@@ -9,6 +9,12 @@
 
 ## ポリシー一覧
 
+### [refined-engineer-judgment-principles.md](refined-engineer-judgment-principles.md)
+**概要**: 全ポリシーの上位に立つ横断原則（トレードオフの比較衡量・決定を遅らせる・シフトレフト・コードは負債・シンプルな発想で大きな変化）。判断の北極星。
+**参照タイミング**: トレードオフ・設計選択・優先順位付けなど判断を迫られたすべての場面（他ポリシーで裁定できないときも）
+
+---
+
 ### [git-policy.md](git-policy.md)
 **概要**: コミットメッセージの書き方・粒度・rebase禁止・ブランチ命名規則
 **参照タイミング**: commit作成・branch作成・PR作成・merge操作の前

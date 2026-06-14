@@ -3,7 +3,6 @@ name: unit-test
 description: backendとfrontendの単体テストを実行し、失敗を分析して詳細レポートを提供する。コード変更後のテスト実行、テスト結果の確認、失敗テストの修正を依頼されたときに使用すること。
 context: fork
 agent: unit-test-runner
-disable-model-invocation: true
 argument-hint: '失敗テストを修正してください'
 ---
 
