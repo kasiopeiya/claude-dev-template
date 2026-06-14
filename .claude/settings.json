@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); f=$(printf \"%s\" \"$input\" | jq -r \".tool_input.file_path // empty\"); case \"$f\" in *.md) jq -n \"{hookSpecificOutput:{hookEventName:\\\"PreToolUse\\\",additionalContext:\\\"【ドキュメント作成ポリシー】Markdownを編集しようとしています。反映前に必ず docs/policy/documentation-policy.md を読み、その指針（最重要: ①対象読者と目的が全てを決定する ②「なぜ」を必ず書く ③図表で可視化する）に沿っているか確認し、違反があれば修正してください。\\\"}}\" ;; esac",
+            "statusMessage": "ドキュメントポリシー確認中..."
+          }
+        ]
+      }
+    ]
+  }
+}
