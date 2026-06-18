@@ -15,7 +15,7 @@
 
 ---
 
-### [judgment-log.md](judgment-log.md)
+### [judgment-log.md](../judgment-log.md)
 **概要**: principles を実データから育てるための素材層（append-only）。AIの非自明な自律判断と人間からの矯正を生のまま記録し、分析して principles / rules / メモリへ昇格させる。規範ではなく観測データ置き場。
 **参照タイミング**: 人間に判断を矯正された／トレードオフを伴う非自明な自律判断を下したとき（記録）。貯まった素材を原則へ昇格させるとき（分析）
 
@@ -51,7 +51,7 @@
 
 ---
 
-### [test-terms.md](test-terms.md)
+### [test-terms.md](../reference/test-terms.md)
 **概要**: テスト用語の単一の真実（SSOT）。unit/integration/E2Eの定義・テストダブル5分類（dummy/stub/spy/mock/fake）
 **参照タイミング**: テストの種類やテストダブルの呼称に迷ったとき・他者と認識を揃えたいとき
 

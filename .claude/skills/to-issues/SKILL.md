@@ -9,6 +9,14 @@ Break a plan into independently-grabbable issues using vertical slices (tracer b
 
 The issue tracker is GitHub Issues (`github.com/DX-Platform/pcd-point-bat`) and triage label vocabulary is defined in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
 
+## 貫く原則：コールドスタート再現性
+
+各 Issue は **会話履歴を一切持たない別セッションの実装者** が読む前提で書く。判断基準は一文:
+
+> この Issue だけ読んで、別セッションが**意図と判断を再構築できるか**。ただし陳腐化する実装詳細はコードに委ねる。
+
+「詳細に書く」と「簡潔に保つ」は対立しない。書くべき詳細（目的・WHY、却下した代替案とその理由、前提・制約・スコープ境界、受け入れ基準）と、書かない詳細（具体的なファイルパス・コードスニペット・レイヤーごとの実装手順）を分ける。
+
 ## Process
 
 ### 1. Gather context

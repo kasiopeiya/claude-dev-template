@@ -1,9 +1,9 @@
 # テスト用語定義
 
-テストを実装・レビュー・議論する開発者が、テストの種類（unit/integration/E2E）やテストダブルの呼称に迷ったとき・他者と認識を揃えたいときに引く、用語の単一の真実（Single Source of Truth）。各テストポリシー（[unit-test-policy.md](unit-test-policy.md) ほか）と[用語集](../glossary.md)は、テスト用語の定義を本書にリンクし、再定義しない。
+テストを実装・レビュー・議論する開発者が、テストの種類（unit/integration/E2E）やテストダブルの呼称に迷ったとき・他者と認識を揃えたいときに引く、用語の単一の真実（Single Source of Truth）。各テストポリシー（[unit-test-policy.md](../policy/unit-test-policy.md) ほか）と[用語集](glossary.md)は、テスト用語の定義を本書にリンクし、再定義しない。
 
 > [!NOTE]
-> 本書は「定義」だけを扱う reference 文書である。各種類を**どう設計・配分するか**の指針は [test-strategy-policy.md](test-strategy-policy.md)、単体テストの**書き方**は [unit-test-policy.md](unit-test-policy.md) を参照。
+> 本書は「定義」だけを扱う reference 文書である。各種類を**どう設計・配分するか**の指針は [test-strategy-policy.md](../policy/test-strategy-policy.md)、単体テストの**書き方**は [unit-test-policy.md](../policy/unit-test-policy.md) を参照。
 
 ## テストの種類（unit / integration / E2E）
 
@@ -20,7 +20,7 @@
 <details>
 <summary>なぜこの軸（スコープ）で定義するのか</summary>
 
-本書はこの軸を **古典学派（Vladimir Khorikov『Unit Testing Principles, Practices, and Patterns』）の定義**に従って採る。これは [unit-test-policy.md](unit-test-policy.md) が採用する流儀と同じ系譜である。
+本書はこの軸を **古典学派（Vladimir Khorikov『Unit Testing Principles, Practices, and Patterns』）の定義**に従って採る。これは [unit-test-policy.md](../policy/unit-test-policy.md) が採用する流儀と同じ系譜である。
 </details>
 
 ### 単体と統合の境界：判断に迷うケース
@@ -77,5 +77,5 @@ flowchart TD
 
 一番の理由は、テスト用語が世の中で統一されておらず、人によって違う定義で同じ言葉を使うため、**コミュニケーション齟齬**が起きるからである。「モック」と言っても、ある人は検証付きのダブルを、別の人は単なるスタブを指している、ということが頻繁に起こる。本書で語彙を1つに固定すれば、レビューや設計の議論で同じ言葉が同じものを指すようになる。これが用語を整理する本来の目的である。
 
-副次的な効果として、「提供系（stub/dummy/fake）」と「検証系（mock/spy）」を言葉の上で分けておくと、データ提供のために置いたダブルにまで呼び出し検証を足す過剰検証（over specification）を防ぎやすくなる（[unit-test-policy.md](unit-test-policy.md) の「スタブとのやりとりを検証してはならない」参照）。
+副次的な効果として、「提供系（stub/dummy/fake）」と「検証系（mock/spy）」を言葉の上で分けておくと、データ提供のために置いたダブルにまで呼び出し検証を足す過剰検証（over specification）を防ぎやすくなる（[unit-test-policy.md](../policy/unit-test-policy.md) の「スタブとのやりとりを検証してはならない」参照）。
 </details>

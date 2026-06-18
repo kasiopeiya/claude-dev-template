@@ -12,11 +12,11 @@
 
 | 文書 | 何を見るか |
 | --- | --- |
-| [test-terms.md](test-terms.md) | 用語の定義（unit/integration/E2E、テストダブル5分類） |
+| [test-terms.md](../reference/test-terms.md) | 用語の定義（unit/integration/E2E、テストダブル5分類） |
 | [unit-test-policy.md](unit-test-policy.md) | 単体テストの思想・テストダブル方針・書き方 |
 | 本書 | 層の配分（ピラミッド）・層ごとの責務分担・統合/E2Eの設計指針 |
 
-> 各種類の定義は本書で再掲しない。[test-terms.md](test-terms.md) を参照。
+> 各種類の定義は本書で再掲しない。[test-terms.md](../reference/test-terms.md) を参照。
 
 ## 各層の責務分担：異なるリスクを検証する
 
@@ -98,7 +98,7 @@
 
 ## テスト対象外：テスト用コード
 
-テストヘルパーやスタブ実装などの**テスト用コードはテストの対象外**とする。ただし fake（[test-terms.md](test-terms.md) のテストダブル分類）を作成した場合は、それ自体が独自のロジックを持つため**テストの対象とする**（例外）。
+テストヘルパーやスタブ実装などの**テスト用コードはテストの対象外**とする。ただし fake（[test-terms.md](../reference/test-terms.md) のテストダブル分類）を作成した場合は、それ自体が独自のロジックを持つため**テストの対象とする**（例外）。
 
 ## アンチパターン
 
