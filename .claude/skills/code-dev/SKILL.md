@@ -2,7 +2,6 @@
 name: code-dev
 description: 'アプリケーション実装の一気通貫オーケストレーションワークフロー。実装（テスト変更を含む場合はTDD、含まない場合は直接実装）→コードレビュー→レビュー指摘修正→CI実行→CI指摘修正→設計書整合性チェック→設計書修正を人間への確認なしに自律実行する。CLAUDE.md の開発フロー Step 6（frontend/backend実装）で使用。Issue番号を引数に指定すること（例: /code-dev 15）。CDKには使用しない。'
 argument-hint: '<Issue番号>'
-disable-model-invocation: true
 ---
 
 # /code-dev
