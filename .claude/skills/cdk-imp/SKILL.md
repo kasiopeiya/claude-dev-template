@@ -338,8 +338,10 @@ Edit または Write ツールで実装:
 
 **実装ガイドライン**:
 
-1. **JSDocコメント**: 関数の役割・引数・戻り値を明記
-2. **日本語コメント**: 各処理ステップを説明
+コメント・JSDoc は `docs/policy/code-comment-policy.md` に従う（実装コメントは WHY、doc comment は契約。コードが語る WHAT/HOW は書かない）。
+
+1. **JSDocコメント**: 関数の役割・引数・戻り値・例外を契約として明記
+2. **日本語コメント**: コードから読み取れない WHY（判断理由・制約・罠）を説明
 3. **循環参照の回避**:
    - SSM Parameter Storeの活用（CloudFront URLなど）
    - ワイルドカードリソース指定（Secrets Managerなど）

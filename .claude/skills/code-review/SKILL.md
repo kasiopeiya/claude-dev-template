@@ -8,4 +8,6 @@ agent: code-reviewer-agent
 
 TypeScript アプリケーションコードをレビューしてください。
 
+コメントのレビューでは `docs/policy/code-comment-policy.md` に従って評価してください（実装コメントが WHY を書いているか、doc comment が契約を書いているか、名前で消せるコメントがないか）。
+
 引数: $ARGUMENTS
