@@ -10,3 +10,5 @@ Ask the questions one at a time.
 When a question's answer can be narrowed to 3 or more concrete options, you MUST use the AskUserQuestion tool to present them.
 
 If a question can be answered by exploring the codebase, explore the codebase instead.
+
+When the plan implies documentation changes, ask which document's purpose (対象読者・目的) each piece of resulting content belongs to. Content that doesn't serve any existing document's purpose belongs elsewhere, or nowhere — surface this before it gets frozen into a task list. This catches purpose-mismatch at the source, since downstream sessions treat the issue's task list as ground truth.
