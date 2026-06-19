@@ -61,6 +61,8 @@ Iterate until the user approves the breakdown.
 
 For each approved slice, publish a new issue to the issue tracker. Use the issue body template below. These issues are considered ready for AFK agents, so publish them with the correct triage label unless instructed otherwise.
 
+Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転記する**（そのスライスが実際に触れる種別の Skill だけに絞る）。これは「issue NNN 対応して」だけで開発フローを自動追従させるための情報なので、issue 化で**落とさない**こと。Plan に同セクションが無ければ、変更種別から CLAUDE.md「開発フロー」のマッピング（設計書→`/design`、アプリ→`/code-dev`、CDK→`/cdk-dev`）で補って記載する。
+
 Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field.
 
 <issue-template>
@@ -95,6 +97,14 @@ Avoid specific file paths or code snippets — they go stale fast. Exception: if
 - [ ] タスク1
 - [ ] タスク2
 - [ ] （必要に応じて）設計書の更新
+
+## 実装フロー（使用するSkill）
+
+このIssueを実装する際に使う開発フローSkillを実行順に記載する（Planの「実装フロー」から転記。このスライスが触れる種別だけに絞る）。**issue番号だけで開発フローを再現するための情報**。種別→Skillの対応は CLAUDE.md「開発フロー」が正典。
+
+| 順 | 変更種別 | 使用Skill |
+|---|---|---|
+| 1 | 例：アプリ実装（backend/frontend） | `/code-dev` |
 
 ## Acceptance criteria
 
