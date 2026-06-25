@@ -30,6 +30,26 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { generateState, verifyState } from './utils/state'
 ```
 
+## Import はファイル冒頭に集約する
+
+すべての `import` 文はファイル先頭（最初の非 import 文より前）にまとめる。コードの途中に `import` を置いてはならない（ESLint `import/first` 相当）。
+
+依存関係はファイル冒頭を見れば一覧できる状態に保つ。途中の import は依存の見落とし・循環参照の発見を妨げ、「このファイルが何に依存するか」を掴むコストを上げる。
+
+```typescript
+// ✅ 良い例：すべて冒頭に集約
+import { readFile } from 'fs/promises'
+import { parseConfig } from './config'
+
+const config = parseConfig()
+
+// ❌ 避けるべき例：コードの途中で import
+const config = parseConfig()
+import { parseConfig } from './config' // 冒頭以外での import は禁止
+```
+
+遅延読み込みが必要な場合のみ動的 `import()` を関数内で使ってよいが、なぜ静的 import にしないかを WHY コメントで明記する。
+
 ## 例外処理・制御フロー
 
 - `try` ブロックは20行以内に収める。長い場合は処理を関数に分割する
