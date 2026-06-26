@@ -29,8 +29,23 @@ Mermaid diagram and documentation system with specialized guides and code-to-dia
 
 1. **User makes a request** → Skill analyzes intent
 2. **Skill determines diagram/document type** → Loads appropriate guide(s)
-3. **AI reads specialized guide** → Generates diagram/document using templates
-4. **Result delivered** → With validation and export options
+3. **Value Gate (MANDATORY)** → Before generating, pass the reverse-conversion test
+4. **AI reads specialized guide** → Generates diagram/document using templates
+5. **Result delivered** → With validation and export options
+
+### Value Gate: reverse-conversion test (run before drawing)
+
+A diagram must let the reader grasp the **structure** (relations, flow, hierarchy, branching) at a glance without reading prose. A diagram that merely re-packages sentences into boxes is noise, not visualization. See `docs/policy/documentation-policy.md` (「図にする前に『逆変換テスト』を通す」).
+
+**Before generating any diagram, ask: "If I convert this diagram back into a bullet list, is any information lost?"**
+
+| Symptom | Verdict |
+|---|---|
+| Straight line (A→B→C) with no branch / merge / loop / parallelism | No value → use a bullet list, not a diagram |
+| Nodes convert back to bullets with zero information loss | No value → use a table or bullet list |
+| Just a 1-to-1 enumeration | No value → use a table |
+
+Only draw when the content needs 2D placement — branching, merging, loops, parallelism, many-to-many, hierarchy, or state transitions. Diagram count is never a goal in itself.
 
 **User Intent Analysis:**
 
