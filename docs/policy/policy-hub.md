@@ -74,3 +74,9 @@
 ### [monitoring-policy.md](monitoring-policy.md)
 **概要**: 監視・アラームのレビュー基準（根拠を持った項目選定と文書化・ブラックボックス/ホワイトボックスの使い分け・オオカミ少年・症状ベース・actionable・Runbook）。根拠の作り方は [GSMガイド](../guide/gsm-monitoring-guide.md) を推奨
 **参照タイミング**: 監視・アラームを設計する前・作られた監視設定をレビューする前
+
+---
+
+### [database-design-policy.md](database-design-policy.md)
+**概要**: データベース設計で判断が分かれやすい事柄に対する、私たちの既定の立場と判断基準。トピックごとにデフォルトの選択を示す
+**参照タイミング**: テーブル・データ操作を設計・実装・レビューする前
