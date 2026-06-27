@@ -83,6 +83,12 @@
 
 ---
 
+### [bugfix-policy.md](bugfix-policy.md)
+**概要**: 良いバグ修正のアプローチを定義する。①良いバグレポート（起票に含める4点＝再現方法・発生頻度・本来の仕様・実際の動作）②不具合修正の手順（再現テストを先に書いてから直す7ステップ＝再現→原因の最小絞り込み→落ちる再現テスト→修正→通過確認→全テスト確認）。テストの書き方そのものには触れず unit-test-policy / test-strategy-policy に委ねる
+**参照タイミング**: バグを起票する前・不具合の修正に着手する前
+
+---
+
 ### [monitoring-policy.md](monitoring-policy.md)
 **概要**: 監視・アラームのレビュー基準（根拠を持った項目選定と文書化・ブラックボックス/ホワイトボックスの使い分け・オオカミ少年・症状ベース・actionable・Runbook）。根拠の作り方は [GSMガイド](../guide/gsm-monitoring-guide.md) を推奨
 **参照タイミング**: 監視・アラームを設計する前・作られた監視設定をレビューする前
@@ -95,6 +101,24 @@
 
 ---
 
+### [application-architecture-policy.md](application-architecture-policy.md)
+**概要**: アプリ（コード内部構造）アーキテクチャの、特定パターン（Clean/Hexagonal/Layered…）非依存の普遍原則。どのアーキテクチャ特性（-ility）を重視し均衡させるか（既定は変更容易性を最優先）・高凝集低結合・偶有的複雑性を増やさない・意図を表出する構造（Screaming Architecture）。具体トポロジー（採用パターン・レイヤー名）の選択は各設計書・[clean-architecture-guide](../guide/clean-architecture-guide.md) に委譲
+**参照タイミング**: レイヤー・境界・依存方向などマクロ構造を設計・レビューする前（設計判断の北極星として常時参照）
+
+---
+
+### [application-design-policy.md](application-design-policy.md)
+**概要**: 「良い設計とは何か」を技術・パターン非依存で宣言。コード内部設計（クラス・関数・モジュールの作り方）が対象。正しく使うのが一番易しいインターフェース・関数とクラスの使い分け・共通化の判断・引数は責務の鏡（ブーリアン引数アンチパターン禁止）・失敗は投げて伝える。マクロ構造は application-architecture-policy に委譲
+**参照タイミング**: クラス・関数・モジュールを設計・実装・レビューする前
+
+---
+
 ### [frontend-design-policy.md](frontend-design-policy.md)
 **概要**: フロントエンド（React）固有の設計判断軸。コンポーネントの責務は1つ（表示とロジックを分離）・状態は最小スコープに（持ち上げ/グローバル化は必要になってから）・Props はインターフェース（フラグ Props 回避）・ビジュアルデザインは自作せず委譲。application-design-policy を継承し UI 固有の差分だけを足す（実装の機械的ルールは .claude/rules/react.md）
 **参照タイミング**: React コンポーネント・カスタムフックを設計・レビューする前
+
+---
+
+### [dependency-policy.md](dependency-policy.md)
+**概要**: 外部ライブラリを足すか迷ったときの判断基準。既定は「足さない」（依存は保守・セキュリティ・ビルド時間の恒久的負債）。足す前に4つの問い（①本当に必要か ②自分で書く方が簡単か ③ジャングルを買っていないか ④安全か）を通し、1つでも赤信号なら足さない。left-pad 事件が動機。原則4 YAGNI・原則5 Less is more の具体化
+**参照タイミング**: `package.json` に依存を追加する前（hook が package.json 編集時に自動で促す）
