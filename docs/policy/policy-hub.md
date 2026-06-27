@@ -92,3 +92,9 @@
 ### [database-design-policy.md](database-design-policy.md)
 **概要**: データベース設計で判断が分かれやすい事柄に対する、私たちの既定の立場と判断基準。トピックごとにデフォルトの選択を示す
 **参照タイミング**: テーブル・データ操作を設計・実装・レビューする前
+
+---
+
+### [frontend-design-policy.md](frontend-design-policy.md)
+**概要**: フロントエンド（React）固有の設計判断軸。コンポーネントの責務は1つ（表示とロジックを分離）・状態は最小スコープに（持ち上げ/グローバル化は必要になってから）・Props はインターフェース（フラグ Props 回避）・ビジュアルデザインは自作せず委譲。application-design-policy を継承し UI 固有の差分だけを足す（実装の機械的ルールは .claude/rules/react.md）
+**参照タイミング**: React コンポーネント・カスタムフックを設計・レビューする前

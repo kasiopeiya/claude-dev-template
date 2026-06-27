@@ -74,6 +74,7 @@
 言語・フレームワーク別のルールは `.claude/rules/` 配下にあり、Claude Code実行時に自動ロードされる。実装前に必ず参照すること。
 
 - [.claude/rules/typescript.md](.claude/rules/typescript.md) — TypeScript共通ルール（命名・import順序・コメント方針など）
+- [.claude/rules/react.md](.claude/rules/react.md) — React実装ルール（コンポーネント・Hooks・状態管理・Tailwind・Testing Library戦術。typescript.mdを継承）
 - [.claude/rules/cdk.md](.claude/rules/cdk.md) — CDK実装ルール（Construct選定・import形式・ビルド禁止事項など）
 
 ### ディレクトリ構成
