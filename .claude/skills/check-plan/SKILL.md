@@ -46,7 +46,7 @@ Plan が挙げる変更箇所と、実際のコードベースを照合する。
 > [!NOTE]
 > 上の観点は `refined-engineer-judgment-principles.md` からの要約（発火しやすさのための転記）。**正典は常に同ファイル（SSOT）**であり、食い違えば原文を優先する。原則が改定されたら、ファイル名 `refined-engineer-judgment-principles.md` で横断検索（grep）し、この箇所も追従更新すること。
 
-あわせて、Plan が **新規ライブラリ追加（`package.json` への依存追加）** を含むなら [dependency-policy](../../../docs/policy/dependency-policy.md) の4つの問い（①本当に必要か ②自分で書く方が簡単か ③ジャングルを買っていないか ④安全か）を通したか確認する。赤信号があれば代替（自前実装・標準機能・軽量パッケージ）を促す。依存は導入後に剥がしにくいので、最左のこの段階で問うのが最も安い（dependency-policy が正典）。
+あわせて、Plan が **新規ライブラリ追加（`package.json` への依存追加）** を含むなら [dependency-policy](../../../docs/policy/dependency-policy.md) の早見表の問いを通したか確認する。赤信号があれば代替（自前実装・標準機能・軽量パッケージ）を促す。依存は導入後に剥がしにくいので、最左のこの段階で問うのが最も安い（dependency-policy が正典）。
 
 ### E. コールドスタート再現性
 
