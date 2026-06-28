@@ -17,3 +17,4 @@
 
 - [application-architecture-policy](../policy/application-architecture-policy.md)：判断基準（特性の優先順位付け）
 - [clean-architecture-guide](clean-architecture-guide.md)：レイヤード系を選んだ後のレビュー観点
+- [directory-structure-guide](directory-structure-guide.md)：選んだスタイルをディレクトリ／パッケージにどう落とすか
