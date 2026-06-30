@@ -102,7 +102,7 @@
 ---
 
 ### [application-architecture-policy.md](application-architecture-policy.md)
-**概要**: アプリ（コード内部構造）アーキテクチャの、特定パターン（Clean/Hexagonal/Layered…）非依存の普遍原則。どのアーキテクチャ特性（-ility）を重視し均衡させるか（既定は変更容易性を最優先）・高凝集低結合・偶有的複雑性を増やさない・意図を表出する構造（Screaming Architecture）。具体トポロジー（採用パターン・レイヤー名）の選択は各設計書・[clean-architecture-guide](../guide/clean-architecture-guide.md) に委譲
+**概要**: アプリ（コード内部構造）アーキテクチャの、特定パターン（Clean/Hexagonal/Layered…）非依存の普遍原則。どのアーキテクチャ特性（-ility）を重視し均衡させるか（既定は変更容易性を最優先）・高凝集低結合・偶有的複雑性を増やさない・意図を表出する構造（Screaming Architecture）・詳細（FW/プラットフォーム）と距離をとりポータビリティを保つ（薄いアダプタ）。具体トポロジー（採用パターン・レイヤー名）の選択は各設計書・[clean-architecture-guide](../guide/clean-architecture-guide.md) に委譲
 **参照タイミング**: レイヤー・境界・依存方向などマクロ構造を設計・レビューする前（設計判断の北極星として常時参照）
 
 ---
