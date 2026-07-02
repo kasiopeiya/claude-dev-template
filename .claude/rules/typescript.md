@@ -107,6 +107,7 @@ if (error) return { statusCode: 500, body: 'Internal Server Error' }
 - 略語は避け、意味が明確な名前を使う（`usr` → `user`、`btn` → `button`）
 - 真偽値は `is` / `has` / `should` / `can` などのプレフィックスで意図を明示する
 - 関数名は動詞で始める（`getUser`、`validateInput`、`createSession`）
+- クラス名は目的（担う一つの責務）が分かる狭い名前にする。`Money`・`Manager`・`Util` のような広い名前は、あらゆる処理を招き入れて神クラス化する。設計上の根拠と判断基準は [application-design-policy「神クラスアンチパターンを禁ずる」](../../docs/policy/application-design-policy.md) を参照
 - 定数は目的が伝わる名前にする（`3000` → `REQUEST_TIMEOUT_MS`）
 - ファイル名はそのファイルが担う責務を表す名前にする（`utils.ts` → `dateFormatter.ts`、`helpers.ts` → `tokenValidator.ts`）
 
