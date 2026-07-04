@@ -15,7 +15,7 @@ Issue番号: $ARGUMENTS
 
 1. **Phase 0（Issue読み込み）**: `gh issue view $ARGUMENTS --json number,title,body,labels` でIssue情報を取得し、以降のPhaseで参照できるよう保持する
 2. **Phase 1**: `update-design` スキルを Skill ツールで Issue番号 `$ARGUMENTS` を渡して起動し、設計書更新をこの場（インライン）で実行する
-3. **Phase 2**: Phase 1 完了後、Phase 1 で更新された設計書を対象に `doc-reviewer-agent` を Task ツールで起動し、完了を待つ。その際、Phase 0 で取得したIssue情報（番号・タイトル・スコープ）をプロンプトに含め、「このIssueの意図に基づいて設計書が更新されている」ことを伝えること
+3. **Phase 2**: Phase 1 完了後、Phase 1 で更新された設計書を対象に `doc-reviewer-agent` を Task ツールで起動し、完了を待つ。その際、Phase 0 で取得したIssue情報（番号・タイトル・スコープ）をプロンプトに含め、「このIssueの意図に基づいて設計書が更新されている」ことを伝えること。あわせて、更新後の設計書が **`docs/requirements.md` の要件（機能・非機能・SLO を含む）を満たしているか**を照合し、未充足・矛盾があれば指摘するよう指示すること（設計が要件を満たすことの検証。とくに SLO はアーキテクチャの構造が目標を満たせるかに直結する）
 4. **Phase 3**: Phase 2 のレビュー結果をもとに、再度 `update-design` スキルの手順で設計書の修正をインライン実行し、指摘事項を反映する。その際以下を反映すること：
    - Phase 2 の出力（レビュー結果）をそのまま含める
    - Phase 0 で取得したIssue情報を含める
