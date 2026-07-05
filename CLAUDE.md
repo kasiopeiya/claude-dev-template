@@ -48,6 +48,9 @@
 
 基本的に以下の仕様駆動で開発を行う。各段階でスラッシュコマンドを実行する。
 
+> [!NOTE]
+> **新規立ち上げ（グリーンフィールド）時**は、まず [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って requirements→plan→起点Issue を作り、その起点Issueから以下のフローに入る。
+
 0. **起点Issue起票（人間）**：要望・課題の起点となるIssueをGitHub Issuesに起票（スキップする場合もある）
 1. **仕様の相談（人間＋AI）**：`/grill-me` — 対話で仕様・設計を詰める（必要ない場合はスキップ）
 2. **Plan作成＋チェック（人間＋AI）**：Planモードでの事前調査、または `/grill-me` の議論を `/to-plan` でPlanファイル化。`/to-plan` は続けて `/check-plan` を自動実行し、必須セクションの充足とコードベース・ドキュメントの影響範囲の網羅を早期にチェックする（シフトレフト）。`/check-plan` は単体でも実行できる。
