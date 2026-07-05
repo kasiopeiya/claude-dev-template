@@ -1,15 +1,20 @@
 ---
 name: validate-design
 description: >
-  設計書（docs/design/）とアプリケーションコード（backend/、frontend/）の整合性を検証する。
+  設計書と実装コードの整合性（ドリフト）を検証する。プロジェクト固有の構成に依存せず、
+  CLAUDE.md からディレクトリ構成と設計ハブの所在を読み取って検証対象を決める。
   「/validate-design」「設計書と実装の整合性チェック」と指示されたときに使用する。
-argument-hint: '[backend|frontend|all]'
+argument-hint: '[all|<設計書パス>|<ソースパス>]'
 context: fork
 agent: design-validator-agent
 ---
 
-引数: 設計書とアプリケーションコードの整合性を検証してください。
+引数: 設計書と実装コードの整合性を検証してください。
 
-検証対象は引数で決定します（未指定または "all": backend と frontend の両方、"backend": Backend のみ、"frontend": Frontend のみ）。
+検証対象の決め方（詳細は agent 定義に従う）:
+
+- **未指定・`all`**: CLAUDE.md が指す設計ハブから辿れる全設計書
+- **設計書のパス**: その1件のみ
+- **ソースのパス・領域名**: 対応する設計書を推定して突き合わせる
 
 レポートの出力形式は `.claude/skills/validate-design/assets/report-template.md` を読み込み、そのテンプレートに従って作成してください。
