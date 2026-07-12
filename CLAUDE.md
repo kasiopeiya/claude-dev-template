@@ -49,7 +49,7 @@
 基本的に以下の仕様駆動で開発を行う。各段階でスラッシュコマンドを実行する。
 
 > [!NOTE]
-> **新規立ち上げ（グリーンフィールド）時**は、まず [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って requirements→plan→起点Issue を作り、その起点Issueから以下のフローに入る。
+> **新規立ち上げ（グリーンフィールド）時**は、まず [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って requirements→plan→起点Issue を作り（requirements は `/requirements-review` で凍結前にレビューする）、その起点Issueから以下のフローに入る。
 
 0. **起点Issue起票（人間）**：要望・課題の起点となるIssueをGitHub Issuesに起票（スキップする場合もある）
 1. **仕様の相談（人間＋AI）**：`/grill-me` — 対話で仕様・設計を詰める（必要ない場合はスキップ）

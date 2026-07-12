@@ -52,6 +52,7 @@ git diff --cached --name-only --diff-filter=ACMR
 2 つの結果を結合し、重複を除去する。その後フィルタリングする:
 
 - 残す: `.md` で終わるファイル
+- 除外: `docs/requirements.md`（要件定義書は専用レビュー `/requirements-review` の対象。一覧から外し、「requirements.md は /requirements-review で専用レビューしてください」と出力する）
 
 該当ファイルが 0 件の場合は「git diff/status に対象 Markdownファイルが見つかりませんでした」と出力して終了する。
 
@@ -59,7 +60,7 @@ git diff --cached --name-only --diff-filter=ACMR
 
 #### 引数がファイルパスの場合
 
-そのファイルパスを直接使用して Phase 2 以降を実行する。完了後、Phase 5 でレポートを出力する。
+そのファイルパスが `docs/requirements.md` の場合は、レビューせず「requirements.md は /requirements-review で専用レビューしてください」と出力して終了する。それ以外はそのファイルパスを直接使用して Phase 2 以降を実行する。完了後、Phase 5 でレポートを出力する。
 
 ---
 
@@ -151,7 +152,7 @@ git diff --cached --name-only --diff-filter=ACMR
 
 | 種別             | 追加観点                                              |
 | ---------------- | ----------------------------------------------------- |
-| **PRD**          | ターゲットユーザーの明確性、解決する課題の具体性、業務要件が What に留まり相互参照で紐づくか（判定は `docs/policy/requirements-doc-policy.md` のレビューチェックリスト） |
+| **PRD**          | **要件定義書（requirements.md）は本エージェントの対象外。`/requirements-review` で専用レビューする（Phase 1 で誘導）** |
 | **ARCHITECTURE** | AWSリソース構成、コスト見積もり、セキュリティ考慮事項 |
 | **DESIGN**       | API設計の具体性（リクエスト/レスポンス例）            |
 | **PLAN**         | 依存関係の明示、受け入れ基準（AC）の具体性            |
