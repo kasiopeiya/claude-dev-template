@@ -105,7 +105,7 @@ Avoid specific file paths or code snippets — they go stale fast. Exception: if
 
 | 順 | 変更種別 | 使用Skill |
 |---|---|---|
-| 1 | 例：アプリ実装（backend/frontend） | `/code-dev` |
+| 1 | 例：アプリ実装 | `/code-dev` |
 
 ## Acceptance criteria
 
