@@ -221,7 +221,7 @@ Read で取得したファイル内容を確認し、以下を評価すること
 | --- | --- | --- |
 | `docs/policy/application-design-policy.md` | #19 アプリ設計ポリシー準拠 | 全ファイル |
 | `docs/policy/application-logging-policy.md` | #20 ロギングポリシー準拠 | ログ出力を含むファイル（無ければ対象外） |
-| `docs/policy/frontend-design-policy.md` | #21 フロントエンド設計ポリシー準拠 | **フロントエンドコード（frontend/ 配下・React コンポーネント）のみ**。それ以外は対象外 |
+| `docs/policy/frontend-design-policy.md` | #21 フロントエンド設計ポリシー準拠 | **React コンポーネント（`.tsx`/`.jsx` ファイル、または `react` を import するファイル）のみ**。それ以外は対象外 |
 | `docs/policy/unit-test-policy.md` | #22 単体テストポリシー準拠 | **テストファイル（.test.ts / .test.tsx / .spec.ts）のみ**。それ以外は対象外 |
 
 **対象外の観点は採点せず、得点率の分母（適用観点数）からも除外する**（該当なしを 3点として加点しない）。

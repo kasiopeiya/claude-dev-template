@@ -9,11 +9,10 @@
 ```
 🔴 環境エラー
 
-Error: node_modules が見つかりません
+Error: node_modules が見つかりません（[ワークスペース名]）
 
 以下のコマンドで依存関係をインストールしてください:
-cd backend && npm install
-cd frontend && npm install
+cd [ワークスペース名] && npm install
 ```
 
 ---
@@ -35,10 +34,10 @@ CIチェックを中断します。
 
 ---
 
-## ESLint 失敗（Phase 3/4 失敗時）
+## ESLint 失敗（Phase 3 失敗時）
 
 ```
-🔴 CI Failed: ESLint ([Backend または Frontend])
+🔴 CI Failed: ESLint ([ワークスペース名])
 
 以下のファイルでエラーが検出されました:
 
@@ -48,17 +47,17 @@ CIチェックを中断します。
 
 修正方法:
 1. [具体的な修正内容]
-2. 自動修正を試す: cd [backend または frontend] && npm run lint:fix
+2. 自動修正を試す: cd [ワークスペース名] && npm run lint:fix
 
 CIチェックを中断します。
 ```
 
 ---
 
-## TypeScript 型チェック失敗（Phase 5/6 失敗時）
+## TypeScript 型チェック失敗（Phase 3 失敗時）
 
 ```
-🔴 CI Failed: TypeScript Type Check ([Backend または Frontend])
+🔴 CI Failed: TypeScript Type Check ([ワークスペース名])
 
 以下のファイルで型エラーが検出されました:
 
@@ -73,10 +72,10 @@ CIチェックを中断します。
 
 ---
 
-## 単体テスト失敗（Phase 7/8 失敗時）
+## 単体テスト失敗（Phase 3 失敗時）
 
 ```
-🔴 CI Failed: Unit Tests ([Backend または Frontend])
+🔴 CI Failed: Unit Tests ([ワークスペース名])
 
 以下のテストが失敗しました:
 
@@ -107,15 +106,14 @@ All checks completed successfully.
 
 === Summary ===
 
-Prettier Check:        ✅ Passed
-ESLint (Backend):      ✅ Passed
-ESLint (Frontend):     ✅ Passed
-Type Check (Backend):  ✅ Passed
-Type Check (Frontend): ✅ Passed
-Unit Tests (Backend):  ✅ Passed ([X] tests)
-Unit Tests (Frontend): ✅ Passed ([Y] tests)
+Prettier Check:              ✅ Passed
+ESLint ([ワークスペース名]):   ✅ Passed
+Type Check ([ワークスペース名]): ✅ Passed
+Unit Tests ([ワークスペース名]): ✅ Passed ([X] tests)
 
-Total Tests: [X + Y] tests passed
+（検出した各ワークスペース分、上記3行を繰り返す）
+
+Total Tests: [全ワークスペースの合計] tests passed
 
 === Next Steps ===
 
