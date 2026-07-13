@@ -27,4 +27,4 @@ npm run lint:fix     # 自動修正込みで実行
 npm run test:rule    # 自作ルールの単体テスト（RuleTester）
 ```
 
-`src/` に規約準拠の記述例を置いている（`appImportExample.ts`＝アプリ、`infraImportExample.ts`＝CDK）。
+`src/` にはクリーンアーキテクチャ構成のサンプルを置いている。ArchUnitTS によるアーキテクチャテストを app コードだけに適用し `cdk/` へ及ぼさないため、`src/` は自前の `package.json` / `tsconfig.json` で TS プロジェクト境界を持つ（テスト本体は issue #17）。リント設定はこのファイル（ルート）に共通化しており `src/` も対象にする。詳細は [src/README.md](src/README.md)。

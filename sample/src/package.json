@@ -1,0 +1,12 @@
+{
+  "name": "app-arch-sample",
+  "version": "0.1.0",
+  "private": true,
+  "description": "クリーンアーキテクチャ構成のサンプル。ArchUnitTS によるアーキテクチャテストを src(app) のみに適用するためのプロジェクト境界（cdk は対象外）",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}
