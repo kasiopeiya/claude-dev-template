@@ -11,7 +11,6 @@
     "test:fga": "vitest run fineGrained",
     "test:snap": "vitest run snapshot",
     "cdk": "cdk",
-    "prepare": "husky",
     "format:ci": "prettier --check '*/**/*.ts'",
     "format:fix": "prettier --write '*/**/*.ts'",
     "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint '*/**/*.ts' --max-warnings 0",

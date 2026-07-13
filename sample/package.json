@@ -7,8 +7,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:rule": "node eslint-rules/awsCdkLibBarrelImport.test.mjs",
-    "prepare": "husky"
+    "test:rule": "node eslint-rules/awsCdkLibBarrelImport.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
