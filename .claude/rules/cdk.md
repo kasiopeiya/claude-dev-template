@@ -143,3 +143,48 @@ async function getResourceId(tagKey: string, tagValue: string): Promise<string> 
 // コンストラクト内
 const rawId = await getResourceId('Role', 'legacy-system');
 ```
+
+## Interface Segregation（ISP）
+
+Stack / Construct の外部公開インターフェース（props と public メンバー）は、利用者が必要とする最小限の型にする。Construct 内部では具体的な L2 Construct を使ってよい。型によって利用者に許可する操作範囲を制御する。
+
+### 型の選択基準
+
+参照型は下ほど公開範囲が狭い。必要な操作に応じて **できるだけ下の型** を選ぶ。
+
+```text
+Bucket        ← Bucket 固有 API が必要な場合のみ（props / public では原則使わない）
+  ↑
+IBucket       ← grant系・addEventNotification・metric など L2 操作が必要な場合
+  ↑
+IBucketRef    ← 名前・ARN など識別情報のみで足りる場合（基本はこれ）
+```
+
+他リソースも同様（例: `IFunctionRef` / `IFunction` / `Function`）。
+
+### 例
+
+```typescript
+interface MyS3BucketProps extends s3.BucketProps {
+  // grant / addEventNotification で L2 操作するため IFunction を要求
+  readonly func: lambda.IFunction
+}
+
+export class MyS3Bucket extends Construct {
+  // 外部には識別情報のみ公開し、設定変更を許可しない
+  public readonly bucket: s3.IBucketRef
+
+  constructor(scope: Construct, id: string, props: MyS3BucketProps) {
+    super(scope, id)
+    const bucket = new s3.Bucket(this, 'Bucket', {
+      ...props,
+      autoDeleteObjects: props.autoDeleteObjects ?? true,
+      removalPolicy: props.removalPolicy ?? RemovalPolicy.DESTROY,
+      encryption: props.encryption ?? s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: props.enforceSSL ?? true,
+    })
+    bucket.grantDelete(props.func)
+    bucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(props.func))
+    this.bucket = bucket
+  }
+}
