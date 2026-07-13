@@ -1,0 +1,43 @@
+# 初期構築用ドキュメント（参照不要）
+docs/implementation-plan.md
+docs/project-structure.md
+
+docs/idea/
+
+# プロンプト関連
+prompt/
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+dist/
+build/
+*.js.map
+*.d.ts
+*.tsbuildinfo
+!**/vite-env.d.ts
+
+# CDK
+cdk.out/
+cdk.context.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test coverage & reports
+coverage/
+integration-tests/test-results/
+integration-tests/playwright-report/
+integration-tests/test-reports/
