@@ -1,0 +1,44 @@
+{
+  "name": "infra-repo",
+  "version": "0.1.15",
+  "bin": {
+    "infra-repo": "bin/infra-repo.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "vitest run",
+    "test:fga": "vitest run fineGrained",
+    "test:snap": "vitest run snapshot",
+    "cdk": "cdk",
+    "prepare": "husky",
+    "format:ci": "prettier --check '*/**/*.ts'",
+    "format:fix": "prettier --write '*/**/*.ts'",
+    "lint:ci": "ESLINT_USE_FLAT_CONFIG=true eslint '*/**/*.ts' --max-warnings 0",
+    "lint:fix": "ESLINT_USE_FLAT_CONFIG=true eslint '*/**/*.ts' --max-warnings 0 --fix",
+    "md-lint-fix": "prettier --write '*/**/*.md' && markdownlint-cli2 '*/**/*.md'",
+    "release": "standard-version && git push --follow-tags",
+    "depcheck": "depcheck"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-sns": "^3.1085.0",
+    "@eslint/js": "^9.25.1",
+    "@types/aws-lambda": "^8.10.162",
+    "@types/node": "20.16.11",
+    "aws-cdk": "^2.1106.0",
+    "depcheck": "^1.4.7",
+    "esbuild": "^0.25.2",
+    "eslint": "^9.25.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "typescript": "~5.6.2",
+    "typescript-eslint": "^8.30.1",
+    "vitest": "^4.0.18",
+    "winston": "^3.15.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.238.0",
+    "cdk-nag": "^2.29.1",
+    "constructs": "^10.4.2",
+    "tsx": "^4.19.3"
+  }
+}

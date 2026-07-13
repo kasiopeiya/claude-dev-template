@@ -1,0 +1,58 @@
+# Dependencies
+**/node_modules/
+
+# Build outputs
+dist/
+build/
+*.js.map
+*.d.ts
+!**/vite-env.d.ts
+
+# CDK
+cdk.out/
+cdk.context.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Test coverage
+coverage/
+
+# Integration test reports
+integration-tests/test-reports/
+integration-tests/test-results/
+integration-tests/playwright-report/
+
+# Pyhon
+__pycache__/
+*.pyc
+
+*.js
+!jest.config.js
+!.eslintrc.js
+!.prettierrc.js
+!.versionrc.js
+*.d.ts
+node_modules
+tmp
+*.log
+.DS_Store

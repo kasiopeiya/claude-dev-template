@@ -5,9 +5,9 @@
 
 import { type App, type Stack } from 'aws-cdk-lib'
 
-import { devParameter, stgParameter, prdParameter, type Parameter } from '../parameter'
-import { BaseStack } from './stack/baseStack'
-import { AppStack } from './stack/appStack'
+import { devParameter, stgParameter, prdParameter, type Parameter } from './parameter'
+import { BaseStack } from './lib/stack/baseStack'
+import { AppStack } from './lib/stack/appStack'
 
 /**
  * 開発環境のスタック構築
@@ -15,13 +15,18 @@ import { AppStack } from './stack/appStack'
 export class DevStackBuilder {
   private readonly param: Parameter = devParameter
 
-  constructor(app: App) {
-    this.build(app)
-  }
+  constructor(
+    private readonly app: App,
+    // snapshot test では env を undefined にするため、デフォルト値を devParameter.env に設定
+    private readonly env: Parameter['env'] = devParameter.env
+  ) {}
 
-  build(app: App): Stack[] {
-    const baseStack = new BaseStack(app, `${this.param.prefix}-base-stack`, { env: this.param.env })
-    const appStack = new AppStack(app, `${this.param.prefix}-app-stack`, { env: this.param.env })
+  build(): Stack[] {
+    const baseStack = new BaseStack(this.app, `${this.param.prefix}-base-stack`, { env: this.env })
+    const appStack = new AppStack(this.app, `${this.param.prefix}-app-stack`, {
+      env: this.env,
+      topic: baseStack.topic
+    })
     return [baseStack, appStack]
   }
 }
@@ -32,13 +37,17 @@ export class DevStackBuilder {
 export class StgStackBuilder {
   private readonly param: Parameter = stgParameter
 
-  constructor(app: App) {
-    this.build(app)
-  }
+  constructor(
+    private readonly app: App,
+    private readonly env: Parameter['env'] = stgParameter.env
+  ) {}
 
-  build(app: App): Stack[] {
-    const baseStack = new BaseStack(app, `${this.param.prefix}-base-stack`, { env: this.param.env })
-    const appStack = new AppStack(app, `${this.param.prefix}-app-stack`, { env: this.param.env })
+  build(): Stack[] {
+    const baseStack = new BaseStack(this.app, `${this.param.prefix}-base-stack`, { env: this.env })
+    const appStack = new AppStack(this.app, `${this.param.prefix}-app-stack`, {
+      env: this.env,
+      topic: baseStack.topic
+    })
     return [baseStack, appStack]
   }
 }
@@ -49,13 +58,17 @@ export class StgStackBuilder {
 export class PrdStackBuilder {
   private readonly param: Parameter = prdParameter
 
-  constructor(app: App) {
-    this.build(app)
-  }
+  constructor(
+    private readonly app: App,
+    private readonly env: Parameter['env'] = prdParameter.env
+  ) {}
 
-  build(app: App): Stack[] {
-    const baseStack = new BaseStack(app, `${this.param.prefix}-base-stack`, { env: this.param.env })
-    const appStack = new AppStack(app, `${this.param.prefix}-app-stack`, { env: this.param.env })
+  build(): Stack[] {
+    const baseStack = new BaseStack(this.app, `${this.param.prefix}-base-stack`, { env: this.env })
+    const appStack = new AppStack(this.app, `${this.param.prefix}-app-stack`, {
+      env: this.env,
+      topic: baseStack.topic
+    })
     // 本番環境のみAlarm通知が必須
     appStack.addAlarms()
     return [baseStack, appStack]

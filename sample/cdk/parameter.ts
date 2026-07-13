@@ -5,7 +5,7 @@
  */
 
 import { type Environment } from 'aws-cdk-lib'
-import * as ec2 from 'aws-cdk-lib/aws-ec2'
+import { aws_ec2 as ec2 } from 'aws-cdk-lib'
 
 // デプロイ先環境は複数であるがアカウントID設定は１つのみ
 // そのときにデプロイしたい環境のアカウントIDをセットすること
@@ -18,7 +18,7 @@ export interface Parameter {
   env: Environment
   prefix: string
   vpcId: string
-  InstanceType: ec2.InstanceType
+  instanceType: ec2.InstanceType
 }
 
 export const devParameter: Parameter = {
@@ -27,19 +27,19 @@ export const devParameter: Parameter = {
   // VPCは手動作成リソース
   vpcId: 'aaaaaaaaaa',
   // EC2インスタンスタイプは環境によって異なるためここで設定
-  InstanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO)
+  instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.MICRO)
 }
 
 export const stgParameter: Parameter = {
   env,
   prefix: 'kasio-stg',
   vpcId: 'bbbbbbbbbb',
-  InstanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.SMALL)
+  instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.SMALL)
 }
 
 export const prdParameter: Parameter = {
   env,
   prefix: 'kasio-prd',
   vpcId: 'cccccccccc',
-  InstanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.SMALL)
+  instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.SMALL)
 }
