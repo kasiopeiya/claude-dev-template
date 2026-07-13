@@ -48,7 +48,7 @@ import { AppParameter } from '../parameter'
 
 ## CDKの差分検知ルール
 
-このプロジェクトでは、`cdk diff`による正確な差分検知と、決定論的（予測可能）なインフラ構築を最優先します。CloudFormationのデプロイ時評価機能（動的参照や条件分岐）への依存を排除し、すべてを「CDK Synth時」に解決する静的な実装を行ってください。
+なぜ決定論的な構築を最優先するか（設計判断）は [cdk-design-policy](../../docs/policy/cdk-design-policy.md) を参照。ここではそれを守るための具体ルールを定める。CloudFormationのデプロイ時評価機能（動的参照や条件分岐）への依存を排除し、すべてを「CDK Synth時」に解決する静的な実装を行ってください。
 
 以下のルールを厳守してコードを生成・修正してください。
 
@@ -146,7 +146,7 @@ const rawId = await getResourceId('Role', 'legacy-system');
 
 ## Interface Segregation（ISP）
 
-Stack / Construct の外部公開インターフェース（props と public メンバー）は、利用者が必要とする最小限の型にする。Construct 内部では具体的な L2 Construct を使ってよい。型によって利用者に許可する操作範囲を制御する。
+なぜ公開インターフェースを最小の型に絞るか（設計判断）は [cdk-design-policy](../../docs/policy/cdk-design-policy.md) を参照。ここでは型の選択という実装戦術を定める。
 
 ### 型の選択基準
 
