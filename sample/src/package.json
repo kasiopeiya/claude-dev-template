@@ -4,9 +4,12 @@
   "private": true,
   "description": "クリーンアーキテクチャ構成のサンプル。ArchUnitTS によるアーキテクチャテストを src(app) のみに適用するためのプロジェクト境界（cdk は対象外）",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "archunit": "^2.3.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.18"
   }
 }

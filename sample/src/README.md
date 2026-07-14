@@ -25,10 +25,28 @@ src/
 ```bash
 npm install        # 依存を導入
 npm run typecheck  # 型検査（src のみ。cdk は対象外）
+npm run test       # アーキテクチャテスト（境界・循環依存・凝集度）を実行
 ```
 
 リント・フォーマットはルート（`sample/`）に共通化しているため、`sample/` で `npm run lint` / `npm run format` を実行する。
 
-## ArchUnitTS 本体の導入
+## アーキテクチャテスト（ArchUnitTS）
 
-このプロジェクトを土台に issue #17 で実施する（依存追加・境界/循環テスト・結合度メトリクス・CI 組込み）。タスクの詳細は issue #17 を SSOT とする。
+`npm run test`（vitest + `archunit`）が次の3つを機械的に検査する。違反があるとテストが失敗する。
+
+### 境界テスト（`test/architecture.test.ts`）
+
+**「内側レイヤーは外側レイヤーを import しない」**を強制する。
+
+- `domain` は `usecase` / `infrastructure` / `presentation` を import しない
+- `usecase` は `infrastructure` / `presentation` を import しない
+
+`main.ts`（合成ルート）はレイヤーフォルダ外のため対象外で、全層を結線してよい。
+
+### 循環依存テスト（`test/cycles.test.ts`）
+
+ファイル間に循環依存が無いことを保証する（`haveNoCycles`）。
+
+### 凝集度メトリクス（`test/metrics.test.ts`）
+
+各クラスの LCOM96b（凝集度の欠如。0=完全凝集〜1=無凝集）を固定しきい値 0.5 未満で検査し、凝集低下を信号として検知する。
