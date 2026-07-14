@@ -7,7 +7,9 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test:rule": "node eslint-rules/awsCdkLibBarrelImport.test.mjs"
+    "test:rule": "node eslint-rules/awsCdkLibBarrelImport.test.mjs",
+    "knip": "knip",
+    "knip:fix": "knip --fix"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -16,6 +18,7 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-sonarjs": "^4.1.0",
     "globals": "^17.7.0",
+    "knip": "^6.26.0",
     "prettier": "^3.4.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.63.0"

@@ -39,6 +39,17 @@
 - `import * as s3 from 'aws-cdk-lib/aws-s3'` → `import { aws_s3 as s3 } from 'aws-cdk-lib'` は**自動修正する**（ローカル名 `s3` を保てるため安全）。
 - `import { Bucket } from 'aws-cdk-lib/aws-s3'` は**検出のみ**。使用箇所（`Bucket` → `s3.Bucket`）の書き換えを伴い自動修正が非安全なため手動で直す。
 
+## 未使用コード検出（knip）
+
+ESLint の `no-unused-vars`（②）や tsconfig の `noUnusedLocals` は **1 ファイル内**の未使用しか捕まえられない。どこからも import されない export・到達しないファイル・使われない依存という **プロジェクト横断の未使用** は [knip](https://knip.dev) で検出し、AI が残しがちな足場コードをゲートする。設定は [knip.jsonc](knip.jsonc)（ルート・`cdk`・`src` を workspace として一括検査）。
+
+### 較正（過剰ゲート化を避ける）
+
+import グラフから辿れない参照は knip が未使用と誤検知するため、明示的に登録する。
+
+- **文字列パスで参照されるファイルは `entry` に登録**：Lambda ハンドラ（CDK が `entry: path.join(...)` で参照）・vitest の `snapshotSerializers`。
+- **実行時ツールは `ignoreDependencies`**：`tsx`（`cdk.json` の CDK アプリ実行）・`esbuild`（NodejsFunction のバンドルで aws-cdk-lib が内部起動）。
+
 ## 使い方
 
 ```bash
@@ -46,6 +57,7 @@ npm install          # 依存を導入
 npm run lint         # 静的解析（違反があれば非ゼロ終了）
 npm run lint:fix     # 自動修正込みで実行
 npm run test:rule    # 自作ルールの単体テスト（RuleTester）
+npm run knip         # 未使用 file/export/dependency を検出（検出があれば非ゼロ終了）
 ```
 
 `src/` にはクリーンアーキテクチャ構成のサンプルを置いている。ArchUnitTS によるアーキテクチャテストを app コードだけに適用し `cdk/` へ及ぼさないため、`src/` は自前の `package.json` / `tsconfig.json` で TS プロジェクト境界を持つ（テスト本体は issue #17）。リント設定はこのファイル（ルート）に共通化しており `src/` も対象にする。詳細は [src/README.md](src/README.md)。
