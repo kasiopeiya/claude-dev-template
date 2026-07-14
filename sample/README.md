@@ -1,17 +1,38 @@
-# 静的解析（ESLint）サンプル
+# 静的解析（ESLint / tsconfig）サンプル
 
-`sample/` 直下に置いた ESLint 設定のサンプル。プロジェクトのコーディング規約（[typescript.md](../.claude/rules/typescript.md) / [cdk.md](../.claude/rules/cdk.md)）を静的解析で自動適用する例を示す。CDK・アプリ双方の TypeScript を対象にする。
+`sample/` 直下に置いた静的解析ゲートのサンプル。プロジェクトのコーディング規約（[typescript.md](../.claude/rules/typescript.md) / [cdk.md](../.claude/rules/cdk.md)）を ESLint と tsconfig で自動適用する例を示す。CDK・アプリ双方の TypeScript を対象にする。機械で測れる品質を CI ゲートへ寄せ、LLM レビューを機械で測れない判断に集中させることが狙い。
 
-## 適用しているルール
+## 適用している ESLint ルール
 
 | #   | ルール                                                                | 実現手段                                                                    | autofix    |
 | --- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------- |
 | ①   | クラス・関数の前後に空行を入れる                                      | `@stylistic/padding-line-between-statements`＋`lines-between-class-members` | ✅         |
-| ②   | 未使用の引数を検出（optional 引数を含む全引数）                       | `@typescript-eslint/no-unused-vars`（`args: 'all'`）                        | －         |
+| ②   | 未使用の変数・引数を検出（optional 引数を含む全引数）                 | `@typescript-eslint/no-unused-vars`（`args: 'all'`）                        | －         |
 | ③   | import 順序（標準ライブラリ→サードパーティ→自作、各グループ間に空行） | `eslint-plugin-import` の `import/order`                                    | ✅         |
 | ④   | aws-cdk-lib のサービスモジュールは barrel 形式に統一                  | 自作ルール `local/aws-cdk-lib-barrel-import`                                | ✅（一部） |
+| ⑤   | `any` を禁止し型システムを使わせる                                    | `@typescript-eslint/no-explicit-any`                                        | －         |
+| ⑥   | 複雑度（循環的・認知的とも各 15 まで）                                | `complexity`＋`sonarjs/cognitive-complexity`                                | －         |
+| ⑦   | 関数長（50 行まで。コメント・空行は除く）                             | `max-lines-per-function`                                                    | －         |
+| ⑧   | 引数数（3 個まで）                                                    | `max-params`                                                                | －         |
+| ⑨   | ネスト深さ（2 重まで）                                                | `max-depth`                                                                 | －         |
+| ⑩   | マジックナンバー禁止（**`src/` のみ**）                               | `no-magic-numbers`                                                          | －         |
+| ⑪   | 浮いた Promise・Promise 誤用の禁止                                    | `@typescript-eslint/no-floating-promises` / `no-misused-promises`           | －         |
 
-「プラグインで規約通りに設定できるものはプラグイン、できないものだけ自作ルール」の方針。④のみ該当する標準ルールが無いため自作した（[eslint-rules/awsCdkLibBarrelImport.mjs](eslint-rules/awsCdkLibBarrelImport.mjs)）。
+⑥〜⑨のしきい値は [typescript.md](../.claude/rules/typescript.md) を SSOT とする。⑪は型情報が要るため対象を tsconfig に含まれるソースへ限定し、型サービスを有効化している。
+
+### 較正（過剰ゲート化を避ける）
+
+- **⑩ マジックナンバーは `src/`（アプリロジック）のみ**。CDK はメモリ量・タイムアウト・しきい値など設定値としての数値リテラルが正当なため対象外にする。
+- **`require-await` は `warn` 止め**。`async` ポート（`Promise` を返す interface）を満たすための `await` なし `async` 実装（例: インメモリ Repository）を誤検知するため、error にはしない。
+- テストコードは期待値の数値リテラルを直書きするのが読みやすいため、⑩の対象から外す。
+
+「プラグインで規約通りに設定できるものはプラグイン、できないものだけ自作ルール」の方針。④のみ該当する標準ルールが無いため自作した（[eslint-rules/awsCdkLibBarrelImport.mjs](eslint-rules/awsCdkLibBarrelImport.mjs)）。⑥の認知的複雑度のみ [`eslint-plugin-sonarjs`](https://github.com/SonarSource/eslint-plugin-sonarjs) を追加している（他は ESLint / typescript-eslint 同梱）。
+
+## tsconfig による型の厳格化
+
+型検査は「最強・最安の評価関数」であり、ESLint と並ぶゲートとして効かせる。`strict` に加えて `noUnusedLocals` / `noUnusedParameters` / `noImplicitReturns` / `noUncheckedIndexedAccess` / `noFallthroughCasesInSwitch` を有効化する。フラグの実体は各 `tsconfig.json`（[src](src/tsconfig.json) / [cdk](cdk/tsconfig.json)）を SSOT とする。
+
+`exactOptionalPropertyTypes` は自前で型を制御できる **`src/` のみ**有効にする。CDK では aws-cdk-lib の optional 多用型（env-agnostic synth で `account` が `undefined` になる等）と衝突し過剰ゲートになるため外す。
 
 ### ④ 自作ルールの autofix 範囲
 

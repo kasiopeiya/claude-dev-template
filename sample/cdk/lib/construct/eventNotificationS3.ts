@@ -18,6 +18,7 @@ interface EventNotificationS3BucketProps extends s3.BucketProps {
  */
 export class EventNotificationS3Bucket extends Construct {
   public readonly bucket: s3.IBucketRef
+
   // addAlarms など下流でメトリクスを参照するため IFunction を公開する
   public readonly func: lambda.IFunction
 

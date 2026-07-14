@@ -17,6 +17,7 @@ interface AppStackProps extends StackProps {
  */
 export class AppStack extends Stack {
   private readonly topic: sns.ITopic
+
   private readonly eventNotificationBucket: EventNotificationS3Bucket
 
   constructor(scope: Construct, id: string, props: AppStackProps) {
