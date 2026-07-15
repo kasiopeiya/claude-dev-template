@@ -103,17 +103,3 @@
 ├── asset/                        # アセット（sql/ テストデータなど）
 └── docs/                         # 設計書・ドキュメント（ADR・用語集・CI/CD・ポリシー）
 ```
-
-## Agent skills
-
-### Issue tracker
-
-GitHub Issues（`github.com/DX-Platform/pcd-point-bat`）。`gh` CLI を使う。詳細は `docs/agents/issue-tracker.md`。
-
-### Triage labels
-
-5ロール標準語彙（`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`）。詳細は `docs/agents/triage-labels.md`。
-
-### Domain docs
-
-Single-context。ADR は `docs/adr/`、用語集は `docs/reference/glossary.md`。詳細は `docs/agents/domain.md`。
