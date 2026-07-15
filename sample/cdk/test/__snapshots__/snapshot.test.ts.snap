@@ -12,7 +12,6 @@ exports[`dev > kasio-dev-app-stack 1`] = `
   "Resources": {
     "BucketNotificationsHandler050a0587b7544547bf325f094a3db8347ECC3691": {
       "DependsOn": [
-        "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36",
         "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
       ],
       "Properties": {
@@ -172,32 +171,6 @@ def sort_filter_rules(json_obj):
       },
       "Type": "AWS::IAM::Role",
     },
-    "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36": {
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": "s3:PutBucketNotification",
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "EventNotificationS3BucketB821D06E",
-                  "Arn",
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36",
-        "Roles": [
-          {
-            "Ref": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
     "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
       "DependsOn": [
         "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
@@ -229,7 +202,7 @@ def sort_filter_rules(json_obj):
             "Arn",
           ],
         },
-        "Runtime": "nodejs22.x",
+        "Runtime": "nodejs24.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -411,6 +384,7 @@ def sort_filter_rules(json_obj):
     "EventNotificationS3BucketNotifications06B1A5C4": {
       "DependsOn": [
         "EventNotificationS3BucketAllowBucketNotificationsTokasiodevappstackEventNotificationS3BucketFunctionBAE5C9AD115F261B",
+        "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
         "EventNotificationS3BucketPolicy11F527D0",
       ],
       "Properties": {
@@ -442,6 +416,32 @@ def sort_filter_rules(json_obj):
         "SkipDestinationValidation": false,
       },
       "Type": "Custom::S3BucketNotifications",
+    },
+    "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:PutBucketNotification",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EventNotificationS3BucketB821D06E",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
+        "Roles": [
+          {
+            "Ref": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "EventNotificationS3BucketPolicy11F527D0": {
       "Properties": {
@@ -674,7 +674,6 @@ exports[`prd > kasio-prd-app-stack 1`] = `
   "Resources": {
     "BucketNotificationsHandler050a0587b7544547bf325f094a3db8347ECC3691": {
       "DependsOn": [
-        "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36",
         "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
       ],
       "Properties": {
@@ -834,32 +833,6 @@ def sort_filter_rules(json_obj):
       },
       "Type": "AWS::IAM::Role",
     },
-    "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36": {
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": "s3:PutBucketNotification",
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "EventNotificationS3BucketB821D06E",
-                  "Arn",
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36",
-        "Roles": [
-          {
-            "Ref": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
     "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
       "DependsOn": [
         "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
@@ -891,7 +864,7 @@ def sort_filter_rules(json_obj):
             "Arn",
           ],
         },
-        "Runtime": "nodejs22.x",
+        "Runtime": "nodejs24.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1073,6 +1046,7 @@ def sort_filter_rules(json_obj):
     "EventNotificationS3BucketNotifications06B1A5C4": {
       "DependsOn": [
         "EventNotificationS3BucketAllowBucketNotificationsTokasioprdappstackEventNotificationS3BucketFunction2B660081AA2B44F9",
+        "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
         "EventNotificationS3BucketPolicy11F527D0",
       ],
       "Properties": {
@@ -1104,6 +1078,32 @@ def sort_filter_rules(json_obj):
         "SkipDestinationValidation": false,
       },
       "Type": "Custom::S3BucketNotifications",
+    },
+    "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:PutBucketNotification",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EventNotificationS3BucketB821D06E",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
+        "Roles": [
+          {
+            "Ref": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "EventNotificationS3BucketPolicy11F527D0": {
       "Properties": {
@@ -1362,7 +1362,6 @@ exports[`stg > kasio-stg-app-stack 1`] = `
   "Resources": {
     "BucketNotificationsHandler050a0587b7544547bf325f094a3db8347ECC3691": {
       "DependsOn": [
-        "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36",
         "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
       ],
       "Properties": {
@@ -1522,32 +1521,6 @@ def sort_filter_rules(json_obj):
       },
       "Type": "AWS::IAM::Role",
     },
-    "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36": {
-      "Properties": {
-        "PolicyDocument": {
-          "Statement": [
-            {
-              "Action": "s3:PutBucketNotification",
-              "Effect": "Allow",
-              "Resource": {
-                "Fn::GetAtt": [
-                  "EventNotificationS3BucketB821D06E",
-                  "Arn",
-                ],
-              },
-            },
-          ],
-          "Version": "2012-10-17",
-        },
-        "PolicyName": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleDefaultPolicy2CF63D36",
-        "Roles": [
-          {
-            "Ref": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
-          },
-        ],
-      },
-      "Type": "AWS::IAM::Policy",
-    },
     "CustomS3AutoDeleteObjectsCustomResourceProviderHandler9D90184F": {
       "DependsOn": [
         "CustomS3AutoDeleteObjectsCustomResourceProviderRole3B1BD092",
@@ -1579,7 +1552,7 @@ def sort_filter_rules(json_obj):
             "Arn",
           ],
         },
-        "Runtime": "nodejs22.x",
+        "Runtime": "nodejs24.x",
         "Timeout": 900,
       },
       "Type": "AWS::Lambda::Function",
@@ -1761,6 +1734,7 @@ def sort_filter_rules(json_obj):
     "EventNotificationS3BucketNotifications06B1A5C4": {
       "DependsOn": [
         "EventNotificationS3BucketAllowBucketNotificationsTokasiostgappstackEventNotificationS3BucketFunction1D3529DEDF72F34F",
+        "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
         "EventNotificationS3BucketPolicy11F527D0",
       ],
       "Properties": {
@@ -1792,6 +1766,32 @@ def sort_filter_rules(json_obj):
         "SkipDestinationValidation": false,
       },
       "Type": "Custom::S3BucketNotifications",
+    },
+    "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:PutBucketNotification",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::GetAtt": [
+                  "EventNotificationS3BucketB821D06E",
+                  "Arn",
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
+        "Roles": [
+          {
+            "Ref": "BucketNotificationsHandler050a0587b7544547bf325f094a3db834RoleB6FB88EC",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
     },
     "EventNotificationS3BucketPolicy11F527D0": {
       "Properties": {
