@@ -15,7 +15,7 @@ Plan ファイルを **Issue 化（`/to-issues`）の前** に監査する。後
 
 ## チェック観点
 
-**着手前に** `docs/design-hub.md`・`docs/policy/policy-hub.md`・`docs/policy/refined-engineer-judgment-principles.md`（判断の北極星）・該当 ADR（`docs/adr/`）を参照する（CLAUDE.md 必読ルール）。
+**着手前に** `docs/design-hub.md`・`docs/policy-hub.md`・`docs/policy/refined-engineer-judgment-principles.md`（判断の北極星）・該当 ADR（`docs/adr/`）を参照する（CLAUDE.md 必読ルール）。
 
 ### A. 必須セクションの充足
 
