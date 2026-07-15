@@ -7,7 +7,7 @@ description: Break a plan, spec, or PRD into independently-grabbable issues on t
 
 Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
 
-The issue tracker is GitHub Issues (`github.com/DX-Platform/pcd-point-bat`) and triage label vocabulary is defined in `docs/agents/issue-tracker.md` and `docs/agents/triage-labels.md`.
+The issue tracker is GitHub Issues. Use the `gh` CLI, which resolves the repository from the local git remote.
 
 ## 貫く原則：コールドスタート再現性
 
@@ -59,7 +59,7 @@ Iterate until the user approves the breakdown.
 
 ### 5. Publish the issues to the issue tracker
 
-For each approved slice, publish a new issue to the issue tracker. Use the issue body template below. These issues are considered ready for AFK agents, so publish them with the correct triage label unless instructed otherwise.
+For each approved slice, publish a new issue to the issue tracker. Use the issue body template below.
 
 Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転記する**（そのスライスが実際に触れる種別の Skill だけに絞る）。これは「issue NNN 対応して」だけで開発フローを自動追従させるための情報なので、issue 化で**落とさない**こと。Plan に同セクションが無ければ、変更種別から CLAUDE.md「開発フロー」のマッピング（設計書→`/design`、アプリ→`/code-dev`、CDK→`/cdk-dev`）で補って記載する。
 

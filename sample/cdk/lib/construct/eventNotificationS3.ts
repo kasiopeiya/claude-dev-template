@@ -18,6 +18,7 @@ interface EventNotificationS3BucketProps extends s3.BucketProps {
  */
 export class EventNotificationS3Bucket extends Construct {
   public readonly bucket: s3.IBucketRef
+
   // addAlarms など下流でメトリクスを参照するため IFunction を公開する
   public readonly func: lambda.IFunction
 
@@ -55,7 +56,10 @@ export class EventNotificationS3Bucket extends Construct {
       encryption: props.encryption ?? s3.BucketEncryption.S3_MANAGED,
       enforceSSL: props.enforceSSL ?? true
     })
-    bucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(eventNotificationHandlerFunc))
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED,
+      new s3n.LambdaDestination(eventNotificationHandlerFunc)
+    )
     this.bucket = bucket
   }
 }
