@@ -27,9 +27,13 @@ export class AppStack extends Stack {
     /*
     * イベント通知機能付きのS3バケット
     -------------------------------------------------------------------------- */
-    this.eventNotificationBucket = new EventNotificationS3Bucket(this, 'EventNotificationS3Bucket', {
-      topic: props.topic
-    })
+    this.eventNotificationBucket = new EventNotificationS3Bucket(
+      this,
+      'EventNotificationS3Bucket',
+      {
+        topic: props.topic
+      }
+    )
   }
 
   /**
