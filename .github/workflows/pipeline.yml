@@ -1,0 +1,163 @@
+# 責務: topic ブランチへの push から、マージ可否の判定までを担う唯一のパイプライン。
+# なぜこの構成なのかは docs/design/cicd-design.md を参照する。
+
+name: pipeline
+run-name: pipeline (${{ github.ref_name }})
+
+# git-policy の7プレフィックスのみを対象にし、ブランチ命名規約を仕組みで強制する。
+# 代償として、これ以外のブランチは checks が1つも走らず無言でマージ不可になる（cicd-design「既知の制約」）。
+# workflow レベルの paths フィルタは使わない。ワークフローごとスキップされると required check が
+# pending のまま残り、PR が永久にマージできなくなるため（job レベルの skip とは挙動が違う）。
+on:
+  push:
+    branches:
+      - 'feat/**'
+      - 'fix/**'
+      - 'refactor/**'
+      - 'chore/**'
+      - 'ci/**'
+      - 'test/**'
+      - 'docs/**'
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create-pull-request:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      # --fill は base..head 間のコミットを local git から読むため、全履歴が要る
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      # 重複判定はタイトルではなくブランチで行う。--fill はコミットごとにタイトルが変わるため、
+      # タイトル検索だと毎 push で新しい PR ができてしまう。
+      - name: Create pull request if absent
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          if [ -n "$(gh pr list --head "$BRANCH" --state open --json number --jq '.[].number')" ]; then
+            echo "pull request already exists for $BRANCH"
+            exit 0
+          fi
+          # 本文はコミットメッセージから生成する。git-policy が既にコミットへ「なぜ」を
+          # 書くことを義務付けており、同じ内容を人間に2度書かせないため（--fill）。
+          gh pr create --base main --head "$BRANCH" --fill
+
+  detect-changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      docs_only: ${{ steps.detect.outputs.docs_only }}
+      app_changed: ${{ steps.detect.outputs.app_changed }}
+      cdk_changed: ${{ steps.detect.outputs.cdk_changed }}
+    steps:
+      # merge-base を求めるため全履歴が要る
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      # 第三者 action を使わず自前で書く。他人のコードが、このリポジトリの権限を
+      # 持ったまま動くリスクと、数行の shell を引き換えにしない（cicd-design）。
+      - name: Detect changed areas
+        id: detect
+        run: |
+          changed=$(git diff --name-only origin/main...HEAD)
+          echo "changed files:"
+          echo "$changed"
+
+          if [ -z "$changed" ]; then
+            # 判定材料が無いときは検査を省かない側へ倒す
+            docs_only=false
+          elif grep -qvE '^(docs/|[^/]*\.md$)' <<< "$changed"; then
+            docs_only=false
+          else
+            docs_only=true
+          fi
+
+          if grep -qE '^app/' <<< "$changed"; then app_changed=true; else app_changed=false; fi
+          if grep -qE '^infra/' <<< "$changed"; then cdk_changed=true; else cdk_changed=false; fi
+
+          echo "docs_only=$docs_only" | tee -a "$GITHUB_OUTPUT"
+          echo "app_changed=$app_changed" | tee -a "$GITHUB_OUTPUT"
+          echo "cdk_changed=$cdk_changed" | tee -a "$GITHUB_OUTPUT"
+
+  # リポジトリ全体を1回で舐めるツール。静的解析はルールを1箇所で定義しているため
+  # 階層ごとに分割・スキップできない（cicd-design）。
+  ci-common:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.docs_only != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # キャッシュキーはジョブのスコープごとに分ける。cache-dependency-path が
+      # キーのハッシュ元になるため、参照する lock ファイルが違えばキーも分かれる。
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            app/backend/package-lock.json
+            infra/package-lock.json
+
+      # eslint.config.mjs の型対応 lint（projectService: true）が TS の型情報を要求するため、
+      # 3階層すべての node_modules が揃っていないと動かない。共通だから軽い、は誤り。
+      - run: npm ci
+      - run: npm ci
+        working-directory: app/backend
+      - run: npm ci
+        working-directory: infra
+
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run knip
+      - run: npm run test:rule
+
+  # マージ可否を決める唯一の required check。
+  # GitHub は「実行しなかった」を「成功」と同じものとして扱うため、上流に needs で繋ぐだけの
+  # ゲートは検査が丸ごと走らなかったときに赤くならずに静かに開く。
+  # 未実行は検証の不在であって、検証の成功ではない（cicd-design）。
+  cicd-gate:
+    needs: [create-pull-request, detect-changes, ci-common]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Verify upstream job results
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          echo "$NEEDS"
+          # skipped は許す。上流が落ちて連鎖的に skipped になった場合でも、
+          # 落ちたジョブ自身が failure として needs に現れるため取りこぼさない。
+          bad=$(jq -r 'to_entries[]
+            | select(.value.result == "failure" or .value.result == "cancelled")
+            | "\(.key): \(.value.result)"' <<< "$NEEDS")
+
+          if [ -n "$bad" ]; then
+            echo "::error::upstream jobs did not pass"
+            echo "$bad"
+            exit 1
+          fi
+          echo "all upstream jobs passed or were intentionally skipped"
