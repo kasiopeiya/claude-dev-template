@@ -24,9 +24,11 @@ flowchart TD
     Push([⚡ topic ブランチへ push]) --> PR[📝 PR を自動生成]
     Push --> Detect[🔍 変更種別を判定<br/>docs のみ / アプリ / CDK]
     Push --> Format
+    Push --> PolicyHook
 
     subgraph Checks["🔀 検査（並行実行）"]
         Format[✓ 整形チェック<br/>常に実行・docs のみでも]
+        PolicyHook[✓ policy hook 検査<br/>常に実行・docs のみでも]
         Common[✓ 全体を舐める検査<br/>docs のみなら skip]
         App[✓ アプリ検査<br/>アプリ変更時のみ]
         Cdk[✓ CDK 検査<br/>CDK 変更時のみ]
@@ -47,6 +49,7 @@ flowchart TD
     IT --> Gate
 
     Format --> Gate
+    PolicyHook --> Gate
     Common --> Gate
     App --> Gate
     Cdk --> Gate
@@ -61,7 +64,7 @@ flowchart TD
     classDef hollow fill:#FFE4B5,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5,color:black
 
     class Push,Merge startEnd
-    class PR,Detect,Format,Common,App,Cdk process
+    class PR,Detect,Format,PolicyHook,Common,App,Cdk process
     class DeployCheck decision
     class Deploy,IT hollow
     class Gate gate
@@ -80,6 +83,7 @@ flowchart TD
 | 最新の取り込みを **merge commit** で行う（rebase しない）         | [git-policy](../policy/git-policy.md) が rebase を禁じている（履歴の書き換えが `git bisect` を妨げるため）                                                                                                                                                                                                               |
 | 検査を「整形／全体を舐めるもの／アプリ固有／CDK 固有」の4つに割る | 静的解析はルールを1箇所で定義しているので、走らせるには全階層の依存が要る。だからスキップできない。条件付きにできるのは固有の検査だけ                                                                                                                                                                                    |
 | 整形チェックだけは切り出して**変更種別に関わらず常に実行**する    | prettier は `.md` も検査対象にしている以上、「docs だから検査不要」は事実に反する。docs のみの PR で飛ばすと、整形の崩れた `.md` がゲートを緑のまま通り、**被害は後続の無関係な PR に出る**（自分が触っていない `.md` で落ちる）。root の依存だけで完結し型情報を要らないため、3階層分の依存が要る全体検査から切り離せる |
+| policy hook の検査も切り出して**変更種別に関わらず常に実行**する  | ポリシーの発火対象は `docs/policy/*.md` の frontmatter が宣言する。それだけを直す PR は docs のみの変更と判定され全体検査がスキップされるため、hook の検査を全体検査に含めると**hook を壊す変更でこそ走らない**。整形チェックと同型の判断で、独立ジョブとして常に走らせる（root の依存だけで完結し軽量）                 |
 | **アプリ変更でも** deploy する                                    | アプリは CDK が deploy する。変更を反映するには deploy が要る                                                                                                                                                                                                                                                            |
 | required check をゲート1つに集約する                              | ジョブを個別登録すると、required の一覧がリポジトリ設定（コード外）に住む。ジョブを増やしたときの登録漏れが静かに穴を開け、テンプレートとしてコピーされた先に設定は付いてこない                                                                                                                                          |
 | ゲートは上流の結果に関わらず必ず実行し、一つずつ成功を確認する    | GitHub は「実行しなかった」を「成功」と同じものとして扱う。上流に繋ぐだけのゲートは、検査が丸ごと走らなかったときに——赤くならずに——静かに開く。**未実行は検証の不在であって、検証の成功ではない**                                                                                                                        |

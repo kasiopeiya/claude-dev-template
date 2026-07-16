@@ -1,8 +1,6 @@
 ---
 hook:
-  applies-to:
-    - 'app/**/*.ts'
-    - 'app/**/*.tsx'
+  applies-to: ['app/**/*.ts', 'app/**/*.tsx']
 ---
 
 # アプリケーションロギングポリシー

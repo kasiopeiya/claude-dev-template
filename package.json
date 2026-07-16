@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "test:rule": "node eslint-rules/awsCdkLibBarrelImport.test.mjs",
+    "test:policy-hook": "node --test .claude/hooks/policyMatcher.test.mjs .claude/hooks/policy-loader.test.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix"
   },

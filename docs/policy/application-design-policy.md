@@ -1,3 +1,8 @@
+---
+hook:
+  applies-to: ['app/**/*.ts', 'app/**/*.tsx']
+---
+
 # アプリケーション設計ポリシー
 
 「良い設計とは何か」を、特定の技術・パターンに依存しない普遍的な指針として宣言する。アプリケーションの**コード内部の設計（クラス・関数・モジュールの作り方）**を対象とし、マクロ構造（レイヤー・境界・依存方向）は [application-architecture-policy](application-architecture-policy.md) に委ねる。

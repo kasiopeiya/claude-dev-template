@@ -120,6 +120,27 @@ jobs:
       - run: npm ci
       - run: npm run format:check
 
+  # policy hook（.claude/hooks/policy-loader.mjs）の回帰検査。docs/policy の frontmatter だけを
+  # 直す PR は docs_only 判定で ci-common がスキップされるため、その中に置くと「hook を壊す変更で
+  # こそ検査が走らない」。ci-format と同じ理由で、変更種別に関わらず常に実行する独立ジョブにする。
+  # root の依存だけで完結し軽量（ci-format と同型）。
+  ci-policy-hook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run test:policy-hook
+
   # リポジトリ全体を1回で舐めるツール。静的解析はルールを1箇所で定義しているため
   # 階層ごとに分割・スキップできない（cicd-design）。
   ci-common:
@@ -304,6 +325,7 @@ jobs:
         create-pull-request,
         detect-changes,
         ci-format,
+        ci-policy-hook,
         ci-common,
         ci-app,
         ci-cdk,

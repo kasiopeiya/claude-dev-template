@@ -5,7 +5,9 @@
 ポリシーはこのプロジェクトの憲法であり、すべての判断の北極星である。
 設計・実装・レビュー・git操作など、何らかのアクションを起こす前に必ず該当するポリシーを参照し、その精神に沿って行動すること。
 
-各ポリシーは frontmatter の `hook.applies-to`（グロブ配列）で適用対象ファイルを宣言し、ファイル編集時に PreToolUse hook（`.claude/hooks/policy-loader.mjs`）が該当ポリシーの参照を自動で促す。hook を効かせたいポリシーには `applies-to` を付与すること。
+各ポリシーは frontmatter の `hook.applies-to`（グロブのインライン配列、例 `['app/**/*.ts']`）で適用対象ファイルを宣言し、ファイル編集時に PreToolUse hook（`.claude/hooks/policy-loader.mjs`）が該当ポリシーの参照を自動で促す。hook を効かせたいポリシーには `applies-to` を付与すること。
+
+hook が捕捉できるのは、**編集対象ファイルのパスで発火点を語れるポリシーだけ**である。git-policy・pr-review-policy・bugfix-policy・new-development-policy・refined-engineer-judgment-principles は、commit・レビュー・起票・判断という**行為**で発火すべきもので、ファイル編集に紐づかない——この機構には原理的に乗らず、`applies-to` を持たないのは付け忘れではない（CLAUDE.md と各 Skill が担保する）。逆に、パスで発火点を語れるのに `applies-to` が無ければそれは付け忘れである。
 
 ---
 
