@@ -1,5 +1,5 @@
 ---
-globs: cdk/**/*
+globs: infra/**/*
 ---
 
 # CDK 実装ルール
@@ -45,7 +45,6 @@ import { Construct } from 'constructs'
 import { AppParameter } from '../parameter'
 ```
 
-
 ## CDKの差分検知ルール
 
 なぜ決定論的な構築を最優先するか（設計判断）は [cdk-design-policy](../../docs/policy/cdk-design-policy.md) を参照。ここではそれを守るための具体ルールを定める。CloudFormationのデプロイ時評価機能（動的参照や条件分岐）への依存を排除し、すべてを「CDK Synth時」に解決する静的な実装を行ってください。
@@ -56,38 +55,38 @@ import { AppParameter } from '../parameter'
 
 デプロイ実行時まで値が確定しないSSMやSecrets Managerの動的参照は使用しないでください。代わりに、Synth時に値を取得してキャッシュするContextルックアップを使用してください。
 
-* **Bad (差分が出ない):**
+- **Bad (差分が出ない):**
+
 ```typescript
 // デプロイ時に評価されるためdiffで検知不可
-const amiId = ssm.StringParameter.fromStringParameterName(this, 'Ami', '/my/ami').stringValue;
-
+const amiId = ssm.StringParameter.fromStringParameterName(this, 'Ami', '/my/ami').stringValue
 ```
 
 ### 2. DON'T: CloudFormation `Parameters` の利用
 
 実行時に外部から値を注入する`CfnParameter`は使用しないでください。代わりに、CDKのContext（`cdk.json`）やTypeScriptのプロパティを利用し、Synth時に値を固定してください。
 
-* **Bad:**
-```typescript
-const envType = new CfnParameter(this, 'EnvType', { type: 'String' });
+- **Bad:**
 
+```typescript
+const envType = new CfnParameter(this, 'EnvType', { type: 'String' })
 ```
 
 ### 3. DON'T: CloudFormation `Conditions` の利用
 
 テンプレート内に分岐ロジックを残す`CfnCondition`や`Fn.conditionIf`は使用しないでください。代わりに、TypeScriptのネイティブな制御構文（`if`文）を使用して、不要なリソースはテンプレートから完全に除外してください。
 
-* **Bad:**
-```typescript
-const isProd = new CfnCondition(this, 'IsProd', { expression: Fn.conditionEquals(env, 'prod') });
+- **Bad:**
 
+```typescript
+const isProd = new CfnCondition(this, 'IsProd', { expression: Fn.conditionEquals(env, 'prod') })
 ```
 
 ### 4. DON'T: 非決定的な値を出力するカスタムリソース
 
 実行のたびに結果が変わる（外部APIの最新取得など）カスタムリソースは原則使用しないでください。動的な値が必要な場合は、ビルドスクリプト等で事前に取得し、CDKへは静的な値として渡してください。
 
-* **Bad:** Lambda内でAPIをフェッチし結果を後続に渡すCustomResource
+- **Bad:** Lambda内でAPIをフェッチし結果を後続に渡すCustomResource
 
 ### 5. MUST: `cdk.context.json` のバージョン管理
 
@@ -99,28 +98,30 @@ Synthのたびに物理名が変わると `cdk diff` で毎回「リソースの
 
 実行時評価に依存する物理名生成や、動的な変数での名前指定は避けてください。リソース名はCDKの論理ID管理に任せるか、`PhysicalName.GENERATE_IF_NEEDED` を使用してください。
 
-* **Bad:**
+- **Bad:**
+
 ```typescript
 const bucket = new s3.Bucket(this, 'MyBucket', {
-  bucketName: `my-app-${Date.now()}`, // Synthのたびに変わる
-});
-
+  bucketName: `my-app-${Date.now()}` // Synthのたびに変わる
+})
 ```
 
 ### 7. MUST: 依存関係の明示
 
 L1コンストラクト等を使用し、自動解決されない依存関係がある場合は、デプロイ順序のエラーを防ぐため `node.addDependency()` を必ず明示してください。
 
-* **Bad:**
+- **Bad:**
+
 ```typescript
 const rule = new events.CfnRule(...);
 const target = new events.CfnTarget(...); // 順序が担保されない
 
 ```
 
-* **Good:**
+- **Good:**
+
 ```typescript
-target.node.addDependency(rule);
+target.node.addDependency(rule)
 ```
 
 ### 8. MUST: CDK内部でのSDK使用は読み取り専用に限定
@@ -133,15 +134,17 @@ target.node.addDependency(rule);
 
 ```typescript
 async function getResourceId(tagKey: string, tagValue: string): Promise<string> {
-  const client = new EC2Client({ region: 'ap-northeast-1' });
-  const res = await client.send(new DescribeInstancesCommand({
-    Filters: [{ Name: `tag:${tagKey}`, Values: [tagValue] }]
-  }));
-  return res.Reservations![0].Instances![0].InstanceId!;
+  const client = new EC2Client({ region: 'ap-northeast-1' })
+  const res = await client.send(
+    new DescribeInstancesCommand({
+      Filters: [{ Name: `tag:${tagKey}`, Values: [tagValue] }]
+    })
+  )
+  return res.Reservations![0].Instances![0].InstanceId!
 }
 
 // コンストラクト内
-const rawId = await getResourceId('Role', 'legacy-system');
+const rawId = await getResourceId('Role', 'legacy-system')
 ```
 
 ## Interface Segregation（ISP）
@@ -181,10 +184,11 @@ export class MyS3Bucket extends Construct {
       autoDeleteObjects: props.autoDeleteObjects ?? true,
       removalPolicy: props.removalPolicy ?? RemovalPolicy.DESTROY,
       encryption: props.encryption ?? s3.BucketEncryption.S3_MANAGED,
-      enforceSSL: props.enforceSSL ?? true,
+      enforceSSL: props.enforceSSL ?? true
     })
     bucket.grantDelete(props.func)
     bucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(props.func))
     this.bucket = bucket
   }
 }
+```

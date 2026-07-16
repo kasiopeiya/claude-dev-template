@@ -52,7 +52,7 @@ import { parseConfig } from './config' // 冒頭以外での import は禁止
 
 ## 規模・複雑度の上限（CIゲートで機械的に強制）
 
-次の数値はこのファイルを SSOT とし、ESLint / tsconfig の CI ゲートで自動検知する（設定例は [sample/README.md](../../sample/README.md)）。数値を変えるときはまずここを直す。
+次の数値はこのファイルを SSOT とし、ESLint / tsconfig の CI ゲートで自動検知する（設定例は [README.md](../../README.md)）。数値を変えるときはまずここを直す。
 
 - 関数は**50行以内**（コメント・空行を除く）。超えるのは責務過多のサインなので分割する
 - 関数の引数は**3個まで**。4個以上になるならオブジェクト引数へまとめる
@@ -80,7 +80,7 @@ const user = await loadUser()
 
 見やすさを損ねない範囲で行数を最小限にする。引数・オブジェクト・配列は1行に収まる場合はインラインで記述する。
 
-```typescript
+````typescript
 // ✅ 良い例：引数が収まるなら1行で
 saveSession(sessionId, { accessToken }, logger)
 createUser({ id, name, email }, options)
@@ -127,7 +127,7 @@ const fetchActiveUsers = async () => { ... }
 // ❌ 避けるべき例：意図が不明
 const flag = expiresAt < Date.now()
 const getData = async () => { ... }
-```
+````
 
 ## コメント
 

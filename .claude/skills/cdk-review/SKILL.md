@@ -1,6 +1,6 @@
 ---
 name: cdk-review
-description: AWS CDK インフラコードを詳細にレビュー。/cdk-review コマンドが呼ばれたとき、またはユーザーが CDK コードのレビューを依頼したときに使用する。cdk/ ディレクトリ内の TypeScript ファイルを対象に、型安全性・CDK ベストプラクティス・プロジェクトルール準拠を自動チェックする。併せて、存在すればインフラ設計書（既定 docs/design/infrastructure-design.md）の内容の妥当性を iac-infra-design-doc-policy に照らしてレビューする（ドキュメントとしての質は /doc-review の領分）。
+description: AWS CDK インフラコードを詳細にレビュー。/cdk-review コマンドが呼ばれたとき、またはユーザーが CDK コードのレビューを依頼したときに使用する。infra/ ディレクトリ内の TypeScript ファイルを対象に、型安全性・CDK ベストプラクティス・プロジェクトルール準拠を自動チェックする。併せて、存在すればインフラ設計書（既定 docs/design/infrastructure-design.md）の内容の妥当性を iac-infra-design-doc-policy に照らしてレビューする（ドキュメントとしての質は /doc-review の領分）。
 context: fork
 agent: cdk-reviewer-agent
 ---
@@ -11,13 +11,13 @@ AWS CDK インフラコードをレビューしてください。以下の手順
 
 ## Phase 1: 対象ファイルの検出
 
-- Glob で `cdk/**/*.ts` を検出
+- Glob で `infra/**/*.ts` を検出
 - 除外: `**/*.test.ts`、`*.config.*`、`cdk.json`、`node_modules`、`cdk.out/`
 - 種別を自動判定:
-  - **App**: `cdk/bin/*.ts`
-  - **Stack**: `cdk/lib/*-stack.ts`
-  - **Construct**: `cdk/lib/constructs/*.ts` または `cdk/lib/*-construct.ts`
-  - **Parameter**: `cdk/parameter.ts` または `cdk/lib/parameters/*.ts`
+  - **App**: `infra/bin/*.ts`
+  - **Stack**: `infra/lib/*-stack.ts`
+  - **Construct**: `infra/lib/constructs/*.ts` または `infra/lib/*-construct.ts`
+  - **Parameter**: `infra/parameter.ts` または `infra/lib/parameters/*.ts`
 - 検出したすべてのファイルをレビュー対象とする（選択ステップはスキップ）
 - **インフラ設計書**: 既定パス `docs/design/infrastructure-design.md` の存在を確認し、あれば設計書レビューの対象に加える（なければ設計書レビューはスキップし、その旨を報告）
 

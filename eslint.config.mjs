@@ -1,4 +1,4 @@
-// 責務: sample/ 配下の静的解析(ESLint)ルールを typescript.md / cdk.md に沿って一元定義する
+// 責務: 静的解析(ESLint)ルールを typescript.md / cdk.md に沿って一元定義する
 
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
@@ -84,11 +84,16 @@ export default tseslint.config(
   // アプリロジック(src)限定: マジックナンバーを定数へ切り出させる（typescript.md「定数は目的が伝わる名前に」）。
   // CDK はメモリ量・タイムアウト・しきい値など設定値としての数値リテラルが正当なため対象外にする（過剰ゲート化の回避）
   {
-    files: ['src/**/*.ts'],
+    files: ['app/**/*.ts'],
     rules: {
       'no-magic-numbers': [
         'error',
-        { ignore: [0, 1, -1], ignoreArrayIndexes: true, ignoreDefaultValues: true, enforceConst: true }
+        {
+          ignore: [0, 1, -1],
+          ignoreArrayIndexes: true,
+          ignoreDefaultValues: true,
+          enforceConst: true
+        }
       ]
     }
   },
@@ -99,10 +104,16 @@ export default tseslint.config(
     rules: { 'no-magic-numbers': 'off' }
   },
 
-  // 型情報が必要なルール(型対応 lint)。src と cdk のソースを対象にし、型サービスを有効化する。
-  // cdk/test は cdk/tsconfig の対象外のため、ここでは含めない
+  // 型情報が必要なルール(型対応 lint)。app と infra のソースを対象にし、型サービスを有効化する。
+  // infra/test は infra/tsconfig の対象外のため、ここでは含めない
   {
-    files: ['src/**/*.ts', 'cdk/bin/**/*.ts', 'cdk/lib/**/*.ts', 'cdk/stackBuilder.ts', 'cdk/parameter.ts'],
+    files: [
+      'app/**/*.ts',
+      'infra/bin/**/*.ts',
+      'infra/lib/**/*.ts',
+      'infra/stackBuilder.ts',
+      'infra/parameter.ts'
+    ],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname }
     },

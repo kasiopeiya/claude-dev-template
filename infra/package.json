@@ -1,5 +1,5 @@
 {
-  "name": "cdk",
+  "name": "infra",
   "version": "0.1.15",
   "bin": {
     "cdk": "bin/app.js"
