@@ -1,0 +1,14 @@
+# 責務: commit SHA で固定した GitHub Actions に、更新を運び続ける仕組みを担う。
+# SHA 固定は不変性と引き換えに自動更新を止めるため、更新を運ぶ経路が無いと action は塩漬けになり、
+# 固定した SHA に後から脆弱性が見つかっても誰も気づかない（dependency-policy ④）。
+#
+# github-actions エコシステムだけに絞るのは意図的な制約である。npm を足すと deploy が
+# secrets 制限で落ちる。理由は docs/design/cicd-design.md の「変更可能境界」を参照。
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

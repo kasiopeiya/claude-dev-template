@@ -18,6 +18,9 @@ on:
       - 'ci/**'
       - 'test/**'
       - 'docs/**'
+      # Dependabot は dependabot/github_actions/... を切る。7プレフィックスのどれにも
+      # 当たらないため、足さないとその PR は checks が走らず無言でマージ不可になる。
+      - 'dependabot/**'
 
 permissions: {}
 

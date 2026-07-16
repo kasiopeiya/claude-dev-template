@@ -12,9 +12,9 @@ on:
       stack:
         type: choice
         description: target stack
-        default: dev/*
+        default: kasio-dev-*
         options:
-          - dev/*
+          - kasio-dev-*
 
 permissions: {}
 
@@ -22,14 +22,16 @@ defaults:
   run:
     shell: bash
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   destroy:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    # dev を使う者は全員このグループで直列化する（理由は docs/design/cicd-design.md の変更可能境界）。
+    # グループ名は pipeline.yml の cdk-deploy と完全一致させること。別名にすると直列化が効かず、
+    # destroy と deploy が並行する。
+    concurrency:
+      group: cdk-deploy-dev
+      cancel-in-progress: false
     environment:
       name: dev
     permissions:
@@ -58,7 +60,9 @@ jobs:
       - run: npm ci
         working-directory: infra
 
+      # destroy 対象は devParameter.prefix（infra/parameter.ts）由来のスタック名で選ぶ。
+      # bin/app.ts は dev/stg/prd の3環境すべてを synth するため、対象の絞り込みが要る。
       - run: npx cdk destroy -f "$STACK_NAME"
         working-directory: infra
         env:
-          STACK_NAME: ${{ github.event.inputs.stack || 'dev/*' }}
+          STACK_NAME: ${{ github.event.inputs.stack || 'kasio-dev-*' }}
