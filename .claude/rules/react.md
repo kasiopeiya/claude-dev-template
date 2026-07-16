@@ -1,5 +1,5 @@
 ---
-globs: frontend/**/*.{ts,tsx}
+globs: **/*.tsx
 ---
 
 # React 実装ルール

@@ -372,8 +372,7 @@ APIエンドポイントの記載がある場合：
 
 **ドキュメント内のコード例（該当する場合）**:
 
-- `.claude/rules/typescript.md`: import順序の規約準拠
-- `.claude/rules/backend.md`: 日本語コメントの有無
+- `.claude/rules/typescript.md`: import順序・コメント規約準拠
 
 **注**: 実装コードとの整合性チェックは対象外。
 
