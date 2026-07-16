@@ -100,6 +100,26 @@ jobs:
           echo "app_changed=$app_changed" | tee -a "$GITHUB_OUTPUT"
           echo "cdk_changed=$cdk_changed" | tee -a "$GITHUB_OUTPUT"
 
+  # prettier は .md も検査対象にしており、docs_only でも整形崩れを検出する必要があるため
+  # ci-common から切り出し常に実行する。root の依存だけで完結し型情報を要らないので、
+  # 3階層分の npm ci が要る ci-common と違い軽量に保てる（cicd-design）。
+  ci-format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run format:check
+
   # リポジトリ全体を1回で舐めるツール。静的解析はルールを1箇所で定義しているため
   # 階層ごとに分割・スキップできない（cicd-design）。
   ci-common:
@@ -131,10 +151,28 @@ jobs:
       - run: npm ci
         working-directory: infra
 
-      - run: npm run format:check
       - run: npm run lint
       - run: npm run knip
       - run: npm run test:rule
+
+      # 脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実。だから
+      # ci-app / ci-cdk に分けて条件実行にしない（infra の脆弱性が app だけの PR で見えなくなる）。
+      # high 未満で落とさないのは、受容するかが人間の判断だから（cicd-policy）。
+      # 1つ落ちても残りを検査してから赤にする（往復させないため）。
+      - name: Audit npm dependencies
+        run: |
+          failed=""
+          for dir in . app/backend infra; do
+            echo "::group::npm audit ($dir)"
+            npm audit --audit-level=high --prefix "$dir" || failed="$failed $dir"
+            echo "::endgroup::"
+          done
+
+          if [ -n "$failed" ]; then
+            echo "::error::high or critical vulnerabilities found in:$failed"
+            exit 1
+          fi
+          echo "no high or critical vulnerabilities"
 
   # app 固有の検査。ルールが app/backend に閉じているため条件実行できる（ci-common との違い）。
   ci-app:
@@ -262,7 +300,16 @@ jobs:
   # 未実行は検証の不在であって、検証の成功ではない（cicd-design）。
   cicd-gate:
     needs:
-      [create-pull-request, detect-changes, ci-common, ci-app, ci-cdk, cdk-deploy, integration-test]
+      [
+        create-pull-request,
+        detect-changes,
+        ci-format,
+        ci-common,
+        ci-app,
+        ci-cdk,
+        cdk-deploy,
+        integration-test
+      ]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
