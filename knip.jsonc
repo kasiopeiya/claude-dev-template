@@ -20,7 +20,7 @@
       // esbuild: NodejsFunction のバンドルで aws-cdk-lib が内部起動する（コードからは import しない）
       "ignoreDependencies": ["tsx", "esbuild"]
     },
-    "app": {
+    "app/backend": {
       "entry": ["main.ts", "test/**/*.test.ts"],
       "project": ["**/*.ts"]
     }

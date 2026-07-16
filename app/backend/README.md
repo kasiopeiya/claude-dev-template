@@ -1,11 +1,11 @@
-# app（クリーンアーキテクチャ構成・ArchUnitTS 対象）
+# app/backend（クリーンアーキテクチャ構成・ArchUnitTS 対象）
 
-クリーンアーキテクチャ構成で実装する。ArchUnitTS によるアーキテクチャテストを **app コードだけに適用し `infra/`（インフラ）へ及ぼさない** ため、自前の `package.json` / `tsconfig.json` で TS プロジェクト境界を持つ。リント設定は共通で `eslint.config.mjs`（ルート）が `app/` も対象にするので、ここには置かない。
+クリーンアーキテクチャ構成で実装する。ArchUnitTS によるアーキテクチャテストを **backend コードだけに適用し `infra/`（インフラ）へ及ぼさない** ため、自前の `package.json` / `tsconfig.json` で TS プロジェクト境界を持つ。リント設定は共通で `eslint.config.mjs`（ルート）が `app/` も対象にするので、ここには置かない。
 
 ## 構成（依存方向）
 
 ```text
-app/
+app/backend/
 ├── domain/                       # 最内・依存なし（方針）
 │   ├── user.ts                   #   User エンティティ＋不変条件
 │   └── userRepository.ts         #   永続化のポート（抽象）
@@ -24,7 +24,7 @@ app/
 
 ```bash
 npm install        # 依存を導入
-npm run typecheck  # 型検査（app のみ。infra は対象外）
+npm run typecheck  # 型検査（app/backend のみ。infra は対象外）
 npm run test       # アーキテクチャテスト（境界・循環依存・凝集度）を実行
 ```
 

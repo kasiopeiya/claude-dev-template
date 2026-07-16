@@ -30,7 +30,7 @@
 
 ## tsconfig による型の厳格化
 
-型検査は「最強・最安の評価関数」であり、ESLint と並ぶゲートとして効かせる。`strict` に加えて `noUnusedLocals` / `noUnusedParameters` / `noImplicitReturns` / `noUncheckedIndexedAccess` / `noFallthroughCasesInSwitch` を有効化する。フラグの実体は各 `tsconfig.json`（[app](app/tsconfig.json) / [infra](infra/tsconfig.json)）を SSOT とする。
+型検査は「最強・最安の評価関数」であり、ESLint と並ぶゲートとして効かせる。`strict` に加えて `noUnusedLocals` / `noUnusedParameters` / `noImplicitReturns` / `noUncheckedIndexedAccess` / `noFallthroughCasesInSwitch` を有効化する。フラグの実体は各 `tsconfig.json`（[app/backend](app/backend/tsconfig.json) / [infra](infra/tsconfig.json)）を SSOT とする。
 
 `exactOptionalPropertyTypes` は自前で型を制御できる **`app/` のみ**有効にする。CDK では aws-cdk-lib の optional 多用型（env-agnostic synth で `account` が `undefined` になる等）と衝突し過剰ゲートになるため外す。
 
@@ -41,7 +41,7 @@
 
 ## 未使用コード検出（knip）
 
-ESLint の `no-unused-vars`（②）や tsconfig の `noUnusedLocals` は **1 ファイル内**の未使用しか捕まえられない。どこからも import されない export・到達しないファイル・使われない依存という **プロジェクト横断の未使用** は [knip](https://knip.dev) で検出し、AI が残しがちな足場コードをゲートする。設定は [knip.jsonc](knip.jsonc)（ルート・`infra`・`app` を workspace として一括検査）。
+ESLint の `no-unused-vars`（②）や tsconfig の `noUnusedLocals` は **1 ファイル内**の未使用しか捕まえられない。どこからも import されない export・到達しないファイル・使われない依存という **プロジェクト横断の未使用** は [knip](https://knip.dev) で検出し、AI が残しがちな足場コードをゲートする。設定は [knip.jsonc](knip.jsonc)（ルート・`infra`・`app/backend` を workspace として一括検査）。
 
 ### 較正（過剰ゲート化を避ける）
 
@@ -60,4 +60,4 @@ npm run test:rule    # 自作ルールの単体テスト（RuleTester）
 npm run knip         # 未使用 file/export/dependency を検出（検出があれば非ゼロ終了）
 ```
 
-`app/` はクリーンアーキテクチャ構成で実装している。ArchUnitTS によるアーキテクチャテストを app コードだけに適用し `infra/` へ及ぼさないため、`app/` は自前の `package.json` / `tsconfig.json` で TS プロジェクト境界を持つ（テスト本体は issue #17）。リント設定はこのファイル（ルート）に共通化しており `app/` も対象にする。詳細は [app/README.md](app/README.md)。
+`app/backend/` はクリーンアーキテクチャ構成で実装している。ArchUnitTS によるアーキテクチャテストを app コードだけに適用し `infra/` へ及ぼさないため、`app/backend/` は自前の `package.json` / `tsconfig.json` で TS プロジェクト境界を持つ（テスト本体は issue #17）。リント設定はこのファイル（ルート）に共通化しており `app/` も対象にする。詳細は [app/backend/README.md](app/backend/README.md)。
