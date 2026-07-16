@@ -5,8 +5,11 @@ This directory contains examples of generating Mermaid diagrams from Python ETL 
 ## Diagram Types
 
 ### 1. Activity Diagram (from ETL workflow stages)
+
 ### 2. Architecture Diagram (from pipeline components)
+
 ### 3. Deployment Diagram (from Airflow/orchestration setup)
+
 ### 4. Sequence Diagram (from data flow between components)
 
 ## Example ETL Project Structure
@@ -584,44 +587,44 @@ class PostgresExtractor(BaseExtractor):
 # config/pipeline_config.yaml
 pipelines:
   daily_sales:
-    schedule: "0 2 * * *"
+    schedule: '0 2 * * *'
     source:
       type: postgres
       connection: prod_db
-      query: "SELECT * FROM sales WHERE date = {{ ds }}"
+      query: 'SELECT * FROM sales WHERE date = {{ ds }}'
       batch_size: 10000
 
     transformations:
       - type: clean
         rules:
-          - remove_nulls: ["amount", "product_id"]
-          - deduplicate: ["order_id"]
+          - remove_nulls: ['amount', 'product_id']
+          - deduplicate: ['order_id']
 
       - type: aggregate
-        group_by: ["product_id", "date"]
+        group_by: ['product_id', 'date']
         metrics:
-          total_sales: "SUM(amount)"
-          order_count: "COUNT(order_id)"
+          total_sales: 'SUM(amount)'
+          order_count: 'COUNT(order_id)'
 
       - type: enrich
-        join_table: "dim_products"
-        join_key: "product_id"
-        columns: ["product_name", "category"]
+        join_table: 'dim_products'
+        join_key: 'product_id'
+        columns: ['product_name', 'category']
 
     target:
       type: snowflake
       connection: snowflake_prod
-      table: "fact_daily_sales"
+      table: 'fact_daily_sales'
       mode: upsert
-      keys: ["product_id", "date"]
+      keys: ['product_id', 'date']
 
     quality_checks:
       - name: row_count
         min_rows: 1000
       - name: null_check
-        columns: ["product_id", "total_sales"]
+        columns: ['product_id', 'total_sales']
       - name: range_check
-        column: "total_sales"
+        column: 'total_sales'
         min: 0
         max: 1000000
 ```

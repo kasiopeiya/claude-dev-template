@@ -41,6 +41,7 @@ ls ~/.claude/skills/design-doc-mermaid
 ## What This Skill Does
 
 **Intelligent Diagram Generation:**
+
 - Activity diagrams (workflows, processes, business logic)
 - Deployment diagrams (cloud infrastructure, K8s, serverless)
 - Architecture diagrams (system components, microservices)
@@ -48,12 +49,14 @@ ls ~/.claude/skills/design-doc-mermaid
 - Complete design documents with embedded diagrams
 
 **Code-to-Diagram Conversion:**
+
 - Extract architecture from Spring Boot applications
 - Generate deployment diagrams from configuration files
 - Create sequence diagrams from method calls
 - Document ETL pipelines and data flows
 
 **Diagram Management:**
+
 - Extract Mermaid diagrams from Markdown files
 - Validate diagram syntax with mermaid-cli
 - Convert diagrams to PNG/SVG images
@@ -68,6 +71,7 @@ User: "Create an activity diagram for user registration with email verification"
 ```
 
 The skill will:
+
 1. Load `references/guides/diagrams/activity-diagrams.md`
 2. Use the registration pattern template
 3. Add Unicode symbols (🔐 for security, 📧 for email, ✅ for success)
@@ -81,6 +85,7 @@ User: "Here's my Spring Boot application.yml - generate a deployment diagram"
 ```
 
 The skill will:
+
 1. Analyze configuration (datasource, cache, security)
 2. Load `references/guides/diagrams/deployment-diagrams.md`
 3. Load `examples/spring-boot/README.md`
@@ -94,6 +99,7 @@ User: "Create an API design document for the contacts API"
 ```
 
 The skill will:
+
 1. Load `assets/api-design-template.md`
 2. Load relevant diagram guides (sequence, ER, architecture)
 3. Generate complete document with embedded diagrams
@@ -161,6 +167,7 @@ graph TB
 ```
 
 **Symbol Categories:**
+
 - Infrastructure: ☁️ 🌐 🔌 📡 🗄️
 - Compute: ⚙️ ⚡ 🔄 🚀 💨
 - Data: 💾 📦 📊 📈 🗃️
@@ -212,10 +219,12 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 ## Requirements
 
 ### For Diagram Generation
+
 - Claude Code skill system (automatic)
 - Guides and templates (included in this skill)
 
 ### For Validation & Image Conversion
+
 ```bash
 # Install mermaid-cli globally
 npm install -g @mermaid-js/mermaid-cli
@@ -225,6 +234,7 @@ mmdc --version
 ```
 
 ### For Python Scripts
+
 - Python 3.7+
 - No additional packages required (uses stdlib only)
 
@@ -257,12 +267,14 @@ mmdc --version
 ## How the Hierarchical System Works
 
 ### Traditional Approach (Inefficient)
+
 - Load entire skill documentation (~50KB)
 - AI processes all templates and examples
 - High token usage
 - Slow response time
 
 ### Hierarchical Approach (Efficient)
+
 1. **User makes request** → AI analyzes intent
 2. **Decision tree activates** → Determines needed guides
 3. **Load only what's needed** → Reads specific guide (~2-5KB)
@@ -274,6 +286,7 @@ mmdc --version
 **User:** "Create deployment diagram for my Docker Compose setup"
 
 **Decision Tree:**
+
 ```
 1. Analyze: "deployment diagram" + "Docker Compose"
 2. Determine: deployment-diagrams.md needed
@@ -288,6 +301,7 @@ mmdc --version
 ## Completion Status
 
 ✅ **Complete:**
+
 - Hierarchical decision tree orchestrator
 - Activity diagram guide with templates
 - Deployment diagram guide (AWS, GCP, K8s, serverless, Docker)
@@ -299,11 +313,13 @@ mmdc --version
 - High-contrast styling system
 
 🚧 **In Progress:**
+
 - FastAPI examples
 - React component architecture examples
 - Python ETL pipeline examples
 
 📋 **Planned:**
+
 - Architecture diagrams guide
 - Sequence diagrams guide
 - Code-to-diagram master guide

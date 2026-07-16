@@ -71,6 +71,7 @@ src/main/webapp/
 ### Mapping to Architecture Diagram
 
 **Pattern Recognition:**
+
 - `controller/` → Servlet classes handling HTTP requests (Controller)
 - `service/` → Business logic classes (Service)
 - `dao/` → Database access classes (DAO/Repository)
@@ -301,6 +302,7 @@ public class ContactServlet extends HttpServlet {
 ### Mapping to Deployment Diagram
 
 **Pattern Recognition:**
+
 - `<servlet>` tags → Web application components
 - `<filter>` tags → Request/response interceptors
 - `<context-param>` → Application configuration
@@ -387,14 +389,14 @@ graph TB
 
 **Key Configuration Mappings:**
 
-| web.xml Element | Diagram Component | Notes |
-|-----------------|-------------------|-------|
-| `<servlet>` + `<servlet-mapping>` | Servlet nodes with URL patterns | Shows routing configuration |
-| `<filter>` + `<filter-mapping>` | Filter chain sequence | Order matters for execution |
-| `<session-config>` | Session Manager component | Security settings (HttpOnly, Secure) |
-| `<context-param>` | Configuration properties | Database URLs, pool sizes |
-| `<Resource>` (server.xml) | JNDI resources | DataSource, Mail, JMS connections |
-| `<error-page>` | Error handling routes | (Optional in diagram) |
+| web.xml Element                   | Diagram Component               | Notes                                |
+| --------------------------------- | ------------------------------- | ------------------------------------ |
+| `<servlet>` + `<servlet-mapping>` | Servlet nodes with URL patterns | Shows routing configuration          |
+| `<filter>` + `<filter-mapping>`   | Filter chain sequence           | Order matters for execution          |
+| `<session-config>`                | Session Manager component       | Security settings (HttpOnly, Secure) |
+| `<context-param>`                 | Configuration properties        | Database URLs, pool sizes            |
+| `<Resource>` (server.xml)         | JNDI resources                  | DataSource, Mail, JMS connections    |
+| `<error-page>`                    | Error handling routes           | (Optional in diagram)                |
 
 ---
 
@@ -543,6 +545,7 @@ public class AuthenticationFilter implements Filter {
 ### Mapping to Sequence Diagram
 
 **Pattern Recognition:**
+
 - Filter chain execution order
 - Servlet request dispatch pattern
 - Service layer method calls
@@ -775,6 +778,7 @@ public class AuthenticationFilter implements Filter {
 ### Mapping to Activity Diagram
 
 **Pattern Recognition:**
+
 - Filter chain execution order (from web.xml)
 - `chain.doFilter()` invocation points
 - Early return patterns (redirect, error response)
@@ -990,6 +994,7 @@ public class Tag {
 ### Mapping to ER Diagram
 
 **Pattern Recognition:**
+
 - `@Entity` → Database table
 - `@Id` + `@GeneratedValue` → Primary key (auto-increment)
 - `@Column(unique = true)` → Unique constraint
@@ -1046,11 +1051,11 @@ erDiagram
 
 **Relationship Details:**
 
-| Relationship | Type | Cascade | Fetch | Notes |
-|--------------|------|---------|-------|-------|
-| User → Contact | 1:N | ALL + orphanRemoval | LAZY | Deleting user deletes all contacts |
-| User ↔ Role | N:M | None | EAGER | Junction table `user_roles` |
-| Contact → Tag | 1:N | ALL + orphanRemoval | LAZY | Deleting contact deletes all tags |
+| Relationship   | Type | Cascade             | Fetch | Notes                              |
+| -------------- | ---- | ------------------- | ----- | ---------------------------------- |
+| User → Contact | 1:N  | ALL + orphanRemoval | LAZY  | Deleting user deletes all contacts |
+| User ↔ Role    | N:M  | None                | EAGER | Junction table `user_roles`        |
+| Contact → Tag  | 1:N  | ALL + orphanRemoval | LAZY  | Deleting contact deletes all tags  |
 
 **Index Strategy:**
 
@@ -1187,15 +1192,16 @@ Use semantic Unicode symbols consistently:
 
 ## Summary: Java Servlet → Mermaid Mapping
 
-| Java Element | Diagram Type | Key Patterns |
-|--------------|--------------|--------------|
-| Package structure (`controller/`, `service/`, `dao/`) | Architecture | Three-layer MVC separation |
-| `web.xml` + `server.xml` config | Deployment | Servlet mappings, filters, JNDI resources |
-| Method call chain (Servlet → Service → DAO) | Sequence | Request/response flow with method calls |
-| Filter chain with `doFilter()` | Activity | Sequential filter execution with conditionals |
-| `@Entity`, `@OneToMany`, `@ManyToMany` | ER Diagram | JPA annotations to table relationships |
+| Java Element                                          | Diagram Type | Key Patterns                                  |
+| ----------------------------------------------------- | ------------ | --------------------------------------------- |
+| Package structure (`controller/`, `service/`, `dao/`) | Architecture | Three-layer MVC separation                    |
+| `web.xml` + `server.xml` config                       | Deployment   | Servlet mappings, filters, JNDI resources     |
+| Method call chain (Servlet → Service → DAO)           | Sequence     | Request/response flow with method calls       |
+| Filter chain with `doFilter()`                        | Activity     | Sequential filter execution with conditionals |
+| `@Entity`, `@OneToMany`, `@ManyToMany`                | ER Diagram   | JPA annotations to table relationships        |
 
 **Token Efficiency:**
+
 - This guide: ~8,000 words
 - Loaded on-demand only when user mentions "Java servlet", "JSP", or "Java webapp"
 - Reduces token usage by 75% compared to loading all framework examples at once
@@ -1203,11 +1209,13 @@ Use semantic Unicode symbols consistently:
 ---
 
 **Related Examples:**
+
 - [Spring Boot → Mermaid](../spring-boot/README.md) - Modern Spring Boot patterns
 - [FastAPI → Mermaid](../fastapi/README.md) - Python async patterns
 - [Node.js/Express → Mermaid](../node-webapp/README.md) - JavaScript patterns
 
 **Guides:**
+
 - [Activity Diagrams](../../guides/diagrams/activity-diagrams.md)
 - [Deployment Diagrams](../../guides/diagrams/deployment-diagrams.md)
 - [Unicode Symbols](../../guides/unicode-symbols/guide.md)

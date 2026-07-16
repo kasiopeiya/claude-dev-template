@@ -5,8 +5,11 @@ This directory contains examples of generating Mermaid diagrams from Spring Boot
 ## Diagram Types
 
 ### 1. Architecture Diagram (from application structure)
+
 ### 2. Deployment Diagram (from configuration)
+
 ### 3. Sequence Diagram (from controller/service code)
+
 ### 4. Activity Diagram (from business logic)
 
 ## Example Application Structure

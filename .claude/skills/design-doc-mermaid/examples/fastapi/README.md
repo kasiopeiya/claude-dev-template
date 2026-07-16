@@ -5,8 +5,11 @@ This directory contains examples of generating Mermaid diagrams from FastAPI app
 ## Diagram Types
 
 ### 1. Architecture Diagram (from async structure and dependencies)
+
 ### 2. Deployment Diagram (from Docker/K8s configuration)
+
 ### 3. Sequence Diagram (from async endpoint handlers)
+
 ### 4. Activity Diagram (from async business logic)
 
 ## Example Application Structure

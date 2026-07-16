@@ -1,6 +1,6 @@
 ---
 hook:
-  applies-to: [".github/**"]
+  applies-to: ['.github/**']
 ---
 
 # CI/CDポリシー

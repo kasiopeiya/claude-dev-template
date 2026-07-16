@@ -103,9 +103,9 @@ Avoid specific file paths or code snippets — they go stale fast. Exception: if
 
 このIssueを実装する際に使う開発フローSkillを実行順に記載する（Planの「実装フロー」から転記。このスライスが触れる種別だけに絞る）。**issue番号だけで開発フローを再現するための情報**。種別→Skillの対応は CLAUDE.md「開発フロー」が正典。
 
-| 順 | 変更種別 | 使用Skill |
-|---|---|---|
-| 1 | 例：アプリ実装 | `/code-dev` |
+| 順  | 変更種別       | 使用Skill   |
+| --- | -------------- | ----------- |
+| 1   | 例：アプリ実装 | `/code-dev` |
 
 ## Acceptance criteria
 

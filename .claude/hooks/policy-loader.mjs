@@ -79,7 +79,7 @@ function main() {
 
   process.stdout.write(
     JSON.stringify({
-      hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext },
+      hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext }
     })
   )
 }

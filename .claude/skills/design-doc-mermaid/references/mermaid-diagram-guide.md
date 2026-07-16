@@ -6,18 +6,18 @@ This reference provides comprehensive guidance on creating effective Mermaid dia
 
 ## Diagram Type Selection Matrix
 
-| When You Need To... | Use This Diagram | Best For |
-|---------------------|------------------|----------|
-| Show system boundaries and external actors | C4 Context | System context, stakeholder view |
-| Document API calls and timing | Sequence Diagram | API flows, interactions, temporal behavior |
-| Model object relationships and inheritance | Class Diagram | OOP design, code structure |
-| Visualize database schema | ER Diagram | Data model, relationships |
-| Show state transitions and lifecycle | State Diagram | Workflows, status changes |
-| Document decision flows and algorithms | Flowchart | Business logic, processes |
-| Map hierarchical concepts | Mind Map | Brainstorming, concept organization |
-| Track project timeline | Gantt Chart | Project planning, milestones |
-| Capture user experience | User Journey | UX flows, user interactions |
-| Show infrastructure components | Architecture Diagram | Deployment, infrastructure |
+| When You Need To...                        | Use This Diagram     | Best For                                   |
+| ------------------------------------------ | -------------------- | ------------------------------------------ |
+| Show system boundaries and external actors | C4 Context           | System context, stakeholder view           |
+| Document API calls and timing              | Sequence Diagram     | API flows, interactions, temporal behavior |
+| Model object relationships and inheritance | Class Diagram        | OOP design, code structure                 |
+| Visualize database schema                  | ER Diagram           | Data model, relationships                  |
+| Show state transitions and lifecycle       | State Diagram        | Workflows, status changes                  |
+| Document decision flows and algorithms     | Flowchart            | Business logic, processes                  |
+| Map hierarchical concepts                  | Mind Map             | Brainstorming, concept organization        |
+| Track project timeline                     | Gantt Chart          | Project planning, milestones               |
+| Capture user experience                    | User Journey         | UX flows, user interactions                |
+| Show infrastructure components             | Architecture Diagram | Deployment, infrastructure                 |
 
 ---
 
@@ -26,11 +26,13 @@ This reference provides comprehensive guidance on creating effective Mermaid dia
 **Purpose:** Show system boundaries, users, and external dependencies
 
 **When to use:**
+
 - System overview
 - Stakeholder presentations
 - Architecture documentation
 
 **Syntax:**
+
 ```mermaid
 C4Context
     title System Context for [System Name]
@@ -46,6 +48,7 @@ C4Context
 ```
 
 **Best Practices:**
+
 - Limit to 5-7 systems for clarity
 - Focus on key external dependencies
 - Use consistent naming (nouns for systems, verbs for relationships)
@@ -58,12 +61,14 @@ C4Context
 **Purpose:** Show interactions between components over time
 
 **When to use:**
+
 - API documentation
 - Request/response flows
 - Authentication flows
 - Error scenarios
 
 **Syntax:**
+
 ```mermaid
 sequenceDiagram
     participant Client
@@ -91,6 +96,7 @@ sequenceDiagram
 ```
 
 **Best Practices:**
+
 - Order participants left-to-right by interaction flow
 - Use activation boxes for processing time
 - Include both happy path and error scenarios
@@ -98,6 +104,7 @@ sequenceDiagram
 - Use alt/opt/loop for conditional logic
 
 **Common Patterns:**
+
 ```mermaid
 sequenceDiagram
     %% Request-Response
@@ -122,11 +129,13 @@ sequenceDiagram
 **Purpose:** Model object-oriented structure and relationships
 
 **When to use:**
+
 - OOP design documentation
 - Code architecture
 - Domain model
 
 **Syntax:**
+
 ```mermaid
 classDiagram
     class Animal {
@@ -156,6 +165,7 @@ classDiagram
 ```
 
 **Relationships:**
+
 - `<|--` : Inheritance
 - `*--` : Composition
 - `o--` : Aggregation
@@ -164,6 +174,7 @@ classDiagram
 - `..|>` : Realization
 
 **Visibility:**
+
 - `+` : Public
 - `-` : Private
 - `#` : Protected
@@ -176,11 +187,13 @@ classDiagram
 **Purpose:** Model database schema and relationships
 
 **When to use:**
+
 - Database design
 - Data architecture
 - Schema documentation
 
 **Syntax:**
+
 ```mermaid
 erDiagram
     CUSTOMER ||--o{ ORDER : places
@@ -216,12 +229,14 @@ erDiagram
 ```
 
 **Cardinality:**
+
 - `||--||` : One to one
 - `||--o{` : One to zero or more
 - `||--|{` : One to one or more
 - `}o--o{` : Zero or more to zero or more
 
 **Best Practices:**
+
 - Mark primary keys with "PK"
 - Mark foreign keys with "FK"
 - Mark unique constraints with "UK"
@@ -235,11 +250,13 @@ erDiagram
 **Purpose:** Model state transitions and lifecycles
 
 **When to use:**
+
 - Workflow documentation
 - Status management
 - Lifecycle modeling
 
 **Syntax:**
+
 ```mermaid
 stateDiagram-v2
     [*] --> Draft
@@ -262,6 +279,7 @@ stateDiagram-v2
 ```
 
 **Best Practices:**
+
 - Start with `[*]` for initial state
 - End with `[*]` for final state
 - Use nested states for complex workflows
@@ -275,11 +293,13 @@ stateDiagram-v2
 **Purpose:** Document processes, algorithms, and decision logic
 
 **When to use:**
+
 - Business logic documentation
 - Process flows
 - Algorithm explanation
 
 **Syntax:**
+
 ```mermaid
 flowchart TD
     Start([Start])
@@ -304,6 +324,7 @@ flowchart TD
 ```
 
 **Node Shapes:**
+
 - `[Text]` : Rectangle (process)
 - `([Text])` : Stadium (start/end)
 - `{Text}` : Diamond (decision)
@@ -313,6 +334,7 @@ flowchart TD
 - `>Text]` : Asymmetric (flag)
 
 **Directions:**
+
 - `TD` / `TB` : Top to bottom
 - `BT` : Bottom to top
 - `LR` : Left to right
@@ -325,11 +347,13 @@ flowchart TD
 **Purpose:** Project planning and timeline visualization
 
 **When to use:**
+
 - Project schedules
 - Milestone tracking
 - Roadmap planning
 
 **Syntax:**
+
 ```mermaid
 gantt
     title Project Roadmap
@@ -346,6 +370,7 @@ gantt
 ```
 
 **Keywords:**
+
 - `done` : Completed task
 - `active` : Currently in progress
 - `crit` : Critical path
@@ -358,11 +383,13 @@ gantt
 **Purpose:** Document user experience and interactions
 
 **When to use:**
+
 - UX documentation
 - User story mapping
 - Experience design
 
 **Syntax:**
+
 ```mermaid
 journey
     title User Purchase Journey
@@ -380,6 +407,7 @@ journey
 ```
 
 **Satisfaction Scores:**
+
 - 5: Very satisfied
 - 4: Satisfied
 - 3: Neutral
@@ -461,16 +489,16 @@ graph LR
 
 **High-Contrast Color Palette**:
 
-| State | Background Fill | Text Color | Stroke |
-|-------|----------------|------------|--------|
-| Normal | `#F0F0F0` | `color:black` | `#333` |
-| Success | `#90EE90` | `color:darkgreen` | `#2E7D2E` |
-| Warning | `#FFD700` | `color:black` | `#B8860B` |
-| Error | `#FFB6C1` | `color:black` | `#DC143C` |
-| Info | `#87CEEB` | `color:darkblue` | `#4682B4` |
-| Public | `#FFE4B5` | `color:black` | `#FF8C00` |
-| Private | `#E6E6FA` | `color:darkblue` | `#8A2BE2` |
-| Dark | `#2C3E50` | `color:white` | `#34495E` |
+| State   | Background Fill | Text Color        | Stroke    |
+| ------- | --------------- | ----------------- | --------- |
+| Normal  | `#F0F0F0`       | `color:black`     | `#333`    |
+| Success | `#90EE90`       | `color:darkgreen` | `#2E7D2E` |
+| Warning | `#FFD700`       | `color:black`     | `#B8860B` |
+| Error   | `#FFB6C1`       | `color:black`     | `#DC143C` |
+| Info    | `#87CEEB`       | `color:darkblue`  | `#4682B4` |
+| Public  | `#FFE4B5`       | `color:black`     | `#FF8C00` |
+| Private | `#E6E6FA`       | `color:darkblue`  | `#8A2BE2` |
+| Dark    | `#2C3E50`       | `color:white`     | `#34495E` |
 
 ### Link Styles
 
@@ -492,11 +520,13 @@ graph LR
 ### 1. Choose the Right Diagram
 
 **Don't use:**
+
 - Class diagrams for infrastructure
 - Sequence diagrams for data models
 - ER diagrams for workflows
 
 **Do use:**
+
 - The diagram type that best communicates your intent
 - Multiple diagram types for different aspects
 - Simpler diagrams over complex ones
@@ -507,6 +537,7 @@ graph LR
 **Good:** Multiple focused diagrams showing specific aspects
 
 **Guidelines:**
+
 - Max 10-12 nodes per diagram
 - Max 3-4 levels of nesting
 - Break complex diagrams into multiple views
@@ -514,6 +545,7 @@ graph LR
 ### 3. Use Consistent Naming
 
 **Bad:**
+
 ```mermaid
 graph LR
     usr --> sys
@@ -521,6 +553,7 @@ graph LR
 ```
 
 **Good:**
+
 ```mermaid
 graph LR
     User --> System
@@ -575,6 +608,7 @@ graph LR
 ```
 
 **Quick Accessibility Test**:
+
 1. Can you easily read the text on each background color?
 2. Would the diagram be readable if printed in grayscale?
 3. Does every `classDef` include a `color:` property?
@@ -582,11 +616,13 @@ graph LR
 If answer is NO to any → Fix the contrast!
 
 **Common Mistakes to Avoid**:
+
 - ❌ `classDef myStyle fill:#FFD700` (missing `color:`)
 - ❌ `style A fill:#F0F0F0,color:#E0E0E0` (light on light)
 - ❌ `style B fill:#333,color:#222` (dark on dark)
 
 **Always Include**:
+
 - ✅ Explicit `color:` property in all `classDef` statements
 - ✅ Explicit `color:` property in all `style` statements
 - ✅ High-contrast combinations (see Color Coding section above)
@@ -618,6 +654,7 @@ Before including a diagram, verify:
 **Cause:** Syntax error in Mermaid code
 
 **Fix:**
+
 - Check for missing quotes
 - Verify relationship syntax
 - Ensure all braces/parentheses match
@@ -628,6 +665,7 @@ Before including a diagram, verify:
 **Cause:** Invalid node IDs or special characters
 
 **Fix:**
+
 - Use alphanumeric IDs (avoid spaces)
 - Escape special characters in labels
 - Use quotes for multi-word labels
@@ -637,6 +675,7 @@ Before including a diagram, verify:
 **Cause:** Wrong relationship syntax
 
 **Fix:**
+
 - `A-->B` : A to B
 - `B<--A` : A to B (same as above)
 - `A<-->B` : Bidirectional

@@ -9,6 +9,7 @@
 ## 設計書一覧
 
 ### [cicd-design.md](design/cicd-design.md)
+
 **概要**: CI/CD パイプラインの設計。芯は「**deploy 成功をレビューの Entry Criteria とする**」——CDK は deploy しないと分からないエラーが多いため、PR マージ**前**に dev へ deploy する
 **参照タイミング**: `.github/` 配下のワークフローを変更・レビューする前、CI がなぜこの構成なのかを知りたいとき
 

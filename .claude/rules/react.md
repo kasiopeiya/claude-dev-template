@@ -42,7 +42,9 @@ type ButtonProps = { variant: 'primary' | 'secondary' }
 ```tsx
 // ❌ 派生値を Effect + state で持つ（再レンダーが二重に走り、同期ズレの温床）
 const [fullName, setFullName] = useState('')
-useEffect(() => { setFullName(`${first} ${last}`) }, [first, last])
+useEffect(() => {
+  setFullName(`${first} ${last}`)
+}, [first, last])
 
 // ✅ レンダー中に計算する
 const fullName = `${first} ${last}`

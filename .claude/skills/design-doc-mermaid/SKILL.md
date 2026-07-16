@@ -39,11 +39,11 @@ A diagram must let the reader grasp the **structure** (relations, flow, hierarch
 
 **Before generating any diagram, ask: "If I convert this diagram back into a bullet list, is any information lost?"**
 
-| Symptom | Verdict |
-|---|---|
+| Symptom                                                           | Verdict                                     |
+| ----------------------------------------------------------------- | ------------------------------------------- |
 | Straight line (A→B→C) with no branch / merge / loop / parallelism | No value → use a bullet list, not a diagram |
-| Nodes convert back to bullets with zero information loss | No value → use a table or bullet list |
-| Just a 1-to-1 enumeration | No value → use a table |
+| Nodes convert back to bullets with zero information loss          | No value → use a table or bullet list       |
+| Just a 1-to-1 enumeration                                         | No value → use a table                      |
 
 Only draw when the content needs 2D placement — branching, merging, loops, parallelism, many-to-many, hierarchy, or state transitions. Diagram count is never a goal in itself.
 
@@ -90,34 +90,34 @@ flowchart TD
 
 ### Diagram Type Guides (`references/guides/diagrams/`)
 
-| Guide | Full Path | Load When User Wants | Examples |
-|-------|-----------|---------------------|----------|
-| Activity Diagrams | `references/guides/diagrams/activity-diagrams.md` | Workflows, processes, business logic, user flows, decision trees | "Show checkout flow", "Document ETL pipeline", "Create approval workflow" |
-| Deployment Diagrams | `references/guides/diagrams/deployment-diagrams.md` | Infrastructure, cloud architecture, K8s, serverless, network topology | "Show AWS architecture", "Document GCP deployment", "Create K8s diagram" |
-| Architecture Diagrams | `references/guides/diagrams/architecture-diagrams.md` | System architecture, component design, high-level structure | "Show system components", "Document microservices", "Architecture overview" |
-| Sequence Diagrams | `references/guides/diagrams/sequence-diagrams.md` | API interactions, service communication, request/response flows | "Show API call sequence", "Document auth flow", "Service interactions" |
+| Guide                 | Full Path                                             | Load When User Wants                                                  | Examples                                                                    |
+| --------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Activity Diagrams     | `references/guides/diagrams/activity-diagrams.md`     | Workflows, processes, business logic, user flows, decision trees      | "Show checkout flow", "Document ETL pipeline", "Create approval workflow"   |
+| Deployment Diagrams   | `references/guides/diagrams/deployment-diagrams.md`   | Infrastructure, cloud architecture, K8s, serverless, network topology | "Show AWS architecture", "Document GCP deployment", "Create K8s diagram"    |
+| Architecture Diagrams | `references/guides/diagrams/architecture-diagrams.md` | System architecture, component design, high-level structure           | "Show system components", "Document microservices", "Architecture overview" |
+| Sequence Diagrams     | `references/guides/diagrams/sequence-diagrams.md`     | API interactions, service communication, request/response flows       | "Show API call sequence", "Document auth flow", "Service interactions"      |
 
 ### Code-to-Diagram Guide & Examples
 
-| Resource | Full Path | What It Provides |
-|----------|-----------|------------------|
-| **Master Guide** | `references/guides/code-to-diagram/README.md` | Complete workflow for analyzing any codebase and extracting diagrams |
-| **Spring Boot** | `examples/spring-boot/README.md` | Controller→Service→Repository architecture, deployment config, sequence from methods, activity from business logic |
-| **FastAPI** | `examples/fastapi/README.md` | Python async patterns, Pydantic models, dependency injection, cloud deployment |
-| **React** | `examples/react/README.md` | Component hierarchy, state management, data flow, build pipeline |
-| **Python ETL** | `examples/python-etl/README.md` | Data pipeline, transformation steps, error handling, scheduling |
-| **Node/Express** | `examples/node-webapp/README.md` | Middleware chain, route handlers, async patterns, deployment |
-| **Java Web App** | `examples/java-webapp/README.md` | Traditional MVC, servlet containers, WAR deployment |
+| Resource         | Full Path                                     | What It Provides                                                                                                   |
+| ---------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **Master Guide** | `references/guides/code-to-diagram/README.md` | Complete workflow for analyzing any codebase and extracting diagrams                                               |
+| **Spring Boot**  | `examples/spring-boot/README.md`              | Controller→Service→Repository architecture, deployment config, sequence from methods, activity from business logic |
+| **FastAPI**      | `examples/fastapi/README.md`                  | Python async patterns, Pydantic models, dependency injection, cloud deployment                                     |
+| **React**        | `examples/react/README.md`                    | Component hierarchy, state management, data flow, build pipeline                                                   |
+| **Python ETL**   | `examples/python-etl/README.md`               | Data pipeline, transformation steps, error handling, scheduling                                                    |
+| **Node/Express** | `examples/node-webapp/README.md`              | Middleware chain, route handlers, async patterns, deployment                                                       |
+| **Java Web App** | `examples/java-webapp/README.md`              | Traditional MVC, servlet containers, WAR deployment                                                                |
 
 ### Design Document Templates
 
-| Template | Full Path | Use For | Load When |
-|----------|-----------|---------|-----------|
+| Template            | Full Path                                | Use For                  | Load When                                           |
+| ------------------- | ---------------------------------------- | ------------------------ | --------------------------------------------------- |
 | Architecture Design | `assets/architecture-design-template.md` | System-wide architecture | "Create architecture doc", "Document system design" |
-| API Design | `assets/api-design-template.md` | API specifications | "API design doc", "Document REST API" |
-| Feature Design | `assets/feature-design-template.md` | Feature planning | "Feature design", "Plan new feature" |
-| Database Design | `assets/database-design-template.md` | Database schema | "Database design", "Document schema" |
-| System Design | `assets/system-design-template.md` | Complete system | "System design doc", "Full system documentation" |
+| API Design          | `assets/api-design-template.md`          | API specifications       | "API design doc", "Document REST API"               |
+| Feature Design      | `assets/feature-design-template.md`      | Feature planning         | "Feature design", "Plan new feature"                |
+| Database Design     | `assets/database-design-template.md`     | Database schema          | "Database design", "Document schema"                |
+| System Design       | `assets/system-design-template.md`       | Complete system          | "System design doc", "Full system documentation"    |
 
 ### Unicode Symbols Guide
 
@@ -126,6 +126,7 @@ flowchart TD
 **Load when user mentions:** "unicode symbols", "emoji in diagrams", "semantic icons", "add symbols"
 
 **Quick Reference:**
+
 - 📦 Infrastructure: ☁️ 🌐 🔌 📡 🗄️
 - ⚙️ Compute: ⚙️ ⚡ 🔄 ♻️ 🚀 💨
 - 💾 Data: 💾 📦 📊 📈 🗃️ 🧊
@@ -135,23 +136,23 @@ flowchart TD
 
 ### Python Scripts (`scripts/`)
 
-| Script | Use For | Load When |
-|--------|---------|-----------|
-| `extract_mermaid.py` | Extract diagrams from Markdown, validate syntax, replace with images | "extract diagrams", "validate mermaid", "find all diagrams" |
-| `mermaid_to_image.py` | Convert .mmd to PNG/SVG, batch conversion, custom themes | "convert to image", "render diagram", "create PNG" |
-| `resilient_diagram.py` | Full workflow: save .mmd, generate image, validate, error recovery | "generate diagram", "create diagram with validation", "resilient diagram" |
+| Script                 | Use For                                                              | Load When                                                                 |
+| ---------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `extract_mermaid.py`   | Extract diagrams from Markdown, validate syntax, replace with images | "extract diagrams", "validate mermaid", "find all diagrams"               |
+| `mermaid_to_image.py`  | Convert .mmd to PNG/SVG, batch conversion, custom themes             | "convert to image", "render diagram", "create PNG"                        |
+| `resilient_diagram.py` | Full workflow: save .mmd, generate image, validate, error recovery   | "generate diagram", "create diagram with validation", "resilient diagram" |
 
 ## Usage Patterns
 
 Common request patterns and guide selection. See [When to Use What](#when-to-use-what) for complete mapping.
 
-| Pattern | Example Request | Guides to Load |
-|---------|-----------------|----------------|
-| Single Diagram | "Create activity diagram for login flow" | Diagram type guide + Unicode symbols |
-| Code-to-Diagram | "Generate deployment from application.yml" | Framework example + Deployment guide |
-| Design Document | "Create API design document" | Template from assets/ + Relevant diagram guides |
-| Extract/Validate | "Extract diagrams from design.md" | Use `scripts/extract_mermaid.py` |
-| Batch Convert | "Convert all .mmd to PNG" | Use `scripts/mermaid_to_image.py` |
+| Pattern          | Example Request                            | Guides to Load                                  |
+| ---------------- | ------------------------------------------ | ----------------------------------------------- |
+| Single Diagram   | "Create activity diagram for login flow"   | Diagram type guide + Unicode symbols            |
+| Code-to-Diagram  | "Generate deployment from application.yml" | Framework example + Deployment guide            |
+| Design Document  | "Create API design document"               | Template from assets/ + Relevant diagram guides |
+| Extract/Validate | "Extract diagrams from design.md"          | Use `scripts/extract_mermaid.py`                |
+| Batch Convert    | "Convert all .mmd to PNG"                  | Use `scripts/mermaid_to_image.py`               |
 
 ## Resilient Workflow
 
@@ -233,6 +234,7 @@ If the script is unavailable:
 **User:** "Create a sequence diagram and add it to the design doc"
 
 **Skill Actions:**
+
 1. Identify intent: **diagram generation** + **markdown integration**
 2. Load workflow guide: `references/guides/resilient-workflow.md`
 3. Identify diagram type: **sequence**
@@ -255,6 +257,7 @@ If the script is unavailable:
 Always use Unicode symbols to enhance diagram clarity. Common patterns:
 
 ### Infrastructure & Deployment
+
 ```mermaid
 graph TB
     Client[👤 User] --> LB[🌐 Load Balancer]
@@ -265,6 +268,7 @@ graph TB
 ```
 
 ### Activity Flow with States
+
 ```mermaid
 flowchart TD
     Start([🚀 Start]) --> Process[⚙️ Process Data]
@@ -275,6 +279,7 @@ flowchart TD
 ```
 
 ### Microservices Architecture
+
 ```mermaid
 graph TB
     API[🌐 API Gateway] --> Auth[🔐 Auth Service]
@@ -329,6 +334,7 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 **Input:** "Show the checkout process workflow"
 
 **Skill Decision Path:**
+
 ```
 1. Analyze: workflow, process → ACTIVITY DIAGRAM
 2. Load guide: guides/diagrams/activity-diagrams.md
@@ -344,6 +350,7 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 **Input:** "Here's my Spring Boot controller, create diagrams"
 
 **Skill Decision Path:**
+
 ```
 1. Analyze: Spring Boot, code provided → CODE-TO-DIAGRAM + SPRING BOOT
 2. Load guides:
@@ -365,6 +372,7 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 **Input:** "Document my GCP Cloud Run deployment with AlloyDB"
 
 **Skill Decision Path:**
+
 ```
 1. Analyze: infrastructure, GCP, Cloud Run → DEPLOYMENT DIAGRAM
 2. Load guides:
@@ -398,6 +406,7 @@ graph TB
 ```
 
 **Rules:**
+
 - Light background → Dark text color
 - Dark background → Light text color
 - Always specify `color:` in every `classDef`
@@ -458,22 +467,22 @@ design-doc-mermaid/
 
 ## When to Use What
 
-| User Request | Load This |
-|--------------|-----------|
-| "activity diagram", "workflow", "process flow" | `references/guides/diagrams/activity-diagrams.md` |
-| "deployment", "infrastructure", "cloud", "k8s" | `references/guides/diagrams/deployment-diagrams.md` |
-| "architecture", "system design", "components" | `references/guides/diagrams/architecture-diagrams.md` + design template |
-| "API", "sequence", "interactions", "flow" | `references/mermaid-diagram-guide.md` (sequence section) |
-| "Spring Boot code" | `examples/spring-boot/` + relevant diagram guides |
-| "FastAPI code", "Python API" | `examples/fastapi/` + relevant diagram guides |
-| "React app", "frontend" | `examples/react/` + architecture guide |
-| "ETL", "data pipeline", "Python batch" | `examples/python-etl/` + activity guide |
-| "symbols", "unicode", "emoji" | `references/guides/unicode-symbols/guide.md` |
-| "syntax error", "diagram won't render", "troubleshoot" | `references/guides/troubleshooting.md` |
-| "extract diagrams" | `scripts/extract_mermaid.py` |
-| "convert to image", "PNG", "SVG" | `scripts/mermaid_to_image.py` |
+| User Request                                                    | Load This                                                                  |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| "activity diagram", "workflow", "process flow"                  | `references/guides/diagrams/activity-diagrams.md`                          |
+| "deployment", "infrastructure", "cloud", "k8s"                  | `references/guides/diagrams/deployment-diagrams.md`                        |
+| "architecture", "system design", "components"                   | `references/guides/diagrams/architecture-diagrams.md` + design template    |
+| "API", "sequence", "interactions", "flow"                       | `references/mermaid-diagram-guide.md` (sequence section)                   |
+| "Spring Boot code"                                              | `examples/spring-boot/` + relevant diagram guides                          |
+| "FastAPI code", "Python API"                                    | `examples/fastapi/` + relevant diagram guides                              |
+| "React app", "frontend"                                         | `examples/react/` + architecture guide                                     |
+| "ETL", "data pipeline", "Python batch"                          | `examples/python-etl/` + activity guide                                    |
+| "symbols", "unicode", "emoji"                                   | `references/guides/unicode-symbols/guide.md`                               |
+| "syntax error", "diagram won't render", "troubleshoot"          | `references/guides/troubleshooting.md`                                     |
+| "extract diagrams"                                              | `scripts/extract_mermaid.py`                                               |
+| "convert to image", "PNG", "SVG"                                | `scripts/mermaid_to_image.py`                                              |
 | "create diagram", "generate diagram", "add diagram to markdown" | `scripts/resilient_diagram.py` + `references/guides/resilient-workflow.md` |
-| "design document", "full docs" | `assets/*-design-template.md` + diagram guides |
+| "design document", "full docs"                                  | `assets/*-design-template.md` + diagram guides                             |
 
 ## Best Practices
 
@@ -488,18 +497,21 @@ design-doc-mermaid/
 ## Learning Path
 
 **New to Mermaid?** Start here:
+
 1. Read `references/guides/unicode-symbols/guide.md` for symbol meanings
 2. Read `references/guides/diagrams/activity-diagrams.md` for basic patterns
 3. Try examples in `examples/spring-boot/` or `examples/fastapi/`
 4. Use `scripts/extract_mermaid.py --validate` to check your work
 
 **Need to document code?** Follow this:
+
 1. Identify your framework → Load relevant `examples/{framework}/`
 2. Match code pattern to diagram type
 3. Use templates from guide
 4. Validate with scripts
 
 **Creating design docs?** Follow this:
+
 1. Choose document type → Load template from `assets/`
 2. Fill in text sections
 3. Load diagram guides as needed for each section

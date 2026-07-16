@@ -12,155 +12,181 @@
 ## ポリシー一覧
 
 ### [refined-engineer-judgment-principles.md](policy/refined-engineer-judgment-principles.md)
+
 **概要**: 全ポリシーの上位に立つ横断原則（トレードオフの比較衡量・決定を遅らせる・シフトレフト・コードは負債・シンプルな発想で大きな変化）。判断の北極星。
 **参照タイミング**: トレードオフ・設計選択・優先順位付けなど判断を迫られたすべての場面（他ポリシーで裁定できないときも）
 
 ---
 
 ### [judgment-log.md](judgment-log.md)
+
 **概要**: principles を実データから育てるための素材層（append-only）。AIの非自明な自律判断と人間からの矯正を生のまま記録し、分析して principles / rules / メモリへ昇格させる。規範ではなく観測データ置き場。
 **参照タイミング**: 人間に判断を矯正された／トレードオフを伴う非自明な自律判断を下したとき（記録）。貯まった素材を原則へ昇格させるとき（分析）
 
 ---
 
 ### [git-policy.md](policy/git-policy.md)
+
 **概要**: コミットメッセージの書き方・粒度・rebase禁止・ブランチ命名規則
 **参照タイミング**: commit作成・branch作成・PR作成・merge操作の前
 
 ---
 
 ### [pr-review-policy.md](policy/pr-review-policy.md)
+
 **概要**: レビューコメントのラベル体系（MUST/WANT/FYI/LGTM）・PRラベルとレビューケースの使い分け・PRサイズ感
 **参照タイミング**: PRレビューを行う前・レビューコメントを書く前・PRをマージする前
 
 ---
 
 ### [cicd-policy.md](policy/cicd-policy.md)
+
 **概要**: リリースまでのフローに人間の手動手順を可能な限り入れない、の一点をツール非依存で declare。人間は判断に強く繰り返しに弱く、手動の間違いは「その場では正しく見える」形で静かに起こるため。自動化の目的は速さではなく再現性。裏返しとして、判断そのものは自動化しない
 **参照タイミング**: CI/CD パイプラインを設計・実装・レビューする前（hook が `.github/` 配下の編集時に自動で促す）
 
 ---
 
 ### [documentation-policy.md](policy/documentation-policy.md)
+
 **概要**: ドキュメント作成の基本原則（対象読者と目的・なぜを書く・Progressive Disclosure・DRY・可視化・文章の書き方）
 **参照タイミング**: 設計書・ドキュメントを作成・編集・レビューする前
 
 ---
 
 ### [runbook-policy.md](policy/runbook-policy.md)
+
 **概要**: 手順書（Runbook）作成の基本原則（再現性が北極星＝著者不在でも目的の結果へ到達・再現性の7条件・CLI最優先/画面ショット回避・Linux/CloudShell既定・1ステップ1アクション・期待結果の明示・通し検証と鮮度管理）。documentation-policy とは目的が異なるため独立・単体完結（SRP優先）
 **参照タイミング**: セットアップ・デプロイ・運用・障害対応などの手順書を作成・編集・レビューする前
 
 ---
 
 ### [design-doc-policy.md](policy/design-doc-policy.md)
+
 **概要**: 良い設計書／悪い設計書を見分ける基準を定義する（良い＝コードから読み取れないことだけを直感的に示す・悪い＝コードを読めば分かる実装詳細/手順/仕様の混入で保守段階に二重管理化／対象は保守され続ける設計書で具体値だらけの一次資料は対象外／コードがSSoTゆえ図表が主役で削るなら文章から削り図表を残す・書くべきは①図表で示す構造/流れ/全体像②4つの問いで渡すなぜ＝採用理由/却下案/変更可能境界/スコープ外・却下案こそ設計書の価値／仕様書か設計書か迷う項目は3層〔振る舞いWhat=仕様・構造/なぜ=設計書・具体値=コード〕に分解して振り分ける・経緯はADRへ逃がす）。共通品質は documentation-policy を継承し、設計書固有の差分だけを定める（runbook-policy と同じ独立・単体完結型）。※「設計書を書く」ポリシーであり、アプリ/インフラを設計する application-design-policy 等とは別物
 **参照タイミング**: 設計書（docs/design/）を作成・編集・レビューする前
 
 ---
 
 ### [iac-infra-design-doc-policy.md](policy/iac-infra-design-doc-policy.md)
+
 **概要**: IaC で構築したシステムの**インフラ設計書**（文書）作成ポリシー。IaC ではコードが最大の SSoT ゆえ、設計書は「全体を見渡す図」と「設計判断（なぜ・却下案）」に寄せ、具体パラメータ値は書かない（二重管理で腐る）。必須セクションをテンプレートとして定め、必須＝「セクションを必ず存在させる」（該当なしは「なし＋理由」で閉じる＝未検討と対象外を読者が区別できる）。運用監視の項目選定思想は monitoring-policy へ、CDK コードの作り方は cdk-design-policy / cdk.md へ委譲。独立・単体完結。※インフラ設計「書」を書くポリシーであり、CDK コードを設計する cdk-design-policy とは対象が別物
 **参照タイミング**: インフラ設計書（IaC 構成の全体像・設計判断を記す文書）を作成・編集・レビューする前
 
 ---
 
 ### [spec-doc-policy.md](policy/spec-doc-policy.md)
+
 **概要**: 仕様書（システムが外から観測できる振る舞い＝何をするかを規定する文書）作成ポリシー。想定読者には開発者だけでなくビジネスサイドも入りうる（仕様＝観測できる振る舞いはビジネスが検証できる唯一の層）。仕様書と設計書の書き分けは design-doc-policy「迷ったら：仕様書か設計書か」に従う
 **参照タイミング**: 仕様書を作成・編集・レビューする前
 
 ---
 
 ### [requirements-doc-policy.md](policy/requirements-doc-policy.md)
+
 **概要**: 要件定義書（`docs/requirements.md`）作成ポリシー。①記述すべきはビジネスの基準（What）であり実装の手段（How）ではない②変動リスクのある実現コスト・技術予測は書かない③顧客の抽象的な要望は測定可能な前提条件に翻訳して明記する。レビューチェックリスト付き
 **参照タイミング**: 要件定義書を作成・編集・レビューする前（`/elicit-requirements` 実行時、要件定義書レビューSkill実行時）
 
 ---
 
 ### [code-comment-policy.md](policy/code-comment-policy.md)
+
 **概要**: コードコメントの種類別指針（実装コメント＝WHY／ドキュメンテーションコメント＝WHAT契約／ファイル冒頭コメント）・名前優先・コメントは腐る前提
 **参照タイミング**: コードのコメントを書く・レビューする前
 
 ---
 
 ### [test-strategy-policy.md](policy/test-strategy-policy.md)
+
 **概要**: テスト系ポリシーのハブ。テストピラミッド（配分の嗅覚）・各層の責務分担・統合/E2Eの汎用設計指針とアンチパターン
 **参照タイミング**: テストをどの層に書くか・統合/E2Eを設計する前
 
 ---
 
 ### [test-terms.md](reference/test-terms.md)
+
 **概要**: テスト用語の単一の真実（SSOT）。unit/integration/E2Eの定義・テストダブル5分類（dummy/stub/spy/mock/fake）
 **参照タイミング**: テストの種類やテストダブルの呼称に迷ったとき・他者と認識を揃えたいとき
 
 ---
 
 ### [unit-test-policy.md](policy/unit-test-policy.md)
+
 **概要**: 単体テストの思想（古典学派）・テストダブル方針（モック/スタブ）・AAAパターン・命名規則・テスト対象の判断基準・カバレッジの考え方
 **参照タイミング**: テストコードを実装・レビューする前
 
 ---
 
 ### [bugfix-policy.md](policy/bugfix-policy.md)
+
 **概要**: 良いバグ修正のアプローチを定義する。①良いバグレポート（起票に含める4点＝再現方法・発生頻度・本来の仕様・実際の動作）②不具合修正の手順（再現テストを先に書いてから直す7ステップ＝再現→原因の最小絞り込み→落ちる再現テスト→修正→通過確認→全テスト確認）。テストの書き方そのものには触れず unit-test-policy / test-strategy-policy に委ねる
 **参照タイミング**: バグを起票する前・不具合の修正に着手する前
 
 ---
 
 ### [monitoring-policy.md](policy/monitoring-policy.md)
+
 **概要**: 監視・アラームのレビュー基準（根拠を持った項目選定と文書化・ブラックボックス/ホワイトボックスの使い分け・オオカミ少年・症状ベース・actionable・Runbook）。根拠の作り方は [GSMガイド](guide/gsm-monitoring-guide.md) を推奨
 **参照タイミング**: 監視・アラームを設計する前・作られた監視設定をレビューする前
 
 ---
 
 ### [database-design-policy.md](policy/database-design-policy.md)
+
 **概要**: データベース設計で判断が分かれやすい事柄に対する、私たちの既定の立場と判断基準。トピックごとにデフォルトの選択を示す
 **参照タイミング**: テーブル・データ操作を設計・実装・レビューする前
 
 ---
 
 ### [application-architecture-policy.md](policy/application-architecture-policy.md)
+
 **概要**: アプリ（コード内部構造）アーキテクチャの、特定パターン（Clean/Hexagonal/Layered…）非依存の普遍原則。どのアーキテクチャ特性（-ility）を重視し均衡させるか（既定は変更容易性を最優先）・高凝集低結合・偶有的複雑性を増やさない・意図を表出する構造（Screaming Architecture）・詳細（FW/プラットフォーム）と距離をとりポータビリティを保つ（薄いアダプタ）。具体トポロジー（採用パターン・レイヤー名）の選択は各設計書・[clean-architecture-guide](guide/clean-architecture-guide.md) に委譲
 **参照タイミング**: レイヤー・境界・依存方向などマクロ構造を設計・レビューする前（設計判断の北極星として常時参照）
 
 ---
 
 ### [application-design-policy.md](policy/application-design-policy.md)
+
 **概要**: 「良い設計とは何か」を技術・パターン非依存で宣言。コード内部設計（クラス・関数・モジュールの作り方）が対象。正しく使うのが一番易しいインターフェース・関数とクラスの使い分け・共通化の判断・引数は責務の鏡（ブーリアン引数アンチパターン禁止）・失敗は投げて伝える。マクロ構造は application-architecture-policy に委譲
 **参照タイミング**: クラス・関数・モジュールを設計・実装・レビューする前
 
 ---
 
 ### [frontend-design-policy.md](policy/frontend-design-policy.md)
+
 **概要**: フロントエンド（React）固有の設計判断軸。コンポーネントの責務は1つ（表示とロジックを分離）・状態は最小スコープに（持ち上げ/グローバル化は必要になってから）・Props はインターフェース（フラグ Props 回避）・ビジュアルデザインは自作せず委譲。application-design-policy を継承し UI 固有の差分だけを足す（実装の機械的ルールは .claude/rules/react.md）
 **参照タイミング**: React コンポーネント・カスタムフックを設計・レビューする前
 
 ---
 
 ### [cdk-design-policy.md](policy/cdk-design-policy.md)
+
 **概要**: AWS CDK **コード**の設計判断軸。環境差分は Stack 内で分岐させず、値の差分は `parameter.ts`・構造/振る舞いの差分は Builder 層（環境別 Builder／Stack の public メソッド）へ寄せる・外部依存パラメータは `parameter.ts` に集約・リソース物理名はなるべく固定しない（固定するなら prefix ＋ 理由コメント）・公開インターフェースは最小の型に絞る（ISP）。すべての根拠は決定論的な構築（正確な `cdk diff`）を最優先することに帰する。判断軸（なぜ）を定め、機械的な実装ルール（import 形式・差分検知の具体 DON'T/MUST）は .claude/rules/cdk.md へ委譲。※CDK **コード**を設計するポリシーであり、インフラ設計「書」を書く iac-infra-design-doc-policy とは対象が別物
 **参照タイミング**: CDK コード（Stack・Construct・parameter.ts）を設計・実装・レビューする前
 
 ---
 
 ### [new-development-policy.md](policy/new-development-policy.md)
+
 **概要**: 新規開発（システム/モジュールを 0 から立ち上げる）で判断が分かれる「進め方」の既定の立場を declare。曳光弾/walking skeleton（薄い縦スライス先行・本番品質で残す）・スパイクは使い捨て（本番に昇格させない）・ドメイン/コアから着手（FW・DBから始めない）・ディレクトリ構成の方針を先を見越して最初に決める（具体の選び方は directory-structure-guide に委譲）、など。判断の上位は refined-engineer-judgment-principles（原則2 決定の遅延・原則4 YAGNI）、マクロ構造は application-architecture-policy を継承し、新規開発固有の差分だけを書く
 **参照タイミング**: 新しいシステム・モジュール・境界づけられたコンテキストを 0 から設計・実装する前
 
 ---
 
 ### [dependency-policy.md](policy/dependency-policy.md)
+
 **概要**: 外部ライブラリを足すか迷ったときの判断基準。既定は「足さない」（依存は保守・セキュリティ・ビルド時間の恒久的負債）。足す前に早見表の問い（必要性・自前実装・推移的依存・安全性・設計への密結合など）を通し、1つでも赤信号なら足さない。left-pad 事件が動機。原則4 YAGNI・原則5 Less is more の具体化
 **参照タイミング**: `package.json` に依存を追加する前（hook が package.json 編集時に自動で促す）
 
 ---
 
 ### [configuration-policy.md](policy/configuration-policy.md)
+
 **概要**: 構成値（設定値）をコードに直書きするか外部設定へ追い出すか、アプリがそれをどう受け取るかの既定の立場。外部化すべき値（環境差分・外部依存・認証情報の*参照先*・変更が予想される値）と、設定に置いてはいけないもの（機密の実値・ビジネスロジック・不変の定数）を declare。アプリは境界の単一 config モジュールで読み・検証・型付けし他所で `process.env` を直接触らない（fail-fast）。値の決定（供給元＝IaC/デプロイ環境/.env 等）と受け取りを分け、特定供給元は前提にしない（IaC 固有は cdk-design-policy 等へ委譲）。application-architecture-policy「詳細と距離をとる」を継承
 **参照タイミング**: 構成値を直書きするか設定へ出すか迷ったとき・設定ファイル（config.ts/.env/パラメータ定義）を編集する前
 
 ---
 
 ### [application-logging-policy.md](policy/application-logging-policy.md)
+
 **概要**: ログをいつ・何を・どのレベルで出力するかの基準を定義。「多すぎるログ＝ないのと同じ」の原則のもと、必ず出す2カテゴリ（エラー・外部依存）・ログレベルの使い分け（ERROR は詳細に、INFO はキー識別子のみ）・エラーコード必須・個人情報禁止・構造化ログ（JSON）推奨・アンチパターン（飲み込み・重複出力）
 **参照タイミング**: ログ出力を実装・レビューする前

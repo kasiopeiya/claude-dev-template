@@ -5,8 +5,11 @@ This directory contains examples of generating Mermaid diagrams from React appli
 ## Diagram Types
 
 ### 1. Component Architecture (from component hierarchy)
+
 ### 2. State Management Flow (from Redux/Context/Zustand)
+
 ### 3. Data Flow (from props and state)
+
 ### 4. Build & Deployment (from Vite/Webpack config)
 
 ## Example Application Structure
@@ -386,11 +389,16 @@ graph TB
 ```tsx
 // hooks/useContacts.ts
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
-import { fetchContacts, addContact, updateContact, deleteContact } from '@/store/slices/contactsSlice'
+import {
+  fetchContacts,
+  addContact,
+  updateContact,
+  deleteContact
+} from '@/store/slices/contactsSlice'
 
 export function useContacts() {
   const dispatch = useAppDispatch()
-  const { contacts, loading, error } = useAppSelector(state => state.contacts)
+  const { contacts, loading, error } = useAppSelector((state) => state.contacts)
 
   const loadContacts = async () => {
     await dispatch(fetchContacts())
@@ -466,7 +474,7 @@ function ContactsPage() {
       <Header title="Contacts" />
       <Filters onFilterChange={handleFilter} />
       <ContactList contacts={filteredContacts}>
-        {contact => (
+        {(contact) => (
           <ContactCard
             key={contact.id}
             contact={contact}
@@ -522,7 +530,14 @@ function App() {
           <Route index element={<HomePage />} />
           <Route path="contacts" element={<ContactsPage />} />
           <Route path="contacts/:id" element={<ContactDetailPage />} />
-          <Route path="profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+          <Route
+            path="profile"
+            element={
+              <PrivateRoute>
+                <ProfilePage />
+              </PrivateRoute>
+            }
+          />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
@@ -626,9 +641,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          'vendor': ['react', 'react-dom', 'react-router-dom'],
-          'redux': ['@reduxjs/toolkit', 'react-redux'],
-          'ui': ['@mui/material', '@emotion/react']
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          redux: ['@reduxjs/toolkit', 'react-redux'],
+          ui: ['@mui/material', '@emotion/react']
         }
       }
     }

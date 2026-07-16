@@ -32,15 +32,15 @@ model: sonnet
 
 `readiness-rubric.md` の各領域を順に審査する。**基準が既存ポリシーにある領域は、そのポリシーを Read してからチェックリストを照合する**（記憶で判定しない）。
 
-| 領域 | 主な調査手段 |
-|---|---|
-| ① ドキュメント | `docs/design-hub.md` 起点で運用ドキュメント・Runbook の有無を辿る。`runbook-policy` を Read して再現性を照合 |
-| ② リリース/ロールバック | `.github/workflows/` のデプロイ定義、ロールバック手順の文書、破壊的マイグレーションの戻し手順を Grep/Read |
-| ③ 監視・アラート | `monitoring-policy` を Read し「レビューチェックリスト」を照合。CDK コードからアラーム・Synthetics 定義を Grep（例：`Alarm`・`Synthetics`・`Canary`） |
-| ④ 性能・スケール限界 | `requirements.md` の SLO を確認。CDK から `reservedConcurrent`・`RdsProxy`・`throttle`・接続設定を Grep |
-| ⑤ セキュリティ | `dependency-policy` を Read。`npm audit` を Bash 実行（`package.json` があれば）。秘密の直書きを Grep（例：`process.env` の散在・ハードコード秘密）。security-review の実施を ⑦ の attest で確認 |
-| ⑥ 回復性/DR | CDK/コードから DLQ・リトライ・冪等キー・RDS バックアップ/PITR 設定を Grep/Read。SPOF を構造から判断 |
-| ⑦ 既存レビューの実施状況 | 下記「機械確認」＋「人間 attest」 |
+| 領域                     | 主な調査手段                                                                                                                                                                                     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ① ドキュメント           | `docs/design-hub.md` 起点で運用ドキュメント・Runbook の有無を辿る。`runbook-policy` を Read して再現性を照合                                                                                     |
+| ② リリース/ロールバック  | `.github/workflows/` のデプロイ定義、ロールバック手順の文書、破壊的マイグレーションの戻し手順を Grep/Read                                                                                        |
+| ③ 監視・アラート         | `monitoring-policy` を Read し「レビューチェックリスト」を照合。CDK コードからアラーム・Synthetics 定義を Grep（例：`Alarm`・`Synthetics`・`Canary`）                                            |
+| ④ 性能・スケール限界     | `requirements.md` の SLO を確認。CDK から `reservedConcurrent`・`RdsProxy`・`throttle`・接続設定を Grep                                                                                          |
+| ⑤ セキュリティ           | `dependency-policy` を Read。`npm audit` を Bash 実行（`package.json` があれば）。秘密の直書きを Grep（例：`process.env` の散在・ハードコード秘密）。security-review の実施を ⑦ の attest で確認 |
+| ⑥ 回復性/DR              | CDK/コードから DLQ・リトライ・冪等キー・RDS バックアップ/PITR 設定を Grep/Read。SPOF を構造から判断                                                                                              |
+| ⑦ 既存レビューの実施状況 | 下記「機械確認」＋「人間 attest」                                                                                                                                                                |
 
 ### 機械確認（⑦）
 

@@ -5,8 +5,11 @@ This directory contains examples of generating Mermaid diagrams from Node.js/Exp
 ## Diagram Types
 
 ### 1. Architecture Diagram (from layered structure)
+
 ### 2. Middleware Chain (from Express middleware)
+
 ### 3. Deployment Diagram (from Docker/PM2 setup)
+
 ### 4. Sequence Diagram (from async request flow)
 
 ## Example Application Structure
@@ -169,28 +172,28 @@ graph TB
 
 ```javascript
 // app.js
-const express = require('express');
-const app = express();
+const express = require('express')
+const app = express()
 
 // Global middleware (applied to all routes)
-app.use(helmet());                    // Security headers
-app.use(cors());                      // CORS policy
-app.use(morgan('combined'));          // HTTP logging
-app.use(express.json());              // Body parser
-app.use(express.urlencoded({ extended: true }));
+app.use(helmet()) // Security headers
+app.use(cors()) // CORS policy
+app.use(morgan('combined')) // HTTP logging
+app.use(express.json()) // Body parser
+app.use(express.urlencoded({ extended: true }))
 
 // Custom middleware
-app.use(requestId());                 // Add request ID
-app.use(rateLimiter);                 // Rate limiting
+app.use(requestId()) // Add request ID
+app.use(rateLimiter) // Rate limiting
 
 // Routes with route-specific middleware
-app.use('/api/auth', authRoutes);
-app.use('/api/users', authenticate, userRoutes);
-app.use('/api/products', authenticate, authorize('admin'), productRoutes);
+app.use('/api/auth', authRoutes)
+app.use('/api/users', authenticate, userRoutes)
+app.use('/api/products', authenticate, authorize('admin'), productRoutes)
 
 // Error handling (must be last)
-app.use(notFoundHandler);
-app.use(errorHandler);
+app.use(notFoundHandler)
+app.use(errorHandler)
 ```
 
 **Generated Middleware Chain Diagram:**
@@ -267,45 +270,45 @@ const userController = {
   async createUser(req, res, next) {
     try {
       // 1. Validate request
-      const { error, value } = userSchema.validate(req.body);
+      const { error, value } = userSchema.validate(req.body)
       if (error) {
-        return res.status(400).json({ error: error.message });
+        return res.status(400).json({ error: error.message })
       }
 
       // 2. Check if user exists
-      const existing = await User.findOne({ email: value.email });
+      const existing = await User.findOne({ email: value.email })
       if (existing) {
-        return res.status(409).json({ error: 'User already exists' });
+        return res.status(409).json({ error: 'User already exists' })
       }
 
       // 3. Hash password
-      const hashedPassword = await bcrypt.hash(value.password, 10);
+      const hashedPassword = await bcrypt.hash(value.password, 10)
 
       // 4. Create user
       const user = await User.create({
         ...value,
         password: hashedPassword
-      });
+      })
 
       // 5. Cache user
-      await cacheService.set(`user:${user.id}`, user, 3600);
+      await cacheService.set(`user:${user.id}`, user, 3600)
 
       // 6. Send welcome email (async, non-blocking)
-      emailService.sendWelcome(user.email).catch(err => {
-        logger.error('Failed to send welcome email', err);
-      });
+      emailService.sendWelcome(user.email).catch((err) => {
+        logger.error('Failed to send welcome email', err)
+      })
 
       // 7. Return response
       res.status(201).json({
         id: user.id,
         email: user.email,
         createdAt: user.createdAt
-      });
+      })
     } catch (error) {
-      next(error);
+      next(error)
     }
   }
-};
+}
 ```
 
 **Generated Sequence Diagram:**
@@ -462,16 +465,16 @@ graph TB
 // middleware/error.middleware.js
 class AppError extends Error {
   constructor(message, statusCode) {
-    super(message);
-    this.statusCode = statusCode;
-    this.isOperational = true;
-    Error.captureStackTrace(this, this.constructor);
+    super(message)
+    this.statusCode = statusCode
+    this.isOperational = true
+    Error.captureStackTrace(this, this.constructor)
   }
 }
 
 const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
+  err.statusCode = err.statusCode || 500
+  err.status = err.status || 'error'
 
   if (process.env.NODE_ENV === 'development') {
     res.status(err.statusCode).json({
@@ -479,37 +482,37 @@ const errorHandler = (err, req, res, next) => {
       error: err,
       message: err.message,
       stack: err.stack
-    });
+    })
   } else {
     // Production: don't leak error details
     if (err.isOperational) {
       res.status(err.statusCode).json({
         status: err.status,
         message: err.message
-      });
+      })
     } else {
       // Programming errors: log and send generic message
-      console.error('ERROR 💥', err);
+      console.error('ERROR 💥', err)
       res.status(500).json({
         status: 'error',
         message: 'Something went wrong'
-      });
+      })
     }
   }
-};
+}
 
 // Usage
 app.get('/users/:id', async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findById(req.params.id)
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new AppError('User not found', 404)
     }
-    res.json(user);
+    res.json(user)
   } catch (error) {
-    next(error);
+    next(error)
   }
-});
+})
 ```
 
 ### 2. Async Handler Wrapper
@@ -518,16 +521,19 @@ app.get('/users/:id', async (req, res, next) => {
 // utils/async-handler.js
 const asyncHandler = (fn) => {
   return (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-};
+    Promise.resolve(fn(req, res, next)).catch(next)
+  }
+}
 
 // Usage - cleaner controllers
-app.get('/users', asyncHandler(async (req, res) => {
-  const users = await User.find();
-  res.json(users);
-  // No try-catch needed!
-}));
+app.get(
+  '/users',
+  asyncHandler(async (req, res) => {
+    const users = await User.find()
+    res.json(users)
+    // No try-catch needed!
+  })
+)
 ```
 
 ### 3. Service Layer Pattern
@@ -536,59 +542,59 @@ app.get('/users', asyncHandler(async (req, res) => {
 // services/user.service.js
 class UserService {
   constructor() {
-    this.cache = new CacheService();
-    this.email = new EmailService();
+    this.cache = new CacheService()
+    this.email = new EmailService()
   }
 
   async createUser(userData) {
     // Business logic encapsulated in service
-    const existing = await User.findOne({ email: userData.email });
+    const existing = await User.findOne({ email: userData.email })
     if (existing) {
-      throw new AppError('User already exists', 409);
+      throw new AppError('User already exists', 409)
     }
 
-    const hashedPassword = await bcrypt.hash(userData.password, 10);
+    const hashedPassword = await bcrypt.hash(userData.password, 10)
 
     const user = await User.create({
       ...userData,
       password: hashedPassword
-    });
+    })
 
     // Cache user
-    await this.cache.set(`user:${user.id}`, user, 3600);
+    await this.cache.set(`user:${user.id}`, user, 3600)
 
     // Send welcome email (async)
-    this.email.sendWelcome(user.email).catch(console.error);
+    this.email.sendWelcome(user.email).catch(console.error)
 
-    return user;
+    return user
   }
 
   async getUserById(id, useCache = true) {
     if (useCache) {
-      const cached = await this.cache.get(`user:${id}`);
-      if (cached) return cached;
+      const cached = await this.cache.get(`user:${id}`)
+      if (cached) return cached
     }
 
-    const user = await User.findById(id);
+    const user = await User.findById(id)
     if (!user) {
-      throw new AppError('User not found', 404);
+      throw new AppError('User not found', 404)
     }
 
-    await this.cache.set(`user:${id}`, user, 3600);
-    return user;
+    await this.cache.set(`user:${id}`, user, 3600)
+    return user
   }
 }
 
-module.exports = new UserService();
+module.exports = new UserService()
 ```
 
 ### 4. Dependency Injection Pattern
 
 ```javascript
 // config/container.js (using awilix)
-const { createContainer, asClass, asFunction, asValue } = require('awilix');
+const { createContainer, asClass, asFunction, asValue } = require('awilix')
 
-const container = createContainer();
+const container = createContainer()
 
 container.register({
   // Services
@@ -605,71 +611,74 @@ container.register({
 
   // Config
   config: asValue(require('./environment'))
-});
+})
 
 // Usage in controller
 class UserController {
   constructor({ userService, authService }) {
-    this.userService = userService;
-    this.authService = authService;
+    this.userService = userService
+    this.authService = authService
   }
 
   async createUser(req, res) {
-    const user = await this.userService.createUser(req.body);
-    res.status(201).json(user);
+    const user = await this.userService.createUser(req.body)
+    res.status(201).json(user)
   }
 }
 
-module.exports = container.resolve('userController');
+module.exports = container.resolve('userController')
 ```
 
 ### 5. Background Job Processing with Bull
 
 ```javascript
 // services/queue.service.js
-const Queue = require('bull');
+const Queue = require('bull')
 
 const emailQueue = new Queue('email', {
   redis: { host: 'localhost', port: 6379 }
-});
+})
 
 // Producer: Add jobs to queue
 exports.sendEmail = async (to, subject, body) => {
-  await emailQueue.add({
-    to,
-    subject,
-    body
-  }, {
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000
+  await emailQueue.add(
+    {
+      to,
+      subject,
+      body
+    },
+    {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 2000
+      }
     }
-  });
-};
+  )
+}
 
 // Consumer: Process jobs
 emailQueue.process(async (job) => {
-  const { to, subject, body } = job.data;
+  const { to, subject, body } = job.data
 
   await transporter.sendMail({
     from: process.env.EMAIL_FROM,
     to,
     subject,
     html: body
-  });
+  })
 
-  job.progress(100);
-});
+  job.progress(100)
+})
 
 // Event handlers
 emailQueue.on('completed', (job) => {
-  console.log(`Email job ${job.id} completed`);
-});
+  console.log(`Email job ${job.id} completed`)
+})
 
 emailQueue.on('failed', (job, err) => {
-  console.error(`Email job ${job.id} failed:`, err);
-});
+  console.error(`Email job ${job.id} failed:`, err)
+})
 ```
 
 ## PM2 Ecosystem Configuration
@@ -704,7 +713,7 @@ module.exports = {
       }
     }
   ]
-};
+}
 
 // Start: pm2 start ecosystem.config.js
 // Monitor: pm2 monit
