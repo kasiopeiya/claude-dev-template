@@ -4,7 +4,7 @@
 // 入力は合成パスで足りる。実ファイルに紐づけると、リネーム・削除で hook が正しくても
 // 無関係にテストが壊れる。
 
-import { test } from 'node:test'
+import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -15,58 +15,77 @@ import { globToRegExp, extractFrontmatter, parseAppliesTo } from './policyMatche
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const policyDir = resolve(scriptDir, '../../docs/policy')
 
-// ── 沈黙の検知（本丸・パス非依存）──────────────────────────
 // applies-to を宣言したポリシーが、書式差のせいで1件もパースされない状態を「沈黙」と呼ぶ。
 // hook は存在するのに一切発火しない最悪の壊れ方であり、これを機械的に禁じる。
-test('applies-to を宣言する全ポリシーは1件以上のグロブにパースされる（沈黙禁止）', () => {
-  for (const name of readdirSync(policyDir)) {
-    if (!name.endsWith('.md')) continue
-    const frontmatter = extractFrontmatter(readFileSync(resolve(policyDir, name), 'utf8'))
-    if (!frontmatter || !/^\s*applies-to:/m.test(frontmatter)) continue
+describe('ポリシー宣言の沈黙検知', () => {
+  test('applies-to を宣言する全ポリシーは1件以上のグロブにパースされる', () => {
+    // Arrange
+    const declaringPolicies = readdirSync(policyDir)
+      .filter((name) => name.endsWith('.md'))
+      .map((name) => ({ name, frontmatter: extractFrontmatter(readFileSync(resolve(policyDir, name), 'utf8')) }))
+      .filter(({ frontmatter }) => frontmatter !== null && /^\s*applies-to:/m.test(frontmatter))
+    const sut = parseAppliesTo
 
-    const globs = parseAppliesTo(frontmatter)
-    assert.ok(
-      globs.length >= 1,
-      `${name}: applies-to を宣言しているのにパース結果が空（hook が沈黙する）`
-    )
-  }
+    // Assert
+    for (const { name, frontmatter } of declaringPolicies) {
+      assert.ok(
+        sut(frontmatter).length >= 1,
+        `${name}: applies-to を宣言しているのにパース結果が空（hook が沈黙する）`
+      )
+    }
+  })
 })
 
-// ── パーサ両形式（合成入力）────────────────────────────────
-test('parseAppliesTo はインライン配列・ブロックシーケンス・単一スカラーを同じ結果に読む', () => {
-  const inline = "hook:\n  applies-to: ['app/**/*.ts', 'app/**/*.tsx']"
-  const block = "hook:\n  applies-to:\n    - 'app/**/*.ts'\n    - 'app/**/*.tsx'"
-  const expected = ['app/**/*.ts', 'app/**/*.tsx']
+describe('applies-to のパース', () => {
+  test('インライン配列・ブロックシーケンス・単一スカラーのどの書式でも同じグロブ配列に読める', () => {
+    // Arrange
+    const inline = "hook:\n  applies-to: ['app/**/*.ts', 'app/**/*.tsx']"
+    const block = "hook:\n  applies-to:\n    - 'app/**/*.ts'\n    - 'app/**/*.tsx'"
+    const scalar = "hook:\n  applies-to: '**/*.md'"
+    const sut = parseAppliesTo
 
-  assert.deepEqual(parseAppliesTo(inline), expected)
-  assert.deepEqual(parseAppliesTo(block), expected)
-  assert.deepEqual(parseAppliesTo("hook:\n  applies-to: '**/*.md'"), ['**/*.md'])
+    // Assert
+    assert.deepEqual(sut(inline), ['app/**/*.ts', 'app/**/*.tsx'])
+    assert.deepEqual(sut(block), ['app/**/*.ts', 'app/**/*.tsx'])
+    assert.deepEqual(sut(scalar), ['**/*.md'])
+  })
+
+  test('ダブルクォートや空白のゆらぎがあっても同じグロブに読める', () => {
+    const sut = parseAppliesTo
+
+    assert.deepEqual(sut('hook:\n  applies-to: ["**/package.json"]'), ['**/package.json'])
+    assert.deepEqual(sut('applies-to:\n  -   "infra/**/*.ts"'), ['infra/**/*.ts'])
+  })
+
+  test('applies-to の宣言が無ければ空になる', () => {
+    const sut = parseAppliesTo
+
+    assert.deepEqual(sut('name: foo\ndescription: bar'), [])
+  })
 })
 
-test('parseAppliesTo はダブルクォートと空白ゆらぎを吸収する', () => {
-  assert.deepEqual(parseAppliesTo('hook:\n  applies-to: ["**/package.json"]'), ['**/package.json'])
-  assert.deepEqual(parseAppliesTo('applies-to:\n  -   "infra/**/*.ts"'), ['infra/**/*.ts'])
-})
+describe('glob から正規表現への変換', () => {
+  test('** はディレクトリを跨いでマッチする', () => {
+    // Arrange
+    const sut = globToRegExp
+    const deep = sut('app/**/*.ts')
+    const prefixed = sut('**/config.ts')
 
-test('parseAppliesTo は applies-to が無ければ空を返す', () => {
-  assert.deepEqual(parseAppliesTo('name: foo\ndescription: bar'), [])
-})
+    // Assert
+    assert.ok(deep.test('app/x.ts'))
+    assert.ok(deep.test('app/backend/usecase/x.ts'))
+    assert.ok(!deep.test('other/x.ts'))
+    assert.ok(!deep.test('app/x.tsx'))
+    assert.ok(prefixed.test('config.ts'))
+    assert.ok(prefixed.test('app/backend/config.ts'))
+    assert.ok(!prefixed.test('app/config.ts.bak'))
+  })
 
-// ── glob 意味論（合成パス）────────────────────────────────
-test('globToRegExp: ** はディレクトリ跨ぎ、* は単一階層に留まる', () => {
-  const appTs = globToRegExp('app/**/*.ts')
-  assert.ok(appTs.test('app/x.ts'))
-  assert.ok(appTs.test('app/backend/usecase/x.ts'))
-  assert.ok(!appTs.test('other/x.ts'))
-  assert.ok(!appTs.test('app/x.tsx'))
+  test('* は単一階層に留まりディレクトリを跨がない', () => {
+    const sut = globToRegExp
+    const flat = sut('infra/*.ts')
 
-  const single = globToRegExp('**/config.ts')
-  assert.ok(single.test('config.ts'))
-  assert.ok(single.test('app/backend/config.ts'))
-  assert.ok(!single.test('app/config.ts.bak'))
-
-  // * は / を跨がない
-  const flat = globToRegExp('infra/*.ts')
-  assert.ok(flat.test('infra/app.ts'))
-  assert.ok(!flat.test('infra/lib/stack.ts'))
+    assert.ok(flat.test('infra/app.ts'))
+    assert.ok(!flat.test('infra/lib/stack.ts'))
+  })
 })
