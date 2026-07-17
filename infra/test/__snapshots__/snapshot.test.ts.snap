@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`dev > kasio-dev-app-stack 1`] = `
+exports[`dev 環境 > kasio-dev-app-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Parameters": {
     "BootstrapVersion": {
@@ -560,7 +560,7 @@ def sort_filter_rules(json_obj):
 }
 `;
 
-exports[`dev > kasio-dev-base-stack 1`] = `
+exports[`dev 環境 > kasio-dev-base-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Outputs": {
     "ExportsOutputRefTopicBFC7AF6ECB4A357A": {
@@ -662,7 +662,7 @@ exports[`dev > kasio-dev-base-stack 1`] = `
 }
 `;
 
-exports[`prd > kasio-prd-app-stack 1`] = `
+exports[`prd 環境 > kasio-prd-app-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Parameters": {
     "BootstrapVersion": {
@@ -1248,7 +1248,7 @@ def sort_filter_rules(json_obj):
 }
 `;
 
-exports[`prd > kasio-prd-base-stack 1`] = `
+exports[`prd 環境 > kasio-prd-base-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Outputs": {
     "ExportsOutputRefTopicBFC7AF6ECB4A357A": {
@@ -1350,7 +1350,7 @@ exports[`prd > kasio-prd-base-stack 1`] = `
 }
 `;
 
-exports[`stg > kasio-stg-app-stack 1`] = `
+exports[`stg 環境 > kasio-stg-app-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Parameters": {
     "BootstrapVersion": {
@@ -1910,7 +1910,7 @@ def sort_filter_rules(json_obj):
 }
 `;
 
-exports[`stg > kasio-stg-base-stack 1`] = `
+exports[`stg 環境 > kasio-stg-base-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Outputs": {
     "ExportsOutputRefTopicBFC7AF6ECB4A357A": {

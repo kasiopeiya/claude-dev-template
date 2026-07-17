@@ -1,12 +1,22 @@
-import { type App, type Environment, type Stack } from 'aws-cdk-lib'
+import { type App, type Stack } from 'aws-cdk-lib'
 import { Template, Match } from 'aws-cdk-lib/assertions'
+
+import { type Parameter } from '../parameter'
 
 /**
  * 全環境の Builder に共通する構築・検証ヘルパーを提供する
  */
 
 // 3つの StackBuilder は同一シグネチャなので、テストからまとめて扱うための型
-export type StackBuilder = new (app: App, env?: Environment) => { build: () => Stack[] }
+export type StackBuilder = new (app: App, param?: Parameter) => { build: () => Stack[] }
+
+/**
+ * snapshot を環境非依存にするため、env（特に account）を固定した Parameter を返す。
+ * デプロイ先アカウントに依存すると synth 結果が環境ごとに揺れ、snapshot が壊れるため。
+ */
+export function withFixedEnv(base: Parameter): Parameter {
+  return { ...base, env: { account: undefined, region: 'ap-northeast-1' } }
+}
 
 /**
  * Builder が返す Stack 配列から AppStack を取り出す

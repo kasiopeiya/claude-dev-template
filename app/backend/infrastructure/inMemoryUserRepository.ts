@@ -8,13 +8,13 @@ import { UserRepository } from '../domain/userRepository'
  * 「詳細」であり DB 実装などへ差し替え可能。domain・usecase はこの存在を知らない。
  */
 export class InMemoryUserRepository implements UserRepository {
-  private readonly store = new Map<UserId, User>()
+  private readonly userStore = new Map<UserId, User>()
 
   async findById(id: UserId): Promise<User | null> {
-    return this.store.get(id) ?? null
+    return this.userStore.get(id) ?? null
   }
 
   async save(user: User): Promise<void> {
-    this.store.set(user.id, user)
+    this.userStore.set(user.id, user)
   }
 }

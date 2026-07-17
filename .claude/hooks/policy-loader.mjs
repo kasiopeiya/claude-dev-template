@@ -18,19 +18,21 @@ const projectRoot = resolve(scriptDir, '../..')
 const policyDir = resolve(projectRoot, 'docs/policy')
 
 function main() {
+  // Claude Code の hook 契約（外部仕様）：type: "command" の PreToolUse フックは、
+  // イベント情報（tool_input 等）を JSON として子プロセスの標準入力（fd 0）経由で渡す。
   const input = JSON.parse(readFileSync(0, 'utf8'))
-  const filePath = input?.tool_input?.file_path
-  if (!filePath) return
+  const targetFilePath = input?.tool_input?.file_path
+  if (!targetFilePath) return
 
-  const relPath = relative(projectRoot, resolve(filePath))
+  const targetRelativePath = relative(projectRoot, resolve(targetFilePath))
   // プロジェクト外のファイルは対象外
-  if (relPath.startsWith('..')) return
+  if (targetRelativePath.startsWith('..')) return
 
-  const matched = collectMatchingPolicies(relPath, policyDir)
+  const matched = collectMatchingPolicies(targetRelativePath, policyDir)
   if (matched.length === 0) return
 
-  const list = matched.map((name) => `- docs/policy/${name}`).join('\n')
-  const additionalContext = `【ポリシー遵守】編集対象「${relPath}」には以下のポリシーが適用されます。反映前に必ず各ファイルを読み、その指針に沿っているか確認し、違反があれば修正してください:\n${list}`
+  const policyList = matched.map((name) => `- docs/policy/${name}`).join('\n')
+  const additionalContext = `【ポリシー遵守】編集対象「${targetRelativePath}」には以下のポリシーが適用されます。反映前に必ず各ファイルを読み、その指針に沿っているか確認し、違反があれば修正してください:\n${policyList}`
 
   process.stdout.write(
     JSON.stringify({

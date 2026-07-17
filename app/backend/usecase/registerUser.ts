@@ -14,7 +14,7 @@ export interface RegisterUserInput {
  * 永続化の詳細はポート(UserRepository)に委ね、詳細層(infrastructure)には依存しない（依存性逆転）。
  */
 export class RegisterUser {
-  constructor(private readonly users: UserRepository) {}
+  constructor(private readonly userRepository: UserRepository) {}
 
   /**
    * ユーザーを登録する。同一 ID が既に存在する場合は登録を拒否する。
@@ -23,13 +23,13 @@ export class RegisterUser {
    * @throws {Error} 同一 ID が既に存在する場合、またはメール形式が不正な場合
    */
   async execute(input: RegisterUserInput): Promise<User> {
-    const existing = await this.users.findById(input.id)
-    if (existing !== null) {
+    const existingUser = await this.userRepository.findById(input.id)
+    if (existingUser !== null) {
       throw new Error(`user already exists: ${input.id}`)
     }
 
     const user = User.create(input.id, input.email)
-    await this.users.save(user)
+    await this.userRepository.save(user)
     return user
   }
 }
