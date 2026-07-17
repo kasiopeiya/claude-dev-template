@@ -75,8 +75,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 第三者 action を使わず自前で書く。他人のコードが、このリポジトリの権限を
-      # 持ったまま動くリスクと、数行の shell を引き換えにしない（cicd-design）。
       - name: Detect changed areas
         id: detect
         run: |
@@ -171,10 +169,12 @@ jobs:
         working-directory: app/backend
       - run: npm ci
         working-directory: infra
-
+      # プロジェクトのコーディング規約の適用
       - run: npm run lint
-      - run: npm run knip
+      # ESLintカスタムルールの適用
       - run: npm run test:rule
+      # 未使用のexport・未使用のファイル・未使用の依存パッケージなどを検出
+      - run: npm run knip
 
       # 脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実。だから
       # ci-app / ci-cdk に分けて条件実行にしない（infra の脆弱性が app だけの PR で見えなくなる）。
@@ -216,6 +216,7 @@ jobs:
         working-directory: app/backend
       - run: npm run typecheck
         working-directory: app/backend
+      # 単体テストに加え、レイヤー依存・循環依存・凝集度(LCOM)のアーキテクチャ規約テスト（archunit）も実行
       - run: npm run test
         working-directory: app/backend
 
@@ -238,8 +239,10 @@ jobs:
 
       - run: npm ci
         working-directory: infra
+      # 合成したCloudFormationテンプレート全体をスナップショットと比較し、意図しない差分を検知
       - run: npm run test:snap
         working-directory: infra
+      # 暗号化設定・アラーム有無など、リソースの個別プロパティをピンポイントで検査（fine-grained assertions）
       - run: npm run test:fga
         working-directory: infra
 
