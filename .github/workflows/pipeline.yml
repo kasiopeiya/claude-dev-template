@@ -11,16 +11,16 @@ run-name: pipeline (${{ github.ref_name }})
 on:
   push:
     branches:
-      - 'feat/**'
-      - 'fix/**'
-      - 'refactor/**'
-      - 'chore/**'
-      - 'ci/**'
-      - 'test/**'
-      - 'docs/**'
+      - 'feat**'
+      - 'fix**'
+      - 'refactor**'
+      - 'chore**'
+      - 'ci**'
+      - 'test**'
+      - 'docs**'
       # Dependabot は dependabot/github_actions/... を切る。7プレフィックスのどれにも
       # 当たらないため、足さないとその PR は checks が走らず無言でマージ不可になる。
-      - 'dependabot/**'
+      - 'dependabot**'
 
 permissions: {}
 
