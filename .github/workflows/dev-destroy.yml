@@ -5,6 +5,8 @@ name: dev-destroy
 run-name: dev-destroy (${{ github.ref_name }})
 
 on:
+  # schedule:
+  #   - cron: '00 4,14 * * *'
   workflow_dispatch:
     inputs:
       stack:
