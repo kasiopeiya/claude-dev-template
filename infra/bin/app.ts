@@ -2,14 +2,18 @@
 import { App, Aspects, Stack } from 'aws-cdk-lib'
 import { AwsSolutionsChecks, NagSuppressions } from 'cdk-nag'
 
-import { DevStackBuilder, StgStackBuilder, PrdStackBuilder } from '../stackBuilder'
+import {
+  DevStackBuilder,
+  // StgStackBuilder,
+  // PrdStackBuilder
+ } from '../stackBuilder'
 import { nagSuppressions } from '../test/nagSuppressions'
 
 const app = new App()
 
 new DevStackBuilder(app).build()
-new StgStackBuilder(app).build()
-new PrdStackBuilder(app).build()
+// new StgStackBuilder(app).build()
+// new PrdStackBuilder(app).build()
 
 // CDK Nagのルールを適用
 Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }))
