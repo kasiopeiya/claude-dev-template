@@ -76,6 +76,7 @@ npm run knip         # 未使用 file/export/dependency を検出（検出があ
 | `docs/design/`（ディレクトリ名） | `design-doc-policy.md` の `applies-to`、cdk-review スキルの既定パス（`docs/design/infrastructure-design.md`）が参照。中の個別設計書は自由に追加・更新可 |
 | `docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md` | CLAUDE.md・create-adr/decide-tech-stack スキルがファイル名までハードコード参照。一覧表への行追加は自由 |
 | `docs/reference/glossary.md`, `docs/reference/non-functional-requirement-items.md` | to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照 |
+| `docs/reference/test-terms.md` | `policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照 |
 | `docs/guide/`（ディレクトリ名。例: `directory-structure-guide.md`, `code-review-guide.md`） | decide-tech-stack・code-review スキルが直接参照 |
 | `docs/requirements.md` | `requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス |
 
