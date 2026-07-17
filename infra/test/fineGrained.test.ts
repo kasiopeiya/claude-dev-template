@@ -3,7 +3,12 @@ import { Template } from 'aws-cdk-lib/assertions'
 
 import { DevStackBuilder, StgStackBuilder, PrdStackBuilder } from '../stackBuilder'
 import { devParameter, stgParameter, prdParameter, type Parameter } from '../parameter'
-import { type StackBuilder, findAppStack, assertAllBucketsEncrypted, withFixedEnv } from './testHelper'
+import {
+  type StackBuilder,
+  findAppStack,
+  assertAllBucketsEncrypted,
+  withFixedEnv
+} from './testHelper'
 
 const appTemplateOf = (Builder: StackBuilder, param: Parameter): Template =>
   Template.fromStack(findAppStack(new Builder(new App(), withFixedEnv(param)).build()))

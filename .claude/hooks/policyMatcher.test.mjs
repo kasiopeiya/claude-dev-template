@@ -22,7 +22,10 @@ describe('ポリシー宣言の沈黙検知', () => {
     // Arrange
     const declaringPolicies = readdirSync(policyDir)
       .filter((name) => name.endsWith('.md'))
-      .map((name) => ({ name, frontmatter: extractFrontmatter(readFileSync(resolve(policyDir, name), 'utf8')) }))
+      .map((name) => ({
+        name,
+        frontmatter: extractFrontmatter(readFileSync(resolve(policyDir, name), 'utf8'))
+      }))
       .filter(({ frontmatter }) => frontmatter !== null && /^\s*applies-to:/m.test(frontmatter))
     const sut = parseAppliesTo
 
