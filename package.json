@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "prepare": "git config core.hooksPath .githooks",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -23,9 +24,5 @@
     "prettier": "^3.4.0",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.63.0"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": "prettier --write",
-    "*.{json,md}": "prettier --write"
   }
 }
