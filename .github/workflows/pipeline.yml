@@ -359,13 +359,15 @@ jobs:
           echo "all upstream jobs passed or were intentionally skipped"
 
   # cicd-gate 成功後に走る advisory な AI ジョブ（cicd-design「AI は advisory」）。
-  # 対象 PR に対し ①本文の AI 書き換え ②pr-label ③（needs-human-review 付与時のみ）pr-check を行い、
-  # ④needs-human-review が無ければ auto-merge を有効化する（cicd-design の capstone）。
+  # 対象 PR に対し ①本文の AI 書き換え ②pr-label ③（needs-human-review 付与時のみ）pr-check を行う。
   # ★ この job は cicd-gate の needs に含めない。含めると AI の非決定性が required check に入り、
   #   Claude の障害やブレでマージが止まる（cicd-design「AI を cicd-gate に入れてブロックする」却下案）。
   #   gate の後段に置くことで、マージ可否の判定（gate）には一切影響しない副作用だけを担う。
-  #   ④の auto-merge は「gate 成功待ち」を GitHub ネイティブ機能に委ね、gate が required check で
-  #   ある限り安全に守られる（cicd-design 採用理由の表）。
+  # ★ contents は read に固定する。GitHub Actions の権限は job 単位のため、merge 権限（contents: write）を
+  #   この AI job に置くと「差分の prompt injection → git push で main 改ざん」の経路が構造的に開く（#66）。
+  #   merge が要る ④auto-merge は後段の別 job（auto-merge）に分離し、この job から write を剥がす。
+  # ★ Bash は無制限にせず skill が実際に使う gh サブコマンドだけを許可する。injection が通っても
+  #   env+curl 等による secret 外部送信へ到達させないため（#65）。
   ai-advisory:
     needs: cicd-gate
     # needs だけでも gate 成功時のみ走るが、advisory であることを明示するため success() を置く。
@@ -373,15 +375,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      # ④auto-merge の有効化（gh pr merge --auto）に merge 権限が要る。#58 では read だった
-      # が、#59 でマージ挙動を足すため write へ引き上げる。
-      contents: write
+      # AI ステップには merge 権限を渡さない（#66）。skill は gh pr diff/view で読むだけ。
+      contents: read
       # PR 本文の書き換え（gh pr edit --body）・コメント（gh pr comment）・PR へのラベル付与
       pull-requests: write
       # pr-label は不足ラベルを gh label create で自己作成する。リポジトリのラベル作成は
       # issues スコープに属し pull-requests: write では作れないため、最小限追加する
       # （テンプレートのコピー先でも手動セットアップ無しで動く自己完結性を保つ）。
       issues: write
+    outputs:
+      # 後段の auto-merge job へ解決済み PR 番号を渡す（job 分割に伴う受け渡し・#66）。
+      pr_number: ${{ steps.pr.outputs.number }}
     steps:
       # skill 定義（.claude/skills/）とポリシー（docs/policy/）を Claude が読むため checkout する。
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -400,8 +404,9 @@ jobs:
           echo "number=$num" | tee -a "$GITHUB_OUTPUT"
 
       # AI 実行は Anthropic 公式 Action をサブスク OAuth 認証で使う（cicd-design 採用理由の表）。
-      # モデルは pr-label の判断に十分な Sonnet 5 単一。allowedTools は skill が使う gh/git（Bash）と
-      # skill・ポリシーの読み取り（Read/Grep/Glob）に絞る。
+      # モデルは pr-label の判断に十分な Sonnet 5 単一。allowedTools は skill・ポリシーの読み取り
+      # （Read/Grep/Glob）と、pr-label / pr-check / 本文書き換えが実際に使う gh サブコマンドだけに
+      # 絞る（Bash 無制限をやめる・#65）。git 直叩きは使わないため許可しない。
       - name: Run AI advisory (rewrite body / pr-label / pr-check)
         if: steps.pr.outputs.number != ''
         uses: anthropics/claude-code-action@3553f84341b92da26052e28acf1aa898f9511f32 # v1.0.177
@@ -410,7 +415,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_args: |
             --model claude-sonnet-5
-            --allowedTools "Bash,Read,Grep,Glob"
+            --allowedTools "Read,Grep,Glob,Bash(gh pr diff:*),Bash(gh pr edit:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh label list:*),Bash(gh label create:*)"
           prompt: |
             あなたはこのリポジトリの CI 上で動く advisory エージェントです。
             対象は PR #${{ steps.pr.outputs.number }}（base: main）。
@@ -432,21 +437,33 @@ jobs:
             `.claude/skills/pr-check/SKILL.md` を読み、その手順に従って
             PR #${{ steps.pr.outputs.number }} をチェックする（NG のときだけ PR に1件コメントする）。
 
-      # ④auto-merge の有効化。起動条件は決定論（cicd-gate success ＝ この job の needs／if、かつ
-      # needs-human-review ラベルが無い）なので、AI プロンプトに委ねず独立ステップでラベルを直接見る
-      # （cicd-policy「機械に委ねてよいのは正解が一意に決まる作業だけ」）。pr-check の NG はここに
-      # 影響しない——needs-human-review 無しなら pr-check 自体を実行しておらず、判定材料はラベルだけ。
+  # ④auto-merge の有効化（cicd-design の capstone）。AI を実行せず、ラベルを読んで gh pr merge --auto
+  # するだけの決定論 job（cicd-policy「機械に委ねてよいのは正解が一意に決まる作業だけ」）。
+  # ★ ai-advisory から独立 job に分けることで、merge に要る contents: write を AI ステップから剥がす（#66）。
+  #   起動条件も決定論（ai-advisory success ＝ gate 成功、かつ needs-human-review ラベルが無い）。
+  #   pr-check の NG はここに影響しない——needs-human-review 無しなら pr-check 自体を実行しておらず、
+  #   判定材料はラベルだけ。gate 成功待ちは GitHub ネイティブ auto-merge に委ねる（gate が required
+  #   check である限り守られる）。
+  auto-merge:
+    needs: ai-advisory
+    # PR が解決できたとき（＝AI advisory が走ったとき）だけ実行する。
+    if: ${{ success() && needs.ai-advisory.outputs.pr_number != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # merge にのみ必要な write。AI を実行しないこの job だけに閉じ込める。
+      contents: write
+      pull-requests: write
+    steps:
       - name: Enable auto-merge when no human review is needed
-        if: steps.pr.outputs.number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ steps.pr.outputs.number }}
+          PR: ${{ needs.ai-advisory.outputs.pr_number }}
         run: |
           labels=$(gh pr view "$PR" --json labels --jq '.labels[].name')
           if grep -qx 'needs-human-review' <<< "$labels"; then
             echo "needs-human-review is set; leaving PR #$PR open for human review (no auto-merge)"
             exit 0
           fi
-          # gate 成功待ちは GitHub ネイティブ auto-merge に委ねる（gate が required check である限り守られる）。
           echo "no needs-human-review label; enabling auto-merge (merge commit) for PR #$PR"
           gh pr merge "$PR" --auto --merge

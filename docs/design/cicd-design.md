@@ -104,6 +104,8 @@ flowchart TD
 | AI ジョブ（PR説明書き換え・pr-label・pr-check）を **cicd-gate 成功後の単一ジョブに集約**する | 別ジョブに分けると AI ロジックが複数箇所に散り、サブスク枠の消費と pr-check コメントの重複騒音が増える（却下案参照）。cicd-gate を通過した PR にだけ AI を回せば、枠と騒音を最小化できる                                                                                                                                     |
 | auto-merge は GitHub ネイティブ機能（`gh pr merge --auto`）・merge commit を使う | 「cicd-gate 成功待ち」を自前のワークフローで再実装すると、コード量と落とし穴が増える（却下案参照）。GitHub に待機を委ねれば、cicd-gate が required check である限り自動的に守られる。merge commit を選ぶのは、[git-policy](../policy/git-policy.md) が rebase を禁じているのと同じ理由（履歴の書き換えを避ける）           |
 | AI セルフレビュー（pr-review-policy）を auto-merge 経路に重ねて実施しない | pr-review-policy が求める AI セルフレビューは、実装フローの各 Skill（`/code-dev`・`/cdk-dev` 等）が実装時点で既に実施済み。auto-merge 経路で再度回すのは二重実施であり、advisory ジョブの実行時間とサブスク枠を消費するだけで新たな検出価値がない                                                                       |
+| merge に要る `contents: write` は AI ジョブから剥がし、auto-merge を別ジョブに分離して閉じ込める | GitHub Actions の権限は job 単位。AI ジョブは差分（ブランチ作者が書ける文字列）を読むため、プロンプトインジェクションが通った場合を前提に設計する。merge 権限を同居させると injection → `git push` で main を改ざんする経路が構造的に開く。AI ジョブの `contents` を read に固定し、決定論の auto-merge だけを別ジョブ（`contents: write`）へ切り出して塞ぐ |
+| AI ジョブの `allowedTools` の Bash を無制限にせず、skill が使う gh サブコマンドだけに限定する | 同じ injection 前提。`Bash` 無制限だと injection が `env`+`curl` で secret を外部送信する経路まで届く（blast radius が最大）。pr-label / pr-check / 本文書き換えが実際に使う `gh pr diff`・`gh pr edit`・`gh pr view`・`gh pr comment`・`gh label list`・`gh label create` だけを許可し、それ以外を構造的に弾く |
 
 ## どの代替案を、なぜ却下したか（却下案）
 
