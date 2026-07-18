@@ -357,3 +357,72 @@ jobs:
             exit 1
           fi
           echo "all upstream jobs passed or were intentionally skipped"
+
+  # cicd-gate 成功後に走る advisory な AI ジョブ（cicd-design「AI は advisory」）。
+  # 対象 PR に対し ①本文の AI 書き換え ②pr-label ③（needs-human-review 付与時のみ）pr-check を行う。
+  # ★ この job は cicd-gate の needs に含めない。含めると AI の非決定性が required check に入り、
+  #   Claude の障害やブレでマージが止まる（cicd-design「AI を cicd-gate に入れてブロックする」却下案）。
+  #   gate の後段に置くことで、マージ可否には一切影響しない副作用だけを担う。
+  ai-advisory:
+    needs: cicd-gate
+    # needs だけでも gate 成功時のみ走るが、advisory であることを明示するため success() を置く。
+    if: ${{ success() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # PR 本文の書き換え（gh pr edit --body）・コメント（gh pr comment）・PR へのラベル付与
+      pull-requests: write
+      # pr-label は不足ラベルを gh label create で自己作成する。リポジトリのラベル作成は
+      # issues スコープに属し pull-requests: write では作れないため、最小限追加する
+      # （テンプレートのコピー先でも手動セットアップ無しで動く自己完結性を保つ）。
+      issues: write
+    steps:
+      # skill 定義（.claude/skills/）とポリシー（docs/policy/）を Claude が読むため checkout する。
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # push イベントには PR コンテキストが無い。create-pull-request が作った PR をブランチから引く。
+      - name: Resolve PR number for branch
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          num=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number')
+          if [ -z "$num" ]; then
+            echo "::warning::no open PR found for $BRANCH; skipping AI advisory"
+          fi
+          echo "number=$num" | tee -a "$GITHUB_OUTPUT"
+
+      # AI 実行は Anthropic 公式 Action をサブスク OAuth 認証で使う（cicd-design 採用理由の表）。
+      # モデルは pr-label の判断に十分な Sonnet 5 単一。allowedTools は skill が使う gh/git（Bash）と
+      # skill・ポリシーの読み取り（Read/Grep/Glob）に絞る。
+      - name: Run AI advisory (rewrite body / pr-label / pr-check)
+        if: steps.pr.outputs.number != ''
+        uses: anthropics/claude-code-action@3553f84341b92da26052e28acf1aa898f9511f32 # v1.0.177
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: |
+            --model claude-sonnet-5
+            --allowedTools "Bash,Read,Grep,Glob"
+          prompt: |
+            あなたはこのリポジトリの CI 上で動く advisory エージェントです。
+            対象は PR #${{ steps.pr.outputs.number }}（base: main）。
+            マージ・承認・クローズ・ブランチ削除は絶対に行わないこと。以下の3タスクを上から順に実行する。
+
+            ## タスク1: PR本文のAI書き換え
+            `gh pr diff ${{ steps.pr.outputs.number }}` で差分全体を読み、「何を・なぜ変えたか」を
+            人間の言葉で説明する PR 本文を作成し、`gh pr edit ${{ steps.pr.outputs.number }} --body '<本文>'`
+            で反映する。コミットメッセージの機械的な要約ではなく、差分から読み取った意図を簡潔に記述する。
+
+            ## タスク2: ラベル付与（pr-label）
+            `.claude/skills/pr-label/SKILL.md` を読み、そこに書かれた手順・基準
+            （参照先の docs/policy/pr-review-policy.md を含む）に厳密に従って、
+            PR #${{ steps.pr.outputs.number }} に「変更の種類」ラベルと
+            needs-human-review / needs-manual-triage を付与する。
+
+            ## タスク3: 前提条件チェック（pr-check・条件付き）
+            タスク2で **needs-human-review ラベルを付けた場合のみ** 実行する。付けていなければスキップする。
+            `.claude/skills/pr-check/SKILL.md` を読み、その手順に従って
+            PR #${{ steps.pr.outputs.number }} をチェックする（NG のときだけ PR に1件コメントする）。
