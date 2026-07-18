@@ -1,0 +1,13 @@
+#!/bin/sh
+# ci-format（prettier --check .）が push 後に落ちるのを防ぐため、
+# コミット前にステージ済みファイルだけを prettier で整形して再ステージする。
+
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.json' '*.md')
+
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+echo "$staged_files" | xargs npx prettier --write
+
+echo "$staged_files" | xargs git add
