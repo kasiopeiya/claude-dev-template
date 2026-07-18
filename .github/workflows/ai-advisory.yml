@@ -73,6 +73,7 @@ jobs:
       # （Read/Grep/Glob）と、pr-label / pr-check / 本文書き換えが実際に使う gh サブコマンドだけに
       # 絞る（Bash 無制限をやめる・#65）。git 直叩きは使わないため許可しない。
       - name: Run AI advisory (rewrite body / pr-label / pr-check)
+        id: advisory
         if: steps.pr.outputs.number != ''
         uses: anthropics/claude-code-action@3553f84341b92da26052e28acf1aa898f9511f32 # v1.0.177
         with:
@@ -101,6 +102,42 @@ jobs:
             タスク2で **needs-human-review ラベルを付けた場合のみ** 実行する。付けていなければスキップする。
             `.claude/skills/pr-check/SKILL.md` を読み、その手順に従って
             PR #${{ steps.pr.outputs.number }} をチェックする（NG のときだけ PR に1件コメントする）。
+
+            ## 最終出力: 実行サマリ（可観測性・#69）
+            すべて終えたら、最後のメッセージで次の3行を必ず出力する。後続の決定論ステップが
+            この本文をラン サマリへ転記し、「何をしたか」を毎ラン残す（沈黙とスキップ／失敗を区別可能にする）。
+            - task1（本文書き換え）: 実施 / 未実施（一言で理由）
+            - task2（ラベル）: 付与したラベルを列挙（needs-human-review の有無を明記）
+            - task3（pr-check）: 実行した(OK / NG) / スキップ（needs-human-review 無しのため）
+
+      # advisory が「何をしたか」を毎ラン残す（#69）。AI ステップの Bash は gh に限定され
+      # $GITHUB_STEP_SUMMARY へ直接書けないため、ここで実行ログ JSON を後処理する決定論ステップに分ける。
+      # 出す情報を「AI が末尾に出した実行サマリ（.result）」と「拒否コマンド（.permission_denials）」だけに
+      # 絞る——show_full_output / display_report で全メッセージを公開すると secret 混入リスクがある（#65/#66）。
+      # AI が失敗しても痕跡を残すため always()。
+      - name: Summarize advisory outcome
+        if: ${{ always() && steps.pr.outputs.number != '' }}
+        env:
+          EXECUTION_FILE: ${{ steps.advisory.outputs.execution_file }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          echo "## AI advisory outcome — PR #$PR" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$EXECUTION_FILE" ] || [ ! -f "$EXECUTION_FILE" ]; then
+            echo "_実行ログ無し（AI ステップが走らなかった／ログ未生成）_" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          # 実行ログは全メッセージの JSON 配列。末尾の result メッセージだけを取り出す。
+          result=$(jq -r 'map(select(.type=="result")) | last // {} | .result // empty' "$EXECUTION_FILE")
+          {
+            echo "### 実行サマリ（task1/2/3）"
+            printf '```\n%s\n```\n' "${result:-（サマリ出力なし）}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # 拒否された具体コマンド（#65 allowlist の過不足判断の材料）。
+          denials=$(jq -r 'map(select(.type=="result")) | last // {} | .permission_denials // [] | .[] | "- `\(.tool_name)`: \(.tool_input | tostring)"' "$EXECUTION_FILE")
+          {
+            echo "### permission_denials（拒否された具体コマンド）"
+            echo "${denials:-_なし_}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # auto-merge の有効化（cicd-design の capstone）。AI を実行せず、ラベルを読んで gh pr merge --auto
   # するだけの決定論 job（cicd-policy「機械に委ねてよいのは正解が一意に決まる作業だけ」）。
