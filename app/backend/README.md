@@ -7,7 +7,9 @@
 ```text
 app/backend/
 ├── domain/                       # 最内・依存なし（方針）
-│   ├── user.ts                   #   User エンティティ＋不変条件
+│   ├── user.ts                   #   User エンティティ（値オブジェクトを合成）
+│   ├── email.ts                  #   Email 値オブジェクト（形式の不変条件）
+│   ├── userId.ts                 #   UserId 値オブジェクト（非空の不変条件）
 │   └── userRepository.ts         #   永続化のポート（抽象）
 ├── usecase/
 │   └── registerUser.ts           # → domain（ポートに依存＝依存性逆転）

@@ -1,33 +1,25 @@
-// 責務: User エンティティと、その生成に伴う不変条件（業務ルール）のみを担う
+// 責務: User エンティティ——検証済みの値オブジェクトを合成して不正な状態を作らせない
 
-/** User を一意に識別する ID。 */
-export type UserId = string
+import { Email } from './email'
+import { UserId } from './userId'
 
 /**
  * 登録済みユーザーを表すエンティティ。
- * 生成時にメール形式の不変条件を検証し、不正な状態のインスタンスを作らせない。
+ * id・email は生成時に不変条件を検証済みの値オブジェクトなので、User 自身は検証を持たず合成に徹する。
  */
 export class User {
   private constructor(
     public readonly id: UserId,
-    public readonly email: string
+    public readonly email: Email
   ) {}
 
   /**
-   * User を生成する。メール形式が不正な場合は生成を拒否する。
-   * @param id ユーザーID
-   * @param email メールアドレス
+   * User を生成する。
+   * @param id ユーザーID（検証済み）
+   * @param email メールアドレス（検証済み）
    * @returns 生成された User
-   * @throws {Error} メール形式が不正な場合
    */
-  static create(id: UserId, email: string): User {
-    if (!User.isValidEmail(email)) {
-      throw new Error(`invalid email: ${email}`)
-    }
+  static create(id: UserId, email: Email): User {
     return new User(id, email)
-  }
-
-  private static isValidEmail(email: string): boolean {
-    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)
   }
 }
