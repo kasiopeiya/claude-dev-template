@@ -359,10 +359,13 @@ jobs:
           echo "all upstream jobs passed or were intentionally skipped"
 
   # cicd-gate 成功後に走る advisory な AI ジョブ（cicd-design「AI は advisory」）。
-  # 対象 PR に対し ①本文の AI 書き換え ②pr-label ③（needs-human-review 付与時のみ）pr-check を行う。
+  # 対象 PR に対し ①本文の AI 書き換え ②pr-label ③（needs-human-review 付与時のみ）pr-check を行い、
+  # ④needs-human-review が無ければ auto-merge を有効化する（cicd-design の capstone）。
   # ★ この job は cicd-gate の needs に含めない。含めると AI の非決定性が required check に入り、
   #   Claude の障害やブレでマージが止まる（cicd-design「AI を cicd-gate に入れてブロックする」却下案）。
-  #   gate の後段に置くことで、マージ可否には一切影響しない副作用だけを担う。
+  #   gate の後段に置くことで、マージ可否の判定（gate）には一切影響しない副作用だけを担う。
+  #   ④の auto-merge は「gate 成功待ち」を GitHub ネイティブ機能に委ね、gate が required check で
+  #   ある限り安全に守られる（cicd-design 採用理由の表）。
   ai-advisory:
     needs: cicd-gate
     # needs だけでも gate 成功時のみ走るが、advisory であることを明示するため success() を置く。
@@ -370,7 +373,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
-      contents: read
+      # ④auto-merge の有効化（gh pr merge --auto）に merge 権限が要る。#58 では read だった
+      # が、#59 でマージ挙動を足すため write へ引き上げる。
+      contents: write
       # PR 本文の書き換え（gh pr edit --body）・コメント（gh pr comment）・PR へのラベル付与
       pull-requests: write
       # pr-label は不足ラベルを gh label create で自己作成する。リポジトリのラベル作成は
@@ -426,3 +431,22 @@ jobs:
             タスク2で **needs-human-review ラベルを付けた場合のみ** 実行する。付けていなければスキップする。
             `.claude/skills/pr-check/SKILL.md` を読み、その手順に従って
             PR #${{ steps.pr.outputs.number }} をチェックする（NG のときだけ PR に1件コメントする）。
+
+      # ④auto-merge の有効化。起動条件は決定論（cicd-gate success ＝ この job の needs／if、かつ
+      # needs-human-review ラベルが無い）なので、AI プロンプトに委ねず独立ステップでラベルを直接見る
+      # （cicd-policy「機械に委ねてよいのは正解が一意に決まる作業だけ」）。pr-check の NG はここに
+      # 影響しない——needs-human-review 無しなら pr-check 自体を実行しておらず、判定材料はラベルだけ。
+      - name: Enable auto-merge when no human review is needed
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          labels=$(gh pr view "$PR" --json labels --jq '.labels[].name')
+          if grep -qx 'needs-human-review' <<< "$labels"; then
+            echo "needs-human-review is set; leaving PR #$PR open for human review (no auto-merge)"
+            exit 0
+          fi
+          # gate 成功待ちは GitHub ネイティブ auto-merge に委ねる（gate が required check である限り守られる）。
+          echo "no needs-human-review label; enabling auto-merge (merge commit) for PR #$PR"
+          gh pr merge "$PR" --auto --merge
