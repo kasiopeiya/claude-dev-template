@@ -370,10 +370,11 @@ jobs:
   #   env+curl 等による secret 外部送信へ到達させないため（#65）。
   ai-advisory:
     needs: cicd-gate
-    # cicd-gate の結果だけを見る。bare success() は祖先グラフ全体を評価するため、cicd/docs のみの
-    # 変更で ci-app 等が skip されると（skip は success ではない）false になり、この job まで skip
-    # される。cicd-gate は if: always() で祖先の skip を無視して成功するので、その結果を直接見る。
-    if: ${{ needs.cicd-gate.result == 'success' }}
+    # GitHub の skip 伝播は祖先グラフ全体に効き、cicd/docs のみの変更で ci-app 等（cicd-gate 経由の
+    # 祖先）が skip されると、この job も既定で skip される。それを無効化できるのは always()/success()
+    # 等のステータス関数だけ——needs.cicd-gate.result == 'success' 単独では伝播 skip を打ち消せない。
+    # よって always()（伝播無効化）と cicd-gate 成功チェックを AND する。gate 失敗時は進めない。
+    if: ${{ always() && needs.cicd-gate.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -448,9 +449,9 @@ jobs:
   #   check である限り守られる）。
   auto-merge:
     needs: ai-advisory
-    # ai-advisory の結果だけを見る（bare success() は祖先の skip に巻き込まれる。ai-advisory と同じ理由）。
-    # かつ PR が解決できたとき（＝AI advisory が走ったとき）だけ実行する。
-    if: ${{ needs.ai-advisory.result == 'success' && needs.ai-advisory.outputs.pr_number != '' }}
+    # always() で祖先の skip 伝播を無効化し、ai-advisory 成功かつ PR が解決できたときだけ実行する
+    # （ai-advisory と同じ理由。needs.*.result 単独では伝播 skip を打ち消せない）。
+    if: ${{ always() && needs.ai-advisory.result == 'success' && needs.ai-advisory.outputs.pr_number != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
