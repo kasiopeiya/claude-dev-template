@@ -6,7 +6,7 @@
 > **TL;DR（この設計の決定事項）**
 >
 > - **PR マージ前に dev へ deploy し、その成功をレビューの Entry Criteria とする**（CDK は deploy しないと分からないエラーが多いため）
-> - 検査は並行に走らせ、**マージ可否を決める required check はゲート1つだけ**にする
+> - 検査は並行に走らせ、**マージ可否を決める required check は cicd-gate 1つだけ**にする（AI は advisory でこの決定論には含めない）
 > - 環境は dev 1つ。ブランチ間で奪い合うが、開発環境なので上書きを許容する
 
 ## 設計の芯：deploy 成功がレビューの Entry Criteria である
@@ -57,20 +57,27 @@ flowchart TD
 
     Gate --> Merge([🎯 マージ可否<br/>★唯一の required check])
 
+    Merge --> AiJob["🤖 AI ジョブ（advisory）<br/>PR説明書き換え・pr-label・pr-check"]
+    AiJob --> AutoMergeCheck{人間レビュー不要と<br/>AIが判定?}
+    AutoMergeCheck -->|Yes| AutoMerge(["🔀 auto-merge<br/>gh pr merge --auto（merge commit）"])
+    AutoMergeCheck -->|No| HumanReview(["👤 人間レビュー"])
+
     classDef startEnd fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
     classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
     classDef gate fill:#87CEEB,stroke:#00008B,stroke-width:4px,color:darkblue
     classDef hollow fill:#FFE4B5,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5,color:black
+    classDef advisory fill:#FFF9C4,stroke:#F57F17,stroke-width:2px,color:#7f4f00
 
     class Push,Merge startEnd
     class PR,Detect,Format,PolicyHook,Common,App,Cdk process
     class DeployCheck decision
     class Deploy,IT hollow
     class Gate gate
+    class AiJob,AutoMergeCheck,AutoMerge,HumanReview advisory
 ```
 
-赤い破線の枠は、**中身を持たないもの**（「スコープ外」参照）。
+赤い破線の枠は、**中身を持たないもの**（「スコープ外」参照）。黄色の枠は、**required check（マージ可否）とは別系統の advisory 処理**（AIの非決定性をブロッキングのゲートに持ち込まないため）。
 
 ## なぜこの構造・方式を選んだか（採用理由）
 
@@ -91,6 +98,12 @@ flowchart TD
 | npm 依存の脆弱性を、階層ごとに分けず**全体を舐める検査**で見る    | Dependabot が npm を見ない穴を塞ぐもの。脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実なので、変更箇所に紐づけて条件実行すると、CDK に新規開示された脆弱性がアプリだけの PR から見えなくなる                                                                                                     |
 | 脆弱性で落とす閾値を設け、それ未満は落とさない                    | どこまでを受容するかは判断であり、機械に委ねてよいのは正解が一意に決まる作業だけ（[cicd-policy](../policy/cicd-policy.md)）                                                                                                                                                                                              |
 | dev をスケジュールで destroy する                                 | コスト節約。この設計では push すれば dev が作り直されるため、消しっぱなしでも困らない                                                                                                                                                                                                                                    |
+| PR 説明の最終稿は AI が書き換える（push 直後の `--fill` は暫定にとどめる） | commit メッセージの機械的な要約（`--fill`）は「何を・なぜ変えたか」を人間の言葉で語れない。cicd-gate 通過後に AI が差分全体を見て本文を書き直すことで、pr-review-policy が求める「PR説明の記載」の質を上げる。push 直後は差分がまだ変わりうるため、他ジョブが PR 番号を参照できるよう `--fill` で即座に PR を存在させておく |
+| AI 実行方式に公式 `anthropics/claude-code-action` を Claude サブスク OAuth 認証（`CLAUDE_CODE_OAUTH_TOKEN`）で採用する | 「サードパーティ製 Action を使わない」方針（本表参照）の例外。AI 実行の自前実装（プロンプトインジェクション対応・API 管理）のコストは、Anthropic 公式が保守する Action を使う利点を上回らない。サブスク認証にすることで API 従量課金も避けられる                                                                       |
+| AI は **advisory**（マージ可否の required check には含めない）    | AI の判断は非決定的（同じ差分でも出力が揺れうる）。cicd-gate の芯は決定論——required check は一意に決まる作業の結果でなければならない（[cicd-policy](../policy/cicd-policy.md)）。AI を cicd-gate に入れると、Claude の障害やブレでマージが止まる                                                                            |
+| AI ジョブ（PR説明書き換え・pr-label・pr-check）を **cicd-gate 成功後の単一ジョブに集約**する | 別ジョブに分けると AI ロジックが複数箇所に散り、サブスク枠の消費と pr-check コメントの重複騒音が増える（却下案参照）。cicd-gate を通過した PR にだけ AI を回せば、枠と騒音を最小化できる                                                                                                                                     |
+| auto-merge は GitHub ネイティブ機能（`gh pr merge --auto`）・merge commit を使う | 「cicd-gate 成功待ち」を自前のワークフローで再実装すると、コード量と落とし穴が増える（却下案参照）。GitHub に待機を委ねれば、cicd-gate が required check である限り自動的に守られる。merge commit を選ぶのは、[git-policy](../policy/git-policy.md) が rebase を禁じているのと同じ理由（履歴の書き換えを避ける）           |
+| AI セルフレビュー（pr-review-policy）を auto-merge 経路に重ねて実施しない | pr-review-policy が求める AI セルフレビューは、実装フローの各 Skill（`/code-dev`・`/cdk-dev` 等）が実装時点で既に実施済み。auto-merge 経路で再度回すのは二重実施であり、advisory ジョブの実行時間とサブスク枠を消費するだけで新たな検出価値がない                                                                       |
 
 ## どの代替案を、なぜ却下したか（却下案）
 
@@ -105,6 +118,13 @@ flowchart TD
 | 静的解析のルールを階層ごとに分割する               | CI の都合で「ルールを一元定義する」という静的解析の設計を壊す本末転倒                                               |
 | ゲートを作らず、各検査を個別に required 登録する   | required の一覧がコード外に住み、登録漏れが静かに穴を開ける（採用理由の表を参照）                                   |
 | 変更種別の判定にサードパーティ製の Action を使う   | 他人のコードが、このリポジトリの権限を持ったまま動く（採用理由の表を参照）                                          |
+| `--fill` を据え置き、PR 説明を AI 生成しない | issue の目的（PR説明のAI自動生成）を満たせない |
+| API キー従量課金で AI を動かす | サブスク OAuth 認証（`CLAUDE_CODE_OAUTH_TOKEN`）で足りる用途に、従量課金の管理コストを負う理由がない |
+| AI を cicd-gate に入れてブロックする | 非決定性を required check に持ち込み、cicd-gate の決定論を壊す |
+| cicd-gate 成功待ちを自前の待機ワークフローで実装する | コード量と落とし穴が増える。「PR 作成と検査を2つのフローに分ける」案（本表）を既に却下しており、同じ理由が再発する |
+| PR 説明の AI 生成のみを PR 作成時点で実行する（label・check は別途 cicd-gate 後） | AI ロジックが作成時ジョブと cicd-gate 後ジョブの2箇所に散る |
+| AI ジョブを毎 push 並行実行する | サブスク枠の消費と pr-check コメントの重複騒音が増える |
+| auto-merge 経路に `/code-review` を必須化する・pr-review-policy を改訂する | 実装フローの各 Skill が実装時点で AI セルフレビューを実施済みであり、重複対応になる |
 
 ## どこまで変えてよく、何が不変の前提か（変更可能境界）
 
@@ -112,6 +132,9 @@ flowchart TD
 | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | **Dependabot が見るのは GitHub Actions だけ**（npm を足さない）                               | GitHub は Dependabot の実行に secrets を渡さない。npm を足すと更新 PR が deploy を起動し、AWS 認証が落ちてゲートが赤くなる——**その PR は永久にマージできない**。npm 依存は代わりに検査側で見る（採用理由の表を参照）ため、この前提は npm を無防備にはしない | Dependabot 用の secrets の設定か、deploy を起動する条件の見直し |
 | **dev を触るものは、スケジュールでの destroy も含めて deploy と同じ直列化のグループに入れる** | dev は1環境しかない。別のグループに分けると destroy と deploy が並行し、CloudFormation スタックが壊れる                                                                                                                                                     | —                                                               |
+| **AI ジョブの実行に `CLAUDE_CODE_OAUTH_TOKEN`（Claude サブスク OAuth トークン）が secret として設定されている** | secret が欠落・失効すると AI ジョブ（PR説明書き換え・pr-label・pr-check）が失敗する。advisory なので cicd-gate 自体は赤くならないが、AI 機能は動かない | secret の再発行・再設定 |
+| **cicd-gate がリポジトリ設定で required check として登録されている** | required 化していないと「マージ可否を cicd-gate 1つに集約する」という設計の芯（TL;DR）が保証されない | GitHub リポジトリ設定で required check を再登録 |
+| **リポジトリで Allow auto-merge が有効化されている** | 無効なままだと `gh pr merge --auto` が失敗し、AI が「人間レビュー不要」と判定した PR も自動マージされず人手待ちのまま滞留する | GitHub リポジトリ設定で Allow auto-merge を有効化 |
 
 ## 何を意図的に対象外としたか（スコープ外）
 
@@ -120,6 +143,7 @@ flowchart TD
 | stg・prd への deploy               | 環境は dev 1つだけが前提（TL;DR）。stg・prd を持つ構成になった時点で改めて設計する                       |
 | Dependabot の npm エコシステム対応 | npm を対象にすると更新 PR が deploy を起動し、AWS 認証が落ちてゲートが赤くなる（変更可能境界の表を参照） |
 | deploy・結合テストの中身           | #31（OIDC ロール構築）の完了が前提。現在は器のみで、図の破線枠がそれを示す                               |
+| auto-merge 時の `/code-review` 再実行 | 実装フローの各 Skill が実装時点で AI セルフレビューを実施済みのため（採用理由の表を参照） |
 
 ## 既知の制約
 
