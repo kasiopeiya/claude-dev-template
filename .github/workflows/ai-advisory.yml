@@ -120,6 +120,10 @@ jobs:
       contents: write
       pull-requests: write
     steps:
+      # gh pr view/merge はリポジトリ文脈を git リモートから解決するため、.git が無いと
+      # 「not a git repository」で落ちる。API 呼び出しだけだが git 文脈が要るので checkout する。
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
       - name: Enable auto-merge when no human review is needed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
