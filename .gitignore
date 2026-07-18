@@ -53,6 +53,6 @@ __pycache__/
 !.versionrc.js
 *.d.ts
 node_modules
-tmp
+**/tmp/
 *.log
 .DS_Store
