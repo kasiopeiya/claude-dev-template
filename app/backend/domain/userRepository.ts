@@ -1,6 +1,7 @@
 // 責務: User 永続化のポート（抽象）を定義する。保存先の詳細は infrastructure 層が担う
 
-import { User, UserId } from './user'
+import { User } from './user'
+import { UserId } from './userId'
 
 /**
  * User を永続化・取得するためのポート。

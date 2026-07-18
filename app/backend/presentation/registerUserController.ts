@@ -23,7 +23,7 @@ export class RegisterUserController {
   async handle(rawInput: { id: string; email: string }): Promise<RegisterUserResult> {
     try {
       const user = await this.registerUser.execute({ id: rawInput.id, email: rawInput.email })
-      return { ok: true, message: `registered: ${user.id}` }
+      return { ok: true, message: `registered: ${user.id.value}` }
     } catch (error) {
       return { ok: false, message: (error as Error).message }
     }
