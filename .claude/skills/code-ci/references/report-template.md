@@ -34,10 +34,10 @@ CIチェックを中断します。
 
 ---
 
-## ESLint 失敗（Phase 3 失敗時）
+## ESLint 失敗（Phase 2 失敗時）
 
 ```
-🔴 CI Failed: ESLint ([ワークスペース名])
+🔴 CI Failed: ESLint
 
 以下のファイルでエラーが検出されました:
 
@@ -47,7 +47,26 @@ CIチェックを中断します。
 
 修正方法:
 1. [具体的な修正内容]
-2. 自動修正を試す: cd [ワークスペース名] && npm run lint:fix
+2. 自動修正を試す: npm run lint:fix
+
+CIチェックを中断します。
+```
+
+---
+
+## knip 失敗（Phase 2 失敗時）
+
+```
+🔴 CI Failed: knip
+
+未使用の export / ファイル / 依存が検出されました:
+
+[ファイルパス]:[行]  [種別（unused export / unused file / unused dependency など）]
+
+修正方法:
+1. 不要なら削除する
+2. 文字列パス等で参照され誤検知なら knip.jsonc に登録する
+3. 自動削除を試す: npm run knip:fix
 
 CIチェックを中断します。
 ```
@@ -107,11 +126,12 @@ All checks completed successfully.
 === Summary ===
 
 Prettier Check:              ✅ Passed
-ESLint ([ワークスペース名]):   ✅ Passed
+ESLint:                      ✅ Passed
+knip:                        ✅ Passed
 Type Check ([ワークスペース名]): ✅ Passed
 Unit Tests ([ワークスペース名]): ✅ Passed ([X] tests)
 
-（検出した各ワークスペース分、上記3行を繰り返す）
+（Type Check / Unit Tests は検出した各ワークスペース分、上記2行を繰り返す）
 
 Total Tests: [全ワークスペースの合計] tests passed
 

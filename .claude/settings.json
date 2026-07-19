@@ -11,6 +11,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/static-check-reminder.mjs\"",
+            "statusMessage": "静的ゲート要否を確認中..."
+          }
+        ]
+      }
     ]
   }
 }

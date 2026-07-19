@@ -122,7 +122,7 @@ jobs:
   # 直す PR は docs_only 判定で ci-common がスキップされるため、その中に置くと「hook を壊す変更で
   # こそ検査が走らない」。ci-format と同じ理由で、変更種別に関わらず常に実行する独立ジョブにする。
   # root の依存だけで完結し軽量（ci-format と同型）。
-  ci-policy-hook:
+  ci-hooks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -137,7 +137,7 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - run: npm ci
-      - run: npm run test:policy-hook
+      - run: npm run test:hooks
 
   # リポジトリ全体を1回で舐めるツール。静的解析はルールを1箇所で定義しているため
   # 階層ごとに分割・スキップできない（cicd-design）。
@@ -328,7 +328,7 @@ jobs:
         create-pull-request,
         detect-changes,
         ci-format,
-        ci-policy-hook,
+        ci-hooks,
         ci-common,
         ci-app,
         ci-cdk,
