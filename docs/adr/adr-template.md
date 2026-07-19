@@ -1,7 +1,12 @@
-# ADR-NNN: <決定を一言で。動詞で言い切る>
+---
+# status / date は adr-index.md 生成の SSOT（本文には転記しない）。
+# status 許容値: proposed / accepted / rejected / deprecated / superseded
+# superseded のときは supersededBy に置換先の3桁番号を書く（例: supersededBy: 003）
+status: proposed
+date: YYYY-MM-DD
+---
 
-- ステータス: 提案 <!-- 提案 / 承認 / 却下 / 廃止 / 置換（→ ADR-MMM） -->
-- 日付: YYYY-MM-DD
+# ADR-NNN: <決定を一言で。動詞で言い切る>
 
 > [!IMPORTANT]
 > **TL;DR（この決定の要点）**
