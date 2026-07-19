@@ -2,7 +2,7 @@
 #       auto-merge を行う。マージ可否の判定（cicd-gate）には一切関与しない。
 # なぜこの構成なのかは docs/design/cicd-design.md を参照する。
 
-name: ai-advisory
+name: pr-ai-triage
 
 # pipeline は push トリガーだが、claude-code-action は push イベントを受け付けない
 # （Unsupported event type: push）。受け付けるのは pull_request 系と workflow_dispatch /
@@ -23,7 +23,7 @@ defaults:
 
 # 同一ブランチの pipeline が連続完了しても AI を重ねて走らせない。
 concurrency:
-  group: ai-advisory-${{ github.event.workflow_run.head_branch }}
+  group: pr-ai-triage-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: true
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
   #   merge が要る auto-merge は後段の別 job に分離し、この job から write を剥がす。
   # ★ Bash は無制限にせず skill が実際に使う gh サブコマンドだけを許可する。injection が通っても
   #   env+curl 等による secret 外部送信へ到達させないため（#65）。
-  ai-advisory:
+  pr-triage:
     # pipeline が成功したときだけ走る。失敗・キャンセル時は advisory 不要。
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
@@ -158,15 +158,15 @@ jobs:
 
   # auto-merge の有効化（cicd-design の capstone）。AI を実行せず、ラベルを読んで gh pr merge --auto
   # するだけの決定論 job（cicd-policy「機械に委ねてよいのは正解が一意に決まる作業だけ」）。
-  # ★ ai-advisory から独立 job に分けることで、merge に要る contents: write を AI ステップから剥がす（#66）。
+  # ★ pr-triage から独立 job に分けることで、merge に要る contents: write を AI ステップから剥がす（#66）。
   #   pr-check の NG はここに影響しない——needs-human-review 無しなら pr-check 自体を実行しておらず、
   #   判定材料はラベルだけ。gate 成功待ちは GitHub ネイティブ auto-merge に委ねる（cicd-gate が
   #   required check である限り守られる）。
   auto-merge:
-    needs: ai-advisory
-    # ai-advisory が成功し PR が解決できたときだけ。この workflow には無関係な skip ジョブが無いので
-    # 伝播 skip の心配は無く、result の直接チェックで足りる（ai-advisory 失敗・skip 時は連鎖 skip）。
-    if: ${{ needs.ai-advisory.result == 'success' && needs.ai-advisory.outputs.pr_number != '' }}
+    needs: pr-triage
+    # pr-triage が成功し PR が解決できたときだけ。この workflow には無関係な skip ジョブが無いので
+    # 伝播 skip の心配は無く、result の直接チェックで足りる（pr-triage 失敗・skip 時は連鎖 skip）。
+    if: ${{ needs.pr-triage.result == 'success' && needs.pr-triage.outputs.pr_number != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -181,7 +181,7 @@ jobs:
       - name: Enable auto-merge when no human review is needed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ needs.ai-advisory.outputs.pr_number }}
+          PR: ${{ needs.pr-triage.outputs.pr_number }}
         run: |
           labels=$(gh pr view "$PR" --json labels --jq '.labels[].name')
           if grep -qx 'needs-human-review' <<< "$labels"; then
