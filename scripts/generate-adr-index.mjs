@@ -2,11 +2,11 @@
 // 責務: 各 ADR（docs/adr/NNN-*.md）の frontmatter から adr-index.md の一覧テーブルを生成する。
 //   frontmatter を SSOT とし、手動転記によるドリフトを構造的になくす（Issue #50）。
 
-import { readFileSync, writeFileSync, readdirSync, mkdtempSync, rmSync } from 'fs'
+import { readFileSync, writeFileSync, readdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { tmpdir } from 'os'
 import { fileURLToPath, pathToFileURL } from 'url'
-import { execFileSync } from 'child_process'
+
+import prettier from 'prettier'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(scriptDir, '..')
@@ -130,25 +130,19 @@ function renderIndex() {
 }
 
 /**
- * 文字列を一時ファイル経由で prettier 整形する（CJK 列幅を含む整形を prettier に委ねる）。
+ * 文字列を prettier 整形する（CJK 列幅を含む整形を prettier に委ねる）。
+ * リポジトリの prettier 設定を indexPath 基準で解決し、`prettier --check .` と結果を一致させる。
  * @param {string} content 整形前の全文
- * @returns {string} 整形後の全文
+ * @returns {Promise<string>} 整形後の全文
  */
-function formatWithPrettier(content) {
-  const dir = mkdtempSync(join(tmpdir(), 'adr-index-'))
-  const tmpFile = join(dir, 'adr-index.md')
-  try {
-    writeFileSync(tmpFile, content)
-    execFileSync('npx', ['prettier', '--write', tmpFile], { stdio: 'ignore' })
-    return readFileSync(tmpFile, 'utf8')
-  } finally {
-    rmSync(dir, { recursive: true, force: true })
-  }
+async function formatWithPrettier(content) {
+  const config = await prettier.resolveConfig(indexPath)
+  return prettier.format(content, { ...config, filepath: indexPath })
 }
 
-function main() {
+async function main() {
   const isCheck = process.argv.includes('--check')
-  const expected = formatWithPrettier(renderIndex())
+  const expected = await formatWithPrettier(renderIndex())
   const actual = readFileSync(indexPath, 'utf8')
 
   if (isCheck) {
@@ -172,5 +166,8 @@ function main() {
 
 // テストから import したときは main を実行しない（直接実行時のみ生成する）。
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main()
+  main().catch((error) => {
+    console.error(error.message)
+    process.exit(1)
+  })
 }

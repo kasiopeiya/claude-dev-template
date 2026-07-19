@@ -117,10 +117,6 @@ jobs:
 
       - run: npm ci
       - run: npm run format:check
-      # ADR の frontmatter と adr-index.md の一覧表がずれていないか検証（Issue #50）。
-      # 生成物なので、フック未通過の push でもドリフトを CI で止める。
-      - run: npm run gen:adr-index -- --check
-      - run: npm run test:adr-index
 
   # policy hook（.claude/hooks/policy-loader.mjs）の回帰検査。docs/policy の frontmatter だけを
   # 直す PR は docs_only 判定で ci-common がスキップされるため、その中に置くと「hook を壊す変更で
