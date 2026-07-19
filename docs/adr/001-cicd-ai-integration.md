@@ -23,6 +23,30 @@ date: 2026-07-18
 2. **auto-merge を導入する**：cicd-gate 成功後の単一 AI ジョブが PR 説明書き換え・pr-label・pr-check の判定を advisory として行い、人間レビュー不要と判定した PR は GitHub ネイティブの `gh pr merge --auto`（merge commit）で自動マージする。AI の判定は required check には含めない。
 3. **AI 実行方式に公式 `anthropics/claude-code-action` を採用する**：Claude サブスク OAuth 認証（secret `CLAUDE_CODE_OAUTH_TOKEN`）で動かし、API 従量課金は使わない。「サードパーティ製 Action を使わない」という既存方針の例外として扱う。
 
+PR のライフサイクル（二段フローと advisory/required の分岐）：
+
+```mermaid
+flowchart TD
+    Push([👤 developer が push]) --> Fill[⚙️ --fill で PR を即作成<br/>暫定：他ジョブが PR番号を参照可に]
+    Fill --> Gate{🔒 cicd-gate<br/>required・決定論}
+    Gate -->|失敗| Stop([❌ 停止：AI ジョブは走らない])
+    Gate -->|成功| AI[🤖 単一 AI ジョブ起動<br/>advisory：required に含めない]
+    AI --> Tasks[✍️ PR 説明を差分から書き換え<br/>pr-label / pr-check]
+    Tasks --> Judge{👀 人間レビュー要否}
+    Judge -->|不要| Merge([🚀 gh pr merge --auto<br/>auto-merge / merge commit])
+    Judge -->|要| Human([🧑‍💻 人間レビューへ])
+
+    classDef startEnd fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef process fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef stop fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+
+    class Push,Merge,Human startEnd
+    class Fill,AI,Tasks process
+    class Gate,Judge decision
+    class Stop stop
+```
+
 ## 採用理由（なぜこれを選んだか）
 
 - 旧設計の `--fill` は commit メッセージの機械的要約に留まり、PR全体の差分を踏まえた説明を書けなかった。AI書き換えの導入でその不足を解消する。
@@ -33,16 +57,19 @@ date: 2026-07-18
 
 ## 検討した代替案（なぜ却下したか）
 
-- **`--fill` を据え置き、AI生成を導入しない（旧設計のまま）**：目的（PR説明のAI自動生成）を満たせないため却下。
-
-その他の構成選択（AI を cicd-gate に入れる／自前の待機ワークフロー／PR説明のAI生成のみ作成時実行 等）の却下理由は、現在の構成そのものに対する却下案であり [cicd-design.md](../design/cicd-design.md) の「却下案」に集約している（本 ADR と二重管理にしない）。
+| 案                   | 内容                                                                                | 却下理由                                                                                                               |
+| -------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| 旧設計のまま         | `--fill` を据え置き、AI 生成を導入しない                                            | 目的（PR説明の AI 自動生成）を満たせない                                                                               |
+| 構成そのものの代替案 | AI を cicd-gate に入れる／自前の待機ワークフロー／PR説明の AI 生成のみ作成時実行 等 | 現在の構成に対する却下案であり [cicd-design.md](../design/cicd-design.md)「却下案」に集約（本 ADR と二重管理にしない） |
 
 ## トレードオフ・影響
 
-- **サードパーティ Action 不使用の原則に例外を作る**：`claude-code-action` はこのリポジトリの権限を持って動く。公式・サブスク認証という条件下でのみ許容する限定的な例外であり、他の Action にこの前例を広げない。
-- **secret 管理が新たに必要になる**：`CLAUDE_CODE_OAUTH_TOKEN` の設定・失効管理が運用に加わる（欠落時は AI ジョブのみ失敗し、advisory のため cicd-gate 自体は赤くならない）。
-- **auto-merge を有効化する前提が増える**：GitHub リポジトリ設定で `Allow auto-merge` の有効化・cicd-gate の required 化が前提となる（設定漏れがあると auto-merge が機能しない）。
-- **AIの非決定性は許容範囲に限定される**：AI はマージ可否そのものを決めず、あくまで「人間レビュー要否」の advisory 判定に留まるため、判定がブレても最悪人間レビューに倒れるだけで安全側に働く。
+| 受け入れる制約・リスク                         | 影響範囲                                                                | 緩和策                                                                                                          |
+| ---------------------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| サードパーティ Action 不使用の原則に例外を作る | `claude-code-action` がリポジトリ権限を持って動く                       | 公式・サブスク認証という条件下のみ許容する限定例外。他 Action に前例を広げない                                  |
+| secret 管理が新たに必要になる                  | `CLAUDE_CODE_OAUTH_TOKEN` の設定・失効管理が運用に加わる                | 欠落時は AI ジョブのみ失敗。advisory なので cicd-gate は赤くならない                                            |
+| auto-merge 有効化の前提が増える                | GitHub 設定で `Allow auto-merge` 有効化・cicd-gate の required 化が前提 | 設定漏れがあると auto-merge が機能しないだけで、マージ自体は壊れない                                            |
+| AI の非決定性                                  | AI の判定がブレうる                                                     | AI はマージ可否を決めず「人間レビュー要否」の advisory 判定に留める。ブレても最悪人間レビューに倒れ安全側に働く |
 
 ## 参照
 
