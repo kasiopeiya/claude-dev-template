@@ -6,6 +6,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "typecheck": "tsc --noEmit",
     "watch": "tsc -w",
     "test": "vitest run",
     "test:fga": "vitest run fineGrained",
