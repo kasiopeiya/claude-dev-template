@@ -10,6 +10,8 @@
     "lint:fix": "eslint . --fix",
     "test:rule": "node eslint-rules/awsCdkLibBarrelImport.test.mjs",
     "test:policy-hook": "node --test .claude/hooks/policyMatcher.test.mjs .claude/hooks/policy-loader.test.mjs",
+    "test:adr-index": "node --test scripts/generate-adr-index.test.mjs",
+    "gen:adr-index": "node scripts/generate-adr-index.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix"
   },

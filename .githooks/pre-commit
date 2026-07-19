@@ -1,6 +1,15 @@
 #!/bin/sh
 # ci-format（prettier --check .）が push 後に落ちるのを防ぐため、
 # コミット前にステージ済みファイルだけを prettier で整形して再ステージする。
+# 併せて、ADR を変更した場合は adr-index.md を frontmatter から再生成し再ステージする（Issue #50）。
+
+# ADR 本体が変更されていれば一覧表を再生成する（生成物 adr-index.md 自体の変更は除外）。
+staged_adr=$(git diff --cached --name-only --diff-filter=ACMRD -- 'docs/adr/[0-9]*.md')
+
+if [ -n "$staged_adr" ]; then
+  npm run --silent gen:adr-index || exit 1
+  git add docs/adr/adr-index.md
+fi
 
 staged_files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.json' '*.md')
 

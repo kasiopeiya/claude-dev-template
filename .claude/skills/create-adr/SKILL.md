@@ -12,6 +12,7 @@ description: ADR（Architecture Decision Record）を作成、またはADR対象
 3. 情報収集：必要情報をユーザーから収集する（不足分のみ質問する）
 4. 自動採番：`docs/adr/` の既存ファイルを確認し、最大番号+1を使用
 5. ファイル作成：`docs/adr/NNN-slug.md`（テンプレート: `docs/adr/adr-template.md` を参照）
+6. 一覧表を再生成：`npm run gen:adr-index` を実行し `docs/adr/adr-index.md` を更新する（表は手で編集しない）
 
 ## ADR判定基準
 
@@ -38,8 +39,10 @@ description: ADR（Architecture Decision Record）を作成、またはADR対象
   - NNN: ゼロ埋め3桁（例: 007）
   - slug: タイトルから生成した英語スラッグ（例: `single-stack`）
 - テンプレート: `docs/adr/adr-template.md` を参照すること
-- ステータスは必ず **提案** にする
-- 日付: 今日の日付（YYYY-MM-DD）
+- `status` / `date` は本文ではなく **frontmatter** に書く（一覧表 `adr-index.md` はここから機械生成される）
+- `status` は必ず **`proposed`** にする（許容値: `proposed` / `accepted` / `rejected` / `deprecated` / `superseded`）
+- `date`: 今日の日付（YYYY-MM-DD）
+- 既存 ADR を `superseded` にする場合は、その ADR の frontmatter に `supersededBy: NNN`（置換先の番号）を書く
 
 ## 収集する情報
 
