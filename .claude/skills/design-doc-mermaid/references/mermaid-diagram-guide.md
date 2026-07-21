@@ -4,24 +4,13 @@ This reference provides comprehensive guidance on creating effective Mermaid dia
 
 ---
 
-## Diagram Type Selection Matrix
+## Choosing a type
 
-| When You Need To...                        | Use This Diagram     | Best For                                   |
-| ------------------------------------------ | -------------------- | ------------------------------------------ |
-| Show system boundaries and external actors | C4 Context           | System context, stakeholder view           |
-| Document API calls and timing              | Sequence Diagram     | API flows, interactions, temporal behavior |
-| Model object relationships and inheritance | Class Diagram        | OOP design, code structure                 |
-| Visualize database schema                  | ER Diagram           | Data model, relationships                  |
-| Show state transitions and lifecycle       | State Diagram        | Workflows, status changes                  |
-| Document decision flows and algorithms     | Flowchart            | Business logic, processes                  |
-| Map hierarchical concepts                  | Mind Map             | Brainstorming, concept organization        |
-| Track project timeline                     | Gantt Chart          | Project planning, milestones               |
-| Capture user experience                    | User Journey         | UX flows, user interactions                |
-| Show infrastructure components             | Architecture Diagram | Deployment, infrastructure                 |
+Choose the type in [diagram-type-selection.md](./diagram-type-selection.md), which maps the **shape of the information** to a type. This file provides the syntax once that choice is made.
 
 ---
 
-## 1. C4 Context Diagrams
+## C4 Context Diagrams
 
 **Purpose:** Show system boundaries, users, and external dependencies
 
@@ -56,7 +45,7 @@ C4Context
 
 ---
 
-## 2. Sequence Diagrams
+## Sequence Diagrams
 
 **Purpose:** Show interactions between components over time
 
@@ -124,7 +113,7 @@ sequenceDiagram
 
 ---
 
-## 3. Class Diagrams
+## Class Diagrams
 
 **Purpose:** Model object-oriented structure and relationships
 
@@ -182,7 +171,7 @@ classDiagram
 
 ---
 
-## 4. ER Diagrams
+## ER Diagrams
 
 **Purpose:** Model database schema and relationships
 
@@ -245,7 +234,7 @@ erDiagram
 
 ---
 
-## 5. State Diagrams
+## State Diagrams
 
 **Purpose:** Model state transitions and lifecycles
 
@@ -288,7 +277,7 @@ stateDiagram-v2
 
 ---
 
-## 6. Flowcharts
+## Flowcharts
 
 **Purpose:** Document processes, algorithms, and decision logic
 
@@ -342,7 +331,7 @@ flowchart TD
 
 ---
 
-## 7. Gantt Charts
+## Gantt Charts
 
 **Purpose:** Project planning and timeline visualization
 
@@ -378,7 +367,7 @@ gantt
 
 ---
 
-## 8. User Journey Maps
+## User Journey Maps
 
 **Purpose:** Document user experience and interactions
 
@@ -413,6 +402,415 @@ journey
 - 3: Neutral
 - 2: Unsatisfied
 - 1: Very unsatisfied
+
+---
+
+## Venn Diagrams
+
+**Purpose:** Show set overlap, shared scope, and mutual exclusivity
+
+**When to use:**
+
+- Comparing the coverage of two approaches or tools
+- Showing which responsibilities are shared between components
+- Clarifying what is inside and outside a boundary
+
+**Syntax:**
+
+```mermaid
+venn-beta
+  title Review scope
+  set code-review
+  set arch-review
+  union code-review,arch-review
+```
+
+**Best Practices:**
+
+- Two or three sets only — more overlaps become unreadable
+- Name the overlap in prose; the diagram shows that it exists, not what it is
+
+---
+
+## TreeView Diagrams
+
+**Purpose:** Show a hierarchy as a file tree
+
+**When to use:**
+
+- Directory structure
+- Nested configuration
+- Any parent/child hierarchy where depth matters more than relationships
+
+**Syntax:**
+
+```mermaid
+treeView-beta
+    app/
+        backend/
+            handler.ts
+        frontend/
+            App.tsx
+    infra/
+        stack.ts
+```
+
+**Best Practices:**
+
+- Mark directories with a trailing `/`
+- Prefer this over a flowchart of boxes — depth reads instantly in a tree
+- Trim to the levels that matter; a full tree is noise
+
+---
+
+## Treemap Diagrams
+
+**Purpose:** Show hierarchy where each element also carries a quantity
+
+**When to use:**
+
+- Code size by directory
+- Cost breakdown by service
+- Test coverage distribution
+
+**Syntax:**
+
+```mermaid
+treemap-beta
+"infra"
+    "stacks": 40
+    "constructs": 25
+"app"
+    "backend": 80
+    "frontend": 55
+```
+
+**Best Practices:**
+
+- Use when the _relative size_ is the point; if it is not, use `treeView-beta`
+- Keep to two levels — deeper nesting produces unreadably small tiles
+
+---
+
+## Radar Diagrams
+
+**Purpose:** Compare several subjects across the same set of axes
+
+**When to use:**
+
+- Comparing candidate technologies across evaluation criteria
+- Showing a quality profile (performance, security, maintainability…)
+
+**Syntax:**
+
+```mermaid
+radar-beta
+axis perf["Performance"], sec["Security"], maint["Maintainability"], cost["Cost"]
+curve optionA{4, 3, 5, 2}
+curve optionB{2, 5, 3, 4}
+```
+
+**Best Practices:**
+
+- Use the same scale on every axis, or the shape lies
+- Three to seven axes; beyond that the shape is unreadable
+- Two or three curves at most
+
+---
+
+## XY Charts
+
+**Purpose:** Show quantitative comparison or change over a numeric axis
+
+**When to use:**
+
+- Latency or throughput across releases
+- Cost trend
+- Any place where the magnitude of numbers is the message
+
+**Syntax:**
+
+```mermaid
+xychart
+    title "p99 latency by release"
+    x-axis [v1, v2, v3, v4]
+    y-axis "ms" 0 --> 800
+    bar [720, 610, 350, 280]
+    line [720, 610, 350, 280]
+```
+
+**Best Practices:**
+
+- Label the y-axis with its unit — an unlabeled number is not data
+- Do not use a diagram when a two-column table is clearer; use this when the _trend_ matters
+
+---
+
+## Timeline Diagrams
+
+**Purpose:** Place events along a chronological axis
+
+**When to use:**
+
+- Release history
+- Incident timeline
+- Project milestones without task durations (use `gantt` when durations matter)
+
+**Syntax:**
+
+```mermaid
+timeline
+    title Release history
+    2024 : v1.0 launch
+    2025 : v2.0 rewrite : v2.1 hotfix
+    2026 : v3.0 beta
+```
+
+---
+
+## Mindmaps
+
+**Purpose:** Decompose one concept into branches (divergent structure)
+
+**When to use:**
+
+- Breaking a topic into sub-topics
+- Organizing findings during design exploration
+
+**Syntax:**
+
+```mermaid
+mindmap
+  root((Design quality))
+    Structure
+      Boundaries
+      Dependencies
+    Change
+      Testability
+      Replaceability
+```
+
+**Best Practices:**
+
+- One root only — a mindmap with two roots is really two diagrams
+- Use when the structure radiates from a center, not when it flows in a direction
+
+---
+
+## Quadrant Charts
+
+**Purpose:** Position items against two axes of evaluation
+
+**When to use:**
+
+- Effort vs impact prioritization
+- Risk vs cost triage
+
+**Syntax:**
+
+```mermaid
+quadrantChart
+    title Work prioritization
+    x-axis Low Effort --> High Effort
+    y-axis Low Impact --> High Impact
+    quadrant-1 Do now
+    quadrant-2 Plan
+    quadrant-3 Drop
+    quadrant-4 Quick win
+    Refactor auth: [0.7, 0.8]
+    Fix typo: [0.1, 0.1]
+```
+
+**Best Practices:**
+
+- Name all four quadrants — an unnamed quadrant leaves the reader guessing the verdict
+- Coordinates are 0–1
+
+---
+
+## Ishikawa (Fishbone) Diagrams
+
+**Purpose:** Decompose a result into contributing causes
+
+**When to use:**
+
+- Root cause analysis in a postmortem
+- Structuring the causes of a recurring defect
+
+**Syntax:**
+
+```mermaid
+ishikawa
+  Deploy failed
+    Configuration
+      Config drift between envs
+      Missing secret
+    Process
+      No pre-deploy check
+```
+
+**Best Practices:**
+
+- Group causes into categories; a flat list of causes is a bullet list, not a diagram
+- Keep the head (the problem) specific and observable
+
+---
+
+## Kanban Boards
+
+**Purpose:** Show work items grouped by status lane
+
+**Syntax:**
+
+```mermaid
+kanban
+  todo[Todo]
+    t1[Write ADR]
+  doing[In Progress]
+    t2[Implement handler]
+  done[Done]
+    t3[Review code]
+```
+
+---
+
+## Sankey Diagrams
+
+**Purpose:** Show flow where the quantity is conserved as it splits and merges
+
+**When to use:**
+
+- Traffic distribution across cache and origin
+- Cost allocation across services
+- Conversion funnel with drop-off
+
+**Syntax:**
+
+```mermaid
+sankey-beta
+Requests,Cache hit,600
+Requests,Origin,400
+Origin,Success,380
+Origin,Error,20
+```
+
+**Best Practices:**
+
+- Use only when the _volume_ matters; otherwise a flowchart is honest and simpler
+- Make the numbers balance, or the widths mislead
+
+---
+
+## Architecture Diagrams
+
+**Purpose:** Show infrastructure components and their connections with service icons
+
+**Syntax:**
+
+```mermaid
+architecture-beta
+    group api(cloud)[API]
+    service gateway(internet)[Gateway] in api
+    service lambda(server)[Handler] in api
+    service db(database)[Aurora] in api
+    gateway:R --> L:lambda
+    lambda:R --> L:db
+```
+
+**Best Practices:**
+
+- Prefer this over a flowchart for cloud topology — the icons carry meaning that box labels cannot
+
+---
+
+## Packet Diagrams
+
+**Purpose:** Show bit-level layout of a protocol or memory structure
+
+**Syntax:**
+
+```mermaid
+packet-beta
+0-15: "Source Port"
+16-31: "Destination Port"
+32-63: "Sequence Number"
+```
+
+---
+
+## Block Diagrams
+
+**Purpose:** Place blocks in an explicit grid when the layout itself carries meaning
+
+**Syntax:**
+
+```mermaid
+block-beta
+    columns 3
+    frontend["Frontend"] api["API"] db[("DB")]
+```
+
+**Best Practices:**
+
+- Use when automatic flowchart layout fights the arrangement you need
+
+---
+
+## GitGraph Diagrams
+
+**Purpose:** Show branch and merge history
+
+**Syntax:**
+
+```mermaid
+gitGraph
+    commit
+    branch feature
+    commit
+    checkout main
+    merge feature
+    commit
+```
+
+---
+
+## Requirement Diagrams
+
+**Purpose:** Link requirements to the elements that verify them
+
+**Syntax:**
+
+```mermaid
+requirementDiagram
+    requirement auth {
+        id: REQ-1
+        text: users must authenticate
+        risk: high
+        verifymethod: test
+    }
+    element authTest {
+        type: integration test
+    }
+    authTest - verifies -> auth
+```
+
+---
+
+## Pie Charts
+
+**Purpose:** Show proportions of a single whole
+
+**Syntax:**
+
+```mermaid
+pie title Error budget consumption
+    "Available" : 72
+    "Consumed" : 28
+```
+
+**Best Practices:**
+
+- Use for a single level of proportion only; for nested proportions use `treemap-beta`
 
 ---
 
@@ -679,24 +1077,6 @@ Before including a diagram, verify:
 - `A-->B` : A to B
 - `B<--A` : A to B (same as above)
 - `A<-->B` : Bidirectional
-
----
-
-## Quick Reference: When to Use Each Diagram
-
-```mermaid
-graph TB
-    Start{What are you documenting?}
-    Start -->|System boundaries| C4[C4 Context Diagram]
-    Start -->|API interactions| Seq[Sequence Diagram]
-    Start -->|Code structure| Class[Class Diagram]
-    Start -->|Database| ER[ER Diagram]
-    Start -->|Workflow/Status| State[State Diagram]
-    Start -->|Process flow| Flow[Flowchart]
-    Start -->|Timeline| Gantt[Gantt Chart]
-    Start -->|User experience| Journey[User Journey]
-    Start -->|Infrastructure| Arch[Architecture Diagram]
-```
 
 ---
 
