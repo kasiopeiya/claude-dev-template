@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI駆動開発フロー — 初期構築からPRマージまで</title>
+    <style>
+      :root {
+        --ink: #1f2430;
+        --sub: #5b6272;
+        --line: #d8dce6;
+        --bg: #f6f7fa;
+        --card: #ffffff;
+        --human: #d97706; /* 人間 */
+        --human-bg: #fff4e0;
+        --ai: #2563eb; /* AI */
+        --ai-bg: #e7efff;
+        --both: #7c3aed; /* 人間+AI */
+        --both-bg: #f1e9ff;
+        --ci: #059669; /* CI自動 */
+        --ci-bg: #e2f6ef;
+        --accent: #1d4ed8;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        line-height: 1.6;
+        padding: 40px 16px 80px;
+      }
+      .page {
+        max-width: 780px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 26px;
+        letter-spacing: 0.02em;
+      }
+      .lead {
+        color: var(--sub);
+        margin-top: 8px;
+        font-size: 14px;
+      }
+      .concept {
+        margin-top: 20px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 22px;
+        font-size: 15px;
+      }
+      .concept strong {
+        color: var(--accent);
+      }
+      section {
+        margin-top: 48px;
+      }
+      h2 {
+        font-size: 19px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--ink);
+      }
+      h2 .tag {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--sub);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 10px;
+        margin-left: 10px;
+        vertical-align: 2px;
+        background: var(--card);
+      }
+      .note {
+        font-size: 13px;
+        color: var(--sub);
+        margin-top: 10px;
+      }
+
+      /* 凡例 */
+      .legend {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .legend span {
+        font-size: 12px;
+        padding: 3px 12px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+
+      /* バッジ */
+      .badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .b-human {
+        background: var(--human-bg);
+        color: var(--human);
+      }
+      .b-ai {
+        background: var(--ai-bg);
+        color: var(--ai);
+      }
+      .b-both {
+        background: var(--both-bg);
+        color: var(--both);
+      }
+      .b-ci {
+        background: var(--ci-bg);
+        color: var(--ci);
+      }
+      .b-either {
+        background: linear-gradient(90deg, var(--human-bg) 45%, var(--ai-bg) 55%);
+        color: var(--ink);
+      }
+
+      /* 派閥比較：象限図 */
+      .quad-wrap {
+        margin-top: 24px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 28px 24px 20px;
+      }
+      .quad {
+        position: relative;
+        height: 300px;
+        margin: 8px 30px 8px 44px;
+        border-left: 2px solid var(--ink);
+        border-bottom: 2px solid var(--ink);
+      }
+      .quad .axis-y,
+      .quad .axis-x {
+        position: absolute;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--sub);
+      }
+      .quad .axis-y {
+        top: -22px;
+        left: -8px;
+      }
+      .quad .axis-x {
+        bottom: -24px;
+        right: -8px;
+      }
+      .camp {
+        position: absolute;
+        width: 168px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 12px;
+        line-height: 1.5;
+        border: 1px solid var(--line);
+        background: #fbfcfe;
+      }
+      .camp b {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+      .camp small {
+        color: var(--sub);
+      }
+      .camp.dark {
+        right: 4%;
+        bottom: 6%;
+      }
+      .camp.hitl {
+        left: 3%;
+        top: 4%;
+      }
+      .camp.glass {
+        left: 38%;
+        top: 4%;
+        background: #eef4ff;
+        border: 2px solid var(--accent);
+        box-shadow: 0 4px 14px rgba(29, 78, 216, 0.15);
+        width: 180px;
+      }
+      .camp.glass b {
+        color: var(--accent);
+      }
+      .quad .goal-arrow {
+        position: absolute;
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 11px;
+      }
+      .quad .goal-arrow.from-hitl {
+        left: 24.5%;
+        top: 12%;
+      }
+
+      /* 派閥比較：3カード */
+      .camps {
+        display: flex;
+        gap: 14px;
+        margin-top: 20px;
+        flex-wrap: wrap;
+        align-items: stretch;
+      }
+      .camp-card {
+        flex: 1 1 200px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 16px 16px 14px;
+        font-size: 12.5px;
+      }
+      .camp-card.featured {
+        border: 2px solid var(--accent);
+        background: #f5f8ff;
+      }
+      .camp-card h3 {
+        font-size: 15px;
+      }
+      .camp-card .sub-name {
+        font-size: 11px;
+        color: var(--sub);
+        margin-bottom: 10px;
+      }
+      .camp-card.featured h3 {
+        color: var(--accent);
+      }
+      .camp-card dl {
+        margin-top: 8px;
+      }
+      .camp-card dt {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--sub);
+        margin-top: 8px;
+      }
+      .camp-card dd {
+        margin: 1px 0 0;
+      }
+      .camp-card .pro {
+        color: var(--ci);
+      }
+      .camp-card .con {
+        color: #dc2626;
+      }
+
+      /* Policy／ガードレール図 */
+      .rail-wrap {
+        margin-top: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .rail-fig {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 16px 18px;
+      }
+      .rail-fig.policy-fig {
+        border: 1.5px solid var(--both);
+      }
+      .rail-fig.gate-fig {
+        border: 1.5px solid var(--ci);
+      }
+      .fig-head b {
+        font-size: 14.5px;
+      }
+      .fig-head .role {
+        font-size: 11px;
+        font-weight: 700;
+        margin-left: 8px;
+      }
+      .policy-fig .fig-head b,
+      .policy-fig .fig-head .role {
+        color: var(--both);
+      }
+      .gate-fig .fig-head b,
+      .gate-fig .fig-head .role {
+        color: var(--ci);
+      }
+      .fig-lead {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--sub);
+      }
+      .chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .chips span {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 11px;
+      }
+      /* Policy：なし/あり比較 */
+      .duo {
+        display: flex;
+        gap: 12px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      .case {
+        flex: 1 1 250px;
+        border-radius: 10px;
+        padding: 12px 14px;
+        font-size: 12px;
+      }
+      .case.bad {
+        background: #fdf3f3;
+        border: 1.5px dashed #dc2626;
+      }
+      .case.good {
+        background: var(--both-bg);
+        border: 1.5px solid var(--both);
+      }
+      .case-title {
+        font-weight: 700;
+        font-size: 12.5px;
+        margin-bottom: 10px;
+      }
+      .case.bad .case-title {
+        color: #dc2626;
+      }
+      .case.good .case-title {
+        color: var(--both);
+      }
+      .mini-flow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .node {
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 11.5px;
+        white-space: nowrap;
+      }
+      .node.policy-node {
+        background: var(--both);
+        border-color: var(--both);
+        color: #fff;
+        font-weight: 700;
+      }
+      .node.settled {
+        border: 1.5px solid var(--both);
+        color: var(--both);
+        font-weight: 700;
+      }
+      .fan {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .fan-line {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .fan-arrow {
+        color: #dc2626;
+        font-weight: 700;
+      }
+      .flow-arrow {
+        color: var(--sub);
+        font-weight: 700;
+      }
+      .case .caption {
+        margin-top: 10px;
+        color: var(--sub);
+      }
+      /* ガードレール：関門の連なり */
+      .gate-chain {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+      }
+      .gate-src {
+        background: #f2f4f8;
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+      .gate {
+        background: #fff;
+        border: 1.5px solid var(--ci);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--ci);
+      }
+      .gate-goal {
+        background: var(--ci);
+        color: #fff;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+      .bounce {
+        margin-top: 10px;
+        font-size: 12px;
+        color: #dc2626;
+        background: #fdf3f3;
+        border-radius: 8px;
+        padding: 6px 12px;
+      }
+      .fig-note {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--sub);
+      }
+      .flow-link {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--sub);
+      }
+      .human-loop {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-top: 16px;
+        background: var(--human-bg);
+        border: 1.5px solid var(--human);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 12.5px;
+      }
+      .human-loop .icon {
+        font-size: 22px;
+      }
+      .human-loop b {
+        color: var(--human);
+        font-size: 13.5px;
+      }
+      .human-loop p {
+        margin-top: 2px;
+        color: var(--sub);
+        font-size: 12px;
+      }
+      .rail-insight {
+        margin-top: 16px;
+        font-size: 13px;
+        background: #f5f8ff;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 10px 10px 0;
+        padding: 12px 16px;
+      }
+
+      /* 全体像：横フロー */
+      .phases {
+        display: flex;
+        align-items: stretch;
+        gap: 0;
+        margin-top: 24px;
+        flex-wrap: wrap;
+      }
+      .phase {
+        flex: 1 1 150px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 14px 12px;
+        position: relative;
+      }
+      .phase + .phase {
+        margin-left: 26px;
+      }
+      .phase + .phase::before {
+        content: '→';
+        position: absolute;
+        left: -22px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--sub);
+        font-size: 18px;
+      }
+      .phase .num {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent);
+        letter-spacing: 0.08em;
+      }
+      .phase h3 {
+        font-size: 14px;
+        margin-top: 2px;
+      }
+      .phase p {
+        font-size: 12px;
+        color: var(--sub);
+        margin-top: 6px;
+      }
+      .phase code {
+        display: inline-block;
+        font-size: 11px;
+        margin-top: 8px;
+        background: #eef1f6;
+        border-radius: 6px;
+        padding: 1px 7px;
+        font-family: 'SF Mono', Menlo, monospace;
+      }
+
+      /* 詳細：縦フロー */
+      .flow {
+        margin-top: 24px;
+        display: flex;
+        flex-direction: column;
+      }
+      .step {
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 18px;
+      }
+      .step.optional {
+        border-style: dashed;
+        background: #fbfcfe;
+      }
+      .step .no {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--ink);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+      .step .body {
+        flex: 1;
+        min-width: 0;
+      }
+      .step .title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .step h4 {
+        font-size: 15px;
+      }
+      .step .desc {
+        font-size: 13px;
+        color: var(--sub);
+        margin-top: 4px;
+      }
+      .step code {
+        font-size: 12px;
+        background: #eef1f6;
+        border-radius: 6px;
+        padding: 1px 8px;
+        font-family: 'SF Mono', Menlo, monospace;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .arrow {
+        align-self: center;
+        color: var(--sub);
+        font-size: 16px;
+        padding: 2px 0;
+        line-height: 1.2;
+      }
+      .arrow small {
+        font-size: 11px;
+        margin-left: 8px;
+      }
+
+      /* 戻りループの注記 */
+      .loopback {
+        font-size: 12px;
+        color: var(--human);
+        margin-top: 6px;
+        background: var(--human-bg);
+        border-radius: 6px;
+        padding: 4px 10px;
+        display: inline-block;
+      }
+
+      /* 締めのポイント */
+      .points {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .point {
+        background: var(--card);
+        border-left: 4px solid var(--accent);
+        border-radius: 0 10px 10px 0;
+        padding: 14px 18px;
+        font-size: 14px;
+      }
+      .point b {
+        display: block;
+        margin-bottom: 2px;
+      }
+      footer {
+        margin-top: 56px;
+        font-size: 11px;
+        color: var(--sub);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>AI駆動開発フロー</h1>
+      <p class="lead">初期構築から Pull Request マージまで（アプリ開発の場合）</p>
+
+      <div class="concept">
+        このプロジェクトは<strong>仕様駆動開発</strong>を採用しています。 要件 → 計画 → Issue →
+        設計書 → 実装の順に文書を先に固め、作業はAIが自律実行します。 さらに<strong
+          >判断はPolicy（判断基準の文書）で、品質確保は静的解析・テスト・メトリクスのガードレールで機械化し、
+          判断と品質もAIへ委譲していく</strong
+        >のがこのテンプレートの狙いです。 各工程は
+        <code>/コマンド</code>（スラッシュコマンド）として定義されており、呼ぶだけで実行されます。
+      </div>
+
+      <div class="legend">
+        <span class="b-human">人間</span>
+        <span class="b-both">人間＋AI</span>
+        <span class="b-either">人間 or AI</span>
+        <span class="b-ai">AI（自律実行）</span>
+        <span class="b-ci">CI（自動）</span>
+      </div>
+
+      <!-- ============ 全体像 ============ -->
+      <section>
+        <h2>全体像<span class="tag">まずはこの4フェーズ</span></h2>
+        <div class="phases">
+          <div class="phase">
+            <div class="num">PHASE 1</div>
+            <h3>要求・要件</h3>
+            <p>顧客の要望を要件定義書にまとめ、レビューして凍結する</p>
+            <code>/elicit-requirements</code>
+          </div>
+          <div class="phase">
+            <div class="num">PHASE 2</div>
+            <h3>計画・Issue化</h3>
+            <p>対話で仕様を詰め、Planを作り、実装Issueに分割する</p>
+            <code>/grill-me → /to-issues</code>
+          </div>
+          <div class="phase">
+            <div class="num">PHASE 3</div>
+            <h3>設計・実装</h3>
+            <p>Issueごとに設計書更新とTDD実装をAIが自律実行する</p>
+            <code>/design → /code-dev</code>
+          </div>
+          <div class="phase">
+            <div class="num">PHASE 4</div>
+            <h3>レビュー・マージ</h3>
+            <p>人間が差分を確認しコミット。CIがデプロイ・テスト後、PRをマージ</p>
+            <code>/git-commit</code>
+          </div>
+        </div>
+        <p class="note">
+          PHASE 1 はプロジェクト開始時に1回だけ。PHASE 2〜4 は Issue 単位で何度も繰り返します。
+        </p>
+      </section>
+
+      <!-- ============ 詳細① 初期構築 ============ -->
+      <section>
+        <h2>詳細① 初期構築<span class="tag">プロジェクト開始時に1回だけ</span></h2>
+        <p class="note">
+          まっさらな状態から「起点Issue群」を作るまで。各ステップの成果物が次のステップの入力になります。
+        </p>
+
+        <div class="flow">
+          <div class="step">
+            <div class="no">1</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>要求を引き出す</h4>
+                <code>/elicit-requirements</code><span class="badge b-both">人間＋AI</span>
+              </div>
+              <div class="desc">
+                顧客のインプット資料（RFC等）をもとにAIと対話し、要件定義書
+                <b>requirements.md</b> を作る
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">2</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>要件定義書をレビューする</h4>
+                <code>/requirements-review</code><span class="badge b-ai">AI</span>
+              </div>
+              <div class="desc">凍結してよい品質かをAIが審査し、合否を判定する</div>
+              <div class="loopback">↩ 要修正なら 1 に戻して直し、凍結できてから次へ</div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">3</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>基盤技術を決める</h4>
+                <code>/decide-tech-stack</code><span class="badge b-both">人間＋AI</span>
+              </div>
+              <div class="desc">
+                言語・クラウド・CI/CDなど「足場に必要なもの」だけ決め、ADRに記録。FW・DB等の詳細はあえて保留する
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">4</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>計画を詰める</h4>
+                <code>/grill-me</code><span class="badge b-both">人間＋AI</span>
+              </div>
+              <div class="desc">
+                AIが質問攻めにしてくる対話形式で、最初に通す縦スライス（曳光弾）・ドメインの核・Issueの分割と順序を確定する
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">5</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>Plan 化する</h4>
+                <code>/to-plan</code><span class="badge b-ai">AI</span>
+              </div>
+              <div class="desc">
+                確定した仕様をPlanファイルに構造化。続けて
+                <code>/check-plan</code> が自動で走り、必須セクションの充足を監査する
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">6</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>起点Issue を作る</h4>
+                <code>/to-issues</code><span class="badge b-ai">AI</span>
+              </div>
+              <div class="desc">Planを分割し、依存順つきの起点Issue群としてGitHubに登録する</div>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          ここで作った起点Issueを、以降は下の「Issue単位の開発フロー」で1つずつ消化していきます。
+        </p>
+      </section>
+
+      <!-- ============ 詳細② Issue単位フロー ============ -->
+      <section>
+        <h2>詳細② Issue単位の開発フロー<span class="tag">Issueごとに繰り返す</span></h2>
+
+        <div class="flow">
+          <div class="step">
+            <div class="no">1</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>起点Issueの起票</h4>
+                <span class="badge b-either">人間 or AI</span>
+              </div>
+              <div class="desc">
+                要望・課題をGitHub Issueとして起票する（初期構築で作成済みならそれを使う）
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">2</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>仕様の相談</h4>
+                <code>/grill-me</code><span class="badge b-both">人間＋AI</span>
+              </div>
+              <div class="desc">対話で仕様・設計を詰める（自明なら省略可）</div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">3</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>Plan作成＋チェック</h4>
+                <code>/to-plan</code><span class="badge b-both">人間＋AI</span>
+              </div>
+              <div class="desc">
+                議論をPlanファイル化。<code>/check-plan</code>
+                が自動実行され、設計書への影響範囲の漏れを早期に検出する（シフトレフト）
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">4</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>実装Issueの作成</h4>
+                <code>/to-issues</code><span class="badge b-ai">AI</span>
+              </div>
+              <div class="desc">
+                Planを実装Issueに分割してGitHubに登録。起点Issueの sub-issue として紐づける
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">5</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>設計書の更新</h4>
+                <code>/design 15</code><span class="badge b-ai">AI</span>
+              </div>
+              <div class="desc">
+                Issue番号を渡すと、設計書の更新→自動レビュー→修正までAIが自律実行する
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">6</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>アプリ実装</h4>
+                <code>/code-dev 15</code><span class="badge b-ai">AI</span>
+              </div>
+              <div class="desc">
+                TDD実装→コードレビュー→静的解析・単体テスト→設計書との整合性チェックまでAIが自律実行する
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">7</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>コードレビュー</h4>
+                <span class="badge b-human">人間</span>
+              </div>
+              <div class="desc">エディタ上で実装差分を確認する（最初の人間ゲート）</div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">8</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>コミット</h4>
+                <code>/git-commit</code><span class="badge b-either">人間 or AI</span>
+              </div>
+              <div class="desc">差分をAIが分析し、規約に沿ったコミットを作成する</div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">9</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>push → デプロイ・結合テスト</h4>
+                <span class="badge b-ci">CI（自動）</span>
+              </div>
+              <div class="desc">
+                リモートブランチにpushすると、CIがdev環境へ自動デプロイし、結合テストを自動実行する
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">10</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>PRのチェック</h4>
+                <code>/pr-label</code>・<code>/pr-check</code><span class="badge b-ai">AI</span>
+              </div>
+              <div class="desc">
+                変更種別と「人間レビューが必要か」のラベルを付け、レビューを受け付けてよい前提条件（説明・サイズ）を判定する
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓</div>
+
+          <div class="step">
+            <div class="no">11</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>PRのレビュー → マージ</h4>
+                <span class="badge b-human">人間</span>
+              </div>
+              <div class="desc">
+                10で「人間レビューが必要」と判定されたPRのみ差分を確認する。問題なければマージ
+              </div>
+            </div>
+          </div>
+          <div class="arrow">↓ <small>本番リリース直前など、必要なときだけ</small></div>
+
+          <div class="step optional">
+            <div class="no">12</div>
+            <div class="body">
+              <div class="title-row">
+                <h4>本番投入レディネスレビュー（任意）</h4>
+                <code>/sre-prr</code><span class="badge b-both">人間＋AI</span>
+              </div>
+              <div class="desc">
+                SRE観点で本番運用に耐えるかを審査し、go / 条件付きgo / no-go を助言する
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ポイント ============ -->
+      <section>
+        <h2>押さえてほしい3つのポイント</h2>
+        <div class="points">
+          <div class="point">
+            <b>① AIは「工程まるごと」を自律実行する</b>
+            <code>/code-dev 15</code>
+            のようにIssue番号を渡すだけで、実装→レビュー→テスト→修正まで確認なしに完走する。人間がコードを1行ずつ指示するのではない。
+          </div>
+          <div class="point">
+            <b>② 判断と品質もAIへ委譲していく</b>
+            判断のブレはPolicy（「私たちの考える良い〇〇」を宣言した文書群）で抑え、品質は静的解析・アーキテクチャテスト・コードメトリクスなどの決定論的なガードレールで機械的に確保する。フロー上に残る人間のレビューは、この仕組みで縮小していく対象。
+          </div>
+          <div class="point">
+            <b>③ Issue がフローの単位</b>
+            すべての作業はGitHub
+            Issueから始まりIssueで完結する。AIはIssueのタスクリストを更新しながら進むので、進捗はいつでもGitHub上で見える。
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ 目指すもの ============ -->
+      <section>
+        <h2>このテンプレートが目指すもの<span class="tag">第3の道</span></h2>
+        <p class="note">
+          AI駆動開発の世間の潮流は大きく2つの派閥に分かれる。このテンプレートはそのどちらでもない。
+        </p>
+
+        <div class="quad-wrap">
+          <div class="quad">
+            <span class="axis-y">品質・保守性 ↑</span>
+            <span class="axis-x">AIへの委譲度（短期的な開発スピード）→</span>
+
+            <div class="camp hitl">
+              <b>HITL</b>
+              <small>Human-in-the-Loop</small><br />
+              人間がAIの成果物を逐一チェック
+            </div>
+
+            <div class="camp dark">
+              <b>ダークファクトリー</b>
+              <small>Dark Factory</small><br />
+              人間はコードを見ない。ブラックボックス化
+            </div>
+
+            <div class="camp glass">
+              <b>Human-on-the-Loop</b>
+              <small>＝ このテンプレート</small><br />
+              品質担保を仕組み化し、可能な限りAIに任せる
+            </div>
+
+            <span class="goal-arrow from-hitl">─ 仕組み化 →</span>
+          </div>
+        </div>
+
+        <div class="camps">
+          <div class="camp-card">
+            <h3>ダークファクトリー</h3>
+            <div class="sub-name">「人間がコードを見る時代は終わった」派</div>
+            <dl>
+              <dt>スタイル</dt>
+              <dd>人間によるコードレビューを行わず、AIに全面委任する</dd>
+              <dt class="pro">強み</dt>
+              <dd>圧倒的なスピード</dd>
+              <dt class="con">弱み</dt>
+              <dd>コードがブラックボックス化し、理解負債・保守性に問題を抱える</dd>
+            </dl>
+          </div>
+
+          <div class="camp-card">
+            <h3>HITL</h3>
+            <div class="sub-name">Human-in-the-Loop（人間が輪の中に入る）派</div>
+            <dl>
+              <dt>スタイル</dt>
+              <dd>AIが書いたドキュメント・コードを人間が逐一チェックする</dd>
+              <dt class="pro">強み</dt>
+              <dd>品質・保守性に優れる</dd>
+              <dt class="con">弱み</dt>
+              <dd>人間のチェックがボトルネックになり、開発スピードが遅い</dd>
+            </dl>
+          </div>
+
+          <div class="camp-card featured">
+            <h3>Human-on-the-Loop</h3>
+            <div class="sub-name">
+              人間がループの外から仕組みを設計・監督する（このテンプレート）
+            </div>
+            <dl>
+              <dt>スタイル</dt>
+              <dd>
+                品質担保を<b>仕組み</b>に置き換え、可能な限りAIに任せる。判断基準はPolicyで文書化し、品質は静的解析・アーキテクチャテスト・コードメトリクスなど決定論的なガードレールで確保する
+              </dd>
+              <dt>人間の役割</dt>
+              <dd>
+                レビューを廃止するのではなく、自動判定で「必要」と絞られたものに集中する。基本は<b>ルールとゲートを設計する側</b>に回る
+              </dd>
+              <dt class="pro">狙い</dt>
+              <dd>
+                工場並みに自動、しかしブラックボックスにしない——仕様書・Policy・メトリクスでいつでも検証できる
+              </dd>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ Policyとガードレール ============ -->
+      <section>
+        <h2>Policyとガードレールの役割<span class="tag">委譲を支える2本のレール</span></h2>
+        <p class="note">
+          「判断と品質をAIへ委譲する」を可能にしているのがこの構造。AIの走路を2本のレールで挟む。
+        </p>
+
+        <div class="rail-wrap">
+          <div class="rail-fig policy-fig">
+            <div class="fig-head">
+              <b>① Policy（判断のレール）</b><span class="role">事前｜判断のブレを抑える</span>
+            </div>
+            <p class="fig-lead">
+              「私たちの考える良い〇〇はこれ」を文書で宣言し、AIが人間に逐一確認せず自律判断できる基準を与える
+            </p>
+            <div class="duo">
+              <div class="case bad">
+                <div class="case-title">❌ Policyなし：同じ指示でも判断が毎回割れる</div>
+                <div class="mini-flow">
+                  <span class="node">同じ指示</span>
+                  <div class="fan">
+                    <div class="fan-line">
+                      <span class="fan-arrow">↗</span
+                      ><span class="node">ライブラリを追加して解決</span>
+                    </div>
+                    <div class="fan-line">
+                      <span class="fan-arrow">→</span><span class="node">自前で実装して解決</span>
+                    </div>
+                    <div class="fan-line">
+                      <span class="fan-arrow">↘</span><span class="node">人間に質問して停止</span>
+                    </div>
+                  </div>
+                </div>
+                <p class="caption">どれになるかは運次第。人間が都度介入して正すしかない</p>
+              </div>
+              <div class="case good">
+                <div class="case-title">✅ Policyあり：迷ったら基準に従う</div>
+                <div class="mini-flow">
+                  <span class="node">同じ指示</span>
+                  <span class="flow-arrow">→</span>
+                  <span class="node policy-node">Policy「既定は足さない」</span>
+                  <span class="flow-arrow">→</span>
+                  <span class="node settled">毎回同じ判断（自前で実装）</span>
+                </div>
+                <p class="caption">人間に聞かずに自律判断でき、結果も揺れない</p>
+              </div>
+            </div>
+            <div class="chips">
+              <span>判断原則</span><span>設計ポリシー</span><span>テスト方針</span
+              ><span>依存関係ポリシー</span><span>ドキュメント基準</span>
+            </div>
+          </div>
+
+          <div class="flow-link">↓ Policyを携えてAIが自律作業（設計 → 実装 → テスト → PR） ↓</div>
+
+          <div class="rail-fig gate-fig">
+            <div class="fig-head">
+              <b>② ガードレール（品質のレール）</b
+              ><span class="role">事後｜逸脱を機械的に止める</span>
+            </div>
+            <p class="fig-lead">AIの成果物はすべて関門を通る。全部越えないとマージできない</p>
+            <div class="gate-chain">
+              <span class="gate-src">🤖 AIの成果物</span>
+              <span class="flow-arrow">→</span>
+              <span class="gate">静的解析</span>
+              <span class="flow-arrow">→</span>
+              <span class="gate">コードメトリクス</span>
+              <span class="flow-arrow">→</span>
+              <span class="gate">アーキテクチャテスト</span>
+              <span class="flow-arrow">→</span>
+              <span class="gate">単体・結合テスト</span>
+              <span class="flow-arrow">→</span>
+              <span class="gate-goal">✅ マージ</span>
+            </div>
+            <div class="bounce">
+              ❌ 1つでも落ちたらマージ不可 →
+              AIへ差し戻して修正・再挑戦（人間の検品なしで品質が保たれる）↩
+            </div>
+            <p class="fig-note">
+              AIは確率論的（同じ指示でも出力が揺れる）。だからこそ関門は<b>決定論的アプローチ</b>——同じ入力には必ず同じ判定を返すチェック——で固める
+            </p>
+          </div>
+
+          <div class="human-loop">
+            <div class="icon">🧑‍🔧</div>
+            <div>
+              <b>人間＝レールを設計・改善する側（Human-on-the-Loop）</b>
+              <p>
+                成果物を1つずつ検品する代わりに、レールそのものを作り育てる。すり抜けた問題やレビューでの学びは、成果物の修正で終わらせず<b
+                  >PolicyやゲートにフィードバックしてAIに任せられる範囲を広げる</b
+                >
+                ↻
+              </p>
+            </div>
+          </div>
+
+          <div class="rail-insight">
+            <b>意義：</b>確率論的なAIの出力の揺れを、決定論的なレールが毎回同じ基準で受け止める。
+            レールが充実するほど、人間が個別成果物を見なくても品質が保たれる——「レールへの投資」が、品質を落とさずにAIへの委譲度（＝短期的な開発スピード）を上げる唯一の方法。
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        出典：docs/guide/new-development-guide.md ／ CLAUDE.md
+        開発フロー（CDK実装は省略・アプリ開発前提）
+      </footer>
+    </div>
+  </body>
+</html>

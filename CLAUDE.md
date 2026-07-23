@@ -54,17 +54,17 @@
 > [!NOTE]
 > **新規立ち上げ（グリーンフィールド）時**は、まず [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って requirements→plan→起点Issue を作り（requirements は `/requirements-review` で凍結前にレビューする）、その起点Issueから以下のフローに入る。
 
-0. **起点Issue起票（人間）**：要望・課題の起点となるIssueをGitHub Issuesに起票（スキップする場合もある）
+0. **起点Issue起票（人間/AI）**：要望・課題の起点となるIssueをGitHub Issuesに起票（スキップする場合もある）
 1. **仕様の相談（人間＋AI）**：`/grill-me` — 対話で仕様・設計を詰める（必要ない場合はスキップ）
 2. **Plan作成＋チェック（人間＋AI）**：Planモードでの事前調査、または `/grill-me` の議論を `/to-plan` でPlanファイル化。`/to-plan` は続けて `/check-plan` を自動実行し、必須セクションの充足とコードベース・ドキュメントの影響範囲の網羅を早期にチェックする（シフトレフト）。`/check-plan` は単体でも実行できる。
    - 必須：「設計書への影響」セクション（更新不要なら「更新不要・理由：〇〇」と明記）
    - 必須：タスク一覧に設計書更新タスクを含める（更新不要な場合を除く）
 3. **Issue作成（AI）**：`/to-issues` — Planを実装Issueに分割してGitHub Issuesに登録（0の起点Issueがあれば sub-issue として紐づける）
 4. **設計書更新（AI）**：`/design <Issue番号>` — 設計書更新→レビュー→修正までを自律実行
-5. **Lambda実装（AI）**：`/code-dev <Issue番号>` — TDD実装→コードレビュー→静的解析/単体テスト→設計書整合性チェックまでを自律実行
+5. **アプリ実装（AI）**：`/code-dev <Issue番号>` — TDD実装→コードレビュー→静的解析/単体テスト→設計書整合性チェックまでを自律実行
 6. **CDK実装（AI）**：`/cdk-dev <Issue番号>` — 実装→レビュー→静的解析/snapshotテスト/cdk synth までを自律実行（※CDKはTDD対象外）
-7. **コードレビュー（人間）**：開発エディタ上で実装差分（Lambda・CDK）を確認
-8. **コミット（人間）**：`/git-commit` でコミット
+7. **コードレビュー（人間）**：開発エディタ上で実装差分（アプリ・CDK）を確認
+8. **コミット（人間/AI）**：`/git-commit` でコミット
 9. **push・デプロイ・結合テスト（人間→CI自動）**：リモートブランチに push すると CI が dev へ cdk deploy し、結合テストが自動実行
 10. **Pull Requestのチェック（AI）**：`/pr-label` で変更種別と人間レビュー要否のラベルを付け、`/pr-check` でレビューを受け付けてよい前提条件（説明の記載・サイズ）を満たすか判定する（満たさない場合のみ PR にコメント）
 11. **Pull Requestのレビュー（人間）**：10 でレビューが必要と判定された場合のみ、PR の実装差分を確認する

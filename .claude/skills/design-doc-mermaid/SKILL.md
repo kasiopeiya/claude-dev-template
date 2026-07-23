@@ -1,6 +1,6 @@
 ---
 name: design-doc-mermaid
-description: Create Mermaid diagrams (activity, deployment, sequence, architecture) from text descriptions or source code. Use when asked to "create a diagram", "generate mermaid", "document architecture", "code to diagram", "create design doc", or "convert code to diagram". Supports hierarchical on-demand guide loading, Unicode semantic symbols, and Python utilities for diagram extraction and image conversion.
+description: Create Mermaid diagrams of any of the 26 supported types (state, ER, class, sequence, venn, treemap, treeView, radar, xychart, timeline, mindmap, quadrant, kanban, gantt, C4, flowchart and more) from text descriptions or source code. Selects the type from the shape of the information rather than the user's wording, and treats flowchart as the last resort. Use when asked to "create a diagram", "generate mermaid", "document architecture", "code to diagram", "create design doc", or "convert code to diagram". Supports hierarchical on-demand guide loading, Unicode semantic symbols, and Python utilities for diagram extraction and image conversion.
 ---
 
 # Mermaid Architect - Hierarchical Diagram and Documentation Skill
@@ -47,16 +47,33 @@ A diagram must let the reader grasp the **structure** (relations, flow, hierarch
 
 Only draw when the content needs 2D placement — branching, merging, loops, parallelism, many-to-many, hierarchy, or state transitions. Diagram count is never a goal in itself.
 
+### Type Gate: choose by shape, not by wording (run after the value gate)
+
+Once you have decided to draw, **read `references/diagram-type-selection.md` and pick the type from the shape of the information** — not from the words the user used. "Show me the workflow" does not mean `flowchart`: if states change, it is `stateDiagram-v2`; if several actors exchange messages, it is `sequenceDiagram`; if work sits in status lanes, it is `kanban`.
+
+`flowchart` / `graph` is the **last resort**, not the default. It can express almost anything, and that is exactly why it is chosen too often — being able to express something is not the same as being suited to it.
+
+| Rule                          |                                                                                          |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| Pick from the shape           | Read `references/diagram-type-selection.md` and take the first matching row              |
+| flowchart needs justification | Choose it only when every other row fails. Then state in one line why no other type fits |
+| Cannot justify it?            | Choose again — the inability to explain means the shape was never checked                |
+
+GitHub renders all 26 Mermaid diagram types (verified by rendering probe), so availability is never a reason to fall back to `flowchart`.
+
 **User Intent Analysis:**
 
 ```mermaid
 flowchart TD
     Start([User Request]) --> Analyze{Analyze Intent}
 
-    Analyze -->|"workflow, process, business logic"| Activity[Load Activity Diagram Guide<br/>references/guides/diagrams/activity-diagrams.md]
-    Analyze -->|"infrastructure, deployment, cloud"| Deploy[Load Deployment Diagram Guide<br/>references/guides/diagrams/deployment-diagrams.md]
-    Analyze -->|"system architecture, components"| Arch[Load Architecture Guide<br/>references/guides/diagrams/architecture-diagrams.md]
-    Analyze -->|"API flow, interactions"| Sequence[Load Sequence Diagram Guide<br/>references/guides/diagrams/sequence-diagrams.md]
+    Analyze -->|"a diagram is warranted"| TypeGate[Read Type Selection Table<br/>references/diagram-type-selection.md]
+    TypeGate --> Shape{Match the shape<br/>of the information}
+    Shape -->|"time-ordered exchange between actors"| Sequence[Load Sequence Diagram Guide<br/>references/guides/diagrams/sequence-diagrams.md]
+    Shape -->|"infrastructure, deployment, cloud"| Deploy[Load Deployment Diagram Guide<br/>references/guides/diagrams/deployment-diagrams.md]
+    Shape -->|"system components and boundaries"| Arch[Load Architecture Guide<br/>references/guides/diagrams/architecture-diagrams.md]
+    Shape -->|"state / entity / hierarchy / quantity / set"| Catalog[Load Full Type Catalog<br/>references/mermaid-diagram-guide.md]
+    Shape -->|"branching with no better fit"| Activity[Load Activity Diagram Guide<br/>references/guides/diagrams/activity-diagrams.md<br/>state why no other type fits]
     Analyze -->|"code to diagram"| CodeToDiag[Load Code-to-Diagram Guide<br/>references/guides/code-to-diagram/ + examples/]
     Analyze -->|"design document, full docs"| DesignDoc[Load Design Document Template<br/>assets/*-design-template.md]
     Analyze -->|"unicode symbols, icons"| Unicode[Load Unicode Symbols Guide<br/>references/guides/unicode-symbols/guide.md]
@@ -81,16 +98,25 @@ flowchart TD
     classDef guide fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
     classDef action fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
 
-    class Analyze,Validate decision
-    class Activity,Deploy,Arch,Sequence,CodeToDiag,DesignDoc,Unicode,Scripts guide
+    class Analyze,Validate,Shape decision
+    class TypeGate,Catalog,Activity,Deploy,Arch,Sequence,CodeToDiag,DesignDoc,Unicode,Scripts guide
     class Generate,Execute,RunValidation,Output action
 ```
 
 ## Available Guides and Resources
 
-### Diagram Type Guides (`references/guides/diagrams/`)
+### Type Selection (read this first)
 
-| Guide                 | Full Path                                             | Load When User Wants                                                  | Examples                                                                    |
+| Resource                 | Full Path                              | What It Provides                                                                                              |
+| ------------------------ | -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Type Selection Table** | `references/diagram-type-selection.md` | Shape → diagram type, and how each shape degrades if drawn as a flowchart. **Entry point for every diagram.** |
+| **Full Type Catalog**    | `references/mermaid-diagram-guide.md`  | Syntax and worked examples for all 26 diagram types                                                           |
+
+### Deep-Dive Guides (`references/guides/diagrams/`)
+
+These four cover the most common shapes in depth. They are **not** the full set of options — the catalog above is. Do not settle for one of these four just because it loaded first.
+
+| Guide                 | Full Path                                             | Load When The Shape Is                                                | Examples                                                                    |
 | --------------------- | ----------------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | Activity Diagrams     | `references/guides/diagrams/activity-diagrams.md`     | Workflows, processes, business logic, user flows, decision trees      | "Show checkout flow", "Document ETL pipeline", "Create approval workflow"   |
 | Deployment Diagrams   | `references/guides/diagrams/deployment-diagrams.md`   | Infrastructure, cloud architecture, K8s, serverless, network topology | "Show AWS architecture", "Document GCP deployment", "Create K8s diagram"    |
@@ -417,10 +443,11 @@ graph TB
 design-doc-mermaid/
 ├── SKILL.md                          # This file - Main orchestrator
 ├── README.md                         # User documentation
-├── CLAUDE.md                         # Claude Code instructions
+├── HIGH_CONTRAST_UPDATE.md           # High-contrast styling notes
 │
 ├── references/                       # Reference materials
-│   ├── mermaid-diagram-guide.md     # Legacy general guide
+│   ├── diagram-type-selection.md    # Shape → type. Entry point for every diagram
+│   ├── mermaid-diagram-guide.md     # Full catalog: syntax for all 26 types
 │   └── guides/                       # Specialized guides (load on-demand)
 │       ├── diagrams/
 │       │   ├── activity-diagrams.md      # Workflows, processes
@@ -442,18 +469,16 @@ design-doc-mermaid/
 │
 ├── scripts/                          # Python utilities
 │   ├── extract_mermaid.py           # Extract & validate diagrams
-│   └── mermaid_to_image.py          # Convert to PNG/SVG
+│   ├── mermaid_to_image.py          # Convert to PNG/SVG
+│   └── resilient_diagram.py         # Full workflow with error recovery
 │
-├── examples/                         # Language-specific patterns
-│   ├── spring-boot/                 # Spring Boot patterns
-│   ├── fastapi/                     # FastAPI patterns
-│   ├── react/                       # React patterns
-│   ├── python-etl/                  # Data pipeline patterns
-│   ├── node-webapp/                 # Express.js patterns
-│   └── java-webapp/                 # Traditional Java patterns
-│
-└── references/                       # General Mermaid reference
-    └── mermaid-diagram-guide.md     # Complete Mermaid syntax guide
+└── examples/                         # Language-specific patterns
+    ├── spring-boot/                 # Spring Boot patterns
+    ├── fastapi/                     # FastAPI patterns
+    ├── react/                       # React patterns
+    ├── python-etl/                  # Data pipeline patterns
+    ├── node-webapp/                 # Express.js patterns
+    └── java-webapp/                 # Traditional Java patterns
 ```
 
 ## Workflow Summary
@@ -467,22 +492,26 @@ design-doc-mermaid/
 
 ## When to Use What
 
-| User Request                                                    | Load This                                                                  |
-| --------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| "activity diagram", "workflow", "process flow"                  | `references/guides/diagrams/activity-diagrams.md`                          |
-| "deployment", "infrastructure", "cloud", "k8s"                  | `references/guides/diagrams/deployment-diagrams.md`                        |
-| "architecture", "system design", "components"                   | `references/guides/diagrams/architecture-diagrams.md` + design template    |
-| "API", "sequence", "interactions", "flow"                       | `references/mermaid-diagram-guide.md` (sequence section)                   |
-| "Spring Boot code"                                              | `examples/spring-boot/` + relevant diagram guides                          |
-| "FastAPI code", "Python API"                                    | `examples/fastapi/` + relevant diagram guides                              |
-| "React app", "frontend"                                         | `examples/react/` + architecture guide                                     |
-| "ETL", "data pipeline", "Python batch"                          | `examples/python-etl/` + activity guide                                    |
-| "symbols", "unicode", "emoji"                                   | `references/guides/unicode-symbols/guide.md`                               |
-| "syntax error", "diagram won't render", "troubleshoot"          | `references/guides/troubleshooting.md`                                     |
-| "extract diagrams"                                              | `scripts/extract_mermaid.py`                                               |
-| "convert to image", "PNG", "SVG"                                | `scripts/mermaid_to_image.py`                                              |
-| "create diagram", "generate diagram", "add diagram to markdown" | `scripts/resilient_diagram.py` + `references/guides/resilient-workflow.md` |
-| "design document", "full docs"                                  | `assets/*-design-template.md` + diagram guides                             |
+Diagram requests route by **shape**, not by the words above them — always via `references/diagram-type-selection.md`. The rows below are for non-diagram actions and for loading deep-dive material once the type is already chosen.
+
+| Request                                                         | Load This                                                                            |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Any diagram at all**                                          | `references/diagram-type-selection.md` **first**, then the guide for the chosen type |
+| Chosen type is sequence                                         | `references/guides/diagrams/sequence-diagrams.md`                                    |
+| Chosen type is deployment / infrastructure                      | `references/guides/diagrams/deployment-diagrams.md`                                  |
+| Chosen type is architecture / components                        | `references/guides/diagrams/architecture-diagrams.md` + design template              |
+| Chosen type is flowchart (after justifying it)                  | `references/guides/diagrams/activity-diagrams.md`                                    |
+| Chosen type is any other of the 26                              | `references/mermaid-diagram-guide.md`                                                |
+| "Spring Boot code"                                              | `examples/spring-boot/` + relevant diagram guides                                    |
+| "FastAPI code", "Python API"                                    | `examples/fastapi/` + relevant diagram guides                                        |
+| "React app", "frontend"                                         | `examples/react/` + architecture guide                                               |
+| "ETL", "data pipeline", "Python batch"                          | `examples/python-etl/` + activity guide                                              |
+| "symbols", "unicode", "emoji"                                   | `references/guides/unicode-symbols/guide.md`                                         |
+| "syntax error", "diagram won't render", "troubleshoot"          | `references/guides/troubleshooting.md`                                               |
+| "extract diagrams"                                              | `scripts/extract_mermaid.py`                                                         |
+| "convert to image", "PNG", "SVG"                                | `scripts/mermaid_to_image.py`                                                        |
+| "create diagram", "generate diagram", "add diagram to markdown" | `scripts/resilient_diagram.py` + `references/guides/resilient-workflow.md`           |
+| "design document", "full docs"                                  | `assets/*-design-template.md` + diagram guides                                       |
 
 ## Best Practices
 

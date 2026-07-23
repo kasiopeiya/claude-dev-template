@@ -11,7 +11,7 @@ if [ -n "$staged_adr" ]; then
   git add docs/adr/adr-index.md
 fi
 
-staged_files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.json' '*.md')
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.json' '*.md' '*.html')
 
 if [ -z "$staged_files" ]; then
   exit 0
