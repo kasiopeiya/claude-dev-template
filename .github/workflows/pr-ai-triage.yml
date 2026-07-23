@@ -44,7 +44,7 @@ jobs:
       pr_number: ${{ steps.pr.outputs.number }}
     steps:
       # skill 定義とポリシーを main（PR 改変を受けない正典）から読むため checkout する。
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # workflow_run には PR コンテキストが無い。トリガー元 pipeline の head ブランチから PR を引く。
       - name: Resolve PR number for branch
@@ -164,7 +164,7 @@ jobs:
       pull-requests: write
     steps:
       # gh pr view/merge は git リモートからリポジトリ文脈を解決するため checkout が要る。
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Enable auto-merge when no human review is needed
         env:
