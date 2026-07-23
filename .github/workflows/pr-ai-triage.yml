@@ -4,12 +4,8 @@
 
 name: pr-ai-triage
 
-# pipeline は push トリガーだが、claude-code-action は push イベントを受け付けない
-# （Unsupported event type: push）。受け付けるのは pull_request 系と workflow_dispatch /
-# workflow_run 等に限られる。そこで pipeline の完了を workflow_run で受けて AI を走らせる。
-# 利点: ①「gate 成功後に advisory」という順序を保てる ②workflow_run はワークフロー定義を
-# 常にデフォルトブランチ（main）から取るため、PR 側ブランチから AI 実行手順を書き換えられない
-# ③トリガー元の pipeline が push 限定＝信頼済みの push 権限者のみ＝fork PR は起点になれない。
+# claude-code-action は push イベント非対応のため、pipeline の完了を workflow_run で受ける。
+# 定義は常に main から取られ PR 側から改変できず、fork PR は起点になれない（詳細: cicd-design）。
 on:
   workflow_run:
     workflows: [pipeline]
@@ -28,11 +24,9 @@ concurrency:
 
 jobs:
   # 対象 PR に対し ①本文の AI 書き換え ②pr-label ③（needs-human-review 付与時のみ）pr-check を行う。
-  # ★ contents は read に固定する。GitHub Actions の権限は job 単位のため、merge 権限（contents: write）を
-  #   この AI job に置くと「差分の prompt injection → git push で main 改ざん」の経路が構造的に開く（#66）。
-  #   merge が要る auto-merge は後段の別 job に分離し、この job から write を剥がす。
-  # ★ Bash は無制限にせず skill が実際に使う gh サブコマンドだけを許可する。injection が通っても
-  #   env+curl 等による secret 外部送信へ到達させないため（#65）。
+  # 権限は prompt injection 前提で設計する——contents: read 固定・Bash は gh 限定
+  # （#65/#66。理由は cicd-design「採用理由」を参照）。Write は本文・コメントを
+  # ファイル経由（--body-file）で渡すためにスコープ無しで許可する（理由は prompt 内に記載）。
   pr-triage:
     # pipeline が成功したときだけ走る。失敗・キャンセル時は advisory 不要。
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -43,16 +37,13 @@ jobs:
       contents: read
       # PR 本文の書き換え（gh pr edit --body）・コメント（gh pr comment）・PR へのラベル付与
       pull-requests: write
-      # pr-label は不足ラベルを gh label create で自己作成する。リポジトリのラベル作成は
-      # issues スコープに属し pull-requests: write では作れないため、最小限追加する
-      # （テンプレートのコピー先でも手動セットアップ無しで動く自己完結性を保つ）。
+      # 不足ラベルの自己作成（gh label create）に必要。ラベル作成は issues スコープに属する
       issues: write
     outputs:
       # 後段の auto-merge job へ解決済み PR 番号を渡す（#66）。
       pr_number: ${{ steps.pr.outputs.number }}
     steps:
-      # skill 定義（.claude/skills/）とポリシー（docs/policy/）を Claude が読むため checkout する。
-      # workflow_run では既定でデフォルトブランチ（main）を取得する。PR 側の改変を受けない正典を読む。
+      # skill 定義とポリシーを main（PR 改変を受けない正典）から読むため checkout する。
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # workflow_run には PR コンテキストが無い。トリガー元 pipeline の head ブランチから PR を引く。
@@ -68,10 +59,8 @@ jobs:
           fi
           echo "number=$num" | tee -a "$GITHUB_OUTPUT"
 
-      # AI 実行は Anthropic 公式 Action をサブスク OAuth 認証で使う（cicd-design 採用理由の表）。
-      # モデルは pr-label の判断に十分な Sonnet 5 単一。allowedTools は skill・ポリシーの読み取り
-      # （Read/Grep/Glob）と、pr-label / pr-check / 本文書き換えが実際に使う gh サブコマンドだけに
-      # 絞る（Bash 無制限をやめる・#65）。git 直叩きは使わないため許可しない。
+      # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet 5 単一。
+      # allowedTools を絞る理由は cicd-design「採用理由」を参照。
       - name: Run AI advisory (rewrite body / pr-label / pr-check)
         id: advisory
         if: steps.pr.outputs.number != ''
@@ -81,44 +70,38 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_args: |
             --model claude-sonnet-5
-            --allowedTools "Read,Grep,Glob,Bash(gh pr diff:*),Bash(gh pr edit:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh label list:*),Bash(gh label create:*)"
+            --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr edit:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh label list:*),Bash(gh label create:*)"
           prompt: |
             あなたはこのリポジトリの CI 上で動く advisory エージェントです。
             対象は PR #${{ steps.pr.outputs.number }}（base: main）。
             マージ・承認・クローズ・ブランチ削除は絶対に行わないこと。以下の3タスクを上から順に実行する。
 
-            ## 使えるコマンド（厳守・無駄な試行でトークンと時間を浪費しないため）
-            allowedTools は Read/Grep/Glob と、次の**6つの gh サブコマンドだけ**。これ以外は
+            ## 使えるツール（厳守・無駄な試行でトークンと時間を浪費しないため）
+            allowedTools は Read/Grep/Glob/Write と、次の**6つの gh サブコマンドだけ**。これ以外は
             すべて拒否される（回り道は全て失敗するので試みない）:
             - `gh pr diff` / `gh pr view` / `gh pr edit` / `gh pr comment` / `gh label list` / `gh label create`
             - **`gh pr list` は許可されていない**（対象 PR 番号は上で渡済みなので不要）。他の gh も不可。
-            - **Write ツール・`cat`・heredoc（`<<EOF`）・コマンド置換（`$(...)`）・一時ファイル作成は
-              すべて拒否される**。SKILL.md がコメント例で `cat` ヒアドキュメントを使っていても、
-              CI では**それに従わず**、下記「本文・コメントの反映方法」の1物理行形式で書くこと。
-            - **本文をシェル変数に組み立てて渡す形（`printf -v body …` 等）も拒否される**
-              （`printf`/`echo` は allowlist 外）。本文は `--body` に直接渡す。
+            - **`cat`・`printf`・`echo`・heredoc（`<<EOF`）・コマンド置換（`$(...)`）・ANSI-C
+              クオート（`$'…'`）はすべて拒否される**。本文の組み立てにシェルを使わないこと。
 
-            ## 本文・コメントの反映方法（1物理行ルール・全タスク共通）
-            PR 本文（`gh pr edit --body`）も PR コメント（`gh pr comment --body`）も、複数行の文章は
-            必ず**1物理行**の `--body $'…\n…'` で渡す。改行は ANSI-C クオート（`$'...'`）内の `\n` で
-            表現し、本文中のシングルクォートは `\'` でエスケープする。コマンドを複数行に跨がせると
-            権限マッチャが改行で分割し、継続行を gh 以外とみなして拒否するため、必ずコマンド全体を
-            1行に収める。**SKILL.md が `--body "$(cat <<'EOF' … )"` の形で例示していても、CI では
-            コマンド置換・heredoc が拒否されるので、その形は使わず上記の1物理行 `$'…'` に置き換える。**
-            **本文・コメントに `#` を使わないこと（最重要）。** bash では `#` がコメント開始文字のため、
-            `--body` の中に markdown 見出し（`## 概要` など）があると権限マッチャがコマンドを安全と
-            判定できず、`gh pr edit` / `gh pr comment` が allowlist にあっても拒否される。クオートの
-            内側でも救われない。実測で、`#` を含む本文は4回連続で拒否され、`#` を含まない本文だけが
-            成功している。**見出しは `#` を使わず、太字（アスタリスク2個で囲む）で表現する。**
-            箇条書きの `-` と通常の記号はそのまま使ってよい。
+            ## 本文・コメントの反映方法（--body-file ルール・全タスク共通）
+            PR 本文も PR コメントも、必ず次の2ステップで反映する。これが唯一の許可された方法:
+            1. **Write ツール**で本文をファイルに書く（例: `pr-body.md`、`pr-comment.md`）。
+               markdown 見出し（`#`）・改行・記号は自由に使ってよい。
+            2. そのファイルを `gh pr edit <番号> --body-file pr-body.md` /
+               `gh pr comment <番号> --body-file pr-comment.md` で渡す。
+            `--body` に本文を直接埋め込む形は使わない——長文・特殊クオートを含むコマンド行は
+            権限マッチャが安全と判定できず、gh コマンドが allowlist にあっても拒否される。
+            **SKILL.md が `--body "$(cat <<'EOF' … )"` の形で例示していても、CI ではそれに従わず、
+            上記の Write + `--body-file` に置き換える。**
 
             **通る書き方を探す実験をしてはならない。** 上の形式で1回だけ実行し、拒否されたらその
-            タスクは諦めて次のタスクへ進む。クオート形式を順に変えて再試行したり、確認用の
+            タスクは諦めて次のタスクへ進む。書き方を順に変えて再試行したり、確認用の
             テストコメントを PR に投稿したりしないこと（実行時間を浪費し、実 PR にゴミが残るため）。
 
             ## タスク1: PR本文のAI書き換え
             `gh pr diff ${{ steps.pr.outputs.number }}` で差分全体を読み、「何を・なぜ変えたか」を
-            人間の言葉で説明する PR 本文を作成し、上記「1物理行ルール」で反映する。コミットメッセージの
+            人間の言葉で説明する PR 本文を作成し、上記「--body-file ルール」で反映する。コミットメッセージの
             機械的な要約ではなく、差分から読み取った意図を簡潔に記述する。
 
             ## タスク2: ラベル付与（pr-label）
@@ -140,11 +123,8 @@ jobs:
               needs-human-review を付けた場合は、投稿した根拠コメントの URL も併記する
             - task3（pr-check）: 実行した(OK / NG) / スキップ（needs-human-review 無しのため）
 
-      # advisory が「何をしたか」を毎ラン残す（#69）。AI ステップの Bash は gh に限定され
-      # $GITHUB_STEP_SUMMARY へ直接書けないため、ここで実行ログ JSON を後処理する決定論ステップに分ける。
-      # 出す情報を「AI が末尾に出した実行サマリ（.result）」と「拒否コマンド（.permission_denials）」だけに
-      # 絞る——show_full_output / display_report で全メッセージを公開すると secret 混入リスクがある（#65/#66）。
-      # AI が失敗しても痕跡を残すため always()。
+      # 実行サマリと拒否コマンドだけを決定論でラン サマリへ転記する（#69。全メッセージを
+      # 公開しない理由は cicd-design 参照）。AI が失敗しても痕跡を残すため always()。
       - name: Summarize advisory outcome
         if: ${{ always() && steps.pr.outputs.number != '' }}
         env:
@@ -169,16 +149,12 @@ jobs:
             echo "${denials:-_なし_}"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  # auto-merge の有効化（cicd-design の capstone）。AI を実行せず、ラベルを読んで gh pr merge --auto
-  # するだけの決定論 job（cicd-policy「機械に委ねてよいのは正解が一意に決まる作業だけ」）。
-  # ★ pr-triage から独立 job に分けることで、merge に要る contents: write を AI ステップから剥がす（#66）。
-  #   pr-check の NG はここに影響しない——needs-human-review 無しなら pr-check 自体を実行しておらず、
-  #   判定材料はラベルだけ。gate 成功待ちは GitHub ネイティブ auto-merge に委ねる（cicd-gate が
-  #   required check である限り守られる）。
+  # ラベルを読んで gh pr merge --auto するだけの決定論 job。merge に要る contents: write を
+  # AI job から剥がすための分離（#66。詳細: cicd-design）。判定材料はラベルだけで、
+  # gate 成功待ちは GitHub ネイティブ auto-merge に委ねる。
   auto-merge:
     needs: pr-triage
-    # pr-triage が成功し PR が解決できたときだけ。この workflow には無関係な skip ジョブが無いので
-    # 伝播 skip の心配は無く、result の直接チェックで足りる（pr-triage 失敗・skip 時は連鎖 skip）。
+    # pr-triage が成功し PR を解決できたときだけ（pr-triage 失敗・skip 時は連鎖 skip）。
     if: ${{ needs.pr-triage.result == 'success' && needs.pr-triage.outputs.pr_number != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -187,8 +163,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      # gh pr view/merge はリポジトリ文脈を git リモートから解決するため、.git が無いと
-      # 「not a git repository」で落ちる。API 呼び出しだけだが git 文脈が要るので checkout する。
+      # gh pr view/merge は git リモートからリポジトリ文脈を解決するため checkout が要る。
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Enable auto-merge when no human review is needed
