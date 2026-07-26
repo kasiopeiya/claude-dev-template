@@ -1,5 +1,6 @@
 ---
-globs: **/*.ts
+paths:
+  - '**/*.{ts,tsx}'
 ---
 
 # TypeScript 共通ルール

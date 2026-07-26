@@ -1,5 +1,6 @@
 ---
-globs: **/*.tsx
+paths:
+  - '**/*.tsx'
 ---
 
 # React 実装ルール

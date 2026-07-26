@@ -87,21 +87,4 @@
 
 ### コーディング規約・技術ルール
 
-言語・フレームワーク別のルールは `.claude/rules/` 配下にあり、Claude Code実行時に自動ロードされる。実装前に必ず参照すること。
-
-- [.claude/rules/typescript.md](.claude/rules/typescript.md) — TypeScript共通ルール（命名・import順序・コメント方針など）
-- [.claude/rules/react.md](.claude/rules/react.md) — React実装ルール（コンポーネント・Hooks・状態管理・Tailwind・Testing Library戦術。typescript.mdを継承）
-- [.claude/rules/cdk.md](.claude/rules/cdk.md) — CDK実装ルール（Construct選定・import形式・ビルド禁止事項など）
-
-### ディレクトリ構成
-
-最上位構成のみ示す。詳細はハブドキュメント（「必読ドキュメント」参照）に委ねる。
-
-```text
-.
-├── infra/                        # AWS CDK インフラ定義
-├── app/                          # アプリケーションコード（Lambdaを含む）
-├── eslint-rules/                 # 独自ESLintルール
-├── asset/                        # アセット（sql/ テストデータなど）
-└── docs/                         # 設計書・ドキュメント（ADR・用語集・CI/CD・ポリシー）
-```
+言語・フレームワーク別のルールは `.claude/rules/` 配下にあり、対象ファイルを読むと自動ロードされる。新規ファイルを書き起こすときは発火しないので、その場合だけ該当ルールを自分で読む。

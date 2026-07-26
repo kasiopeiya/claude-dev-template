@@ -1,5 +1,6 @@
 ---
-globs: infra/**/*
+paths:
+  - 'infra/**/*'
 ---
 
 # CDK 実装ルール
