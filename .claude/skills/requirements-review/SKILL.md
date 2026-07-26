@@ -1,6 +1,6 @@
 ---
 name: requirements-review
-description: 要件定義書（docs/requirements.md）を requirements-doc-policy.md の判定基準で専用レビューする。/requirements-review コマンドが呼ばれたとき、またはユーザーが要件定義書（PRD）のレビュー・品質チェックを依頼したときに使用する。What/How の切り分け・詳細の決め打ち・エコシステムマップ・業務/機能/非機能要件・SLI/SLO・トレーサビリティ・BABOK 品質を1項目ずつ照合し、凍結してよい品質かを合否で判定する。汎用ドキュメントレビュー（/doc-review）とは責務が異なり、要件定義書に特化する。
+description: 要件定義書（docs/requirements.md）を requirements-doc-policy の基準でレビューし、凍結してよい品質かを合否判定する。「requirements-review」「要件定義書をレビューして」と指示されたとき。
 argument-hint: '[file-path] [input-materials...]（省略時は docs/requirements.md。入力資料パスを追加で渡せる）'
 context: fork
 agent: requirements-reviewer-agent

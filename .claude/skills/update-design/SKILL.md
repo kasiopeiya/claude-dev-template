@@ -1,6 +1,6 @@
 ---
 name: update-design
-description: 指定したIssueを元に設計書を自律的に更新する仕様駆動開発サポートコマンド。Issue番号を引数で指定可能（例: /update-design 15）
+description: '指定したIssueを元に設計書を自律的に更新する。Issue番号を引数で指定可能（例: /update-design 15）'
 argument-hint: <Issue番号>
 ---
 

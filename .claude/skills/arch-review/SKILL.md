@@ -1,6 +1,6 @@
 ---
 name: arch-review
-description: アプリの設計・アーキテクチャの「質」をレビューする（ペルソナ：世界一流ソフトウェアアーキテクト）。/arch-review が呼ばれたとき、またはユーザーが設計・アーキテクチャのレビューを依頼したときに使用する。設計が変更容易か＝UI/DB/外部サービス/言語などの詳細を差し替え可能に保てているかを、application-architecture-policy 等に照らして検査する。開発フローの常設ステップではなく任意のタイミングで実行する。文書品質（/doc-review）・コード品質（/code-review）・整合性（/validate-design）とは責務が異なる。
+description: アプリの設計・アーキテクチャの「質」をレビューする。UI/DB/外部サービス/言語などの詳細を差し替え可能に保てているかを検査する。「arch-review」「設計をレビューして」「アーキテクチャをレビューして」と指示されたとき。
 argument-hint: '[設計書パス / ソースディレクトリ / スコープ。省略時は git diff 対象]'
 context: fork
 agent: architecture-reviewer-agent

@@ -1,6 +1,6 @@
 ---
 name: design
-description: 統合設計ワークフロー。GitHub IssueをもとにIssueを読み込み設計書（docs/design/）を更新し、自動レビューと修正まで実行する。仕様駆動開発のStep 4で使用。Issue番号を引数に指定すること（例: /design 15）
+description: 'GitHub Issue をもとに設計書（docs/design/）を更新し、レビューと修正まで自律実行する。Issue番号を引数に指定すること（例: /design 15）'
 argument-hint: '<Issue番号>'
 ---
 

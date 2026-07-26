@@ -2,6 +2,7 @@
 name: sre-prr
 description: 本番投入レディネスレビュー（PRR）。リリース直前に、組み上がったシステム全体が本番運用に耐えるかをSRE観点で審査し、go/条件付きgo/no-go を助言する。/sre-prr が呼ばれたとき、またはユーザーがリリース前の本番投入審査・PRRを依頼したときに使用する。個別のコード品質（/code-review）・アーキ品質（/arch-review）・設計整合（/validate-design）とは責務が異なり、「本番で安全に・低コストで運用し続けられるか」という全体の本番耐性だけを見る。
 argument-hint: '[リリース対象/スコープ。省略時はシステム全体]'
+disable-model-invocation: true
 context: fork
 agent: sre-prr-reviewer-agent
 ---

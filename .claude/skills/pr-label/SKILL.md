@@ -1,6 +1,6 @@
 ---
 name: pr-label
-description: PRの変更内容を読んで「変更の種類」ラベルを自動付与し、人間がレビューすべきPRかどうかを示すラベル（needs-human-review / needs-manual-triage）を付ける。needs-human-review を付けたときは、その判定根拠を PR にコメントする。「pr-label」「PRにラベルを付けて」と指示されたとき。
+description: PR に「変更の種類」ラベルと、人間レビューの要否を示すラベルを付ける。「pr-label」「PRにラベルを付けて」と指示されたとき。
 argument-hint: '[PR番号]'
 ---
 

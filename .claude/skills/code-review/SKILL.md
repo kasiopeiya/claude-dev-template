@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: TypeScript アプリケーションコードをレビュー。/code-review コマンドが呼ばれたとき、またはユーザーが TypeScript/React コードのレビューを依頼したときに使用する。型安全性・設計原則・セキュリティ・プロジェクトルール準拠を自動チェックする。
+description: TypeScript / React アプリケーションコードをレビューする。「code-review」「コードをレビューして」と指示されたとき。
 argument-hint: '[ファイルパス]'
 context: fork
 agent: code-reviewer-agent

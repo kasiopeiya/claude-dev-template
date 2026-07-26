@@ -2,6 +2,7 @@
 name: decide-tech-stack
 description: 新規開発の立ち上げで、requirements.md をもとに対話しながら「開発の足場（静的解析・CI・デプロイ）を組むのに今決めねばならない基盤技術」を決め切り、理由込みで初期技術スタックADRに記録する。使用言語・クラウド・IaC・CI/CD・ディレクトリ方針などを確定し、FW・DB等の詳細はあえて保留する。技術スタック選定・初期技術スタックADR作成を依頼されたとき、または「decide-tech-stack」と指示されたときに使う。
 argument-hint: <requirements.md のパス（省略時は docs/requirements.md を探す）>
+disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, Write, Edit, AskUserQuestion, Task
 ---
 

@@ -1,9 +1,6 @@
 ---
 name: validate-design
-description: >
-  設計書と実装コードの整合性（ドリフト）を検証する。プロジェクト固有の構成に依存せず、
-  CLAUDE.md からディレクトリ構成と設計ハブの所在を読み取って検証対象を決める。
-  「/validate-design」「設計書と実装の整合性チェック」と指示されたときに使用する。
+description: 設計書と実装コードの整合性（ドリフト）を検証する。「validate-design」「設計書と実装の整合性チェック」と指示されたとき。
 argument-hint: '[all|<設計書パス>|<ソースパス>]'
 context: fork
 agent: design-validator-agent

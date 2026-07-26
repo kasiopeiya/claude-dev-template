@@ -1,6 +1,6 @@
 ---
 name: design-doc-mermaid
-description: Create Mermaid diagrams of any of the 26 supported types (state, ER, class, sequence, venn, treemap, treeView, radar, xychart, timeline, mindmap, quadrant, kanban, gantt, C4, flowchart and more) from text descriptions or source code. Selects the type from the shape of the information rather than the user's wording, and treats flowchart as the last resort. Use when asked to "create a diagram", "generate mermaid", "document architecture", "code to diagram", "create design doc", or "convert code to diagram". Supports hierarchical on-demand guide loading, Unicode semantic symbols, and Python utilities for diagram extraction and image conversion.
+description: Create Mermaid diagrams from text or source code, selecting the diagram type from the shape of the information (flowchart is the last resort). Use for "create a diagram", "generate mermaid", "code to diagram", 「図を描く」「図にする」「アーキテクチャ図」。
 ---
 
 # Mermaid Architect - Hierarchical Diagram and Documentation Skill

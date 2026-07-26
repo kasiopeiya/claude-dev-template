@@ -1,6 +1,6 @@
 ---
 name: quick-doc-review
-description: ドキュメント編集直後に、よく指摘される具体項目だけを高速にチェックし、その場で修正まで行う軽量レビュー。subagentは使わずメインの会話内で完結する。docs/ 配下のMarkdownを編集した直後、大掛かりなレビュー（/doc-review）を都度呼ぶほどではない小〜中規模の追記・修正で使う。「quick-doc-review」「軽くdocチェックして」と指示されたとき。
+description: ドキュメント編集直後の軽量レビュー。よく指摘される項目だけを高速にチェックし、その場で修正する。「quick-doc-review」「軽くdocチェックして」と指示されたとき。大掛かりなレビューは /doc-review。
 argument-hint: '[file-path]'
 ---
 

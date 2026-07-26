@@ -1,6 +1,7 @@
 ---
 name: cdk-visualize
 description: CDKコードを解析してAWSリソース構成図・Stack依存関係図・Constructツリーを生成し、cdk.out/visualization/に出力する。CDKプロジェクトの可視化を依頼されたときに使用すること。
+disable-model-invocation: true
 context: fork
 agent: general-purpose
 ---

@@ -1,6 +1,6 @@
 ---
 name: to-plan
-description: grill-me での対話や事前調査の結果を Plan ファイルに構造化して書き出す。Plan モードでの調査結果や grill-me の議論を Plan 化したいとき、「to-plan」「plan ファイルにして」と指示されたときに使用する。必須セクション（設計書への影響・設計書更新タスク）を満たした Plan を ~/.claude/plans/ に保存し、続けて /check-plan による監査まで自動で行う。
+description: grill-me の対話や事前調査の結果を Plan ファイルに構造化して書き出し、続けて /check-plan で監査する。「to-plan」「plan ファイルにして」と指示されたとき。
 ---
 
 # To Plan

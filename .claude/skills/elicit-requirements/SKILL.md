@@ -2,6 +2,7 @@
 name: elicit-requirements
 description: RFC等の入力資料をもとに対話しながら要求を引き出し、requirements.md（PRD）を作成する。顧客が書いた「解決策」を「目的」に還元し、「制約」とされた事項が本当に制約かを疑いながら、目的の認識を合わせて要件を確定する。要求分析・要件定義・requirements.md作成を依頼されたとき、または「elicit-requirements」と指示されたときに使う。
 argument-hint: <RFC等のファイルパス、または要求テキスト>
+disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, Write, Edit, AskUserQuestion, Task
 ---
 

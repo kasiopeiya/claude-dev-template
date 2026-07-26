@@ -1,6 +1,6 @@
 ---
 name: create-adr
-description: ADR（Architecture Decision Record）を作成、またはADR対象かどうかを判定する。技術的・アーキテクチャ的な意思決定の文書化を依頼されたとき、またはADRの要否確認を依頼されたときに使用すること。
+description: ADR（Architecture Decision Record）を作成、またはADR対象かどうかを判定する。意思決定の文書化・ADRの要否確認を依頼されたときに使う。
 ---
 
 # ADR 作成スキル

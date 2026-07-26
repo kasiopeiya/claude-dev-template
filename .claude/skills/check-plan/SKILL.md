@@ -1,6 +1,6 @@
 ---
 name: check-plan
-description: Plan ファイルを早期監査する（シフトレフト）。必須セクションの充足と、コードベース・ドキュメントへの影響範囲の網羅を Issue 化前にチェックする。「check-plan」「plan をチェック」と指示されたとき、または /to-plan から自動で呼ばれる。Plan の不足を指摘し、修正してから次工程へ進めるようにする。
+description: Plan ファイルを Issue 化前に監査し、必須セクションの充足と影響範囲の網羅をチェックする。「check-plan」「plan をチェック」と指示されたとき。
 ---
 
 # Check Plan

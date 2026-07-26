@@ -1,6 +1,6 @@
 ---
 name: quick-issue
-description: 確認不要で手早く GitHub Issue を起票する。grill-me/to-plan/to-issues の正式フローを経由せず、思いついた要望・課題・バグをその場で軽量に Issue 化したいときに使う。「quick-issue」「issueを起票して」「issueを作って」と指示されたとき。
+description: 確認不要で手早く GitHub Issue を起票する。思いついた要望・課題・バグ、および割れ窓（boy-scout）の起票に使う。「quick-issue」「issueを起票して」「issueを作って」と指示されたとき。
 ---
 
 # Quick Issue

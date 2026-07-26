@@ -1,6 +1,6 @@
 ---
 name: cdk-review
-description: AWS CDK インフラコードを詳細にレビュー。/cdk-review コマンドが呼ばれたとき、またはユーザーが CDK コードのレビューを依頼したときに使用する。infra/ ディレクトリ内の TypeScript ファイルを対象に、型安全性・CDK ベストプラクティス・プロジェクトルール準拠を自動チェックする。併せて、存在すればインフラ設計書（既定 docs/design/infrastructure-design.md）の内容の妥当性を iac-infra-design-doc-policy に照らしてレビューする（ドキュメントとしての質は /doc-review の領分）。
+description: infra/ 配下の AWS CDK インフラコードをレビューする。併せてインフラ設計書の内容の妥当性も見る。「cdk-review」「CDKコードをレビューして」と指示されたとき。
 context: fork
 agent: cdk-reviewer-agent
 ---
