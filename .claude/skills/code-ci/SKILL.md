@@ -1,5 +1,5 @@
 ---
-name: code-ci-runner
+name: code-ci
 description: 各npmワークスペースの静的解析・単体テストを実行する（CIパイプラインシミュレーション）。CIチェックやコミット・PR前のコード品質検証を依頼されたときに使用すること。
 context: fork
 agent: code-ci-runner-agent
