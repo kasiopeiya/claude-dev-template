@@ -49,7 +49,7 @@ import { AppParameter } from '../parameter'
 
 ## CDKの差分検知ルール
 
-なぜ決定論的な構築を最優先するか（設計判断）は [cdk-design-policy](../../docs/policy/cdk-design-policy.md) を参照。ここではそれを守るための具体ルールを定める。CloudFormationのデプロイ時評価機能（動的参照や条件分岐）への依存を排除し、すべてを「CDK Synth時」に解決する静的な実装を行ってください。
+なぜ決定論的な構築を最優先するか（設計判断）は [cdk-design-policy](../../docs/policy/cdk-design-policy.md) が定める——デプロイ時評価や実行のたびに変わる値に依存すると `cdk diff` が正しく出ず、意図しない再作成・データ消失を招くからだ。ここではそれを守るための具体ルールを定める。CloudFormationのデプロイ時評価機能（動的参照や条件分岐）への依存を排除し、すべてを「CDK Synth時」に解決する静的な実装を行ってください。
 
 以下のルールを厳守してコードを生成・修正してください。
 
@@ -151,7 +151,7 @@ const rawId = await getResourceId('Role', 'legacy-system')
 
 ## Interface Segregation（ISP）
 
-なぜ公開インターフェースを最小の型に絞るか（設計判断）は [cdk-design-policy](../../docs/policy/cdk-design-policy.md) を参照。ここでは型の選択という実装戦術を定める。
+なぜ公開インターフェースを最小の型に絞るか（設計判断）は cdk-design-policy が定める——公開する型を広く取るほど利用者に余計な操作を許し、結合が強まるからだ。ここでは型の選択という実装戦術を定める。
 
 ### 型の選択基準
 

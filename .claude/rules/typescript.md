@@ -117,7 +117,7 @@ if (error) return { statusCode: 500, body: 'Internal Server Error' }
 - 短さより具体性を優先する。多少長くなっても「何の値か」が伝わる名前にする（略語回避とは別の軸——省略していなくても曖昧なら不十分）。文脈を名前に織り込む（`filePath` → `targetFilePath`、`relPath` → `targetRelativePath`、`list` → `policyList`）
 - 真偽値は `is` / `has` / `should` / `can` などのプレフィックスで意図を明示する
 - 関数名は動詞で始める（`getUser`、`validateInput`、`createSession`）
-- クラス名は目的（担う一つの責務）が分かる狭い名前にする。`Money`・`Manager`・`Util` のような広い名前は、あらゆる処理を招き入れて神クラス化する。設計上の根拠と判断基準は [application-design-policy「神クラスアンチパターンを禁ずる」](../../docs/policy/application-design-policy.md) を参照
+- クラス名は目的（担う一つの責務）が分かる狭い名前にする。`Money`・`Manager`・`Util` のような広い名前は、あらゆる処理を招き入れて神クラス化する。設計上の根拠と判断基準は [application-design-policy](../../docs/policy/application-design-policy.md) が定める（神クラスアンチパターン）
 - 定数は目的が伝わる名前にする（`3000` → `REQUEST_TIMEOUT_MS`）
 - ファイル名はそのファイルが担う責務を表す名前にする（`utils.ts` → `dateFormatter.ts`、`helpers.ts` → `tokenValidator.ts`）
 
@@ -172,7 +172,7 @@ const BATCH_SIZE = 100
 
 各モジュール（ファイル）の冒頭に、そのモジュールの責務を**一文**で書く。これは「名前で足りるならコメント不要」の例外である。関数の責務は関数名1つで伝わるが、ファイルという**まとまりの境界**——なぜこれらが1ファイルに同居するのか、何を含み何を含まないか——は名前1つでは表せない。その境界判断（WHY）を一文で固定する。
 
-同時にこれは単一責任（SRP）のセルフチェックを兼ねる。**一文に "and"／「〜と〜」が混ざるなら責務過多のシグナル**であり、ファイル分割を検討する（[application-design-policy](../../docs/policy/application-design-policy.md)）。
+同時にこれは単一責任（SRP）のセルフチェックを兼ねる。**一文に "and"／「〜と〜」が混ざるなら責務過多のシグナル**であり、ファイル分割を検討する。
 
 ```typescript
 // 責務: OAuth の state パラメータの生成と検証のみを担う
@@ -188,7 +188,7 @@ const BATCH_SIZE = 100
 
 ### 重要箇所バナー：ファイルの心臓部を視覚的に指す
 
-そのファイルの心臓部（最重要のビジネスロジック・`main` 等）**1箇所だけ**に、読まずに目へ飛び込むバナーを打つ。設計上の位置づけは [application-design-policy「レイアウトで重要箇所を語らせる」](../../docs/policy/application-design-policy.md) を参照。
+そのファイルの心臓部（最重要のビジネスロジック・`main` 等）**1箇所だけ**に、読まずに目へ飛び込むバナーを打つ。設計上の位置づけは application-design-policy が定める（重要さは第一に名前と位置で語らせ、バナーはその補助）。
 
 ```typescript
 // ═══════════════════════════════════════════════

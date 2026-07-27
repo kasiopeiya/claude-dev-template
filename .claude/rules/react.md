@@ -5,7 +5,7 @@ paths:
 
 # React 実装ルール
 
-[typescript.md](typescript.md) を継承し、ここでは **React / JSX / Hooks / TailwindCSS / Testing Library 固有の差分だけ**を定める。命名・import順序・コメント・例外処理などの共通ルールは typescript.md に従う。設計の判断軸（責務分割・状態スコープ・Props設計）は [frontend-design-policy.md](../../docs/policy/frontend-design-policy.md) を参照する。
+[typescript.md](typescript.md) を継承し、ここでは **React / JSX / Hooks / TailwindCSS / Testing Library 固有の差分だけ**を定める。命名・import順序・コメント・例外処理などの共通ルールは typescript.md に従う。設計の判断軸は [frontend-design-policy.md](../../docs/policy/frontend-design-policy.md) が定める——**コンポーネントの責務は1つ**（ロジックはカスタムフックへ逃がす）・**状態は使う場所に置く**（持ち上げ・グローバル化は必要になってから）・**Props は誤用が型で弾かれる形にする**（フラグの組み合わせではなく判別可能ユニオン）。
 
 ## コンポーネント
 
@@ -16,7 +16,7 @@ paths:
 ## Props
 
 - Props は型（`type` または `interface`）で明示する。`any`・暗黙の `object` を使わない
-- **boolean / フラグ Props で振る舞いを切り替えない。** これは [application-design-policy「ブーリアン引数アンチパターン」](../../docs/policy/application-design-policy.md) の UI 適用である。状態が割れるなら**コンポーネントを分ける**
+- **boolean / フラグ Props で振る舞いを切り替えない。** これは [application-design-policy](../../docs/policy/application-design-policy.md) が禁ずるブーリアン引数アンチパターンの UI 適用である。状態が割れるなら**コンポーネントを分ける**
 
 ```tsx
 // ❌ フラグ Props で2つの責務を1つに詰め込む
@@ -56,7 +56,7 @@ const fullName = `${first} ${last}`
 ## 状態管理
 
 - **ローカル state を既定**にし、使う場所の近くに置く（colocation）
-- **state の持ち上げ（lifting up）は必要になってから**行う（先回りしない。[frontend-design-policy.md](../../docs/policy/frontend-design-policy.md)）
+- **state の持ち上げ（lifting up）は必要になってから**行う（先回りしない。共有要求が現れた瞬間に持ち上げる）
 - 横断的に共有する state はまず Context を使う。専用のグローバル状態ライブラリ（Redux/Zustand 等）の導入は ADR で判断する
 
 ## TailwindCSS / スタイリング
@@ -82,7 +82,7 @@ const fullName = `${first} ${last}`
 
 ## テスト実装ルール（Testing Library）
 
-テストの**思想**（ユーザー視点で振る舞いを検証する・内部 state や props を直接検証しない・どの層に書くか）は [unit-test-policy.md §9](../../docs/policy/unit-test-policy.md) と [test-strategy-policy.md](../../docs/policy/test-strategy-policy.md)（フロントは統合テスト厚めのトロフィー型）に従う。ここでは Testing Library 固有の**実装戦術**だけを定める。
+テストの**思想**（ユーザー視点で振る舞いを検証する・内部 state や props を直接検証しない・どの層に書くか）は unit-test-policy.md と [test-strategy-policy.md](../../docs/policy/test-strategy-policy.md)（フロントは統合テスト厚めのトロフィー型）に従う。ここでは Testing Library 固有の**実装戦術**だけを定める。
 
 - **クエリの優先順位**：`getByRole` → `getByLabelText` → `getByText` → （最終手段）`getByTestId`。アクセシブルな属性で取得できるなら `data-testid` を増やさない
 - ユーザー操作は **`userEvent` を `fireEvent` より優先**する（実際の操作に近く、フォーカス・入力の副作用まで再現する）
