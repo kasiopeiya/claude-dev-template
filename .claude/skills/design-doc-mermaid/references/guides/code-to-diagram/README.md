@@ -34,14 +34,14 @@ This master guide explains how to analyze source code and configuration files to
 
 ### Supported Frameworks
 
-| Framework        | Language              | Architecture Style                | Example Guide                                              |
-| ---------------- | --------------------- | --------------------------------- | ---------------------------------------------------------- |
-| **Spring Boot**  | Java                  | Annotation-driven, layered        | [Spring Boot Guide](../../examples/spring-boot/README.md)  |
-| **FastAPI**      | Python                | Async, dependency injection       | [FastAPI Guide](../../examples/fastapi/README.md)          |
-| **React**        | JavaScript/TypeScript | Component-based, state management | [React Guide](../../examples/react/README.md)              |
-| **Express.js**   | JavaScript/TypeScript | Middleware chain, routes          | [Node.js Guide](../../examples/node-webapp/README.md)      |
-| **Java Servlet** | Java                  | MVC Model 2, filters              | [Java Servlet Guide](../../examples/java-webapp/README.md) |
-| **Python ETL**   | Python                | Data pipelines, transformations   | [Python ETL Guide](../../examples/python-etl/README.md)    |
+| Framework        | Language              | Architecture Style                | Example Guide                                                 |
+| ---------------- | --------------------- | --------------------------------- | ------------------------------------------------------------- |
+| **Spring Boot**  | Java                  | Annotation-driven, layered        | [Spring Boot Guide](../../../examples/spring-boot/README.md)  |
+| **FastAPI**      | Python                | Async, dependency injection       | [FastAPI Guide](../../../examples/fastapi/README.md)          |
+| **React**        | JavaScript/TypeScript | Component-based, state management | [React Guide](../../../examples/react/README.md)              |
+| **Express.js**   | JavaScript/TypeScript | Middleware chain, routes          | [Node.js Guide](../../../examples/node-webapp/README.md)      |
+| **Java Servlet** | Java                  | MVC Model 2, filters              | [Java Servlet Guide](../../../examples/java-webapp/README.md) |
+| **Python ETL**   | Python                | Data pipelines, transformations   | [Python ETL Guide](../../../examples/python-etl/README.md)    |
 
 ---
 
@@ -221,7 +221,7 @@ sequenceDiagram
     Controller-->>-Client: 200 OK + JSON
 ```
 
-**Full Guide:** [Spring Boot Examples](../../examples/spring-boot/README.md)
+**Full Guide:** [Spring Boot Examples](../../../examples/spring-boot/README.md)
 
 ---
 
@@ -288,7 +288,7 @@ sequenceDiagram
     Endpoint-->>-Client: 201 Created + JSON
 ```
 
-**Full Guide:** [FastAPI Examples](../../examples/fastapi/README.md)
+**Full Guide:** [FastAPI Examples](../../../examples/fastapi/README.md)
 
 ---
 
@@ -353,7 +353,7 @@ sequenceDiagram
     Component->>User: Render ContactTable
 ```
 
-**Full Guide:** [React Examples](../../examples/react/README.md)
+**Full Guide:** [React Examples](../../../examples/react/README.md)
 
 ---
 
@@ -412,7 +412,7 @@ flowchart TD
     Success --> End
 ```
 
-**Full Guide:** [Node.js/Express Examples](../../examples/node-webapp/README.md)
+**Full Guide:** [Node.js/Express Examples](../../../examples/node-webapp/README.md)
 
 ---
 
@@ -469,7 +469,7 @@ graph TB
     AuthFilter --> ContactServlet
 ```
 
-**Full Guide:** [Java Servlet Examples](../../examples/java-webapp/README.md)
+**Full Guide:** [Java Servlet Examples](../../../examples/java-webapp/README.md)
 
 ---
 
@@ -540,7 +540,7 @@ flowchart LR
     Success --> End2([Pipeline Success])
 ```
 
-**Full Guide:** [Python ETL Examples](../../examples/python-etl/README.md)
+**Full Guide:** [Python ETL Examples](../../../examples/python-etl/README.md)
 
 ---
 
@@ -675,7 +675,7 @@ Don't try to diagram everything at once:
 
 Don't reinvent patterns. If you're analyzing a Spring Boot app:
 
-1. Load [Spring Boot Guide](../../examples/spring-boot/README.md)
+1. Load [Spring Boot Guide](../../../examples/spring-boot/README.md)
 2. Find similar code patterns
 3. Adapt the Mermaid template to your specific code
 
@@ -876,12 +876,12 @@ flowchart TD
 - [Deployment Diagrams Guide](../diagrams/deployment-diagrams.md)
 - [Sequence Diagrams Guide](../diagrams/sequence-diagrams.md)
 - [Unicode Symbols Reference](../unicode-symbols/guide.md)
-- [Spring Boot Examples](../../examples/spring-boot/README.md)
-- [FastAPI Examples](../../examples/fastapi/README.md)
-- [React Examples](../../examples/react/README.md)
-- [Node.js Examples](../../examples/node-webapp/README.md)
-- [Java Servlet Examples](../../examples/java-webapp/README.md)
-- [Python ETL Examples](../../examples/python-etl/README.md)
+- [Spring Boot Examples](../../../examples/spring-boot/README.md)
+- [FastAPI Examples](../../../examples/fastapi/README.md)
+- [React Examples](../../../examples/react/README.md)
+- [Node.js Examples](../../../examples/node-webapp/README.md)
+- [Java Servlet Examples](../../../examples/java-webapp/README.md)
+- [Python ETL Examples](../../../examples/python-etl/README.md)
 
 ---
 

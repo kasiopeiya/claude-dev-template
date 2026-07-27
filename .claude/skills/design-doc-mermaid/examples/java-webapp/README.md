@@ -1216,6 +1216,6 @@ Use semantic Unicode symbols consistently:
 
 **Guides:**
 
-- [Activity Diagrams](../../guides/diagrams/activity-diagrams.md)
-- [Deployment Diagrams](../../guides/diagrams/deployment-diagrams.md)
-- [Unicode Symbols](../../guides/unicode-symbols/guide.md)
+- [Activity Diagrams](../../references/guides/diagrams/activity-diagrams.md)
+- [Deployment Diagrams](../../references/guides/diagrams/deployment-diagrams.md)
+- [Unicode Symbols](../../references/guides/unicode-symbols/guide.md)
