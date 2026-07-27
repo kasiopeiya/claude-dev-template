@@ -27,7 +27,7 @@
 | 6   | 起点Issue を作る         | Plan ファイル                      | 起点Issue群（GitHub・依存順つき）          | `/to-issues <Planパス>`                                                           |
 
 - **2 で要修正なら**：1 に戻して `requirements.md` を直し、凍結可になってから 3 へ進む（判定基準は [requirements-doc-policy](../policy/requirements-doc-policy.md)）。
-- **3 の判定基準**：「決めないと足場（静的解析・CI・デプロイ）と最初の曳光弾が組めないか」で決める/保留を分ける。足場に効くもの（言語・クラウド・IaC・CI/CD・ディレクトリ方針 等）は決め、曳光弾でスタブできる詳細（FW・ORM・DBスキーマ・外部サービス）はあえて保留する（[new-development-policy](../policy/new-development-policy.md) §3）。決める基盤項目の全リストは `/decide-tech-stack` が網羅する。決定は ADR（＝設計書の一種）に一本化。構成の絞り込みは [directory-structure-guide](directory-structure-guide.md)。
+- **3 の判定基準**：「決めないと足場（静的解析・CI・デプロイ）と最初の曳光弾が組めないか」で決める/保留を分ける。足場に効くもの（言語・クラウド・IaC・CI/CD・ディレクトリ方針 等）は決め、曳光弾でスタブできる詳細（FW・ORM・DBスキーマ・外部サービス）はあえて保留する——コアから着手し、詳細は境界の外に置いて決定を遅らせるためである。決める基盤項目の全リストは `/decide-tech-stack` が網羅する。決定は ADR（＝設計書の一種）に一本化。構成の絞り込みは [directory-structure-guide](directory-structure-guide.md)。
 - **5 の後**：`/check-plan` が自動で走り、Plan の必須セクション充足を監査する。
 
 **4 で最低限詰めること**（new-development-policy の立場を計画に織り込む）：
@@ -45,19 +45,16 @@
 
 立ち上げと各Issueの開発は、`grill-me → to-plan → to-issues` という**同じスキル列を共有**する。同じ営みが2つの高度で自己相似に回っているだけと捉えれば全体像がすっきりする。
 
-|                  | 立ち上げ（プロダクト全体）                                             | 各起点Issue（[CLAUDE.md 開発フロー](../../CLAUDE.md)） |
-| ---------------- | ---------------------------------------------------------------------- | ------------------------------------------------------ |
-| 対象             | プロダクト全体                                                         | 1つの起点Issue                                         |
-| 粒度             | 粗い                                                                   | 細かい                                                 |
-| 前段             | `/elicit-requirements` → `/requirements-review` → `/decide-tech-stack` | なし                                                   |
-| 共有するスキル列 | `grill-me → to-plan → to-issues`                                       | `grill-me → to-plan → to-issues`                       |
-| その後           | 起点Issue群を産む                                                      | `/design` → 実装 → … → `/sre-prr`                      |
+|                  | 立ち上げ（プロダクト全体）                                             | 各起点Issue（CLAUDE.md 開発フロー） |
+| ---------------- | ---------------------------------------------------------------------- | ----------------------------------- |
+| 対象             | プロダクト全体                                                         | 1つの起点Issue                      |
+| 粒度             | 粗い                                                                   | 細かい                              |
+| 前段             | `/elicit-requirements` → `/requirements-review` → `/decide-tech-stack` | なし                                |
+| 共有するスキル列 | `grill-me → to-plan → to-issues`                                       | `grill-me → to-plan → to-issues`    |
+| その後           | 起点Issue群を産む                                                      | `/design` → 実装 → … → `/sre-prr`   |
 
 立ち上げ固有の差分は、対象がプロダクト全体で粒度が粗いことと、前段に `/elicit-requirements`・`/requirements-review`・`/decide-tech-stack` が付くことだけ。つまり立ち上げは「requirements.md と技術スタックを決め、既存フローを粗い粒度で1回回す」ことに等しい。
 
 ## 関連
 
-- [new-development-policy](../policy/new-development-policy.md)：立ち上げで倒す立場（曳光弾・ドメイン起点・構成の先決め）
-- [directory-structure-guide](directory-structure-guide.md)：ディレクトリ構成の絞り込み
 - [architecture-selection-guide](architecture-selection-guide.md)：アーキテクチャスタイルの選定
-- [CLAUDE.md 開発フロー](../../CLAUDE.md)：起点Issue以降の仕様駆動フロー

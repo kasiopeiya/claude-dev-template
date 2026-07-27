@@ -13,5 +13,4 @@ DDD の戦術的設計（エンティティ・値オブジェクト・集約・�
 
 ## 関連
 
-- [application-design-policy](../policy/application-design-policy.md)：判断基準（良い設計とは何か）
 - [application-architecture-policy](../policy/application-architecture-policy.md)：マクロ構造の判断基準
