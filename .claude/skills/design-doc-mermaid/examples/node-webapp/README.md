@@ -206,7 +206,7 @@ flowchart TD
 
     CORS --> Morgan[📝 Morgan<br/>HTTP Logging<br/>combined format]
 
-    Morgan --> BodyParser[📄 Body Parser<br/>express.json()<br/>express.urlencoded()]
+    Morgan --> BodyParser["📄 Body Parser<br/>express.json()<br/>express.urlencoded()"]
 
     BodyParser --> RequestID[🏷️ Request ID<br/>Add unique ID<br/>X-Request-ID header]
 

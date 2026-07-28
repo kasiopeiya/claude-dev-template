@@ -420,12 +420,12 @@ async def get_current_user(
 ```mermaid
 graph TB
     subgraph "FastAPI Dependency Injection"
-        Endpoint[🌐 Endpoint Handler<br/>async def create_contact()]
+        Endpoint["🌐 Endpoint Handler<br/>async def create_contact()"]
 
         subgraph "Injected Dependencies"
-            DB[🔌 get_db()<br/>yields AsyncSession]
-            Cache[🔌 get_cache()<br/>returns Redis]
-            Auth[🔌 get_current_user()<br/>returns User]
+            DB["🔌 get_db()<br/>yields AsyncSession"]
+            Cache["🔌 get_cache()<br/>returns Redis"]
+            Auth["🔌 get_current_user()<br/>returns User"]
         end
 
         subgraph "Resolved Dependencies"
