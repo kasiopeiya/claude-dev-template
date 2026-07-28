@@ -159,7 +159,7 @@ strokeColorのカラーリング例: `#FF9900`（オレンジ）, `#147EBA`（�
 <mxCell ... style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#3334B9;" ...>
 
 <!-- 破線矢印（参照・リダイレクト） -->
-<mxCell ... style="endArrow=classic;startArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#C7131F;dashed=1;..." ...>
+<mxCell ... style="endArrow=classic;html=1;rounded=0;strokeWidth=2;strokeColor=#C7131F;dashed=1;..." ...>
 
 <!-- エッジラベル -->
 <mxCell id="{edge_ID}_label" value="{ラベルテキスト}" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;" vertex="1" connectable="0" parent="{edge_ID}">
