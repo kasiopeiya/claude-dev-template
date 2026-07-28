@@ -65,13 +65,14 @@ grep -r "express()\|app.use" .
 
 **Common Framework Markers:**
 
-| Framework   | File Markers                         | Code Markers                                            |
-| ----------- | ------------------------------------ | ------------------------------------------------------- |
-| Spring Boot | `pom.xml`, `build.gradle`            | `@SpringBootApplication`, `@RestController`, `@Service` |
-| FastAPI     | `requirements.txt`, `pyproject.toml` | `from fastapi import`, `@app.get`, `async def`          |
-| React       | `package.json`, `.jsx/.tsx` files    | `import React`, `useState`, `useEffect`                 |
-| Express     | `package.json`, `app.js`             | `const express = require`, `app.use`, `app.get`         |
-| Django      | `requirements.txt`, `settings.py`    | `from django`, `models.Model`, `views.py`               |
+| Framework    | File Markers                         | Code Markers                                            |
+| ------------ | ------------------------------------ | ------------------------------------------------------- |
+| Spring Boot  | `pom.xml`, `build.gradle`            | `@SpringBootApplication`, `@RestController`, `@Service` |
+| FastAPI      | `requirements.txt`, `pyproject.toml` | `from fastapi import`, `@app.get`, `async def`          |
+| React        | `package.json`, `.jsx/.tsx` files    | `import React`, `useState`, `useEffect`                 |
+| Express.js   | `package.json`, `app.js`             | `const express = require`, `app.use`, `app.get`         |
+| Java Servlet | `web.xml`, `*.war`                   | `@WebServlet`, `@WebFilter`, `doGet`, `doPost`          |
+| Python ETL   | `requirements.txt`, `dags/`          | `with DAG(`, `PythonOperator`, `extract`/`transform`    |
 
 ### Step 2: Map Code Structure to Diagram Types
 
@@ -111,43 +112,15 @@ grep -r "express()\|app.use" .
 
 ### Step 4: Apply Framework Patterns
 
-Each framework has common architectural patterns. Load the appropriate framework guide:
-
-```mermaid
-graph TB
-    Start([Analyze Codebase]) --> Detect{Detect Framework}
-
-    Detect -->|Spring Boot| SpringGuide[Load Spring Boot Guide]
-    Detect -->|FastAPI| FastAPIGuide[Load FastAPI Guide]
-    Detect -->|React| ReactGuide[Load React Guide]
-    Detect -->|Express| ExpressGuide[Load Express Guide]
-    Detect -->|Java Servlet| ServletGuide[Load Servlet Guide]
-    Detect -->|Python ETL| ETLGuide[Load ETL Guide]
-
-    SpringGuide --> Extract[Extract Patterns]
-    FastAPIGuide --> Extract
-    ReactGuide --> Extract
-    ExpressGuide --> Extract
-    ServletGuide --> Extract
-    ETLGuide --> Extract
-
-    Extract --> Generate[Generate Mermaid Diagram]
-    Generate --> Validate[Validate Syntax]
-    Validate --> Done([Complete])
-
-    classDef guide fill:#4ECDC4,stroke:#0B7285,color:#fff
-    classDef process fill:#FFE66D,stroke:#F08C00,color:#000
-
-    class SpringGuide,FastAPIGuide,ReactGuide,ExpressGuide,ServletGuide,ETLGuide guide
-    class Extract,Generate,Validate process
-```
+Each framework has common architectural patterns. Load the guide matching the framework detected in Step 1 (see [Supported Frameworks](#supported-frameworks)).
 
 ### Step 5: Generate and Validate
 
 1. **Generate Mermaid code** using patterns from guides
-2. **Validate syntax** using `scripts/extract_mermaid.py --validate`
-3. **Review diagram** for accuracy and clarity
-4. **Refine** based on team feedback
+2. **Add Unicode symbols and high-contrast styling** for readability
+3. **Validate syntax** using `scripts/extract_mermaid.py --validate`
+4. **Review diagram** for accuracy and clarity
+5. **Refine** based on team feedback
 
 ---
 
@@ -808,23 +781,23 @@ graph TB
 
 ```mermaid
 flowchart TD
-    Start([Receive Codebase]) --> Identify[🔍 Identify Framework<br/>Check files, imports, annotations]
+    Start([Receive Codebase]) --> Identify[🔍 Step 1: Identify Framework<br/>Check files, imports, annotations]
 
-    Identify --> LoadGuide[📚 Load Framework-Specific Guide<br/>Spring Boot, FastAPI, React, etc.]
-
-    LoadGuide --> Analyze[🧩 Analyze Code Structure<br/>Directories, configs, dependencies]
-
-    Analyze --> SelectDiagram{📊 Select Diagram Type}
+    Identify --> SelectDiagram{📊 Step 2: Select Diagram Type}
 
     SelectDiagram -->|Structure| ArchDiagram[🏗️ Architecture Diagram]
     SelectDiagram -->|Config| DeployDiagram[☁️ Deployment Diagram]
     SelectDiagram -->|Methods| SeqDiagram[📨 Sequence Diagram]
     SelectDiagram -->|Logic| ActDiagram[⚡ Activity Diagram]
 
-    ArchDiagram --> Generate[✏️ Generate Mermaid Code]
-    DeployDiagram --> Generate
-    SeqDiagram --> Generate
-    ActDiagram --> Generate
+    ArchDiagram --> Extract[🧩 Step 3: Extract Key Information<br/>Directories, configs, method calls]
+    DeployDiagram --> Extract
+    SeqDiagram --> Extract
+    ActDiagram --> Extract
+
+    Extract --> LoadGuide[📚 Step 4: Load Framework Guide<br/>Apply its patterns]
+
+    LoadGuide --> Generate[✏️ Step 5: Generate Mermaid Code<br/>Add symbols and high-contrast styling]
 
     Generate --> Validate[✅ Validate Syntax<br/>scripts/extract_mermaid.py]
 
@@ -846,26 +819,11 @@ flowchart TD
     classDef diagram fill:#95E1D3,stroke:#087F5B,color:#000
     classDef done fill:#A8DADC,stroke:#1864AB,color:#000
 
-    class Identify,LoadGuide,Analyze,Generate,Validate,Review,Document process
+    class Identify,Extract,LoadGuide,Generate,Validate,Fix,Review,Refine,Document process
     class SelectDiagram,Valid,Approved decision
     class ArchDiagram,DeployDiagram,SeqDiagram,ActDiagram diagram
     class Done done
 ```
-
----
-
-## Quick Start Checklist
-
-- [ ] **Step 1:** Identify framework (Spring Boot, FastAPI, React, etc.)
-- [ ] **Step 2:** Load appropriate framework example guide
-- [ ] **Step 3:** Decide which diagram type(s) to create
-- [ ] **Step 4:** Extract relevant code patterns
-- [ ] **Step 5:** Generate Mermaid diagram using guide templates
-- [ ] **Step 6:** Add Unicode symbols for clarity
-- [ ] **Step 7:** Apply high-contrast styling
-- [ ] **Step 8:** Validate syntax with validation script
-- [ ] **Step 9:** Review with team
-- [ ] **Step 10:** Commit to version control with code
 
 ---
 
