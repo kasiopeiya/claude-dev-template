@@ -7,6 +7,8 @@
 
 This guide shows how to extract Mermaid diagrams from traditional Java servlet-based web applications using the MVC Model 2 architecture pattern.
 
+> **Persistence style in this example:** The DAO layer uses hand-written JDBC (`PreparedStatement`) for actual queries, while the `model/` classes carry JPA `@Entity` annotations purely to document the schema and relationships (used to generate the ER diagram in [Entity Relationship from JPA Entities](#entity-relationship-from-jpa-entities)). No `EntityManager` is used at runtime in this example — the JPA annotations are a compact, familiar notation for schema documentation, not a live persistence provider.
+
 ---
 
 ## Table of Contents
@@ -158,16 +160,11 @@ graph TB
 
 ```java
 // src/main/java/com/example/controller/ContactServlet.java
-@WebServlet(urlPatterns = {"/contacts", "/contacts/*"})
+@WebServlet("/contacts/*")
 public class ContactServlet extends HttpServlet {
 
+    @Inject
     private ContactService contactService;
-
-    @Override
-    public void init() throws ServletException {
-        // Service layer injection (manual or with CDI)
-        contactService = new ContactService();
-    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
@@ -193,16 +190,36 @@ public class ContactServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        String action = req.getParameter("action");
+        String name = req.getParameter("name");
+        String email = req.getParameter("email");
 
-        if ("create".equals(action)) {
-            Contact contact = buildContactFromRequest(req);
-            contactService.createContact(contact);
-            resp.sendRedirect(req.getContextPath() + "/contacts");
+        if (!ValidationUtil.isValidEmail(email)) {
+            req.setAttribute("error", "Invalid email format");
+            req.getRequestDispatcher("/WEB-INF/jsp/error.jsp").forward(req, resp);
+            return;
+        }
+
+        Contact contact = new Contact();
+        contact.setName(name);
+        contact.setEmail(email);
+
+        try {
+            Contact saved = contactService.createContact(contact);
+            req.setAttribute("contact", saved);
+            req.setAttribute("message", "Contact created successfully");
+            req.getRequestDispatcher("/WEB-INF/jsp/contacts/success.jsp")
+               .forward(req, resp);
+
+        } catch (DuplicateEmailException e) {
+            req.setAttribute("error", "Email already exists");
+            req.getRequestDispatcher("/WEB-INF/jsp/contacts/form.jsp")
+               .forward(req, resp);
         }
     }
 }
 ```
+
+This is the single canonical `ContactServlet` definition referenced throughout this guide (Sequence Diagram section below reuses it).
 
 ---
 
@@ -404,54 +421,9 @@ graph TB
 
 ### Java Code - Request Processing
 
+The `doPost()` flow below is handled by the canonical `ContactServlet` shown in [Architecture Diagram from Project Structure](#architecture-diagram-from-project-structure); this section shows the service, DAO, and filter classes it calls into.
+
 ```java
-// src/main/java/com/example/controller/ContactServlet.java
-@WebServlet("/contacts/*")
-public class ContactServlet extends HttpServlet {
-
-    @Inject
-    private ContactService contactService;
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException {
-
-        // 1. Extract parameters
-        String name = req.getParameter("name");
-        String email = req.getParameter("email");
-
-        // 2. Validate input
-        if (!ValidationUtil.isValidEmail(email)) {
-            req.setAttribute("error", "Invalid email format");
-            req.getRequestDispatcher("/WEB-INF/jsp/error.jsp").forward(req, resp);
-            return;
-        }
-
-        // 3. Build domain object
-        Contact contact = new Contact();
-        contact.setName(name);
-        contact.setEmail(email);
-
-        // 4. Call service layer
-        try {
-            Contact saved = contactService.createContact(contact);
-
-            // 5. Set response attributes
-            req.setAttribute("contact", saved);
-            req.setAttribute("message", "Contact created successfully");
-
-            // 6. Forward to success view
-            req.getRequestDispatcher("/WEB-INF/jsp/contacts/success.jsp")
-               .forward(req, resp);
-
-        } catch (DuplicateEmailException e) {
-            req.setAttribute("error", "Email already exists");
-            req.getRequestDispatcher("/WEB-INF/jsp/contacts/form.jsp")
-               .forward(req, resp);
-        }
-    }
-}
-
 // src/main/java/com/example/service/ContactService.java
 public class ContactService {
 
@@ -463,8 +435,7 @@ public class ContactService {
             throw new DuplicateEmailException("Email already exists");
         }
 
-        // Generate ID
-        contact.setId(UUID.randomUUID().toString());
+        // id is assigned by the database (BIGINT IDENTITY, see Contact entity)
         contact.setCreatedAt(LocalDateTime.now());
 
         // Save to database
@@ -480,17 +451,22 @@ public class ContactDaoImpl implements ContactDao {
 
     @Override
     public Contact save(Contact contact) {
-        String sql = "INSERT INTO contacts (id, name, email, created_at) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO contacts (name, email, created_at) VALUES (?, ?, ?)";
 
         try (Connection conn = dataSource.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
-            stmt.setString(1, contact.getId());
-            stmt.setString(2, contact.getName());
-            stmt.setString(3, contact.getEmail());
-            stmt.setTimestamp(4, Timestamp.valueOf(contact.getCreatedAt()));
+            stmt.setString(1, contact.getName());
+            stmt.setString(2, contact.getEmail());
+            stmt.setTimestamp(3, Timestamp.valueOf(contact.getCreatedAt()));
 
             stmt.executeUpdate();
+
+            try (ResultSet keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) {
+                    contact.setId(keys.getLong(1));
+                }
+            }
             return contact;
 
         } catch (SQLException e) {
@@ -520,27 +496,46 @@ public class ContactDaoImpl implements ContactDao {
 }
 
 // src/main/java/com/example/filter/AuthenticationFilter.java
+@WebFilter(urlPatterns = {"/contacts/*", "/dashboard/*"})
 public class AuthenticationFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response,
                         FilterChain chain) throws IOException, ServletException {
-
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse resp = (HttpServletResponse) response;
         HttpSession session = req.getSession(false);
 
-        // Check if user is authenticated
-        if (session != null && session.getAttribute("user") != null) {
-            // User authenticated, continue
-            chain.doFilter(request, response);
-        } else {
-            // Not authenticated, redirect to login
+        User user = (session != null) ? (User) session.getAttribute("user") : null;
+
+        if (user == null) {
+            // Not authenticated
             resp.sendRedirect(req.getContextPath() + "/login.jsp");
+            return;
         }
+
+        // Check if user has required role
+        String requiredRole = getRequiredRole(req.getRequestURI());
+        if (requiredRole != null && !user.hasRole(requiredRole)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
+            return;
+        }
+
+        // Set user in request scope for servlets
+        req.setAttribute("currentUser", user);
+
+        chain.doFilter(request, response);
+    }
+
+    private String getRequiredRole(String uri) {
+        if (uri.contains("/admin/")) return "ADMIN";
+        if (uri.contains("/dashboard/")) return "USER";
+        return null;
     }
 }
 ```
+
+This is the single canonical `AuthenticationFilter` definition (the Activity Diagram section below reuses it).
 
 ### Mapping to Sequence Diagram
 
@@ -573,9 +568,17 @@ sequenceDiagram
     Note over Tomcat: Servlet Container<br/>receives request
 
     Tomcat->>+AuthFilter: doFilter()
-    AuthFilter->>AuthFilter: Check session.getAttribute("user")
+    AuthFilter->>AuthFilter: session = req.getSession(false)<br/>user = session.getAttribute("user")
 
-    alt User authenticated
+    alt No session or user
+        AuthFilter->>Browser: resp.sendRedirect("/login.jsp")
+        Browser->>User: Display login page
+    else User authenticated but lacks required role
+        AuthFilter->>AuthFilter: getRequiredRole(uri)<br/>!user.hasRole(requiredRole)
+        AuthFilter->>Browser: resp.sendError(403 Forbidden)
+        Browser->>User: Display access denied
+    else User authenticated with required role
+        AuthFilter->>AuthFilter: req.setAttribute("currentUser", user)
         AuthFilter->>+ContactServlet: chain.doFilter()
         Note over ContactServlet: doPost() invoked
 
@@ -591,10 +594,10 @@ sequenceDiagram
         DB-->>-ContactDAO: 0 (not exists)
         ContactDAO-->>-ContactSvc: false
 
-        ContactSvc->>ContactSvc: Generate UUID<br/>Set createdAt timestamp
+        ContactSvc->>ContactSvc: Set createdAt timestamp
         ContactSvc->>+ContactDAO: save(contact)
-        ContactDAO->>+DB: INSERT INTO contacts<br/>(id, name, email, created_at)
-        DB-->>-ContactDAO: Success (1 row)
+        ContactDAO->>+DB: INSERT INTO contacts<br/>(name, email, created_at)
+        DB-->>-ContactDAO: Success, generated id
         ContactDAO-->>-ContactSvc: Contact (with ID)
         ContactSvc-->>-ContactServlet: Contact (saved)
 
@@ -604,14 +607,9 @@ sequenceDiagram
         JSP-->>-ContactServlet: HTML response
         ContactServlet-->>-AuthFilter: Response ready
         AuthFilter-->>-Tomcat: Response ready
-
-    else User not authenticated
-        AuthFilter->>Browser: resp.sendRedirect("/login.jsp")
-        Browser->>User: Display login page
+        Tomcat-->>-Browser: HTTP 200 OK + HTML
+        Browser->>User: Display success page
     end
-
-    Tomcat-->>-Browser: HTTP 200 OK + HTML
-    Browser->>User: Display success page
 ```
 
 **Alternative Flow - Duplicate Email:**
@@ -695,46 +693,9 @@ public class CorsFilter implements Filter {
         chain.doFilter(request, response);
     }
 }
-
-// src/main/java/com/example/filter/AuthenticationFilter.java
-@WebFilter(urlPatterns = {"/contacts/*", "/dashboard/*"})
-public class AuthenticationFilter implements Filter {
-
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response,
-                        FilterChain chain) throws IOException, ServletException {
-        HttpServletRequest req = (HttpServletRequest) request;
-        HttpServletResponse resp = (HttpServletResponse) response;
-        HttpSession session = req.getSession(false);
-
-        User user = (session != null) ? (User) session.getAttribute("user") : null;
-
-        if (user == null) {
-            // Not authenticated
-            resp.sendRedirect(req.getContextPath() + "/login.jsp");
-            return;
-        }
-
-        // Check if user has required role
-        String requiredRole = getRequiredRole(req.getRequestURI());
-        if (requiredRole != null && !user.hasRole(requiredRole)) {
-            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Access denied");
-            return;
-        }
-
-        // Set user in request scope for servlets
-        req.setAttribute("currentUser", user);
-
-        chain.doFilter(request, response);
-    }
-
-    private String getRequiredRole(String uri) {
-        if (uri.contains("/admin/")) return "ADMIN";
-        if (uri.contains("/dashboard/")) return "USER";
-        return null;
-    }
-}
 ```
+
+`AuthenticationFilter` (session + role check) is defined once in [Sequence Diagram from Servlet Request Flow](#sequence-diagram-from-servlet-request-flow); the Activity Diagram below traces its role-check branches.
 
 ### web.xml Filter Ordering
 
