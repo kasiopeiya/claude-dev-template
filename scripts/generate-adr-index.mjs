@@ -4,7 +4,7 @@
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs'
 import { join, dirname } from 'path'
-import { fileURLToPath, pathToFileURL } from 'url'
+import { fileURLToPath } from 'url'
 
 import prettier from 'prettier'
 
@@ -19,7 +19,7 @@ const END_MARKER = '<!-- ADR_INDEX_TABLE:END -->'
 
 // status は機械キー（ASCII enum）を SSOT にし、表示だけ日本語へ写す。
 // 表示語の言い換えが status 値の比較ロジックに波及しないよう、機械キーと表示を分離する。
-export const STATUS_DISPLAY = {
+const STATUS_DISPLAY = {
   proposed: '提案',
   accepted: '承認',
   rejected: '却下',
@@ -33,7 +33,7 @@ export const STATUS_DISPLAY = {
  * @param {string} content ファイル全文
  * @returns {Record<string, string>} frontmatter のキー・値
  */
-export function parseFrontmatter(content) {
+function parseFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---/)
   if (!match) return {}
   const result = {}
@@ -49,7 +49,7 @@ export function parseFrontmatter(content) {
  * @param {string} content ファイル全文
  * @returns {string} タイトル
  */
-export function extractTitle(content) {
+function extractTitle(content) {
   const heading = content.match(/^#\s+(.+)$/m)
   if (!heading) return ''
   return heading[1].replace(/^ADR-\d+:\s*/, '').trim()
@@ -61,7 +61,7 @@ export function extractTitle(content) {
  * @param {string} content ファイル全文
  * @returns {{ number: string, title: string, file: string, status: string, date: string, supersededBy?: string }}
  */
-export function toAdrEntry(file, content) {
+function toAdrEntry(file, content) {
   const front = parseFrontmatter(content)
   const number = file.match(/^(\d{3})/)[1]
 
@@ -102,7 +102,7 @@ function collectAdrs() {
  * @param {ReturnType<typeof toAdrEntry>[]} adrs
  * @returns {string} テーブル文字列
  */
-export function buildTable(adrs) {
+function buildTable(adrs) {
   const header = '| No. | タイトル | ステータス | 日付 |'
   const separator = '| --- | --- | --- | --- |'
   const rows = adrs.map((adr) => {
@@ -141,20 +141,8 @@ async function formatWithPrettier(content) {
 }
 
 async function main() {
-  const isCheck = process.argv.includes('--check')
   const expected = await formatWithPrettier(renderIndex())
   const actual = readFileSync(indexPath, 'utf8')
-
-  if (isCheck) {
-    if (expected !== actual) {
-      console.error(
-        'adr-index.md が ADR の frontmatter と一致しません。`npm run gen:adr-index` を実行してください。'
-      )
-      process.exit(1)
-    }
-    console.log('adr-index.md は最新です。')
-    return
-  }
 
   if (expected !== actual) {
     writeFileSync(indexPath, expected)
@@ -164,10 +152,7 @@ async function main() {
   }
 }
 
-// テストから import したときは main を実行しない（直接実行時のみ生成する）。
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((error) => {
-    console.error(error.message)
-    process.exit(1)
-  })
-}
+main().catch((error) => {
+  console.error(error.message)
+  process.exit(1)
+})
