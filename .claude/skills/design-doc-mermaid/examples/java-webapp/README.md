@@ -225,6 +225,8 @@ This is the single canonical `ContactServlet` definition referenced throughout t
 
 ## Deployment Diagram from web.xml & server.xml
 
+> **Servlet/Filter registration in this example:** `ContactServlet` and `AuthenticationFilter` carry `@WebServlet`/`@WebFilter` annotations — this is the canonical, live registration mechanism used throughout this guide (Sequence Diagram and Activity Diagram sections reuse these classes). The `<servlet>`/`<filter>` entries in `web.xml` below are a separate teaching example showing how to derive a deployment diagram from XML descriptors; they are not a second live registration. A real Jakarta EE app would use one mechanism, not both, to avoid ambiguous/duplicate mappings.
+
 ### web.xml Configuration
 
 ```xml
