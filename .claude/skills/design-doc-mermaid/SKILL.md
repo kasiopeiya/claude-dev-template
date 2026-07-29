@@ -443,7 +443,6 @@ graph TB
 design-doc-mermaid/
 ├── SKILL.md                          # This file - Main orchestrator
 ├── README.md                         # User documentation
-├── HIGH_CONTRAST_UPDATE.md           # High-contrast styling notes
 │
 ├── references/                       # Reference materials
 │   ├── diagram-type-selection.md    # Shape → type. Entry point for every diagram

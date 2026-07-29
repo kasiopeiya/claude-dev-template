@@ -1045,6 +1045,12 @@ Before including a diagram, verify:
 - [ ] **All `style` statements include `color:` property for high contrast**
 - [ ] **Text is readable on all background colors (accessibility test)**
 
+Mechanical check for the `color:` requirement — any output means the contrast rule is violated:
+
+```bash
+grep -n "classDef\|^\s*style " yourfile.md | grep -v "color:"
+```
+
 ---
 
 ## Common Errors and Fixes
