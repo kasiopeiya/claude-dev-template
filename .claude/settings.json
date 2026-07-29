@@ -10,6 +10,16 @@
             "statusMessage": "適用ポリシー確認中..."
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-branch-create.mjs\"",
+            "statusMessage": "gitブランチ作成操作を確認中..."
+          }
+        ]
       }
     ],
     "Stop": [
