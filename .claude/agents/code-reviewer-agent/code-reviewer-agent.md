@@ -51,10 +51,10 @@ git diff --cached --name-only --diff-filter=ACMR
 
 2 つの結果を結合し、重複を除去する。その後フィルタリングする:
 
-- 残す: .ts または .tsx で終わるファイル（テストファイル .test.ts / .test.tsx / .spec.ts も含める）
+- 残す: .ts または .tsx で終わるファイル（テストファイル .test.ts / .test.tsx / .spec.ts も含める）、および .test.mjs で終わるファイル
 - 除外: .config.ts / .config.js で終わるもの、infra/ を含むパス
 
-該当ファイルが 0 件の場合は「git diff/status に対象 TypeScript ファイルが見つかりませんでした」と出力して終了する。
+該当ファイルが 0 件の場合は「git diff/status に対象ファイルが見つかりませんでした」と出力して終了する。
 
 該当ファイルが 1 件以上の場合は、ファイル一覧を出力してから各ファイルについて順番に Phase 2 を実行する。全ファイルのレビュー完了後、Phase 3 で全体サマリーを出力する。
 
@@ -72,15 +72,15 @@ git diff --cached --name-only --diff-filter=ACMR
 
 ファイルパスから種別を判定する:
 
-| ディレクトリパターン                                     | 種別      | 重点観点                         |
-| -------------------------------------------------------- | --------- | -------------------------------- |
-| .test.ts / .test.tsx / .spec.ts で終わる（最優先で判定） | Test      | 単体テストポリシー準拠・命名規則 |
-| パスに handlers/ を含む                                  | Handler   | セキュリティ・エラーハンドリング |
-| パスに utils/ を含む                                     | Utility   | 単一責任・テスタビリティ         |
-| パスに pages/ を含む                                     | Page      | コンポーネント設計・状態管理・UX |
-| パスに contexts/ を含む                                  | Context   | 状態管理・パフォーマンス         |
-| .tsx 拡張子                                              | Component | コンポーネント設計・プロパティ型 |
-| その他                                                   | Module    | 汎用的な観点                     |
+| ディレクトリパターン                                                 | 種別      | 重点観点                         |
+| -------------------------------------------------------------------- | --------- | -------------------------------- |
+| .test.ts / .test.tsx / .spec.ts / .test.mjs で終わる（最優先で判定） | Test      | 単体テストポリシー準拠・命名規則 |
+| パスに handlers/ を含む                                              | Handler   | セキュリティ・エラーハンドリング |
+| パスに utils/ を含む                                                 | Utility   | 単一責任・テスタビリティ         |
+| パスに pages/ を含む                                                 | Page      | コンポーネント設計・状態管理・UX |
+| パスに contexts/ を含む                                              | Context   | 状態管理・パフォーマンス         |
+| .tsx 拡張子                                                          | Component | コンポーネント設計・プロパティ型 |
+| その他                                                               | Module    | 汎用的な観点                     |
 
 ### 2. ファイル内容と変更履歴の取得
 
@@ -131,7 +131,7 @@ git log -1 --pretty=format:"%h - %an, %ar : %s" -- [ファイルパス]
 | `docs/policy/application-design-policy.md`  | #19 アプリ設計ポリシー準拠         | 全ファイル                                                                                             |
 | `docs/policy/application-logging-policy.md` | #20 ロギングポリシー準拠           | ログ出力を含むファイル（無ければ対象外）                                                               |
 | `docs/policy/frontend-design-policy.md`     | #21 フロントエンド設計ポリシー準拠 | **React コンポーネント（`.tsx`/`.jsx`、または `react` を import するファイル）のみ**。それ以外は対象外 |
-| `docs/policy/unit-test-policy.md`           | #22 単体テストポリシー準拠         | **テストファイル（.test.ts / .test.tsx / .spec.ts）のみ**。それ以外は対象外                            |
+| `docs/policy/unit-test-policy.md`           | #22 単体テストポリシー準拠         | **テストファイル（.test.ts / .test.tsx / .spec.ts / .test.mjs）のみ**。それ以外は対象外                |
 
 **対象外の観点は採点せず、得点率の分母（適用観点数）からも除外する**（該当なしを 3点として加点しない）。
 
