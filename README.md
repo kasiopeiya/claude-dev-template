@@ -18,7 +18,7 @@
 | ⑩   | マジックナンバー禁止（**`app/` のみ**）                               | `no-magic-numbers`                                                          | －         |
 | ⑪   | 浮いた Promise・Promise 誤用の禁止                                    | `@typescript-eslint/no-floating-promises` / `no-misused-promises`           | －         |
 
-⑥〜⑨のしきい値は [typescript.md](../.claude/rules/typescript.md) を SSOT とする。⑪は型情報が要るため対象を tsconfig に含まれるソースへ限定し、型サービスを有効化している。
+⑥〜⑨のしきい値は [typescript.md](.claude/rules/typescript.md) を SSOT とする。⑪は型情報が要るため対象を tsconfig に含まれるソースへ限定し、型サービスを有効化している。
 
 ### 較正（過剰ゲート化を避ける）
 
