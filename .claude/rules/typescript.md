@@ -33,7 +33,7 @@ import { generateState, verifyState } from './utils/state'
 
 ## Import はファイル冒頭に集約する
 
-すべての `import` 文はファイル先頭（最初の非 import 文より前）にまとめる。コードの途中に `import` を置いてはならない（ESLint `import/first` 相当）。
+すべての `import` 文はファイル先頭（最初の非 import 文より前）にまとめる。コードの途中に `import` を置いてはならない（ESLint `import-x/first` 相当）。
 
 依存関係はファイル冒頭を見れば一覧できる状態に保つ。途中の import は依存の見落とし・循環参照の発見を妨げ、「このファイルが何に依存するか」を掴むコストを上げる。
 

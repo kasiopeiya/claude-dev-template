@@ -192,24 +192,9 @@ jobs:
       # 未使用のexport・未使用のファイル・未使用の依存パッケージなどを検出
       - run: npm run knip
 
-      # 脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実。だから
-      # ci-app / ci-cdk に分けて条件実行にしない（infra の脆弱性が app だけの PR で見えなくなる）。
-      # high 未満で落とさないのは、受容するかが人間の判断だから（cicd-policy）。
-      # 1つ落ちても残りを検査してから赤にする（往復させないため）。
-      - name: Audit npm dependencies
-        run: |
-          failed=""
-          for dir in . app/backend infra; do
-            echo "::group::npm audit ($dir)"
-            npm audit --audit-level=high --prefix "$dir" || failed="$failed $dir"
-            echo "::endgroup::"
-          done
-
-          if [ -n "$failed" ]; then
-            echo "::error::high or critical vulnerabilities found in:$failed"
-            exit 1
-          fi
-          echo "no high or critical vulnerabilities"
+      # 3階層の npm 依存を舐めて high 以上で落とす。どこを検査するか・どこで落とすか・
+      # 上流が同梱していて手元で直せないものをどう扱うかは scripts/audit-dependencies.mjs にある。
+      - run: npm run check:audit
 
   # app 固有の検査。ルールが app/backend に閉じているため条件実行できる（ci-common との違い）。
   ci-app:

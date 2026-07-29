@@ -8,7 +8,7 @@
 | --- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------- |
 | ①   | クラス・関数の前後に空行を入れる                                      | `@stylistic/padding-line-between-statements`＋`lines-between-class-members` | ✅         |
 | ②   | 未使用の変数・引数を検出（optional 引数を含む全引数）                 | `@typescript-eslint/no-unused-vars`（`args: 'all'`）                        | －         |
-| ③   | import 順序（標準ライブラリ→サードパーティ→自作、各グループ間に空行） | `eslint-plugin-import` の `import/order`                                    | ✅         |
+| ③   | import 順序（標準ライブラリ→サードパーティ→自作、各グループ間に空行） | `eslint-plugin-import-x` の `import-x/order`                                | ✅         |
 | ④   | aws-cdk-lib のサービスモジュールは barrel 形式に統一                  | 自作ルール `local/aws-cdk-lib-barrel-import`                                | ✅（一部） |
 | ⑤   | `any` を禁止し型システムを使わせる                                    | `@typescript-eslint/no-explicit-any`                                        | －         |
 | ⑥   | 複雑度（循環的・認知的とも各 15 まで）                                | `complexity`＋`sonarjs/cognitive-complexity`                                | －         |

@@ -3,7 +3,7 @@
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import stylistic from '@stylistic/eslint-plugin'
-import importPlugin from 'eslint-plugin-import'
+import importPlugin from 'eslint-plugin-import-x'
 import sonarjs from 'eslint-plugin-sonarjs'
 import globals from 'globals'
 
@@ -27,7 +27,7 @@ export default tseslint.config(
     files: ['**/*.ts'],
     plugins: {
       '@stylistic': stylistic,
-      import: importPlugin,
+      'import-x': importPlugin,
       sonarjs,
       local: { rules: { 'aws-cdk-lib-barrel-import': awsCdkLibBarrelImport } }
     },
@@ -49,14 +49,14 @@ export default tseslint.config(
       ],
 
       // ③ import 順序（typescript.md）: 標準ライブラリ → サードパーティ → 自作、各グループ間に空行
-      'import/order': [
+      'import-x/order': [
         'error',
         {
           groups: ['builtin', 'external', ['internal', 'parent', 'sibling', 'index']],
           'newlines-between': 'always'
         }
       ],
-      'import/first': 'error',
+      'import-x/first': 'error',
 
       // ④ aws-cdk-lib のサービスモジュールは barrel 形式へ統一（cdk.md）。名前空間 import は自動修正される
       'local/aws-cdk-lib-barrel-import': 'error',
