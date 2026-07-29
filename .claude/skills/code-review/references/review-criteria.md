@@ -23,7 +23,7 @@
 | 非同期処理（浮いた Promise・誤用）      | ESLint `@typescript-eslint/no-floating-promises` / `no-misused-promises` |
 | 未使用宣言（変数・引数・optional 含む） | ESLint `@typescript-eslint/no-unused-vars`（`args:'all'`）＋ knip        |
 | 不要な export                           | knip（未使用 export 検知）                                               |
-| Import 順序・冒頭集約                   | ESLint `import/order` / `import/first`                                   |
+| Import 順序・冒頭集約                   | ESLint `import-x/order` / `import-x/first`                               |
 | ネスト深度・複雑度                      | ESLint `max-depth` / `complexity` / `sonarjs/cognitive-complexity`       |
 
 下の採点表の番号（#）は他ドキュメント（`code-reviewer-agent.md` 等）からの参照アンカーとして固定する。機械化で採点から外した観点の番号は**欠番のまま残し、振り直さない**（参照を壊さないため）。
