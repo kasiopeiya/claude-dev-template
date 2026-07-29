@@ -163,7 +163,7 @@ graph TB
 ```mermaid
 flowchart TD
     subgraph "User Action"
-        UI[👤 User Clicks<br/>"Add Contact"]
+        UI["👤 User Clicks<br/>'Add Contact'"]
         Component[⚛️ ContactForm]
     end
 
@@ -310,11 +310,6 @@ sequenceDiagram
     Note over Component: Unmount Phase
     User->>Component: Navigate away
     Component->>Component: Cleanup useEffect
-
-    classDef user fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
-    classDef component fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
-    classDef hook fill:#FFD700,stroke:#333,stroke-width:2px,color:black
-    classDef redux fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
 ```
 
 ### Build & Deployment Diagram
@@ -445,7 +440,7 @@ graph LR
     Methods --> removeContact[removeContact]
 
     Redux --> State[State]
-    State --> contacts[contacts: []]
+    State --> contacts["contacts: []"]
     State --> loading[loading: bool]
     State --> error[error: string]
 

@@ -144,12 +144,14 @@ classDiagram
         +meow() void
     }
 
+    class Flyable {
+        <<interface>>
+    }
+
     Animal <|-- Dog : inherits
     Animal <|-- Cat : inherits
     Dog "1" --> "*" Toy : has
     Cat "1" --> "1" Owner : belongs to
-
-    <<interface>> Flyable
     Bird ..|> Flyable : implements
 ```
 
@@ -783,7 +785,7 @@ gitGraph
 ```mermaid
 requirementDiagram
     requirement auth {
-        id: REQ-1
+        id: "REQ-1"
         text: users must authenticate
         risk: high
         verifymethod: test

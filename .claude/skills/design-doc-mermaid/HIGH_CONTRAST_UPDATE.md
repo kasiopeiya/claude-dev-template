@@ -30,7 +30,7 @@ The `design-doc-mermaid` skill has been updated with **MANDATORY high-contrast r
 
 **Key Example**:
 
-```mermaid
+```text
 classDef primaryService fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
 classDef secondaryService fill:#FFD700,stroke:#333,stroke-width:2px,color:black
 classDef database fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue

@@ -283,11 +283,6 @@ sequenceDiagram
     Router-->>-Client: 201 Created<br/>{ContactResponse}
 
     Note over Queue: Async background<br/>processing continues
-
-    classDef client fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
-    classDef api fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
-    classDef service fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
-    classDef database fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
 ```
 
 ### Activity Diagram (Async Workflow)

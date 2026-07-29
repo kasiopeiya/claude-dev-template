@@ -563,7 +563,7 @@ Only after validation succeeds:
 
 ### Example 2: Handling Validation Error
 
-**Diagram Code:**
+**Diagram Code (❌ intentionally broken — `end` is a reserved word):**
 
 ```mermaid
 flowchart TD
