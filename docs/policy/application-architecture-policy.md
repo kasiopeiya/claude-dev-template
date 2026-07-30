@@ -114,4 +114,3 @@ export const handler = async (event: APIGatewayProxyEvent) => {
 | パフォーマンス・可用性・スケーラビリティ | インフラ / CDK 側の設計 |
 | 可観測性（監視・アラーム）               | monitoring-policy       |
 | エラー処理                               | error-handling-policy   |
-| セキュリティ                             | セキュリティポリシー    |
