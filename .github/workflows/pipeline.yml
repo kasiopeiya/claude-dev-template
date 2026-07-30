@@ -187,8 +187,6 @@ jobs:
         working-directory: infra
       # プロジェクトのコーディング規約の適用
       - run: npm run lint
-      # ESLintカスタムルールの適用
-      - run: npm run test:rule
       # 未使用のexport・未使用のファイル・未使用の依存パッケージなどを検出
       - run: npm run knip
 

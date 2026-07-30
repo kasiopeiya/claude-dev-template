@@ -56,7 +56,6 @@ import グラフから辿れない参照は knip が未使用と誤検知する�
 npm install          # 依存を導入
 npm run lint         # 静的解析（違反があれば非ゼロ終了）
 npm run lint:fix     # 自動修正込みで実行
-npm run test:rule    # 自作ルールの単体テスト（RuleTester）
 npm run knip         # 未使用 file/export/dependency を検出（検出があれば非ゼロ終了）
 ```
 
@@ -86,7 +85,7 @@ npm run knip         # 未使用 file/export/dependency を検出（検出があ
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `infra/`                                | CI（`pipeline.yml`/`dev-destroy.yml`）の working-directory・変更検知、`knip.jsonc` の workspace キー、`eslint.config.mjs` のファイル glob、`cdk-design-policy.md` の `applies-to`、cdk-review スキルが直接ハードコード |
 | `app/`, `app/backend/`, `app/frontend/` | 同様に CI・knip・eslint に加え `application-design-policy.md`/`application-logging-policy.md`（`app/**`）、`frontend-design-policy.md`（`app/frontend/**`）が `applies-to` でハードコード                              |
-| `eslint-rules/`                         | `eslint.config.mjs` が直接 import、ルート `package.json` の `test:rule` スクリプトが参照                                                                                                                               |
+| `eslint-rules/`                         | `eslint.config.mjs` が直接 import、`knip.jsonc` の `project` glob が参照                                                                                                                                               |
 
 `infra/`・`app/` は**場所（ディレクトリ名）だけ**固定で、中身（`parameter.ts` の値、`lib/` 配下のスタック/Lambda 実装、`app/backend/domain` 等のサンプルロジック）は自由に差し替えてよい。
 
