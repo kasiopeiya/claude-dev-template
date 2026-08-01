@@ -74,6 +74,5 @@ flowchart TD
 ## 参照
 
 - [cicd-design.md](../design/cicd-design.md) — 現在の設計の構造・採用理由・却下案
-- [cicd-policy.md](../policy/cicd-policy.md) — ツールに依存しない CI/CD 方針
 - [pr-review-policy.md](../policy/pr-review-policy.md) — AIセルフレビュー・レビュー前提条件
 - Issue #53, #56
