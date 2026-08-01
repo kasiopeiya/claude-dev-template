@@ -81,7 +81,7 @@ const user = await loadUser()
 
 見やすさを損ねない範囲で行数を最小限にする。引数・オブジェクト・配列は1行に収まる場合はインラインで記述する。
 
-````typescript
+```typescript
 // ✅ 良い例：引数が収まるなら1行で
 saveSession(sessionId, { accessToken }, logger)
 createUser({ id, name, email }, options)
@@ -102,6 +102,7 @@ const config = { timeout: 3000, retries: 2 }
 // ✅ 良い例：条件式・三項演算子も1行で収まるなら
 const label = isAdmin ? 'Admin' : 'User'
 if (error) return { statusCode: 500, body: 'Internal Server Error' }
+```
 
 **例外：** 引数や要素が多く1行が長くなりすぎる場合（目安：100文字超）は適切に改行する。
 
@@ -129,7 +130,7 @@ const fetchActiveUsers = async () => { ... }
 // ❌ 避けるべき例：意図が不明
 const flag = expiresAt < Date.now()
 const getData = async () => { ... }
-````
+```
 
 ## コメント
 
