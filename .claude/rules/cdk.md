@@ -110,20 +110,23 @@ const bucket = new s3.Bucket(this, 'MyBucket', {
 
 ### 7. MUST: 依存関係の明示
 
-L1コンストラクト等を使用し、自動解決されない依存関係がある場合は、デプロイ順序のエラーを防ぐため `node.addDependency()` を必ず明示してください。
+L1コンストラクト等を使用し、自動解決されない依存関係がある場合は、デプロイ順序のエラーを防ぐため `node.addDependency()` を必ず明示してください。CDK はプロパティ経由の参照（`.ref` など）があれば依存関係を自動検出しますが、固定文字列などプロパティ参照を介さない関連付けでは自動検出されません。
 
-- **Bad:**
+- **Bad（依存関係が自動検出されない）:**
 
 ```typescript
-const rule = new events.CfnRule(...);
-const target = new events.CfnTarget(...); // 順序が担保されない
-
+// eventBus.ref を使わず固定文字列で参照しているため、CDK が依存関係を自動検出できない
+const eventBus = new events.CfnEventBus(this, 'Bus', { name: 'my-custom-bus' })
+const rule = new events.CfnRule(this, 'Rule', {
+  eventBusName: 'my-custom-bus',
+  eventPattern: { source: ['custom.source'] }
+})
 ```
 
 - **Good:**
 
 ```typescript
-target.node.addDependency(rule)
+rule.node.addDependency(eventBus)
 ```
 
 ### 8. MUST: CDK内部でのSDK使用は読み取り専用に限定
@@ -132,7 +135,7 @@ target.node.addDependency(rule)
 
 読み取り専用: 情報取得（Describe/Get/List等）のみに使用し、書き込み操作は禁止。
 
-実装: ヘルパーメソッドがないリソースは、検索キー（タグ等）を引数に取る関数でIDを取得し、L1コンストラクトへ直接渡す。
+実装: ヘルパーメソッドがないリソースは、検索キー（タグ等）を引数に取る関数でIDを取得し、L1コンストラクトへ直接渡す。Construct のコンストラクタは `async` にできないため、SDK呼び出しは app エントリ側で解決し、結果を props で渡す。
 
 ```typescript
 async function getResourceId(tagKey: string, tagValue: string): Promise<string> {
@@ -145,8 +148,27 @@ async function getResourceId(tagKey: string, tagValue: string): Promise<string> 
   return res.Reservations![0].Instances![0].InstanceId!
 }
 
-// コンストラクト内
-const rawId = await getResourceId('Role', 'legacy-system')
+interface MyStackProps extends StackProps {
+  readonly legacyInstanceId: string
+}
+
+class MyStack extends Stack {
+  constructor(scope: Construct, id: string, props: MyStackProps) {
+    super(scope, id, props)
+    new ec2.CfnEIPAssociation(this, 'EipAssociation', {
+      instanceId: props.legacyInstanceId
+    })
+  }
+}
+
+// bin/app.ts（エントリポイント）
+async function main() {
+  const legacyInstanceId = await getResourceId('Role', 'legacy-system')
+  const app = new App()
+  new MyStack(app, 'MyStack', { legacyInstanceId })
+}
+
+main()
 ```
 
 ## Interface Segregation（ISP）
@@ -170,9 +192,13 @@ IBucketRef    ← 名前・ARN など識別情報のみで足りる場合（基�
 ### 例
 
 ```typescript
-interface MyS3BucketProps extends s3.BucketProps {
+import { aws_s3_notifications as s3n } from 'aws-cdk-lib'
+
+// BucketProps を継承せず、必要な操作から逆算した最小の props にする
+interface MyS3BucketProps {
   // grant / addEventNotification で L2 操作するため IFunction を要求
   readonly func: lambda.IFunction
+  readonly removalPolicy?: RemovalPolicy
 }
 
 export class MyS3Bucket extends Construct {
@@ -182,11 +208,10 @@ export class MyS3Bucket extends Construct {
   constructor(scope: Construct, id: string, props: MyS3BucketProps) {
     super(scope, id)
     const bucket = new s3.Bucket(this, 'Bucket', {
-      ...props,
-      autoDeleteObjects: props.autoDeleteObjects ?? true,
+      autoDeleteObjects: true,
       removalPolicy: props.removalPolicy ?? RemovalPolicy.DESTROY,
-      encryption: props.encryption ?? s3.BucketEncryption.S3_MANAGED,
-      enforceSSL: props.enforceSSL ?? true
+      encryption: s3.BucketEncryption.S3_MANAGED,
+      enforceSSL: true
     })
     bucket.grantDelete(props.func)
     bucket.addEventNotification(s3.EventType.OBJECT_CREATED, new s3n.LambdaDestination(props.func))
