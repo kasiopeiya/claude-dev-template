@@ -12,7 +12,7 @@ CI・静的解析・AI レビューが機械的な検査を肩代わりする時
 
 重複を避けるため、次は本ガイドでは**定義し直さない**。中身はリンク先を正典とする。
 
-- レビューコメントのラベル（MUST / WANT / FYI / LGTM）・レビューケースの使い分け・PR サイズ・「なぜレビューするのか」 → [pr-review-policy](../policy/pr-review-policy.md)
+- レビューコメントのラベル（MUST / WANT / FYI / LGTM）・レビュー方針の使い分け・PR サイズ・「なぜレビューするのか」 → [pr-review-policy](../policy/pr-review-policy.md)
 - 良いコメントの定義（実装コメントは WHY・doc comment は契約・名前で消せるコメントは名前を直す） → [code-comment-policy](../policy/code-comment-policy.md)
 - 良い命名の定義 → [typescript.md「命名規則」](../../.claude/rules/typescript.md)
 

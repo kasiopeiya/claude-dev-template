@@ -1,4 +1,4 @@
-# Git Policy
+# Gitポリシー
 
 commit・branch・PR・merge操作の前に参照する、コミットメッセージの書き方・粒度・ブランチ命名規則・rebase禁止の指針。
 
