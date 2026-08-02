@@ -1,6 +1,6 @@
 ---
 hook:
-  applies-to: ['**/*.test.ts', '**/*.test.mjs']
+  applies-to: ['**/*.test.ts', '**/*.test.tsx', '**/*.test.mjs']
 ---
 
 # 単体テスト方針
