@@ -86,10 +86,9 @@ git diff --cached --name-only --diff-filter=ACMR
 
 **2. `docs/` 直下の個別ファイル（ディレクトリに属さないもの）**:
 
-| ファイル                                   | 種別    |
-| ------------------------------------------ | ------- |
-| `docs/policy-hub.md`, `docs/design-hub.md` | HUB     |
-| `docs/judgment-log.md`                     | GENERAL |
+| ファイル                                   | 種別 |
+| ------------------------------------------ | ---- |
+| `docs/policy-hub.md`, `docs/design-hub.md` | HUB  |
 
 **3. ファイル名パターン（上記に該当しない＝`docs/` サブディレクトリ外のフォールバック）**:
 
