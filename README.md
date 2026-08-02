@@ -92,7 +92,6 @@ npm run format       # フォーマット
 | `docs/policy/`（ディレクトリ＋各ファイル名）                                                | `.claude/hooks/policy-loader.mjs` がこのパスを直接読み込み、front-matter `applies-to` で自動アタッチする。個々のファイル名も多数のスキルから SSOT として直接参照される |
 | `docs/design-hub.md`                                                                        | CLAUDE.md・design/to-plan/check-plan/cdk-imp 等が起点として直接参照                                                                                                    |
 | `docs/design/`（ディレクトリ名）                                                            | `design-doc-policy.md` の `applies-to` が参照。中の個別設計書は自由に追加・更新可                                                                                      |
-| `docs/design/` 配下でファイル名に `infra` を含む設計書                                      | `iac-infra-design-doc-policy.md` の `applies-to`（`docs/design/*infra*.md`）が参照。cdk-review スキル・cdk-reviewer-agent は設計ハブ経由で特定するため名前を問わない   |
 | `docs/runbook/`（ディレクトリ名）                                                           | `runbook-policy.md` の `applies-to` が参照。中の個別手順書は自由に追加・更新可                                                                                         |
 | `docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`                            | CLAUDE.md・create-adr/decide-tech-stack スキルがファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない）  |
 | `docs/reference/glossary.md`, `docs/reference/non-functional-requirement-items.md`          | to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照                                                                                                     |
@@ -119,5 +118,16 @@ npm run format       # フォーマット
 | `.prettierrc.js`, `.prettierignore` | フォーマッタ設定                                         |
 | `knip.jsonc`                        | 未使用コード検出の workspace 定義                        |
 | `package.json`（ルート）            | `scripts`・devDependencies。CI がスクリプト名を直接実行  |
+
+### ファイル名でポリシーが発火するもの
+
+以下のポリシーは `applies-to` にファイル名のキーワードを含む。**キーワードを外れた名前を付けると、ポリシーが無言で適用されない。** 新規ファイルを作るときは、この表の名前に合わせる。
+
+| ファイル名に含める語                            | 発火するポリシー              | 対象                                       |
+| ----------------------------------------------- | ----------------------------- | ------------------------------------------ |
+| `infra`（`docs/design/` 配下の `.md`）          | `iac-infra-design-doc-policy` | インフラ設計書                             |
+| `monitoring` / `Monitoring` / `alarm` / `Alarm` | `monitoring-policy`           | 監視・アラームを定義する `.ts`             |
+| `table` / `Table`                               | `database-design-policy`      | テーブル定義を扱う `.ts`                   |
+| `config` / `parameter`                          | `configuration-policy`        | 構成値を扱う `.ts`・`config/` 配下・`.env` |
 
 なお `.claude/`・`.github/` はこのセクションの対象外（ハーネス本体として別枠で扱う）。
