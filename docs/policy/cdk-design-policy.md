@@ -69,7 +69,7 @@ CDK コード設計のすべての判断は、**`cdk diff` による正確な差
 
 **外部公開インターフェース（props と public メンバー）は、利用者が必要とする最小限の型に絞る**（Interface Segregation）。型によって利用者に許可する操作範囲を制御する。Construct 内部では具体的な L2 Construct を使ってよい。
 
-**なぜ**：公開する型を広く取るほど利用者に余計な操作を許し、結合が強まる。最小の型だけ公開すれば、内部実装を差し替えても利用者に影響しない。
+**なぜ**：公開する型を広く取るほど利用者に余計な操作を許し、結合が強まる。最小の型だけ公開すれば、内部実装を差し替えても利用者に影響しない——「決定を遅らせる——境界を引いて選択肢を残す」（[refined-engineer-judgment-principles](refined-engineer-judgment-principles.md)）の、公開インターフェースにおける具体化である。
 
 > 型の選び方（`IBucketRef` / `IBucket` / `Bucket` の使い分け）など具体的な選択基準と実装例は `cdk.md` の「Interface Segregation」に従う。
 
