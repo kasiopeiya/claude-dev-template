@@ -14,4 +14,4 @@ agent: design-validator-agent
 - **設計書のパス**: その1件のみ
 - **ソースのパス・領域名**: 対応する設計書を推定して突き合わせる
 
-レポートの出力形式は `.claude/skills/validate-design/assets/report-template.md` を読み込み、そのテンプレートに従って作成してください。
+レポートの出力形式は `assets/report-template.md` を読み込み、そのテンプレートに従って作成してください。

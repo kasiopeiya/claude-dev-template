@@ -7,4 +7,4 @@ agent: code-ci-runner-agent
 
 各 npm ワークスペースの静的解析と単体テストを実行してください。
 
-出力フォーマットは `.claude/skills/code-ci/references/report-template.md` のテンプレートに従ってください。
+出力フォーマットは `references/report-template.md` のテンプレートに従ってください。

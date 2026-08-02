@@ -363,7 +363,7 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 
 ```
 1. Analyze: workflow, process → ACTIVITY DIAGRAM
-2. Load guide: guides/diagrams/activity-diagrams.md
+2. Load guide: references/guides/diagrams/activity-diagrams.md
 3. Find pattern: E-commerce checkout (template exists in guide)
 4. Generate using template + Unicode symbols
 5. Output activity diagram with decision points
@@ -381,9 +381,9 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 1. Analyze: Spring Boot, code provided → CODE-TO-DIAGRAM + SPRING BOOT
 2. Load guides:
    - examples/spring-boot/README.md
-   - guides/diagrams/architecture-diagrams.md (for structure)
-   - guides/diagrams/sequence-diagrams.md (for method calls)
-   - guides/diagrams/activity-diagrams.md (for business logic)
+   - references/guides/diagrams/architecture-diagrams.md (for structure)
+   - references/guides/diagrams/sequence-diagrams.md (for method calls)
+   - references/guides/diagrams/activity-diagrams.md (for business logic)
 3. Generate multiple diagrams:
    a. Architecture diagram from @RestController/@Service/@Repository annotations
    b. Sequence diagram from method call chain
@@ -402,7 +402,7 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 ```
 1. Analyze: infrastructure, GCP, Cloud Run → DEPLOYMENT DIAGRAM
 2. Load guides:
-   - guides/diagrams/deployment-diagrams.md
+   - references/guides/diagrams/deployment-diagrams.md
    - examples/spring-boot/ or examples/fastapi/ (if code provided)
 3. Check for IaC files (Pulumi, Terraform, docker-compose)
 4. Generate deployment diagram with:
