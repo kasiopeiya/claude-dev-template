@@ -1,6 +1,6 @@
 ---
 hook:
-  applies-to: ['docs/design/infrastructure-design.md']
+  applies-to: ['docs/design/*infra*.md']
 ---
 
 # IaCインフラ設計書作成ポリシー

@@ -19,7 +19,7 @@ AWS CDK インフラコードをレビューしてください。以下の手順
   - **Construct**: `infra/lib/constructs/*.ts` または `infra/lib/*-construct.ts`
   - **Parameter**: `infra/parameter.ts` または `infra/lib/parameters/*.ts`
 - 検出したすべてのファイルをレビュー対象とする（選択ステップはスキップ）
-- **インフラ設計書**: 既定パス `docs/design/infrastructure-design.md` の存在を確認し、あれば設計書レビューの対象に加える（なければ設計書レビューはスキップし、その旨を報告）
+- **インフラ設計書**: 設計ハブ `docs/design-hub.md` を Read し、各設計書の概要からインフラ設計を扱うものを特定して設計書レビューの対象に加える（該当がなければ設計書レビューはスキップし、その旨を報告）
 
 ## Phase 2: レビュー実行
 
