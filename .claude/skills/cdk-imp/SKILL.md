@@ -525,25 +525,7 @@ cdk.out/tree.json
 
 #### ステップ 5-3: 循環参照エラーのチェック
 
-循環参照エラーが検出された場合:
-
-```
-🔴 Circular Dependency Detected
-
-循環参照エラーが検出されました:
-
-Error: Circular dependency between resources:
-- CloudFrontDistribution depends on LambdaFunctionUrl
-- LambdaFunction depends on CloudFrontDistribution (via IAM policy)
-
-原因:
-CloudFrontのURLをLambda関数のIAMポリシーで参照しようとしています。
-
-回避方法:
-1. SSM Parameter Store を利用してCloudFront URLを保存
-2. Lambda関数のIAMポリシーでワイルドカード指定（'*'）
-3. L1 Construct（Cfn）を使用して後付け設定
-```
+循環参照エラーが検出された場合、循環しているリソースと原因を示し、[references/error-handling-and-constraints.md](references/error-handling-and-constraints.md) の「循環参照の回避」から該当パターンの回避方法を提示する。
 
 AskUserQuestion で修正方法を確認:
 
@@ -591,80 +573,13 @@ options: [
 
 「はい」選択時: Phase 3に戻り、実装を修正
 
-**循環参照の回避戦略（既存実装を参考）**:
-
-- SSM Parameter Store の利用（CloudFront URL保存など）
-- ワイルドカードリソース指定（`'*'`）
-- L1 Construct（Cfn）の活用（後付け設定）
-
 ### Phase 6: 結果報告と Next Actions
 
-#### ステップ 6-1: 実装サマリーの表示
+#### ステップ 6-1: レポートの出力
 
-```
-## CDK実装完了レポート
+[references/report-format.md](references/report-format.md) のフォーマットに従い、実装サマリー・テスト結果・Next Steps をまとめて出力する。
 
-### 実装サマリー
-
-Issue: #{番号} {タイトル}
-
-実装ファイル:
-- <CDKディレクトリ>/lib/{スタックファイル名}.ts
-
-変更内容:
-- Lambda Function URLの追加
-- CloudFrontのOrigin設定更新
-- IAMポリシーの自動生成
-```
-
-#### ステップ 6-2: テスト結果サマリー
-
-```
-### テスト結果
-
-| チェック項目 | 結果 |
-| --- | --- |
-| npm test | ✅ Passed (X tests) |
-| cdk synth | ✅ Passed |
-| 循環参照チェック | ✅ OK |
-```
-
-または失敗時:
-
-```
-### テスト結果
-
-| チェック項目 | 結果 |
-| --- | --- |
-| npm test | 🔴 Failed |
-| cdk synth | - |
-| 循環参照チェック | - |
-```
-
-#### ステップ 6-3: Next Actions の提案
-
-**成功時**:
-
-```
-### Next Steps
-
-1. /cdk-ci で包括的な品質チェック（静的解析、型チェック）
-2. cdk diff でデプロイ前の差分確認
-3. cdk deploy で実際にデプロイ（人間が実施）
-4. 結合テスト実行（人間が実施）
-5. /git-commit でコミット作成
-```
-
-**失敗時**:
-
-```
-### Next Steps
-
-1. 上記のエラーを修正
-2. /cdk-imp を再実行
-```
-
-#### ステップ 6-4: GitHub Issueのタスクチェックリスト更新
+#### ステップ 6-2: GitHub Issueのタスクチェックリスト更新
 
 Bash ツールで実装・テスト・CDK合成に関するタスクを完了マークに更新:
 
@@ -679,106 +594,7 @@ gh issue edit {番号} --body "$UPDATED_BODY"
 
 該当するタスクが見つからない場合はスキップ（エラーにしない）。
 
-**出力フォーマット（完全版）**:
+## 参照
 
-```markdown
-## CDK実装完了レポート
-
-### 実装サマリー
-
-Issue: #1 CDK初期構築
-
-実装ファイル:
-
-- <CDKディレクトリ>/lib/{スタックファイル名}.ts
-
-変更内容:
-
-- スタック基本構成作成
-- S3バケット作成
-- CloudFront設定
-
-### テスト結果
-
-| チェック項目     | 結果                |
-| ---------------- | ------------------- |
-| npm test         | ✅ Passed (2 tests) |
-| cdk synth        | ✅ Passed           |
-| 循環参照チェック | ✅ OK               |
-
-### Next Steps
-
-1. /cdk-ci で包括的な品質チェック（静的解析、型チェック）
-2. cdk diff でデプロイ前の差分確認
-3. cdk deploy で実際にデプロイ（人間が実施）
-4. 結合テスト実行（人間が実施）
-5. /git-commit でコミット作成
-
-### GitHub Issue更新
-
-✓ Issue #1 のタスクチェックリストを更新しました（gh issue edit で実装・テスト・synth完了を反映）
-```
-
-## エラーハンドリング一覧
-
-| エラー種別                   | 判定方法                                      | 処理内容                                                                |
-| ---------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- |
-| Issue が見つからない         | gh issue view がエラー                        | エラーメッセージを表示し再入力を促す（最大3回）                         |
-| Issue の body が空           | JSON body フィールドが空                      | 処理を中止                                                              |
-| 設計書ファイルが見つからない | Read でエラー                                 | 警告を表示し、Issueの情報のみで処理継続                                 |
-| npm test 失敗                | 終了コード 非0                                | エラーメッセージを解析し、修正方法を提案                                |
-| スナップショット不一致       | テストエラーメッセージに "snapshot" 含む      | AskUserQuestion でスナップショット更新の可否を確認                      |
-| cdk synth 失敗               | 終了コード 非0                                | エラーメッセージを解析し、修正方法を提案                                |
-| 循環参照エラー               | エラーメッセージに "Circular dependency" 含む | 原因リソースを特定し、回避方法を提案（SSM/ワイルドカード/L1 Construct） |
-| 修正試行回数超過             | 3回連続で同じエラー                           | 処理を中止し、ユーザーに手動修正を促す                                  |
-
-## 制約事項
-
-### TypeScriptコンパイル
-
-CLAUDE.md の指示により、TypeScriptコンパイル（tsc）は実行しない。
-型エラーは `npm test` または `cdk synth` で検出される。
-
-### デプロイ
-
-`cdk deploy` は実行しない。デプロイは人間が実施。
-
-### スタック構成
-
-単一・複数いずれの構成もありうる。スタック数・分割方針はインフラ設計書を確認する。
-
-## 実装上の注意点
-
-### 循環参照の回避
-
-CloudFormationの循環参照は以下のパターンで発生しやすい:
-
-1. **CloudFront ⇔ Lambda Function URL**
-   - CloudFrontがLambda URLをOriginとして参照
-   - LambdaのIAMポリシーがCloudFrontのURLを参照
-   - → SSM Parameter Storeで回避
-
-2. **Lambda ⇔ DynamoDB**
-   - LambdaがDynamoDBテーブルを参照
-   - DynamoDBストリームがLambdaを参照
-   - → ワイルドカード指定で回避
-
-3. **S3 ⇔ CloudFront**
-   - S3バケットポリシーがCloudFrontのOACを参照
-   - CloudFrontがS3をOriginとして参照
-   - → L1 Construct（Cfn）で後付け設定
-
-### スナップショット更新のタイミング
-
-以下の場合はスナップショット更新が必要:
-
-- 新規リソース追加
-- リソースプロパティ変更
-- CloudFormationテンプレート構造変更
-
-ユーザーに確認後、`npm test -- -u` で更新。
-
-### エラー修正の上限
-
-同じエラーで3回連続失敗した場合は処理を中止。
-無限ループを避け、ユーザーに手動修正を促す。
+- [references/report-format.md](references/report-format.md) — 完了レポートの出力フォーマット
+- [references/error-handling-and-constraints.md](references/error-handling-and-constraints.md) — エラーハンドリング一覧・制約事項・循環参照の回避
