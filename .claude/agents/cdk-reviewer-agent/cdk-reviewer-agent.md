@@ -103,9 +103,9 @@ Bash: git log -1 --pretty=format:"%h - %an, %ar : %s" -- <対象ファイルパ�
 | Stateful リソース定義（RemovalPolicy 確認）    | `new s3\.(Bucket\|)\|new dynamodb\.(Table\|)\|new cognito\.(UserPool\|)`                 | content    |
 | 環境変数の非 null アサーション                 | `process\.env\.[A-Z_]+!`                                                                 | content    |
 | 環境分岐ロジック（スタック内）                 | `if\s*\(.*env.*===\|switch\s*\(.*env`                                                    | content    |
-| 動的参照（差分検知ルール#1）                   | `fromStringParameterName\|\.stringValue\|SecretValue\.ssm`                               | content    |
-| CfnParameter（差分検知ルール#2）               | `new CfnParameter\|new cdk\.CfnParameter`                                                | content    |
-| CfnCondition/条件分岐（差分検知ルール#3）      | `new CfnCondition\|Fn\.conditionIf\|Fn\.condition`                                       | content    |
+| 動的参照（差分検知ルール該当）                 | `fromStringParameterName\|\.stringValue\|SecretValue\.ssm`                               | content    |
+| CfnParameter（差分検知ルール該当）             | `new CfnParameter\|new cdk\.CfnParameter`                                                | content    |
+| CfnCondition/条件分岐（差分検知ルール該当）    | `new CfnCondition\|Fn\.conditionIf\|Fn\.condition`                                       | content    |
 | exportされたシンボルの洗い出し（不要なexport） | `^export (const\|function\|class\|type\|interface\|enum)\s+\w+`                          | content    |
 
 上記「exportされたシンボル」で検出したシンボル名ごとに、プロジェクト内の他ファイルからimportされているか Grep で確認する:
@@ -151,18 +151,18 @@ Bash: git log -1 --pretty=format:"%h - %an, %ar : %s" -- <対象ファイルパ�
 
 ### Step 3.5: プロジェクトルール準拠（必須・省略不可）
 
-全 CDK ファイルで**必ず** `.claude/rules/cdk.md` を Read し、各ルールを照合する。特に rubric の採点項目に対応しない「CDK の差分検知ルール」（8項目）は素通りしやすいため、以下を1つずつ判定する。これらは `cdk diff` の正確性・データ保護に関わる規約であり、違反は原則 **Critical**（必須）として報告する。
+全 CDK ファイルで**必ず** `.claude/rules/cdk.md` を Read し、各ルールを照合する。特に rubric の採点項目に対応しない「CDK の差分検知ルール」（DON'T群・MUST群）は素通りしやすいため、以下を1つずつ判定する。これらは `cdk diff` の正確性・データ保護に関わる規約であり、違反は原則 **Critical**（必須）として報告する。
 
-| #   | ルール                      | 確認内容                                                                                                                          |
-| --- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | 動的参照の禁止              | `fromStringParameterName().stringValue` 等、デプロイ時評価される SSM/Secrets 参照を使っていないか。Context ルックアップを使うこと |
-| 2   | `CfnParameter` の禁止       | 実行時注入の `CfnParameter` を使っていないか。Context / プロパティで Synth 時固定すること                                         |
-| 3   | `CfnCondition` の禁止       | `CfnCondition` / `Fn.conditionIf` を使っていないか。TS の `if` でリソースをテンプレートから除外すること                           |
-| 4   | 非決定的カスタムリソース    | 実行のたびに結果が変わるカスタムリソース（外部API最新取得等）を使っていないか                                                     |
-| 5   | `cdk.context.json` の版管理 | ルックアップ結果を含む同ファイルが Git 管理外になっていないか                                                                     |
-| 6   | 物理IDの動的生成禁止        | `Date.now()` 等で Synth ごとに変わる物理名を生成していないか                                                                      |
-| 7   | 依存関係の明示              | L1 等で自動解決されない依存に `node.addDependency()` を明示しているか                                                             |
-| 8   | SDK 利用は読み取り専用      | CDK 内 SDK 使用が Describe/Get/List のみで、書き込み操作をしていないか                                                            |
+| ルール                      | 確認内容                                                                                                                          |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 動的参照の禁止              | `fromStringParameterName().stringValue` 等、デプロイ時評価される SSM/Secrets 参照を使っていないか。Context ルックアップを使うこと |
+| `CfnParameter` の禁止       | 実行時注入の `CfnParameter` を使っていないか。Context / プロパティで Synth 時固定すること                                         |
+| `CfnCondition` の禁止       | `CfnCondition` / `Fn.conditionIf` を使っていないか。TS の `if` でリソースをテンプレートから除外すること                           |
+| 非決定的カスタムリソース    | 実行のたびに結果が変わるカスタムリソース（外部API最新取得等）を使っていないか                                                     |
+| 物理IDの動的生成禁止        | `Date.now()` 等で Synth ごとに変わる物理名を生成していないか                                                                      |
+| `cdk.context.json` の版管理 | ルックアップ結果を含む同ファイルが Git 管理外になっていないか                                                                     |
+| 依存関係の明示              | L1 等で自動解決されない依存に `node.addDependency()` を明示しているか                                                             |
+| SDK 利用は読み取り専用      | CDK 内 SDK 使用が Describe/Get/List のみで、書き込み操作をしていないか                                                            |
 
 検出した違反は1件残らずレポートに反映する。スコア項目（Import 順序・形式、L2優先、リソース名など）に対応するものはその項目の減点に反映し、対応項目が無いルール違反は report-format.md「📏 CDK ルールへの準拠」に ✅/⚠️/❌ で必ず明記する。
 

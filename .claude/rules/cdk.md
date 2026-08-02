@@ -53,7 +53,7 @@ import { AppParameter } from '../parameter'
 
 以下のルールを厳守してコードを生成・修正してください。
 
-### 1. DON'T: 動的参照（Dynamic References）の利用
+### DON'T: 動的参照（Dynamic References）の利用
 
 デプロイ実行時まで値が確定しないSSMやSecrets Managerの動的参照は使用しないでください。代わりに、Synth時に値を取得してキャッシュするContextルックアップを使用してください。
 
@@ -64,7 +64,7 @@ import { AppParameter } from '../parameter'
 const amiId = ssm.StringParameter.fromStringParameterName(this, 'Ami', '/my/ami').stringValue
 ```
 
-### 2. DON'T: CloudFormation `Parameters` の利用
+### DON'T: CloudFormation `Parameters` の利用
 
 実行時に外部から値を注入する`CfnParameter`は使用しないでください。代わりに、CDKのContext（`cdk.json`）やTypeScriptのプロパティを利用し、Synth時に値を固定してください。
 
@@ -74,7 +74,7 @@ const amiId = ssm.StringParameter.fromStringParameterName(this, 'Ami', '/my/ami'
 const envType = new CfnParameter(this, 'EnvType', { type: 'String' })
 ```
 
-### 3. DON'T: CloudFormation `Conditions` の利用
+### DON'T: CloudFormation `Conditions` の利用
 
 テンプレート内に分岐ロジックを残す`CfnCondition`や`Fn.conditionIf`は使用しないでください。代わりに、TypeScriptのネイティブな制御構文（`if`文）を使用して、不要なリソースはテンプレートから完全に除外してください。
 
@@ -84,17 +84,13 @@ const envType = new CfnParameter(this, 'EnvType', { type: 'String' })
 const isProd = new CfnCondition(this, 'IsProd', { expression: Fn.conditionEquals(env, 'prod') })
 ```
 
-### 4. DON'T: 非決定的な値を出力するカスタムリソース
+### DON'T: 非決定的な値を出力するカスタムリソース
 
 実行のたびに結果が変わる（外部APIの最新取得など）カスタムリソースは原則使用しないでください。動的な値が必要な場合は、ビルドスクリプト等で事前に取得し、CDKへは静的な値として渡してください。
 
 - **Bad:** Lambda内でAPIをフェッチし結果を後続に渡すCustomResource
 
-### 5. MUST: `cdk.context.json` のバージョン管理
-
-ルックアップ情報を含む `cdk.context.json` は必ずソース管理（Git）に含めてください。意図しない削除や変更を避けてください。
-
-### 6. DON'T: 物理ID（Physical Name）の動的生成
+### DON'T: 物理ID（Physical Name）の動的生成
 
 Synthのたびに物理名が変わると `cdk diff` で毎回「リソースの削除→再作成」として検知され、意図しないダウンタイムやデータ消失につながります。また、CloudFormationはリソースの同一性を物理名で追跡するため、名前が変わると既存リソースを削除して新規作成しようとし、削除保護が機能しない場合は実データが失われます。
 
@@ -108,7 +104,11 @@ const bucket = new s3.Bucket(this, 'MyBucket', {
 })
 ```
 
-### 7. MUST: 依存関係の明示
+### MUST: `cdk.context.json` のバージョン管理
+
+ルックアップ情報を含む `cdk.context.json` は必ずソース管理（Git）に含めてください。意図しない削除や変更を避けてください。
+
+### MUST: 依存関係の明示
 
 L1コンストラクト等を使用し、自動解決されない依存関係がある場合は、デプロイ順序のエラーを防ぐため `node.addDependency()` を必ず明示してください。CDK はプロパティ経由の参照（`.ref` など）があれば依存関係を自動検出しますが、固定文字列などプロパティ参照を介さない関連付けでは自動検出されません。
 
@@ -129,7 +129,7 @@ const rule = new events.CfnRule(this, 'Rule', {
 rule.node.addDependency(eventBus)
 ```
 
-### 8. MUST: CDK内部でのSDK使用は読み取り専用に限定
+### MUST: CDK内部でのSDK使用は読み取り専用に限定
 
 既存リソースの取得目的でSDKを使用する場合、以下の制約を厳守してください。
 
