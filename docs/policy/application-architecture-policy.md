@@ -104,7 +104,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
 | 強           | ○    | △    | ✕    |
 
 > [!IMPORTANT]
-> **（AI・必須）** この軸が見るのは**ファイルをまたぐ結合**である。同一ファイル内の結合（＝局所性が「近い」で全て ○）は `/code-review` と application-design-policy の領分なので、ここでは減点しない。Connascence 9種を強度3段階へ束ねる分類・結合インスタンスの列挙手順・スコアへの集約は `/arch-review` の実装（architecture-reviewer-agent 観点2）に委ねる。本ポリシーは軸・マトリクス・芯を宣言する。
+> **（AI・必須）** この軸が見るのは**ファイルをまたぐ結合**である。同一ファイル内の結合（＝局所性が「近い」で全て ○）は `/code-review` と application-design-policy の領分なので、ここでは減点しない。Connascence 9種を強度3段階へ束ねる分類・結合インスタンスの列挙手順・スコアへの集約は `/arch-review` の実装（architecture-reviewer-agent の「凝集と結合」観点）に委ねる。本ポリシーは軸・マトリクス・芯を宣言する。
 
 ## 意図を表出する構造（理解容易性）
 
