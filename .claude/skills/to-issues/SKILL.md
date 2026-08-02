@@ -1,13 +1,13 @@
 ---
 name: to-issues
-description: Break a plan, spec, or PRD into independently-grabbable issues using tracer-bullet vertical slices. Use for "convert a plan into issues", 「issue化して」「issueに分割して」。
+description: Plan・仕様・PRD を曳光弾（縦スライス）に分け、それぞれ独立して着手できる Issue にする。「issue化して」「issueに分割して」と指示されたとき。
 ---
 
 # To Issues
 
-Break a plan into independently-grabbable issues using vertical slices (tracer bullets).
+Plan を縦スライス（曳光弾）に分け、それぞれ独立して着手できる Issue にする。
 
-The issue tracker is GitHub Issues. Use the `gh` CLI, which resolves the repository from the local git remote.
+Issue の置き場は GitHub Issues。`gh` CLI を使う（リポジトリはローカルの git remote から解決される）。
 
 ## 貫く原則：コールドスタート再現性
 
@@ -17,53 +17,53 @@ The issue tracker is GitHub Issues. Use the `gh` CLI, which resolves the reposit
 
 「詳細に書く」と「簡潔に保つ」は対立しない。書くべき詳細（目的・WHY、却下した代替案とその理由、前提・制約・スコープ境界、受け入れ基準）と、書かない詳細（具体的なファイルパス・コードスニペット・レイヤーごとの実装手順）を分ける。
 
-## Process
+## 手順
 
-### 1. Gather context
+### 1. 材料を集める
 
-Work from whatever is already in the conversation context. If the user passes an issue reference (issue number, URL, or path) as an argument, fetch it from the issue tracker and read its full body and comments.
+会話の文脈にあるものをそのまま使う。ユーザーが Issue の参照（番号・URL・パス）を引数で渡してきたら、Issue トラッカーから取得し、本文とコメントをすべて読む。
 
-### 2. Explore the codebase (optional)
+### 2. コードベースを調べる（任意）
 
-If you have not already explored the codebase, do so to understand the current state of the code. Issue titles and descriptions should use the project's domain glossary vocabulary, and respect ADRs in the area you're touching.
+まだ調べていなければ、現在のコードの状態を把握する。Issue のタイトル・説明はプロジェクトの用語集の語彙を使い、触れる領域の ADR に従う。
 
-### 3. Draft vertical slices
+### 3. 縦スライスの案を作る
 
-Break the plan into **tracer bullet** issues. Each issue is a thin vertical slice that cuts through ALL integration layers end-to-end, NOT a horizontal slice of one layer.
+Plan を**曳光弾**の Issue に分ける。各 Issue は、すべての統合レイヤーを端から端まで貫く薄い縦スライスにする。1つのレイヤーだけを切り取る横スライスにしてはならない。
 
-Slices may be 'HITL' or 'AFK'. HITL slices require human interaction, such as an architectural decision or a design review. AFK slices can be implemented and merged without human interaction. Prefer AFK over HITL where possible.
+スライスには HITL と AFK がある。HITL はアーキテクチャの決定や設計レビューなど、人間とのやり取りが要るもの。AFK は人間を介さず実装・マージできるもの。可能なら AFK を選ぶ。
 
 <vertical-slice-rules>
-- Each slice delivers a narrow but COMPLETE path through every layer (schema, API, UI, tests)
-- A completed slice is demoable or verifiable on its own
-- Prefer many thin slices over few thick ones
+- 各スライスは、狭くてもすべてのレイヤー（スキーマ・API・UI・テスト）を貫く**完結した**経路を届ける
+- 完了したスライスは、それ単体でデモまたは検証ができる
+- 厚いスライスを少数作るより、薄いスライスを多数作る
 </vertical-slice-rules>
 
-### 4. Quiz the user
+### 4. ユーザーに確認する
 
-Present the proposed breakdown as a numbered list. For each slice, show:
+分割案を番号付きリストで提示する。各スライスについて次を示す。
 
-- **Title**: short descriptive name
-- **Type**: HITL / AFK
-- **ブロッカー**: which other slices (if any) must complete first
-- **User stories covered**: which user stories this addresses (if the source material has them)
+- **タイトル**：短く内容が分かる名前
+- **種別**：HITL / AFK
+- **ブロッカー**：先に完了している必要がある他のスライス（あれば）
+- **対応するユーザーストーリー**：元の資料にあれば、どのストーリーを満たすか
 
-Ask the user:
+そのうえでユーザーに問う。
 
-- Does the granularity feel right? (too coarse / too fine)
-- Are the dependency relationships correct?
-- Should any slices be merged or split further?
-- Are the correct slices marked as HITL and AFK?
+- 粒度は妥当か（粗すぎ／細かすぎ）
+- 依存関係は正しいか
+- 統合または分割すべきスライスはあるか
+- HITL / AFK の割り当ては正しいか
 
-Iterate until the user approves the breakdown.
+ユーザーが分割案を承認するまで繰り返す。
 
-### 5. Publish the issues to the issue tracker
+### 5. Issue を登録する
 
-For each approved slice, publish a new issue to the issue tracker. Use the issue body template below.
+承認された各スライスを、下の本文テンプレートで Issue として登録する。
 
 Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転記する**（そのスライスが実際に触れる種別の Skill だけに絞る）。これは「issue NNN 対応して」だけで開発フローを自動追従させるための情報なので、issue 化で**落とさない**こと。Plan に同セクションが無ければ、変更種別から CLAUDE.md「開発フロー」のマッピング（設計書→`/design`、アプリ→`/code-dev`、CDK→`/cdk-dev`）で補って記載する。
 
-Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the 「ブロッカー」 field.
+Issue は依存順（ブロッカーが先）に登録する。そうすれば「ブロッカー」欄に実際の Issue 番号を書ける。
 
 <writing-rules>
 
@@ -142,4 +142,4 @@ Publish issues in dependency order (blockers first) so you can reference real is
 
 </issue-template>
 
-Do NOT close or modify any parent issue.
+親 Issue はクローズも変更もしてはならない。
