@@ -1,6 +1,6 @@
 ---
 name: quick-issue
-description: 確認不要で手早く GitHub Issue を起票する。思いついた要望・課題・バグ、および割れ窓（boy-scout）の起票に使う。「quick-issue」「issueを起票して」「issueを作って」と指示されたとき。
+description: 確認不要で手早く GitHub Issue を起票する。思いついた要望・課題・バグ・割れ窓の起票に使う。「quick-issue」「issueを起票して」「issueを作って」と指示されたとき。
 ---
 
 # Quick Issue
@@ -32,6 +32,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 
 - **確認不要**：ユーザーへの問い返し（AskUserQuestion・承認待ち）は行わず、与えられた情報からそのまま起票する。
 - **デフォルトで自分にアサイン**：`--assignee @me` を付与する。
+- **必ず `boy-scout` ラベルを付ける**：`--label boy-scout` を無条件で付与する。本スキルで起票するものは、正式フローを経ずアドホックに積んだ＝後でまとめて棚卸しする対象だから。ユーザーが別のラベルを指定した場合は追加で並べ、`boy-scout` は外さない。
 - テンプレートの全セクションを本文に必ず含める。
 
 ## 処理フロー
@@ -91,6 +92,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - [ ] 会話依存の指示語が残っていない
 - [ ] 対象箇所が実在するパス・シンボルで名指しされている
 - [ ] 「実装フロー（使用するSkill）」が埋まっている
+- [ ] 既存 Issue と重複しないか `gh issue list --search "<タイトルの主要語>"` で確認した
 
 ### 4. 起票
 
@@ -100,14 +102,14 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 gh issue create \
   --title "<タイトル>" \
   --assignee @me \
+  --label boy-scout \
   --body "$(cat <<'EOF'
 （テンプレートの全セクションを埋めた本文）
 EOF
 )"
 ```
 
-- ラベルはユーザーが明示した場合のみ `--label` で付与する（指定がなければ付けない）。
-- 起票後、作成された Issue の URL を表示して完了とする。
+- 起票後、作成された Issue の**番号と URL** を提示して完了とする。
 
 ## 使用方法
 
