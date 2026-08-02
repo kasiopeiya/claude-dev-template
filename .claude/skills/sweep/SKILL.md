@@ -1,17 +1,19 @@
 ---
 name: sweep
-description: ai-fixable が付いた open Issue を1件ずつ片付け、コミットして close する。「sweep」「ai-fixable をまとめて処理して」「たまった issue を片付けて」と指示されたとき。
+description: ai-fixable が付いた open Issue を1件ずつ片付け、コミットして close する。人間が `/sweep` と打ったときだけ起動する。
 argument-hint: '[件数 or Issue番号（省略可・複数可）]'
+disable-model-invocation: true
 ---
 
 # /sweep
 
-`ai-fixable` が付いた open Issue を古い順に1件ずつ直し、Issue ごとにコミットして close する。**全工程を人間への確認なしに自律実行する。**
+`ai-fixable` が付いた open Issue を古い順に1件ずつ直し、Issue ごとにコミットして close する。**起動は人間の明示呼び出しに限る**が、起動後は最後まで人間への確認なしに自律実行する。
 
 `/quick-issue` は「割れ窓を見えるようにする」ためのスキルで、見えた窓を塞ぐ担当がいなければ Issue は積み上がるだけになる。本スキルがその担当である。
 
 ## 前提
 
+- **始めるタイミングは人間が握る。** 一度に多数の Issue とコミットへ触れるため、いつ走らせるかは作業状況を見て人間が決める。
 - **ブランチは切らない。** 現在のブランチでそのまま作業する。
 - **1 Issue = 1 コミット = 1 close。** 途中で止まっても、完了した Issue までは履歴と Issue 状態が一致する。
 - **他の Issue の変更を混ぜない。** ステージするのは、その Issue で自分が編集したファイルだけ。
