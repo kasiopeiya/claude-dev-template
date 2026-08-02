@@ -34,7 +34,7 @@
         padding: 40px 16px 80px;
       }
       .page {
-        max-width: 780px;
+        max-width: 1060px;
         margin: 0 auto;
       }
       h1 {
@@ -69,8 +69,33 @@
         padding: 18px 22px;
         font-size: 15px;
       }
-      .concept strong {
-        color: var(--accent);
+      .concept p + p {
+        margin-top: 12px;
+      }
+      .def {
+        margin: 14px 0;
+        background: var(--both-bg);
+        border: 1.5px solid var(--both);
+        border-radius: 10px;
+        padding: 14px 18px;
+      }
+      .def-lead {
+        display: block;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        color: var(--both);
+      }
+      .def b {
+        display: block;
+        margin-top: 2px;
+        font-size: 17px;
+        color: var(--both);
+      }
+      .def-body {
+        display: block;
+        margin-top: 5px;
+        font-size: 14px;
       }
       section {
         margin-top: 48px;
@@ -300,6 +325,7 @@
         color: var(--both);
       }
 
+      .concept code,
       .terms code,
       .harness code,
       .story code {
@@ -322,8 +348,10 @@
       }
       .diag {
         width: 100%;
+        max-width: 900px;
         height: auto;
         display: block;
+        margin: 0 auto;
         font-family: inherit;
       }
       .diag .box {
@@ -953,11 +981,14 @@
       .io {
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px 6px;
         flex-wrap: wrap;
-        margin-top: 10px;
+        margin-top: auto;
         padding-top: 9px;
         border-top: 1px dashed var(--line);
+      }
+      .io .chip {
+        max-width: 100%;
       }
       .io-label {
         font-size: 10px;
@@ -965,10 +996,12 @@
         color: var(--sub);
         letter-spacing: 0.08em;
       }
+      /* IN 行と OUT 行を折り返しで分ける（幅の狭い横フロー用） */
       .io-sep {
-        color: var(--sub);
-        font-weight: 700;
-        font-size: 12px;
+        flex: 0 0 100%;
+        font-size: 0;
+        line-height: 0;
+        margin: 1px 0;
       }
       .chip {
         border-radius: 6px;
@@ -1061,20 +1094,35 @@
         font-family: 'SF Mono', Menlo, monospace;
       }
 
-      /* 詳細：縦フロー */
+      /* 詳細：横フロー */
       .flow {
         margin-top: 24px;
         display: flex;
-        flex-direction: column;
+        align-items: stretch;
+        flex-wrap: wrap;
       }
       .step {
+        flex: 1 1 130px;
         display: flex;
-        align-items: flex-start;
-        gap: 14px;
+        flex-direction: column;
+        gap: 8px;
         background: var(--card);
         border: 1px solid var(--line);
         border-radius: 12px;
-        padding: 14px 18px;
+        padding: 12px 14px 14px;
+        position: relative;
+      }
+      .step + .step {
+        margin-left: 22px;
+      }
+      .step + .step::before {
+        content: '→';
+        position: absolute;
+        left: -18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--sub);
+        font-size: 16px;
       }
       .step.optional {
         border-style: dashed;
@@ -1082,15 +1130,12 @@
       }
       .step .lane {
         display: flex;
-        flex-direction: column;
         align-items: center;
         gap: 6px;
-        width: 64px;
-        flex-shrink: 0;
       }
       .step .no {
-        width: 30px;
-        height: 30px;
+        width: 26px;
+        height: 26px;
         border-radius: 50%;
         flex-shrink: 0;
         display: flex;
@@ -1098,47 +1143,44 @@
         justify-content: center;
         background: var(--ink);
         color: #fff;
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
-        margin-top: 2px;
+      }
+      .step .lane .pict {
+        width: 46px;
+      }
+      .step .lane .mode-label {
+        white-space: nowrap;
       }
       .step .body {
+        display: flex;
+        flex-direction: column;
         flex: 1;
         min-width: 0;
       }
       .step .title-row {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 6px;
         flex-wrap: wrap;
       }
       .step h4 {
-        font-size: 15px;
+        font-size: 14px;
       }
       .step .desc {
-        font-size: 13px;
+        font-size: 12px;
         color: var(--sub);
-        margin-top: 4px;
+        margin-top: 5px;
       }
       .step code {
-        font-size: 12px;
+        display: inline-block;
+        font-size: 11px;
         background: #eef1f6;
         border-radius: 6px;
-        padding: 1px 8px;
+        padding: 1px 7px;
         font-family: 'SF Mono', Menlo, monospace;
         color: var(--accent);
         font-weight: 600;
-      }
-      .arrow {
-        align-self: center;
-        color: var(--sub);
-        font-size: 16px;
-        padding: 2px 0;
-        line-height: 1.2;
-      }
-      .arrow small {
-        font-size: 11px;
-        margin-left: 8px;
       }
 
       /* 3ブロックの帯 */
@@ -1201,28 +1243,124 @@
       }
 
       /* 締めのポイント */
-      .points {
-        margin-top: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .point {
-        background: var(--card);
-        border-left: 4px solid var(--accent);
-        border-radius: 0 10px 10px 0;
-        padding: 14px 18px;
-        font-size: 14px;
-      }
-      .point b {
-        display: block;
-        margin-bottom: 2px;
-      }
       footer {
         margin-top: 56px;
         font-size: 11px;
         color: var(--sub);
         text-align: center;
+      }
+
+      /* 目次 */
+      .toc {
+        margin-top: 18px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 18px 16px;
+        display: flex;
+        gap: 10px 24px;
+        flex-wrap: wrap;
+      }
+      .toc-col {
+        flex: 1 1 260px;
+      }
+      .toc-col > b {
+        display: block;
+        font-size: 11.5px;
+        letter-spacing: 0.06em;
+        color: var(--sub);
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 6px;
+      }
+      .toc ol {
+        margin: 8px 0 0;
+        padding-left: 20px;
+      }
+      .toc li {
+        font-size: 12.5px;
+        padding: 2.5px 0;
+      }
+      .toc a {
+        color: var(--ink);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--line);
+      }
+      .toc a:hover {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      /* 特徴的な機能：芯 → 可視化 → 根拠 の共通型 */
+      .feat {
+        margin-top: 20px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 6px 18px 18px;
+      }
+      .feat > h3 {
+        font-size: 15px;
+        margin-top: 14px;
+      }
+      .core {
+        margin-top: 10px;
+        background: var(--both-bg);
+        border-left: 4px solid var(--both);
+        border-radius: 0 10px 10px 0;
+        padding: 9px 14px;
+        font-size: 13.5px;
+        font-weight: 700;
+        color: var(--both);
+      }
+
+      /* 行と列に収まる情報（グリッドの疑似表） */
+      .grid-table {
+        margin-top: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .gt-head,
+      .gt-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .gt-head span {
+        flex: 1 1 150px;
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--sub);
+        letter-spacing: 0.04em;
+      }
+      .gt-row > div {
+        flex: 1 1 150px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 11px;
+        font-size: 12px;
+        background: #fbfcfe;
+      }
+      .gt-row > div.key {
+        border: 1.5px solid var(--both);
+        background: var(--both-bg);
+        font-weight: 700;
+      }
+
+      /* 付録 */
+      .appendix-head {
+        margin-top: 40px;
+        border-top: 3px double var(--line);
+        padding-top: 20px;
+      }
+      .appendix-head h2 {
+        margin-top: 0;
+      }
+      .toc-col > b a {
+        color: var(--accent);
+        font-weight: 700;
+        text-decoration: none;
+        border-bottom: 1px dotted var(--accent);
       }
     </style>
   </head>
@@ -1235,16 +1373,68 @@
       </p>
       <p class="banner">仕様駆動開発 ＋ <b>ポリシー駆動開発</b></p>
 
+      <nav class="toc">
+        <div class="toc-col">
+          <b>本編 — ポリシー駆動開発とは何か</b>
+          <ol>
+            <li><a href="#why">なぜポリシー駆動開発なのか</a></li>
+            <li><a href="#third-way">このテンプレートが目指すもの</a></li>
+            <li><a href="#roles">人間とAIの役割</a></li>
+            <li><a href="#harness">ポリシー駆動開発とは何か</a></li>
+            <li><a href="#policy">Policy — 判断のレール</a></li>
+            <li><a href="#guardrail">ガードレール — 品質のレール</a></li>
+            <li>
+              <a href="#hook">policy-loader hook：AIに必要なポリシーを読ませる仕組み</a>
+            </li>
+            <li><a href="#three-layers">判断基準をどこに置くか</a></li>
+            <li><a href="#flow">開発フローの全体像</a></li>
+            <li><a href="#initial">詳細① 初期構築</a></li>
+            <li><a href="#issue-flow">詳細② Issue単位の開発フロー</a></li>
+          </ol>
+        </div>
+        <div class="toc-col">
+          <b><a href="#appendix">付録 — このテンプレートの特徴的な機能</a></b>
+          <ol>
+            <li>
+              <a href="#ap-progressive">Progressive Disclosure：必要な分だけ読ませる文書構造</a>
+            </li>
+            <li><a href="#ap-triage">PRのトリアージ：人間がレビューすべきPRだけに絞る</a></li>
+            <li>
+              <a href="#ap-boyscout">ボーイスカウトルールの仕組み化：気づいた課題を失わない</a>
+            </li>
+            <li>
+              <a href="#ap-devil"
+                >AIに自己ディベートさせる：指摘されるとすぐ意見を変える問題への対策</a
+              >
+            </li>
+            <li><a href="#ap-misc">その他の仕組み：SubAgent・ドリフト検出・ADR</a></li>
+          </ol>
+        </div>
+      </nav>
+
       <div class="concept">
-        このプロジェクトは<strong>仕様駆動開発</strong>を採用しています。 要件 → 計画 → Issue →
-        設計書 → 実装の順に文書を先に固め、作業はAIが自律実行します。
-        さらに<strong>判断の基準そのものをPolicyという文書に固め、品質確保は静的解析・テスト・メトリクスのガードレールで機械化する——いわば<u>ポリシー駆動開発</u>で、判断と品質もAIへ委譲していく</strong>のがこのテンプレートの狙いです。
-        各工程は
-        <code>/コマンド</code>（スラッシュコマンド）として定義されており、呼ぶだけで実行されます。
-        <br />
-        このとき<strong
-          >人間の役割は、コードを1行ずつ指示することでも、成果物を1つずつ検品することでもありません。目的を決め、AIが走るレール（Policy・ガードレール）を設計し改善する側に回ります。</strong
-        >
+        <p>
+          このプロジェクトは<b>仕様駆動開発</b>で進めます。要件 → 計画 → Issue → 設計書 →
+          実装の順に文書を先に固め、各工程は <code>/コマンド</code> を呼ぶだけでAIが自律実行します。
+        </p>
+
+        <p>
+          ただ、文書で決められるのは「何を作るか」までです。「どう作るか」はAIがその場で判断するため、判断はぶれ、品質は人間のレビューだけが頼りになります。<b
+            >レビューが重くなるほど、この仕組みは回りません。</b
+          >
+        </p>
+
+        <div class="def">
+          <span class="def-lead">そこで、判断と品質も先に決めておく</span>
+          <b>ポリシー駆動開発</b>
+          <span class="def-body">
+            判断の基準をPolicyという文書に固め、品質の合否は静的解析・テスト・メトリクスに機械的に出させる。
+          </span>
+        </div>
+
+        <p>
+          これで人間は、成果物を1つずつ検品する側から、<b>AIが走るレールを設計し改善する側</b>に回れます。
+        </p>
       </div>
 
       <div class="harness">
@@ -1444,7 +1634,7 @@
 
       <!-- ============ 背景 ============ -->
       <section>
-        <h2>なぜポリシー駆動開発なのか<span class="tag">たどり着いた経緯</span></h2>
+        <h2 id="why">なぜポリシー駆動開発なのか<span class="tag">たどり着いた経緯</span></h2>
         <p class="note">最初からこの形だったわけではなく、失敗して気づいた順に組み上がっている。</p>
 
         <div class="arc">
@@ -1508,7 +1698,7 @@
 
       <!-- ============ 目指すもの ============ -->
       <section>
-        <h2>このテンプレートが目指すもの<span class="tag">第3の道</span></h2>
+        <h2 id="third-way">このテンプレートが目指すもの<span class="tag">第3の道</span></h2>
         <p class="note">
           AI駆動開発の世間の潮流は大きく2つの派閥に分かれる。このテンプレートはそのどちらでもない。
         </p>
@@ -1592,7 +1782,7 @@
 
       <!-- ============ 人間とAIの役割 ============ -->
       <section>
-        <h2>人間とAIの役割<span class="tag">誰が何をするか</span></h2>
+        <h2 id="roles">人間とAIの役割<span class="tag">誰が何をするか</span></h2>
         <p class="note">
           AIはループの中で工程を回す。人間はループの外に立ち、そのループが走るレールを作る。
         </p>
@@ -1659,7 +1849,7 @@
 
       <!-- ============ ハーネスの全体像 ============ -->
       <section>
-        <h2>ポリシー駆動開発とは何か<span class="tag">ハーネスの全体像</span></h2>
+        <h2 id="harness">ポリシー駆動開発とは何か<span class="tag">ハーネスの全体像</span></h2>
         <p class="note">
           このテンプレートは Policy
           を中心に組み上がっている。まず言葉の意味を押さえてから、Policyと各部品の関係を見る。
@@ -1850,7 +2040,7 @@
 
       <!-- ============ Policy ============ -->
       <section>
-        <h2>Policy — 判断のレール<span class="tag">事前｜判断のブレを抑える</span></h2>
+        <h2 id="policy">Policy — 判断のレール<span class="tag">事前｜判断のブレを抑える</span></h2>
         <p class="note">
           判断が割れる事柄に「私たちの立場」を先に決めておく。AIはそれを読んで自分で決めるので、人間に確認が飛んでこない。
         </p>
@@ -1963,7 +2153,9 @@
 
       <!-- ============ ガードレール ============ -->
       <section>
-        <h2>ガードレール — 品質のレール<span class="tag">事後｜逸脱を機械的に止める</span></h2>
+        <h2 id="guardrail">
+          ガードレール — 品質のレール<span class="tag">事後｜逸脱を機械的に止める</span>
+        </h2>
         <p class="note">
           AIの成果物はすべて関門を通る。全部越えないとマージできない。人間の検品を待たずに品質が決まる。
         </p>
@@ -2057,9 +2249,146 @@
         </div>
       </section>
 
+      <!-- ============ hook ============ -->
+      <section>
+        <h2 id="hook">policy-loader hook：AIに必要なポリシーを読ませる仕組み</h2>
+
+        <div class="core">芯：Policy が読まれるかどうかを、AIの記憶に任せない</div>
+
+        <div class="harness">
+          <svg class="diag" viewBox="0 24 800 232" role="img">
+            <title>
+              ファイル編集の直前に policy-loader
+              が割り込み、そのファイルに効くポリシーをAIへ渡す流れ
+            </title>
+
+            <!-- 入口：AIの編集要求 -->
+            <rect class="fbox" x="8" y="44" width="180" height="60" rx="9" />
+            <text class="fnm" x="22" y="70">🤖 AI</text>
+            <text class="li" x="22" y="92">ファイルを編集しようとする</text>
+            <path class="e step" d="M190,74 L208,74" />
+
+            <!-- policy-loader 本体 -->
+            <rect class="box" x="212" y="32" width="240" height="84" rx="10" />
+            <text class="fnm" x="226" y="58">🪝 policy-loader（hook）</text>
+            <text class="li" x="226" y="80">編集するファイルに効く</text>
+            <text class="li" x="226" y="102">ポリシーだけを探して渡す</text>
+
+            <!-- ポリシー側の宣言 -->
+            <rect class="box ref" x="212" y="160" width="240" height="76" rx="10" />
+            <text class="fnm" x="226" y="186">📜 docs/policy/</text>
+            <text class="li" x="226" y="208">各ポリシーが自分で宣言する</text>
+            <text class="ex" x="226" y="228">applies-to: ['**/package.json']</text>
+            <path class="e pol" d="M332,160 L332,120" />
+            <text class="lab" x="202" y="146" text-anchor="end">どのファイルに効くか</text>
+
+            <!-- 出口 -->
+            <path class="e step" d="M454,74 L472,74" />
+            <rect class="aibox" x="476" y="36" width="300" height="76" rx="10" />
+            <text class="fnm" x="492" y="64">🤖 AI が読んでから書く</text>
+            <text class="li" x="492" y="90">読み忘れという事故が起きない</text>
+          </svg>
+
+          <p class="fig-note">
+            ポリシーを増やしても policy-loader は変更不要。<b
+              >どのファイルに効くかはポリシー側が書く</b
+            >
+          </p>
+        </div>
+      </section>
+
+      <!-- ============ 三層 ============ -->
+      <section>
+        <h2 id="three-layers">判断基準をどこに置くか<span class="tag">増やすときのルール</span></h2>
+
+        <div class="core">芯：ポリシーを増やすときのルール自体を、ポリシーとして持っている</div>
+
+        <div class="harness">
+          <svg class="diag" viewBox="0 44 800 290" role="img">
+            <title>新しい判断基準の置き場所を、抽象度と自動検知の可否で振り分ける分岐</title>
+
+            <rect class="fbox" x="10" y="118" width="196" height="60" rx="9" />
+            <text class="fnm" x="24" y="144">🆕 判断基準を足す</text>
+            <text class="li" x="24" y="164">（例：import の並び順）</text>
+            <path class="e step" d="M208,148 L222,148" />
+
+            <rect
+              class="fbox"
+              x="226"
+              y="122"
+              width="180"
+              height="52"
+              rx="9"
+              stroke-dasharray="5 5"
+            />
+            <text class="li" x="240" y="152">「コードをどう書くか」か？</text>
+
+            <!-- No → Policy -->
+            <path class="e step" d="M408,138 C430,120 430,86 446,86" />
+            <text class="lab" x="416" y="106">No</text>
+            <rect class="box ref" x="452" y="58" width="164" height="60" rx="10" />
+            <text class="fnm" x="466" y="84">📜 Policy</text>
+            <text class="li" x="466" y="104">本質寄りの立場と理由</text>
+
+            <!-- Yes → rules -->
+            <path class="e step" d="M408,160 C430,180 430,198 446,198" />
+            <text class="lab" x="416" y="196">Yes</text>
+            <rect class="fbox" x="452" y="170" width="164" height="60" rx="10" />
+            <text class="fnm" x="466" y="196">📏 rules</text>
+            <text class="li" x="466" y="216">実装の書き方</text>
+
+            <!-- rules → 自動検知できるか -->
+            <path class="e step" d="M618,200 L634,200" />
+            <rect
+              class="fbox"
+              x="638"
+              y="174"
+              width="148"
+              height="52"
+              rx="9"
+              stroke-dasharray="5 5"
+            />
+            <text class="li" x="650" y="198">機械が合否を</text>
+            <text class="li" x="650" y="216">出せる？</text>
+
+            <path class="e gate" d="M712,228 L712,254" />
+            <text class="lab" x="720" y="248">Yes</text>
+            <rect class="box gate" x="622" y="258" width="164" height="64" rx="10" />
+            <text class="fnm" x="636" y="284">🚧 ガードレール</text>
+            <text class="li" x="636" y="304">静的解析・テストで落とす</text>
+          </svg>
+
+          <div class="grid-table">
+            <div class="gt-head">
+              <span>置き場所</span><span>何を書くか</span><span>誰が守らせるか</span>
+            </div>
+            <div class="gt-row">
+              <div class="key">📜 Policy</div>
+              <div>判断が割れる事柄への立場と、その理由</div>
+              <div>AIと人間が読んで従う</div>
+            </div>
+            <div class="gt-row">
+              <div class="key">📏 rules</div>
+              <div>実装の書き方（コーディング規約）</div>
+              <div>AIと人間が読んで従う</div>
+            </div>
+            <div class="gt-row">
+              <div class="key">🚧 ガードレール</div>
+              <div>rules のうち、機械が合否を出せるもの</div>
+              <div>機械が落とす</div>
+            </div>
+          </div>
+
+          <div class="chips">
+            <span>独自ESLintルール（CDKのimport形式）</span><span>knip（不要物の検出）</span
+            ><span>npm run check:static</span>
+          </div>
+        </div>
+      </section>
+
       <!-- ============ 全体像 ============ -->
       <section>
-        <h2>開発フローの全体像<span class="tag">まずはこの4フェーズ</span></h2>
+        <h2 id="flow">開発フローの全体像<span class="tag">まずはこの4フェーズ</span></h2>
         <div class="phases">
           <div class="phase">
             <div class="num">PHASE 1</div>
@@ -2136,7 +2465,7 @@
 
       <!-- ============ 詳細① 初期構築 ============ -->
       <section>
-        <h2>詳細① 初期構築<span class="tag">プロジェクト開始時に1回だけ</span></h2>
+        <h2 id="initial">詳細① 初期構築<span class="tag">プロジェクト開始時に1回だけ</span></h2>
         <p class="note">
           まっさらな状態から「起点Issue群」を作るまで。各ステップの成果物が次のステップの入力になります。
         </p>
@@ -2163,8 +2492,6 @@
               </div>
             </div>
           </div>
-          <div class="arrow">↓</div>
-
           <div class="step">
             <div class="lane">
               <div class="no">2</div>
@@ -2186,8 +2513,6 @@
               </div>
             </div>
           </div>
-          <div class="arrow">↓</div>
-
           <div class="step">
             <div class="lane">
               <div class="no">3</div>
@@ -2210,8 +2535,6 @@
               </div>
             </div>
           </div>
-          <div class="arrow">↓</div>
-
           <div class="step">
             <div class="lane">
               <div class="no">4</div>
@@ -2235,8 +2558,6 @@
               </div>
             </div>
           </div>
-          <div class="arrow">↓</div>
-
           <div class="step">
             <div class="lane">
               <div class="no">5</div>
@@ -2260,8 +2581,6 @@
               </div>
             </div>
           </div>
-          <div class="arrow">↓</div>
-
           <div class="step">
             <div class="lane">
               <div class="no">6</div>
@@ -2291,7 +2610,9 @@
 
       <!-- ============ 詳細② Issue単位フロー ============ -->
       <section>
-        <h2>詳細② Issue単位の開発フロー<span class="tag">Issueごとに繰り返す</span></h2>
+        <h2 id="issue-flow">
+          詳細② Issue単位の開発フロー<span class="tag">Issueごとに繰り返す</span>
+        </h2>
         <p class="note">12ステップありますが、やることは「決める → 作る → 通す」の3つだけです。</p>
 
         <div class="block">
@@ -2321,8 +2642,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓</div>
-
             <div class="step">
               <div class="lane">
                 <div class="no">2</div>
@@ -2342,8 +2661,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓</div>
-
             <div class="step">
               <div class="lane">
                 <div class="no">3</div>
@@ -2367,8 +2684,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓</div>
-
             <div class="step">
               <div class="lane">
                 <div class="no">4</div>
@@ -2421,8 +2736,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓</div>
-
             <div class="step">
               <div class="lane">
                 <div class="no">6</div>
@@ -2475,8 +2788,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓</div>
-
             <div class="step">
               <div class="lane">
                 <div class="no">8</div>
@@ -2496,8 +2807,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓</div>
-
             <div class="step">
               <div class="lane">
                 <div class="no">9</div>
@@ -2521,8 +2830,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓</div>
-
             <div class="step">
               <div class="lane">
                 <div class="no">10</div>
@@ -2532,7 +2839,7 @@
               <div class="body">
                 <div class="title-row">
                   <h4>PRのチェック</h4>
-                  <code>/pr-label</code>・<code>/pr-check</code><span class="badge b-ai">AI</span>
+                  <code>/pr-label</code><code>/pr-check</code><span class="badge b-ai">AI</span>
                 </div>
                 <div class="desc">
                   変更種別と「人間レビューが必要か」のラベルを付け、レビューを受け付けてよい前提条件（説明・サイズ）を判定する
@@ -2545,8 +2852,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓</div>
-
             <div class="step">
               <div class="lane">
                 <div class="no">11</div>
@@ -2569,8 +2874,6 @@
                 </div>
               </div>
             </div>
-            <div class="arrow">↓ <small>本番リリース直前など、必要なときだけ</small></div>
-
             <div class="step optional">
               <div class="lane">
                 <div class="no">12</div>
@@ -2583,7 +2886,8 @@
                   <code>/sre-prr</code><span class="badge b-both">人間＋AI</span>
                 </div>
                 <div class="desc">
-                  SRE観点で本番運用に耐えるかを審査し、go / 条件付きgo / no-go を助言する
+                  本番リリース直前など必要なときだけ実行する。SRE観点で本番運用に耐えるかを審査し、go
+                  / 条件付きgo / no-go を助言する
                 </div>
                 <div class="io">
                   <span class="io-label">IN</span><span class="chip c-code">💻 リリース候補</span>
@@ -2597,25 +2901,264 @@
         </div>
       </section>
 
-      <!-- ============ ポイント ============ -->
-      <section>
-        <h2>押さえてほしい3つのポイント</h2>
-        <div class="points">
-          <div class="point">
-            <b>① AIは「工程まるごと」を自律実行する</b>
-            <code>/code-dev 15</code>
-            のようにIssue番号を渡すだけで、実装→レビュー→テスト→修正まで確認なしに完走する。人間がコードを1行ずつ指示するのではない。
-          </div>
-          <div class="point">
-            <b>② 判断と品質もAIへ委譲していく</b>
-            判断のブレはPolicy（「私たちの考える良い〇〇」を宣言した文書群）で抑え、品質は静的解析・アーキテクチャテスト・コードメトリクスなどの決定論的なガードレールで機械的に確保する。フロー上に残る人間のレビューは、この仕組みで縮小していく対象。
-          </div>
-          <div class="point">
-            <b>③ Issue がフローの単位</b>
-            すべての作業はGitHub
-            Issueから始まりIssueで完結する。AIはIssueのタスクリストを更新しながら進むので、進捗はいつでもGitHub上で見える。
-          </div>
-        </div>
+      <!-- ============ 付録 ============ -->
+      <div class="appendix-head">
+        <h2 id="appendix">付録：このテンプレートの特徴的な機能</h2>
+        <p class="note">
+          ポリシー駆動開発そのものの説明ではないが、それを日々回すために効いている仕組み。
+        </p>
+      </div>
+
+      <section class="feat">
+        <h3 id="ap-progressive">Progressive Disclosure：必要な分だけ読ませる文書構造</h3>
+        <div class="core">芯：読ませる量を絞ることが、そのままAIの精度を守る手段になっている</div>
+
+        <svg class="diag" viewBox="0 0 800 320" role="img">
+          <title>全ポリシーを常に読ませる場合と、ハブ経由で必要な分だけ辿らせる場合の対比</title>
+
+          <!-- 左：全部読ませる -->
+          <rect class="fbox" x="8" y="24" width="384" height="268" rx="12" stroke-dasharray="6 5" />
+          <text class="fnm" x="24" y="50">❌ 先に全部読ませる</text>
+
+          <rect class="fbox" x="24" y="66" width="104" height="22" rx="5" />
+          <text class="ex" x="34" y="81">設計ポリシー</text>
+          <rect class="fbox" x="136" y="66" width="104" height="22" rx="5" />
+          <text class="ex" x="146" y="81">テスト方針</text>
+          <rect class="fbox" x="24" y="94" width="104" height="22" rx="5" />
+          <text class="ex" x="34" y="109">CDK設計</text>
+          <rect class="fbox" x="136" y="94" width="104" height="22" rx="5" />
+          <text class="ex" x="146" y="109">監視ポリシー</text>
+          <rect class="fbox" x="24" y="122" width="104" height="22" rx="5" />
+          <text class="ex" x="34" y="137">git規約</text>
+          <rect class="fbox" x="136" y="122" width="104" height="22" rx="5" />
+          <text class="ex" x="146" y="137">PRレビュー</text>
+          <rect class="fbox" x="24" y="150" width="104" height="22" rx="5" />
+          <text class="ex" x="34" y="165">ログ方針</text>
+          <rect class="fbox" x="136" y="150" width="104" height="22" rx="5" />
+          <text class="ex" x="146" y="165">…そのほか全部</text>
+
+          <path class="e step" d="M244,88 L272,132" />
+          <path class="e step" d="M244,133 L272,142" />
+          <path class="e step" d="M244,161 L272,152" />
+          <rect class="aibox" x="276" y="118" width="104" height="52" rx="9" />
+          <text class="fnm" x="292" y="150">🤖 AI</text>
+
+          <text class="li" x="24" y="212">文脈が飽和し、中盤の指示が効かなくなる</text>
+          <text class="ex" x="24" y="234">（Lost in the middle）</text>
+          <text class="lab" x="24" y="262">読ませたのに、効かない</text>
+
+          <!-- 右：ハブから辿らせる -->
+          <rect class="fbox" x="408" y="24" width="384" height="268" rx="12" />
+          <text class="fnm" x="424" y="50">✅ ハブから必要な分だけ辿らせる</text>
+
+          <rect class="box ref" x="424" y="76" width="160" height="56" rx="10" />
+          <text class="fnm" x="438" y="102">🗂 ハブ文書</text>
+          <text class="ex" x="438" y="122">design-hub / policy-hub</text>
+
+          <path class="e pol" d="M586,94 L606,84" />
+          <path class="e pol" d="M586,114 L606,128" />
+          <rect class="fbox" x="610" y="62" width="172" height="36" rx="8" />
+          <text class="ex" x="622" y="85">いま効くポリシー</text>
+          <rect class="fbox" x="610" y="112" width="172" height="36" rx="8" />
+          <text class="ex" x="622" y="135">いま効くポリシー</text>
+
+          <path class="e step" d="M696,148 C696,172 620,168 604,176" />
+          <rect class="aibox" x="424" y="172" width="358" height="52" rx="10" />
+          <text class="fnm" x="440" y="204">🤖 AI が読むのは数本だけ</text>
+
+          <text class="li" x="424" y="250">タスクに効くものしか文脈に載らない</text>
+          <text class="lab" x="424" y="276">最後まで指示が効く</text>
+        </svg>
+      </section>
+
+      <section class="feat">
+        <h3 id="ap-triage">PRのトリアージ：人間がレビューすべきPRだけに絞る</h3>
+        <div class="core">芯：人間のレビューを廃止するのではなく、機械が絞った対象に集中させる</div>
+
+        <svg class="diag" viewBox="0 0 800 292" role="img">
+          <title>
+            CIが成功したPRだけをAIがトリアージし、人間レビューとauto-mergeに振り分ける流れ
+          </title>
+
+          <rect class="fbox" x="8" y="40" width="112" height="52" rx="9" />
+          <text class="fnm" x="24" y="72">⬆ push</text>
+          <path class="e step" d="M122,66 L142,66" />
+
+          <rect class="box gate" x="146" y="34" width="196" height="64" rx="10" />
+          <text class="fnm" x="160" y="60">🔁 pipeline（CI）</text>
+          <text class="li" x="160" y="82">dev へ deploy して結合テスト</text>
+
+          <path class="e step" d="M344,66 L376,60" />
+          <text class="lab" x="348" y="16">成功したときだけ</text>
+
+          <rect class="box ref" x="380" y="24" width="404" height="120" rx="10" />
+          <text class="fnm" x="396" y="50">🤖 pr-ai-triage（AI）</text>
+          <text class="li" x="396" y="76">① 差分を読んで PR 本文を書き直す</text>
+          <text class="li" x="396" y="98">② レビューが要るかどうかのラベルを付ける</text>
+          <text class="li" x="396" y="120">③ 要レビューのときだけ前提条件を見る</text>
+
+          <path class="e hum" d="M525,146 L525,208" />
+          <text class="lab" x="533" y="188">要レビュー</text>
+          <rect class="humbox" x="440" y="212" width="170" height="60" rx="10" />
+          <text class="fnm" x="454" y="238">🧑 人間がレビュー</text>
+          <text class="ex" x="454" y="258">絞られた分だけ見る</text>
+
+          <path class="e step" d="M707,146 L707,208" />
+          <text class="lab" x="715" y="188">不要</text>
+          <rect class="fbox" x="630" y="212" width="154" height="60" rx="10" />
+          <text class="fnm" x="644" y="238">⚙ auto-merge</text>
+          <text class="ex" x="644" y="258">AI非関与の別job</text>
+
+          <path class="e gate" d="M244,100 L244,208" />
+          <text class="lab" x="252" y="150">マージ可否はここだけ</text>
+          <rect class="box gate" x="8" y="212" width="400" height="60" rx="10" />
+          <text class="fnm" x="22" y="238">🚧 cicd-gate（マージ可否の必須チェック）</text>
+          <text class="ex" x="22" y="258">AIは一切関与しない</text>
+        </svg>
+      </section>
+
+      <section class="feat">
+        <h3 id="ap-boyscout">ボーイスカウトルールの仕組み化：気づいた課題を失わない</h3>
+        <div class="core">芯：直すことではなく、失わないこと</div>
+
+        <svg class="diag" viewBox="0 34 800 232" role="img">
+          <title>
+            割れ窓を見つけたらその場で直さず起票し、ラベルで振り分けて改善をレールへ戻すループ
+          </title>
+
+          <rect class="fbox" x="8" y="100" width="176" height="62" rx="9" />
+          <text class="fnm" x="22" y="126">🔍 割れ窓を見つける</text>
+          <text class="li" x="22" y="148">本筋とは別の品質課題</text>
+          <path class="e step" d="M186,131 L204,131" />
+
+          <rect class="fbox" x="208" y="100" width="176" height="62" rx="9" />
+          <text class="fnm" x="222" y="126">🚫 その場で直さない</text>
+          <text class="li" x="222" y="148">脱線と衝突を避ける</text>
+          <path class="e step" d="M386,131 L404,131" />
+
+          <rect class="box ref" x="408" y="100" width="176" height="62" rx="9" />
+          <text class="fnm" x="422" y="126">🎫 /quick-issue</text>
+          <text class="li" x="422" y="148">確認なしで起票する</text>
+
+          <path class="e ai" d="M586,120 C598,96 592,74 604,74" />
+          <rect class="fbox" x="608" y="48" width="184" height="52" rx="9" />
+          <text class="fnm" x="620" y="74">🏷 ai-fixable</text>
+          <text class="ex" x="620" y="92">AIがまとめて片付ける</text>
+
+          <path class="e hum" d="M586,142 C598,166 592,196 604,196" />
+          <rect class="humbox" x="608" y="170" width="184" height="52" rx="9" />
+          <text class="li" x="620" y="196">🏷 needs-human-decision</text>
+          <text class="ex" x="620" y="214">人間が方針を決める</text>
+
+          <path class="e hum" d="M700,222 L700,252 L96,252 L96,166" />
+          <text class="lab" x="400" y="248" text-anchor="middle">
+            決まったことは Policy・rules・ガードレールへ戻す
+          </text>
+        </svg>
+      </section>
+
+      <section class="feat">
+        <h3 id="ap-devil">AIに自己ディベートさせる：指摘されるとすぐ意見を変える問題への対策</h3>
+        <div class="core">芯：起票が事後に拾うループなら、こちらは事前に誤りを潰すループ</div>
+
+        <svg class="diag" viewBox="0 0 800 300" role="img">
+          <title>
+            反論されると迎合してしまう経路と、切り離した反論エージェントに先に潰させる経路の対比
+          </title>
+
+          <!-- 左：そのまま出す -->
+          <rect class="fbox" x="8" y="24" width="384" height="252" rx="12" stroke-dasharray="6 5" />
+          <text class="fnm" x="24" y="52">❌ そのまま意見を出す</text>
+
+          <rect class="aibox" x="24" y="72" width="160" height="42" rx="8" />
+          <text class="li" x="38" y="98">🤖 AIの意見</text>
+          <path class="e step" d="M104,116 L104,134" />
+          <rect class="humbox" x="24" y="138" width="160" height="42" rx="8" />
+          <text class="li" x="38" y="164">🧑 人間が反論</text>
+          <path class="e step" d="M104,182 L104,200" />
+          <rect class="aibox" x="24" y="204" width="160" height="42" rx="8" />
+          <text class="li" x="38" y="230">🤖 すぐ意見を変える</text>
+
+          <text class="ex" x="196" y="164">根拠は1つも</text>
+          <text class="ex" x="196" y="182">増えていない</text>
+          <text class="lab" x="24" y="268">反論が来たこと自体が根拠になってしまう</text>
+
+          <!-- 右：/devil -->
+          <rect class="fbox" x="408" y="24" width="384" height="252" rx="12" />
+          <text class="fnm" x="424" y="52">✅ /devil で先に潰す</text>
+
+          <rect class="aibox" x="424" y="72" width="168" height="42" rx="8" />
+          <text class="li" x="438" y="98">🤖 AIの意見</text>
+          <path class="e step" d="M594,93 L612,93" />
+          <rect class="fbox" x="616" y="72" width="166" height="42" rx="8" />
+          <text class="li" x="630" y="98">主張だけ切り離す</text>
+          <text class="ex" x="616" y="130">誰の主張か・経緯は渡さない</text>
+
+          <path class="e pol" d="M699,140 L699,158" />
+          <rect class="box ref" x="616" y="162" width="166" height="46" rx="8" />
+          <text class="li" x="630" y="190">😈 反論エージェント</text>
+
+          <path class="e pol" d="M614,185 L596,185" />
+          <rect class="fbox" x="424" y="162" width="168" height="46" rx="8" />
+          <text class="li" x="438" y="184">最も強い反論と</text>
+          <text class="li" x="438" y="202">反証条件が返る</text>
+
+          <path class="e step" d="M508,210 L508,228" />
+          <rect class="aibox" x="424" y="232" width="168" height="42" rx="8" />
+          <text class="li" x="438" y="258">🤖 確かめてから答える</text>
+
+          <text class="lab" x="616" y="240">確認した事実だけが</text>
+          <text class="lab" x="616" y="262">意見を変える根拠になる</text>
+        </svg>
+
+        <p class="fig-note">効くのは<b>後戻りコストの高い上流</b>——設計方針・技術選定・進め方</p>
+      </section>
+
+      <section class="feat">
+        <h3 id="ap-misc">その他の仕組み：SubAgent・ドリフト検出・ADR</h3>
+        <div class="core">芯：文脈を分けて、ズレを検出する</div>
+
+        <svg class="diag" viewBox="0 0 800 214" role="img">
+          <title>
+            SubAgentによるレビューの文脈分離・設計書と実装のドリフト検出・ADRへの経緯隔離
+          </title>
+
+          <!-- SubAgent -->
+          <rect class="fbox" x="8" y="24" width="250" height="176" rx="12" />
+          <text class="fnm" x="24" y="50">🧩 SubAgent</text>
+          <rect class="aibox" x="24" y="66" width="98" height="40" rx="8" />
+          <text class="ex" x="38" y="91">書いたAI</text>
+          <path class="e step" d="M124,86 L136,86" />
+          <rect class="fbox" x="140" y="66" width="102" height="40" rx="8" />
+          <text class="ex" x="154" y="91">別のAI</text>
+          <text class="li" x="24" y="140">レビューは別の文脈で走る</text>
+          <text class="li" x="24" y="162">実装時の思い込みを</text>
+          <text class="li" x="24" y="184">持ち込ませない</text>
+
+          <!-- validate-design -->
+          <rect class="fbox" x="274" y="24" width="250" height="176" rx="12" />
+          <text class="fnm" x="290" y="50">🔍 /validate-design</text>
+          <rect class="fbox" x="290" y="66" width="98" height="40" rx="8" />
+          <text class="ex" x="304" y="91">設計書</text>
+          <path class="e pol" d="M390,86 L404,86" />
+          <rect class="fbox" x="408" y="66" width="100" height="40" rx="8" />
+          <text class="ex" x="422" y="91">実装コード</text>
+          <text class="li" x="290" y="140">突き合わせて</text>
+          <text class="li" x="290" y="162">ズレ（ドリフト）を</text>
+          <text class="li" x="290" y="184">機械的に見つける</text>
+
+          <!-- ADR -->
+          <rect class="fbox" x="540" y="24" width="252" height="176" rx="12" />
+          <text class="fnm" x="556" y="50">📘 ADR</text>
+          <rect class="fbox" x="556" y="66" width="106" height="40" rx="8" />
+          <text class="ex" x="570" y="91">設計書</text>
+          <path class="e step" d="M664,86 L678,86" />
+          <rect class="box ref" x="682" y="66" width="94" height="40" rx="8" />
+          <text class="ex" x="696" y="91">ADR</text>
+          <text class="li" x="556" y="140">設計書はいまの仕様だけ</text>
+          <text class="li" x="556" y="162">なぜ変えたかはADRへ</text>
+          <text class="li" x="556" y="184">一覧は自動生成する</text>
+        </svg>
       </section>
 
       <footer>
