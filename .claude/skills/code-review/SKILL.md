@@ -14,11 +14,11 @@ TypeScript アプリケーションコードをレビューしてください。
 
 レビューでは以下のポリシーにも従って評価してください。各ポリシーが判定基準の SSOT であり、具体チェックはポリシー側にあります（本ファイルへ転記しない）。各ポリシーは対応する採点観点に紐づきます（references/review-criteria.md）。
 
-- `docs/policy/code-comment-policy.md` — コメント（#9）
-- `docs/policy/configuration-policy.md` — 構成値・設定の扱い（#18）
-- `docs/policy/application-design-policy.md` — コード内部設計（#19）
-- `docs/policy/application-logging-policy.md` — ログ出力（#20。ログ出力を含む場合）
-- `docs/policy/frontend-design-policy.md` — **フロントエンドコードのレビュー時のみ**（#21）
-- `docs/policy/unit-test-policy.md` — **テストコードのレビュー時のみ**（#22）
+- `docs/policy/code-comment-policy.md` — 観点「コメント」
+- `docs/policy/configuration-policy.md` — 観点「構成管理ポリシー準拠」
+- `docs/policy/application-design-policy.md` — 観点「アプリ設計ポリシー準拠」
+- `docs/policy/application-logging-policy.md` — 観点「ロギングポリシー準拠」（ログ出力を含む場合）
+- `docs/policy/frontend-design-policy.md` — 観点「フロントエンド設計ポリシー準拠」（**フロントエンドコードのレビュー時のみ**）
+- `docs/policy/unit-test-policy.md` — 観点「単体テストポリシー準拠」（**テストコードのレビュー時のみ**）
 
 引数: $ARGUMENTS
