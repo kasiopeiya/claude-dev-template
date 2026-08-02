@@ -20,6 +20,13 @@ hook が捕捉できるのは、**編集対象ファイルのパスで発火点�
 
 ---
 
+### [policy-driven-development-policy.md](policy/policy-driven-development-policy.md)
+
+**概要**: 判断基準を Policy・rules・ガードレールのどこに置くかを定めるメタポリシー。置き場所は抽象度で決める（実装の書き方＝rules／それ以外の本質寄り＝Policy／機械が合否を出せる＝ガードレール）・Policy はプログラミング言語に依存させない（別言語のプロジェクトへ流用するため。技術やフレームワークへの依存は可）・自動検知できる rules はその場でガードレールも実装し、rules からは消さない（正は rules 側、設定はその写し）
+**参照タイミング**: 新しい判断基準を書き足す前・ポリシーや rules を作成／編集する前
+
+---
+
 ### [git-policy.md](policy/git-policy.md)
 
 **概要**: コミットメッセージの書き方・粒度・rebase禁止・ブランチ命名規則
