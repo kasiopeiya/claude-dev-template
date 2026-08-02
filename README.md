@@ -11,14 +11,14 @@
 | ③   | import 順序（標準ライブラリ→サードパーティ→自作、各グループ間に空行） | `eslint-plugin-import-x` の `import-x/order`                                | ✅         |
 | ④   | aws-cdk-lib のサービスモジュールは barrel 形式に統一                  | 自作ルール `local/aws-cdk-lib-barrel-import`                                | ✅（一部） |
 | ⑤   | `any` を禁止し型システムを使わせる                                    | `@typescript-eslint/no-explicit-any`                                        | －         |
-| ⑥   | 複雑度（循環的・認知的とも各 15 まで）                                | `complexity`＋`sonarjs/cognitive-complexity`                                | －         |
-| ⑦   | 関数長（50 行まで。コメント・空行は除く）                             | `max-lines-per-function`                                                    | －         |
-| ⑧   | 引数数（3 個まで）                                                    | `max-params`                                                                | －         |
-| ⑨   | ネスト深さ（2 重まで）                                                | `max-depth`                                                                 | －         |
+| ⑥   | 複雑度（循環的・認知的）の上限                                        | `complexity`＋`sonarjs/cognitive-complexity`                                | －         |
+| ⑦   | 関数長の上限                                                          | `max-lines-per-function`                                                    | －         |
+| ⑧   | 引数数の上限                                                          | `max-params`                                                                | －         |
+| ⑨   | ネスト深さの上限                                                      | `max-depth`                                                                 | －         |
 | ⑩   | マジックナンバー禁止（**`app/` のみ**）                               | `no-magic-numbers`                                                          | －         |
 | ⑪   | 浮いた Promise・Promise 誤用の禁止                                    | `@typescript-eslint/no-floating-promises` / `no-misused-promises`           | －         |
 
-⑥〜⑨のしきい値は [typescript.md](.claude/rules/typescript.md) を SSOT とする。⑪は型情報が要るため対象を tsconfig に含まれるソースへ限定し、型サービスを有効化している。
+⑥〜⑨のしきい値は [typescript.md](.claude/rules/typescript.md) を SSOT とし、本表には数値を書かない（二重管理を避けるため）。⑪は型情報が要るため対象を tsconfig に含まれるソースへ限定し、型サービスを有効化している。
 
 ### 較正（過剰ゲート化を避ける）
 
