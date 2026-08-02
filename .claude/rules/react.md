@@ -1,11 +1,16 @@
 ---
 paths:
   - '**/*.tsx'
+  - '**/use*.ts'
 ---
 
 # React 実装ルール
 
 [typescript.md](typescript.md) を継承し、ここでは **React / JSX / Hooks / TailwindCSS / Testing Library 固有の差分だけ**を定める。命名・import順序・例外処理などの共通ルールは typescript.md に、コメント規約は [code-comment-policy](../../docs/policy/code-comment-policy.md) に従う。設計の判断軸は [frontend-design-policy.md](../../docs/policy/frontend-design-policy.md) が定める——**コンポーネントの責務は1つ**（ロジックはカスタムフックへ逃がす）・**状態は使う場所に置く**（持ち上げ・グローバル化は必要になってから）・**Props は誤用が型で弾かれる形にする**（フラグの組み合わせではなく判別可能ユニオン）。
+
+## 対象読者
+
+React コンポーネント・カスタムフック・そのテストを書く／レビューする開発者・AIエージェントが、JSX・Hooks・Tailwind・Testing Library の書き方に迷ったとき。
 
 ## コンポーネント
 
@@ -82,7 +87,7 @@ const fullName = `${first} ${last}`
 
 ## テスト実装ルール（Testing Library）
 
-テストの**思想**（ユーザー視点で振る舞いを検証する・内部 state や props を直接検証しない・どの層に書くか）は unit-test-policy.md と [test-strategy-policy.md](../../docs/policy/test-strategy-policy.md)（フロントは統合テスト厚めのトロフィー型）に従う。ここでは Testing Library 固有の**実装戦術**だけを定める。
+テストの**思想**（ユーザー視点で振る舞いを検証する・内部 state や props を直接検証しない・どの層に書くか）は [unit-test-policy.md](../../docs/policy/unit-test-policy.md) と [test-strategy-policy.md](../../docs/policy/test-strategy-policy.md)（フロントは統合テスト厚めのトロフィー型）に従う。ここでは Testing Library 固有の**実装戦術**だけを定める。
 
 - **クエリの優先順位**：`getByRole` → `getByLabelText` → `getByText` → （最終手段）`getByTestId`。アクセシブルな属性で取得できるなら `data-testid` を増やさない
 - ユーザー操作は **`userEvent` を `fireEvent` より優先**する（実際の操作に近く、フォーカス・入力の副作用まで再現する）
