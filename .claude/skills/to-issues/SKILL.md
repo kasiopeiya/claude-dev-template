@@ -45,7 +45,7 @@ Present the proposed breakdown as a numbered list. For each slice, show:
 
 - **Title**: short descriptive name
 - **Type**: HITL / AFK
-- **Blocked by**: which other slices (if any) must complete first
+- **ブロッカー**: which other slices (if any) must complete first
 - **User stories covered**: which user stories this addresses (if the source material has them)
 
 Ask the user:
@@ -63,32 +63,55 @@ For each approved slice, publish a new issue to the issue tracker. Use the issue
 
 Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転記する**（そのスライスが実際に触れる種別の Skill だけに絞る）。これは「issue NNN 対応して」だけで開発フローを自動追従させるための情報なので、issue 化で**落とさない**こと。Plan に同セクションが無ければ、変更種別から CLAUDE.md「開発フロー」のマッピング（設計書→`/design`、アプリ→`/code-dev`、CDK→`/cdk-dev`）で補って記載する。
 
-Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field.
+Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the 「ブロッカー」 field.
+
+<writing-rules>
+
+**文体**：中学生が一度で追える文で書く。専門用語は使ってよい。読みにくさの原因は用語ではなく言い回しにある。
+
+| ❌ 書かない                  | ✅ こう書く                    |
+| ---------------------------- | ------------------------------ |
+| その位置づけが実効を持たない | そう書いてあるだけで守られない |
+| 変更耐性の最大化を企図する   | 変更に強くしたい               |
+| 根拠を取り逃がす             | 使えるはずの理由を見逃す       |
+| 担保する・企図する・起因する | 保つ・ねらう・原因である       |
+
+一文に主語と述語は1組まで。長い一文は切る。
+
+**図**：次のどれか1つでも当てはまるときだけ、`/design-doc-mermaid` で図を描いて「作るもの」の直後に埋め込む。当てはまらないなら描かない。
+
+| 発火条件                                                                                  | 例                                                                    |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| 登場するファイル・仕組みが3つ以上あり、その参照が一直線でない（分岐・合流・双方向がある） | 複数の Skill が同じ policy を参照し、policy 側が別の Skill を呼び返す |
+| 条件で振る舞いが分かれる、またはループする                                                | 失敗時にリトライする処理                                              |
+| 状態が移る（未着手→作業中→完了 のような遷移）                                             | Issue ラベルの遷移規則                                                |
+
+自前で Mermaid を書き起こしてはならない（CLAUDE.md）。
+
+</writing-rules>
 
 <issue-template>
-## Parent
+## 親Issue
 
-A reference to the parent issue on the issue tracker (if the source was an existing issue, otherwise omit this section).
+親 Issue への参照。元が既存 Issue だったときだけ書き、無ければセクションごと省く。
 
 ## この変更が必要な理由
 
-なぜこのスライスが必要なのかを記述する。解決する課題・ビジネス上の背景・この変更がもたらす価値を書く。実装の詳細（HOW）ではなく、目的（WHY）に焦点を当てること。別セッションの実装者がこの理由を読めば、判断に迷ったときに「何を優先すべきか」を自力で決められる状態を目指す。
+1文目に「何が困っているか」を言い切る。2文目以降に「放置するとどう損するか」を書く。合計4行以内。実装の詳細（HOW）は書かない。別セッションの実装者が、判断に迷ったとき優先順位を自力で決められる状態を目指す。
 
 ## grill-me で確定した仕様
 
-`/grill-me` での対話や事前の仕様検討で**確定した仕様・設計判断**を漏れなく転記する。決定事項だけでなく、検討の結果「採用しなかった案とその理由」も書くと、別セッションでの蒸し返しを防げる。
+下の表を埋める。**1行1決定・1セル1文**。却下した案も書くと、別セッションでの蒸し返しを防げる。grill-me を実施していない場合は「grill-me 未実施」と書く（セクションごと省かない）。
 
-- 確定した仕様: ...
-- 設計判断とその根拠: ...
-- 却下した代替案（あれば）: ...
+| 決めたこと | なぜそう決めたか | 却下した案（理由） |
+| ---------- | ---------------- | ------------------ |
+| 決定1      |                  | 無ければ「なし」   |
 
-grill-me を実施していない場合は「grill-me 未実施」と明記する（省略しない）。
+## 作るもの
 
-## What to build
+このスライスのエンドツーエンドの振る舞いを4行以内で書く。レイヤーごとの実装手順は書かない。
 
-A concise description of this vertical slice. Describe the end-to-end behavior, not layer-by-layer implementation.
-
-Avoid specific file paths or code snippets — they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it here and note briefly that it came from a prototype. Trim to the decision-rich parts — not a working demo, just the important bits.
+ファイルパスやコード片はすぐ古くなるので書かない。例外は、文章より正確に決定を表すコード片（状態機械・リデューサ・スキーマ・型）をプロトタイプが生んだときだけ。決定が読み取れる部分だけに切り詰めて貼り、プロトタイプ由来だと一言添える。
 
 ## タスク一覧
 
@@ -107,17 +130,15 @@ Avoid specific file paths or code snippets — they go stale fast. Exception: if
 | --- | -------------- | ----------- |
 | 1   | 例：アプリ実装 | `/code-dev` |
 
-## Acceptance criteria
+## 完了条件
 
-- [ ] Criterion 1
-- [ ] Criterion 2
-- [ ] Criterion 3
+どうなったら閉じてよいかを書く。タスクの言い換えではなく、**外から観測できる状態**で書く（例：`npm run lint` が通る）。
 
-## Blocked by
+- [ ] 条件1
 
-- A reference to the blocking ticket (if any)
+## ブロッカー
 
-Or "None - can start immediately" if no blockers.
+先に完了している必要がある Issue への参照。無ければ「なし（すぐ着手できる）」と書く。
 
 </issue-template>
 
