@@ -5,7 +5,7 @@ paths:
 
 # React 実装ルール
 
-[typescript.md](typescript.md) を継承し、ここでは **React / JSX / Hooks / TailwindCSS / Testing Library 固有の差分だけ**を定める。命名・import順序・コメント・例外処理などの共通ルールは typescript.md に従う。設計の判断軸は [frontend-design-policy.md](../../docs/policy/frontend-design-policy.md) が定める——**コンポーネントの責務は1つ**（ロジックはカスタムフックへ逃がす）・**状態は使う場所に置く**（持ち上げ・グローバル化は必要になってから）・**Props は誤用が型で弾かれる形にする**（フラグの組み合わせではなく判別可能ユニオン）。
+[typescript.md](typescript.md) を継承し、ここでは **React / JSX / Hooks / TailwindCSS / Testing Library 固有の差分だけ**を定める。命名・import順序・例外処理などの共通ルールは typescript.md に、コメント規約は [code-comment-policy](../../docs/policy/code-comment-policy.md) に従う。設計の判断軸は [frontend-design-policy.md](../../docs/policy/frontend-design-policy.md) が定める——**コンポーネントの責務は1つ**（ロジックはカスタムフックへ逃がす）・**状態は使う場所に置く**（持ち上げ・グローバル化は必要になってから）・**Props は誤用が型で弾かれる形にする**（フラグの組み合わせではなく判別可能ユニオン）。
 
 ## コンポーネント
 
