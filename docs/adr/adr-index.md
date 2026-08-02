@@ -8,6 +8,6 @@
 
 | No. | タイトル                                                                                              | ステータス | 日付       |
 | --- | ----------------------------------------------------------------------------------------------------- | ---------- | ---------- |
-| 001 | [CI/CD に AI（PR説明書き換え・pr-label・pr-check・auto-merge）を導入する](001-cicd-ai-integration.md) | 提案       | 2026-07-18 |
+| 001 | [CI/CD に AI（PR説明書き換え・pr-label・pr-check・auto-merge）を導入する](001-cicd-ai-integration.md) | 承認       | 2026-07-19 |
 
 <!-- ADR_INDEX_TABLE:END -->

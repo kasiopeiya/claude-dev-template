@@ -1,6 +1,6 @@
 ---
-status: proposed
-date: 2026-07-18
+status: accepted
+date: 2026-07-19
 ---
 
 # ADR-001: CI/CD に AI（PR説明書き換え・pr-label・pr-check・auto-merge）を導入する
