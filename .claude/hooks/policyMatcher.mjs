@@ -43,8 +43,9 @@ export function extractFrontmatter(text) {
 
 /**
  * frontmatter テキストから `applies-to` のグロブ配列を抜き出す（YAML依存なしの最小実装）。
- * インライン配列・ブロックシーケンス・単一スカラーの3形式に対応する。
+ * インライン配列（1行・複数行）・ブロックシーケンス・単一スカラーの4形式に対応する。
  * `hook:` が書かれているのに1件も返せない「沈黙」を防ぐため、書式差を吸収する。
+ * 複数行インライン配列は prettier が printWidth 超過時に自動生成する形なので、必ず読めること。
  */
 export function parseAppliesTo(frontmatter) {
   const lines = frontmatter.split('\n')
@@ -53,12 +54,17 @@ export function parseAppliesTo(frontmatter) {
 
   const value = lines[idx].replace(/^\s*applies-to:\s*/, '').trim()
 
-  // インライン配列: applies-to: ['a', 'b']
+  // インライン配列: applies-to: ['a', 'b']（値が同じ行にある場合）
   if (value.startsWith('[')) {
-    return splitInline(value.replace(/^\[|\]$/g, ''))
+    return splitInline(joinBracketed(lines, idx))
   }
   // インライン単一スカラー: applies-to: '**/*.md'
   if (value) return [stripQuotes(value)]
+
+  // 複数行インライン配列: applies-to: の次行が `[` で始まり、`]` の行まで続く
+  if (lines[idx + 1]?.trim().startsWith('[')) {
+    return splitInline(joinBracketed(lines, idx + 1))
+  }
 
   // ブロックシーケンス: 後続の `- item` 行を、リスト項目でない行に当たるまで集める
   const items = []
@@ -68,6 +74,16 @@ export function parseAppliesTo(frontmatter) {
     items.push(stripQuotes(item[1]))
   }
   return items
+}
+
+/** startIdx 行から `]` の行までを連結し、角括弧の内側テキストを返す。閉じ括弧が無ければ末尾まで。 */
+function joinBracketed(lines, startIdx) {
+  let joined = ''
+  for (let i = startIdx; i < lines.length; i++) {
+    joined += lines[i].trim()
+    if (lines[i].includes(']')) break
+  }
+  return joined.replace(/^[^[]*\[/, '').replace(/\].*$/, '')
 }
 
 function splitInline(inner) {

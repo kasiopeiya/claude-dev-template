@@ -15,10 +15,12 @@ import { globToRegExp, extractFrontmatter, parseAppliesTo } from './policyMatche
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const policyDir = resolve(scriptDir, '../../docs/policy')
 
-// applies-to を宣言したポリシーが、書式差のせいで1件もパースされない状態を「沈黙」と呼ぶ。
-// hook は存在するのに一切発火しない最悪の壊れ方であり、これを機械的に禁じる。
+// hook を宣言したポリシーが、書式差や applies-to の書き忘れで1件もパースされない状態を
+// 「沈黙」と呼ぶ。hook は存在するのに一切発火しない最悪の壊れ方であり、これを機械的に禁じる。
+// 判定の起点は applies-to ではなく hook そのもの。applies-to を起点にすると、
+// applies-to が丸ごと欠けた hook を「宣言していない」と見なして素通りさせてしまう。
 describe('ポリシー宣言の沈黙検知', () => {
-  test('applies-to を宣言する全ポリシーは1件以上のグロブにパースされる', () => {
+  test('hook を宣言する全ポリシーは1件以上のグロブにパースされる', () => {
     // Arrange
     const declaringPolicies = readdirSync(policyDir)
       .filter((name) => name.endsWith('.md'))
@@ -26,14 +28,14 @@ describe('ポリシー宣言の沈黙検知', () => {
         name,
         frontmatter: extractFrontmatter(readFileSync(resolve(policyDir, name), 'utf8'))
       }))
-      .filter(({ frontmatter }) => frontmatter !== null && /^\s*applies-to:/m.test(frontmatter))
+      .filter(({ frontmatter }) => frontmatter !== null && /^\s*hook:/m.test(frontmatter))
     const sut = parseAppliesTo
 
     // Assert
     for (const { name, frontmatter } of declaringPolicies) {
       assert.ok(
         sut(frontmatter).length >= 1,
-        `${name}: applies-to を宣言しているのにパース結果が空（hook が沈黙する）`
+        `${name}: hook を宣言しているのにパース結果が空（hook が沈黙する）`
       )
     }
   })
@@ -51,6 +53,35 @@ describe('applies-to のパース', () => {
     assert.deepEqual(sut(inline), ['app/**/*.ts', 'app/**/*.tsx'])
     assert.deepEqual(sut(block), ['app/**/*.ts', 'app/**/*.tsx'])
     assert.deepEqual(sut(scalar), ['**/*.md'])
+  })
+
+  // prettier は printWidth を超えたインライン配列を複数行へ折り返す。
+  // 書き手の意図と無関係に発生する形なので、読めないと hook が黙って止まる。
+  test('prettier が折り返した複数行インライン配列も同じグロブ配列に読める', () => {
+    // Arrange
+    const wrapped =
+      "hook:\n  applies-to:\n    [\n      'app/**/infrastructure/**/*.ts',\n      '**/*table*.ts',\n      '**/*Table*.ts'\n    ]"
+    const wrappedWithTrailingComma =
+      "hook:\n  applies-to:\n    [\n      'app/**/*.ts',\n      'app/**/*.tsx',\n    ]"
+    const sut = parseAppliesTo
+
+    // Assert
+    assert.deepEqual(sut(wrapped), [
+      'app/**/infrastructure/**/*.ts',
+      '**/*table*.ts',
+      '**/*Table*.ts'
+    ])
+    assert.deepEqual(sut(wrappedWithTrailingComma), ['app/**/*.ts', 'app/**/*.tsx'])
+  })
+
+  test('折り返し配列の後ろに別のキーが続いても、配列の中身だけを読む', () => {
+    // Arrange
+    const followedByOtherKey =
+      "hook:\n  applies-to:\n    [\n      'app/**/*.ts'\n    ]\n  other: value"
+    const sut = parseAppliesTo
+
+    // Assert
+    assert.deepEqual(sut(followedByOtherKey), ['app/**/*.ts'])
   })
 
   test('ダブルクォートや空白のゆらぎがあっても同じグロブに読める', () => {
