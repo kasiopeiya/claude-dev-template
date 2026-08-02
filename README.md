@@ -1,71 +1,90 @@
-# 静的解析（ESLint / tsconfig）
+# ポリシー駆動開発テンプレート
 
-リポジトリ直下に置いた静的解析ゲートの設定。プロジェクトのコーディング規約（[typescript.md](.claude/rules/typescript.md) / [cdk.md](.claude/rules/cdk.md)）を ESLint と tsconfig で自動適用する。CDK・アプリ双方の TypeScript を対象にする。機械で測れる品質を CI ゲートへ寄せ、LLM レビューを機械で測れない判断に集中させることが狙い。
+AI が主体で開発を進めるためのリポジトリテンプレート。人間は成果物を1つずつ検品する代わりに、AI が走る**レール**を設計・改善する（Human-on-the-Loop）。
 
-## 適用している ESLint ルール
+思想・開発フローの全体像は [docs/guide/ai-driven-dev-flow.html](docs/guide/ai-driven-dev-flow.html) を参照（ブラウザで開く）。
 
-| #   | ルール                                                                | 実現手段                                                                    | autofix    |
-| --- | --------------------------------------------------------------------- | --------------------------------------------------------------------------- | ---------- |
-| ①   | クラス・関数の前後に空行を入れる                                      | `@stylistic/padding-line-between-statements`＋`lines-between-class-members` | ✅         |
-| ②   | 未使用の変数・引数を検出（optional 引数を含む全引数）                 | `@typescript-eslint/no-unused-vars`（`args: 'all'`）                        | －         |
-| ③   | import 順序（標準ライブラリ→サードパーティ→自作、各グループ間に空行） | `eslint-plugin-import-x` の `import-x/order`                                | ✅         |
-| ④   | aws-cdk-lib のサービスモジュールは barrel 形式に統一                  | 自作ルール `local/aws-cdk-lib-barrel-import`                                | ✅（一部） |
-| ⑤   | `any` を禁止し型システムを使わせる                                    | `@typescript-eslint/no-explicit-any`                                        | －         |
-| ⑥   | 複雑度（循環的・認知的）の上限                                        | `complexity`＋`sonarjs/cognitive-complexity`                                | －         |
-| ⑦   | 関数長の上限                                                          | `max-lines-per-function`                                                    | －         |
-| ⑧   | 引数数の上限                                                          | `max-params`                                                                | －         |
-| ⑨   | ネスト深さの上限                                                      | `max-depth`                                                                 | －         |
-| ⑩   | マジックナンバー禁止（**`app/` のみ**）                               | `no-magic-numbers`                                                          | －         |
-| ⑪   | 浮いた Promise・Promise 誤用の禁止                                    | `@typescript-eslint/no-floating-promises` / `no-misused-promises`           | －         |
+## 2本のレール
 
-⑥〜⑨のしきい値は [typescript.md](.claude/rules/typescript.md) を SSOT とし、本表には数値を書かない（二重管理を避けるため）。⑪は型情報が要るため対象を tsconfig に含まれるソースへ限定し、型サービスを有効化している。
+AI は確率論的で、同じ指示でも出力が揺れる。その揺れを、**事前**に判断を揃える Policy と、**事後**に逸脱を機械的に止めるガードレールの2本で受け止める。
 
-### 較正（過剰ゲート化を避ける）
+```mermaid
+flowchart LR
+    Human[🧑‍🔧 人間<br/>レールを設計・改善] -.->|定める| Policy
+    Human -.->|定める| Gate
 
-- **⑩ マジックナンバーは `app/`（アプリロジック）のみ**。CDK はメモリ量・タイムアウト・しきい値など設定値としての数値リテラルが正当なため対象外にする。
-- **`require-await` は `warn` 止め**。`async` ポート（`Promise` を返す interface）を満たすための `await` なし `async` 実装（例: インメモリ Repository）を誤検知するため、error にはしない。
-- テストコードは期待値の数値リテラルを直書きするのが読みやすいため、⑩の対象から外す。
+    AI[🤖 AI<br/>設計・実装] --> Policy[📜 Policy<br/>事前 ＝ 判断のレール]
+    AI --> Gate[🚦 ガードレール<br/>事後 ＝ 品質のレール]
+    Gate -->|全部通過| Merge([✅ マージ])
+    Gate -->|1つでも失敗| AI
 
-「プラグインで規約通りに設定できるものはプラグイン、できないものだけ自作ルール」の方針。④のみ該当する標準ルールが無いため自作した（[eslint-rules/awsCdkLibBarrelImport.mjs](eslint-rules/awsCdkLibBarrelImport.mjs)）。⑥の認知的複雑度のみ [`eslint-plugin-sonarjs`](https://github.com/SonarSource/eslint-plugin-sonarjs) を追加している（他は ESLint / typescript-eslint 同梱）。
+    classDef human fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef rail fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef ai fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef done fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
 
-## tsconfig による型の厳格化
+    class Human human
+    class Policy,Gate rail
+    class AI ai
+    class Merge done
+```
 
-型検査は「最強・最安の評価関数」であり、ESLint と並ぶゲートとして効かせる。`strict` に加えて `noUnusedLocals` / `noUnusedParameters` / `noImplicitReturns` / `noUncheckedIndexedAccess` / `noFallthroughCasesInSwitch` を有効化する。フラグの実体は各 `tsconfig.json`（[app/backend](app/backend/tsconfig.json) / [infra](infra/tsconfig.json)）を SSOT とする。
+レールが充実するほど、人間が個別の成果物を見なくても品質が保たれる。レールへの投資が、品質を落とさずに AI への委譲度を上げる唯一の方法である。
 
-`exactOptionalPropertyTypes` は自前で型を制御できる **`app/` のみ**有効にする。CDK では aws-cdk-lib の optional 多用型（env-agnostic synth で `account` が `undefined` になる等）と衝突し過剰ゲートになるため外す。
+## Policy — 判断のレール
 
-### ④ 自作ルールの autofix 範囲
+判断が割れる事柄に「私たちの立場」を先に決めておく。AI はそれを読んで自分で決めるので、人間に確認が飛んでこない。
+Policy を確実に読ませるため、hook で強制する仕組みを作っている。
 
-- `import * as s3 from 'aws-cdk-lib/aws-s3'` → `import { aws_s3 as s3 } from 'aws-cdk-lib'` は**自動修正する**（ローカル名 `s3` を保てるため安全）。
-- `import { Bucket } from 'aws-cdk-lib/aws-s3'` は**検出のみ**。使用箇所（`Bucket` → `s3.Bucket`）の書き換えを伴い自動修正が非安全なため手動で直す。
+```mermaid
+sequenceDiagram
+    participant AI as 🤖 AI
+    participant Hook as 🪝 PreToolUse hook
+    participant Policy as 📜 docs/policy/
 
-## 未使用コード検出（knip）
+    Note over Policy: 各 Policy は frontmatter で適用対象を宣言する<br/>application-design-policy.md → applies-to: ['app/**/*.ts']<br/>unit-test-policy.md → applies-to: ['**/*.test.ts']
 
-ESLint の `no-unused-vars`（②）や tsconfig の `noUnusedLocals` は **1 ファイル内**の未使用しか捕まえられない。どこからも import されない export・到達しないファイル・使われない依存という **プロジェクト横断の未使用** は [knip](https://knip.dev) で検出し、AI が残しがちな足場コードをゲートする。設定は [knip.jsonc](knip.jsonc)（ルート・`infra`・`app/backend` を workspace として一括検査）。
+    AI->>Hook: app/backend/domain/user.ts を編集したい
+    Hook->>Policy: このパスに当たる applies-to を探す
+    Policy-->>Hook: application-design-policy.md
+    Hook-->>AI: 「まずこの Policy を読み、沿っているか確認せよ」
+    AI->>Policy: 読む
+    AI->>AI: 指針に沿うよう直してから編集
+```
 
-### 較正（過剰ゲート化を避ける）
+適用対象を Policy 自身が持つので、Policy を増やしても hook 側は変更しなくてよい。判断の種類ごとにどんな Policy があるかは [docs/policy-hub.md](docs/policy-hub.md) に一覧がある。
 
-import グラフから辿れない参照は knip が未使用と誤検知するため、明示的に登録する。
+## ガードレール — 品質のレール
 
-- **文字列パスで参照されるファイルは `entry` に登録**：Lambda ハンドラ（CDK が `entry: path.join(...)` で参照）・vitest の `snapshotSerializers`。
-- **実行時ツールは `ignoreDependencies`**：`tsx`（`cdk.json` の CDK アプリ実行）・`esbuild`（NodejsFunction のバンドルで aws-cdk-lib が内部起動）。
+AI の成果物はすべて関門を通る。**1つでも落ちたらマージ不可**——人間の検品を待たず AI へ差し戻して再挑戦させる。AI が確率論的だからこそ、関門は同じ入力に必ず同じ判定を返す決定論的なチェックで固める。
+
+| 関門                        | 何を止めるか                                                                | 定義の場所                                                           |
+| --------------------------- | --------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 静的解析（ESLint / 型検査） | 書き方の逸脱（`any`・import 順序・未使用変数・await 忘れ・型エラー など）   | `eslint.config.mjs`・各 `tsconfig.json`                              |
+| コードメトリクス            | 複雑さ（循環的/認知的複雑度・関数の行数・引数の数・ネストの深さ）           | しきい値は `.claude/rules/typescript.md`、適用は `eslint.config.mjs` |
+| アーキテクチャテスト        | 構造の腐り（レイヤー依存の向き・循環依存・凝集度）                          | `app/backend/test/`                                                  |
+| 不要物・脆弱性              | 増えっぱなし（未使用の export・ファイル・依存、脆弱性のある依存）           | `knip.jsonc`・`scripts/audit-dependencies.mjs`                       |
+| テスト                      | 振る舞いの退行（単体テスト・CDK snapshot ＋ synth・dev 環境での結合テスト） | 各ワークスペースの `*.test.ts`・`infra/test/`                        |
 
 ## 使い方
 
 ```bash
-npm install          # 依存を導入
-npm run lint         # 静的解析（違反があれば非ゼロ終了）
-npm run lint:fix     # 自動修正込みで実行
-npm run knip         # 未使用 file/export/dependency を検出（検出があれば非ゼロ終了）
+npm install          # 依存を導入（git hooks も設定される）
+npm run check:static # 静的解析（ESLint・knip・型検査）
+npm run format       # フォーマット
 ```
 
-`app/backend/` はクリーンアーキテクチャ構成で実装している。ArchUnitTS によるアーキテクチャテストを app コードだけに適用し `infra/` へ及ぼさないため、`app/backend/` は自前の `package.json` / `tsconfig.json` で TS プロジェクト境界を持つ（テスト本体は issue #17）。リント設定はこのファイル（ルート）に共通化しており `app/` も対象にする。詳細は [app/backend/README.md](app/backend/README.md)。
+このテンプレートを使う手順:
 
-# 変更してはならないパス
+1. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
+2. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
+3. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。定義は [CLAUDE.md](CLAUDE.md) にある
+
+## 変更してはならないパス
 
 以下はハーネスで利用しており、リネーム・移動すると `.claude/hooks`・`.claude/skills`・CI・静的解析設定が壊れるパス。中身の編集や配下への新規ファイル追加は自由。
 
-## docs/ 配下
+### docs/ 配下
 
 | パス                                                                                        | 固定である根拠                                                                                                                                                         |
 | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -79,7 +98,7 @@ npm run knip         # 未使用 file/export/dependency を検出（検出があ
 | `docs/guide/`（ディレクトリ名。例: `directory-structure-guide.md`, `code-review-guide.md`） | decide-tech-stack・code-review スキルが直接参照                                                                                                                        |
 | `docs/requirements.md`                                                                      | `requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス                                               |
 
-## トップレベル
+### トップレベル
 
 | パス                                    | 固定である根拠                                                                                                                                                                                                         |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -89,7 +108,7 @@ npm run knip         # 未使用 file/export/dependency を検出（検出があ
 
 `infra/`・`app/` は**場所（ディレクトリ名）だけ**固定で、中身（`parameter.ts` の値、`lib/` 配下のスタック/Lambda 実装、`app/backend/domain` 等のサンプルロジック）は自由に差し替えてよい。
 
-## ルート静的解析ゲート設定
+### ルート静的解析ゲート設定
 
 | パス                                | 固定である根拠                                           |
 | ----------------------------------- | -------------------------------------------------------- |
