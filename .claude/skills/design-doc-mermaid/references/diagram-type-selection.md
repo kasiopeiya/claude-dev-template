@@ -54,7 +54,7 @@
 
 ## 図を描く前に
 
-図種を選ぶ前に、そもそも図にする価値があるかを [documentation-policy.md](../../../../docs/policy/documentation-policy.md) の逆変換テストで判定する。箇条書きに戻して情報が失われないなら、それは図ではなく箇条書きである。
+図種を選ぶ前に、そもそも図にする価値があるかを [documentation-policy.md](../../../../docs/policy/documentation-policy.md) の逆変換テストで判定する。表・箇条書きに戻しても文章を読まずに構造を掴めるなら、それは図ではなく表・箇条書きである。
 
 ## 構文と実例
 
