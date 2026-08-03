@@ -1,0 +1,65 @@
+# 責務: 開発フロー解説 HTML（docs/guide/ai-driven-dev-flow.html）を GitHub Pages へ公開する。
+# なぜこの構成なのかは docs/design/cicd-design.md「ドキュメント公開（GitHub Pages）」を参照する。
+
+name: publish-dev-flow-guide
+
+# main に入った内容だけを公開する。paths で対象ファイルの変更時だけに絞れるのは、この
+# ワークフローが required check ではないため（pipeline.yml と違い、スキップしても
+# マージ判定は pending にならない）。
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/guide/ai-driven-dev-flow.html'
+      - '.github/workflows/publish-dev-flow-guide.yml'
+  workflow_dispatch:
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+# Pages のデプロイは1つずつしか走れない。実行中のデプロイは中断させない。
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # Pages サイトの作成（enablement）とデプロイに必要
+      pages: write
+      # deploy-pages が OIDC でデプロイ元を証明するために必要
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # enablement: true でワークフロー自身が Pages を有効化する。リポジトリ設定側で
+      # 手動有効化する運用にすると、テンプレートのコピー先にその設定が付いてこない
+      # （cicd-design が required check をコード外に置かない理由と同じ）。
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+        with:
+          enablement: true
+
+      # 公開対象は開発フロー解説 HTML だけに絞る。docs/ をそのまま公開すると設計書等の
+      # Markdown まで一括で公開される（cicd-design の却下案を参照）。
+      # index.html として置き、サイトのルート URL でそのまま読めるようにする。
+      - name: Stage the guide as the site root
+        run: |
+          mkdir -p _site
+          cp docs/guide/ai-driven-dev-flow.html _site/index.html
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+      - id: deploy
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5.0.0
