@@ -32,28 +32,7 @@ GitHub Issueの内容を解析し、Red-Green-Refactorサイクルに従って�
 
 #### ステップ 1-1: Issue番号の取得
 
-まず、与えられた指示（プロンプト）に `Issue指定:` に続く値が含まれているか確認する。
-
-**引数が提供されている場合**（例: `Issue指定: 15`）:
-
-- その値をそのまま使用し、ステップ 1-2へ進む
-
-**引数が提供されていない場合**（空文字または指定なし）:
-
-AskUserQuestion ツールを使用してユーザーに入力を促す:
-
-```
-question: "実装したいIssueを指定してください。Issue番号（例: 15）を入力してください。"
-header: "Issue指定"
-options: [
-  { label: "その他（手動入力）", description: "Issue番号を入力してください" }
-]
-multiSelect: false
-```
-
-**取得情報**:
-
-- Issue番号（引数からまたはユーザー入力）
+与えられた指示に `Issue指定:` に続く値が含まれていればそれを使う。含まれていなければ AskUserQuestion でIssue番号（例: 15）の入力を促す。
 
 #### ステップ 1-2: GitHub IssueのJSON取得
 
@@ -63,83 +42,30 @@ Bash ツールで GitHub Issue の情報を取得:
 gh issue view {番号} --json number,title,body,labels
 ```
 
-**エラーハンドリング**:
-
-- Issue が見つからない場合:
-
-  ```
-  === Issue 読み込みエラー ===
-
-  Error: Issue #{番号} が見つかりませんでした。
-  gh issue list で利用可能なIssue一覧を確認してください。
-  ```
-
-  → AskUserQuestion で再入力を促す（最大3回まで）
-
-- body が空の場合:
-
-  ```
-  === Issue 読み込みエラー ===
-
-  Error: Issue #{番号} の本文が空です。
-  ```
-
-  → 処理を中止
+Issue が見つからない場合・body が空の場合の扱いは [references/error-handling.md](references/error-handling.md) に従う。
 
 #### ステップ 1-3: Issue内容の解析
 
-取得したJSONから以下の情報を抽出:
+取得したJSONから以下を抽出する。
 
-**1. Issue番号とタイトル**
+| 抽出対象          | 取得元                                                           |
+| ----------------- | ---------------------------------------------------------------- |
+| Issue番号         | `.number`                                                        |
+| タイトル          | `.title`                                                         |
+| ラベル            | `.labels[].name`                                                 |
+| スコープ/作業項目 | body内 `## スコープ / 作業項目` セクションの内容全体             |
+| タスク一覧        | body内 `## タスク一覧` のチェックリスト（`- [ ]` 形式）          |
+| 対象ファイル      | body内 `## 📂 コンテキスト` または `### 対象ファイル` セクション |
+| 実装詳細          | body内 `### 実装詳細` セクション（存在する場合）                 |
 
-- Issue番号: `.number` フィールド
-- タイトル: `.title` フィールド
+**タスク一覧のフィルタリング**（アプリケーションコードタスクのみを対象とする）:
 
-**2. ラベル**
+| 区分               | キーワード                                                                                                       |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| 対象               | 「Lambda実装」「ハンドラー実装」「API実装」「フロントエンド」「画面」「テストコード作成」「TDD」「単体テスト」等 |
+| 対象外（スキップ） | 「CDK」「cdk」「インフラ」「スタック」「Construct」「デプロイ」「synth」「スナップショット」等                   |
 
-`.labels[].name` フィールドから抽出
-
-- 抽出例: `[{name: "backend"}, {name: "frontend"}]` → `['backend', 'frontend']`
-
-**3. スコープ/作業項目**
-
-body内 `## スコープ / 作業項目` セクションの内容全体を抽出
-
-**4. タスク一覧（アプリケーションコードタスクのみ抽出）**
-
-body内 `## タスク一覧` セクションのチェックリスト（`- [ ]` 形式）を抽出し、**アプリケーションコードに関するタスクのみをフィルタリング**する。
-
-**フィルタリングルール**:
-
-- **対象**: 「Lambda実装」「ハンドラー実装」「API実装」「フロントエンド」「画面」「テストコード作成」「TDD」「単体テスト」等、アプリケーションコードに関するタスク
-- **対象外（スキップ）**: 「CDK」「cdk」「インフラ」「スタック」「Construct」「デプロイ」「synth」「スナップショット」等、CDK/インフラに関するタスク
-- キーワードだけで判断が難しい場合は、タスクの文脈からアプリケーションコード関連かどうかを判断する
-- フィルタリング結果（対象タスク・スキップしたタスク）を明示的に表示する
-
-**5. 対象ファイル**
-
-body内 `## 📂 コンテキスト` または `### 対象ファイル` セクションから抽出
-
-**6. 実装詳細**
-
-body内 `### 実装詳細` セクションの内容を抽出（存在する場合）
-
-**出力**:
-
-```typescript
-{
-  issueNumber: 15,
-  issueTitle: "State検証機能の実装",
-  labels: ['backend'],  // 例。ラベル語彙はプロジェクトごとに異なる
-  scope: "...",  // スコープ全文
-  taskList: ["- [ ] 実装完了", "- [ ] テスト完了"],  // タスク一覧
-  targetFiles: {
-    implementation: 'src/utils/state.ts',
-    test: 'src/utils/state.test.ts'
-  },
-  implementationDetails: "...",  // 実装詳細（あれば）
-}
-```
+キーワードだけで判断が難しい場合は、タスクの文脈からアプリケーションコード関連かどうかを判断する。フィルタリング結果（対象タスク・スキップしたタスク）は明示的に表示する。
 
 #### ステップ 1-5: 対象ディレクトリの確認
 
@@ -147,88 +73,19 @@ body内 `### 実装詳細` セクションの内容を抽出（存在する場�
 
 #### ステップ 1-6: テスト対象ファイルとテストファイルの特定
 
-Issue内の「対象ファイル」セクションから抽出:
+Issue内の「対象ファイル」セクションに実装ファイル・テストファイルのパスが明記されていればそのまま使う。記載がなければ AskUserQuestion で両方のパスを尋ねる。
 
-**明示的に記載がある場合**:
-
-```markdown
-## 対象ファイル
-
-- app/backend/utils/state.ts
-- app/backend/utils/state.test.ts
-```
-
-→ そのまま使用
-
-**記載がない場合**:
-
-AskUserQuestion で確認:
-
-```
-question: "テスト対象ファイルとテストファイルのパスを入力してください。\n\n例:\n実装ファイル: app/backend/utils/state.ts\nテストファイル: app/backend/utils/state.test.ts"
-header: "対象ファイル指定"
-options: [
-  { label: "その他（手動入力）", description: "ファイルパスを入力してください" }
-]
-```
-
-**ファイル命名規則の推測**:
-
-`app/` 配下を Glob（`**/*.ts`, `**/*.test.ts`, `**/*.tsx`, `**/*.test.tsx` 等）し、既存ファイルの配置パターン（同階層 or `__tests__/` サブディレクトリ等）を確認して踏襲する。
+命名規則が不明な場合は、`app/` 配下を Glob（`**/*.ts`, `**/*.test.ts`, `**/*.tsx`, `**/*.test.tsx` 等）し、既存ファイルの配置パターン（同階層 or `__tests__/` サブディレクトリ等）を確認して踏襲する。
 
 #### ステップ 1-7: 実装仕様の整理と確認
 
-Issueから抽出した情報を整理してユーザーに確認:
+抽出した情報を [references/phase-reports.md](references/phase-reports.md) の「実装仕様の確認」フォーマットで表示し、AskUserQuestion で開始可否を確認する。
 
-**表示フォーマット**:
-
-```
-=== 実装仕様 ===
-
-Issue: #{番号} {タイトル}
-
-対象ファイル:
-- 実装: {実装ファイルパス}
-- テスト: {テストファイルパス}
-
-実装する機能:
-{スコープ/作業項目の要約}
-
-{実装詳細があれば表示}
-
-この内容でTDDサイクルを開始しますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "上記の内容でTDDサイクルを開始しますか？"
-header: "実装仕様確認"
-options: [
-  { label: "はい、開始します", description: "TDDサイクルを開始します" },
-  { label: "修正する", description: "対象ファイルやIssue番号を修正します" },
-  { label: "中断する", description: "コマンドを終了します" }
-]
-```
-
-**分岐処理**:
-
-- 「はい、開始します」→ Phase 2へ
-- 「修正する」→ ステップ 1-1へ戻る
-- 「中断する」→ 処理を中止
-
-**出力**:
-
-```typescript
-{
-  issueNumber: 15,
-  issueTitle: "State検証機能の実装",
-  implementationFile: 'src/utils/state.ts',
-  testFile: 'src/utils/state.test.ts',
-  scope: "...",
-  implementationDetails: "..."
-}
-```
+| 選択     | 遷移               |
+| -------- | ------------------ |
+| 開始する | Phase 2へ          |
+| 修正する | ステップ 1-1へ戻る |
+| 中断する | 処理を中止         |
 
 ### Phase 2: 赤フェーズ（Red）- 失敗するテストを作成
 
@@ -263,302 +120,34 @@ options: [
 
 #### ステップ 2-1: テストケースの設計支援
 
-**グレーボックステスト**の考え方に基づき、Issue内容と設計書からテストケースを設計する。
+**グレーボックステスト**の考え方に基づき、スコープ/作業項目・実装詳細・設計書（インターフェース定義、シーケンス図、エラーハンドリング仕様）からテストケースを設計する。
 
-**抽出元**:
-
-- スコープ/作業項目
-- 実装詳細
-- 設計書のインターフェース定義、シーケンス図、エラーハンドリング仕様
-
-**テストケース設計の原則（テスト方針ポリシーに基づく）**:
+**設計の原則（ステップ 2-0 で読み込んだテスト方針に基づく）**:
 
 - テスト対象の一律ルール（対象／対象外／例外一覧）に照らして、テストすべきコードかを先に判断する。例外一覧に名指しされていないものを自分の判断で対象に加えてはならない
-- 仕様上の条件ごとにテストケースを分離する（分離基準）
-- 同じ条件のバリエーションは `it.each` でまとめる（パラメータ化テスト）
+- 仕様上の条件ごとにテストケースを分離する
+- 同じ条件のバリエーションは `it.each` でまとめる
 - 正常系と異常系は必ず分離する
 
-**推奨テストケースの提示**:
-
-```
-テストケースを設計します。
-
-テスト方針に基づく設計:
-- テスト対象: {コア実装 / ガード句 / サポートログ等、一律ルールのどの区分に該当するか}
-- 検証手法: {出力値ベース / 状態ベース}
-
-Issueと設計書から抽出したテストケース:
-
-正常系:
-- {仕様上の条件A}の場合に{期待結果}を返す
-- {仕様上の条件B}の場合に{期待結果}を返す
-
-異常系:
-- {仕様上の条件C}の場合に{期待結果}を返す
-
-パラメータ化候補（同一条件のバリエーション）:
-- {条件X}: [{値1}, {値2}, {値3}]
-
-他に追加したいテストケースはありますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "テストケースの選択"
-header: "Red Phase"
-options: [
-  { label: "推奨ケースで開始", description: "上記のテストケースで開始します" },
-  { label: "追加する", description: "テストケースを追加します" }
-]
-```
-
-**「追加する」が選択された場合**:
-
-```
-question: "追加したいテストケースを入力してください（1行1ケース）"
-header: "テストケース追加"
-options: [
-  { label: "その他（手動入力）", description: "テストケースを入力" }
-]
-```
+設計結果を phase-reports.md の「テストケース設計の提示」フォーマットで表示し、AskUserQuestion で「推奨ケースで開始 / 追加する」を確認する。「追加する」なら追加したいテストケース（1行1ケース）を尋ねる。
 
 #### ステップ 2-2: テストコードの生成
 
-**原則（ステップ 2-0 で読み込んだテスト方針に完全準拠）**:
+ステップ 2-0 で読み込んだテスト方針の全ルールに準拠したテストコードを生成する。書き方の具体例は [references/code-examples.md](references/code-examples.md) のテストコード例（バックエンド／フロントエンド）を読む。
 
-- **SUT の明示**: テスト対象を `const sut = handler` 等で明示する
-- **AAAパターン**: Arrange → Act（必ず1行） → Assert の3フェーズで構成
-- **フェーズコメント**: 準備 or 確認が複数行の場合のみ `// Arrange` `// Act` `// Assert` を記載。それ以外は空白行のみで区切る
-- **命名規則**: テストケース名は日本語、メソッド名を含めない、「〜を返す」「〜される」等の事実表現
-- **describe グループ名**: 日本語で記述
-- **テストダブル**: 単体テストではモック・スタブを可能な限り使用しない（プロセス外依存と速度・決定性を壊す依存のみスタブ可。モックによる呼び出し検証は、ステップ 2-0 で読み込んだポリシーが名指しする限定例外に当たる場合だけ使う）
-- **スタブとのやりとり**: スタブに対する `toHaveBeenCalledWith` 等の検証は禁止
-- **テストデータ**: テスト関数内に直接記述。共通化が必要な場合は Object Mother パターン
-- **beforeEach**: テストケース固有データを置かない
-- **パラメータ化テスト**: 仕様上同じ条件のバリエーションに `it.each` を使用。正常系と異常系は分離
-- **テスト内 if 文**: 禁止
-- **検証対象**: 観察可能な振る舞い（出力・戻り値・状態変化）のみ。実装の詳細は検証しない
-
-**テストフレームワークの検出**:
-
-Glob で `package.json` を検索し、Readで読み込んで依存関係を確認:
-
-- `jest` → Jest形式
-- `vitest` → Vitest形式
-
-**生成例（バックエンド: Lambda handler のテスト）**:
-
-```typescript
-// src/handlers/__tests__/authorize.test.ts
-import { handler } from '../authorize'
-
-// Object Mother: APIGatewayイベントのファクトリ関数
-const createApiGatewayEvent = (overrides?: Partial<APIGatewayProxyEvent>) => ({
-  httpMethod: 'GET',
-  path: '/authorize',
-  headers: {},
-  pathParameters: null,
-  queryStringParameters: null,
-  body: null,
-  ...overrides
-})
-
-describe('認可エンドポイント', () => {
-  const sut = handler
-
-  it('正常なリクエストの場合に認可URLへのリダイレクトを返す', async () => {
-    const event = createApiGatewayEvent()
-
-    const result = await sut(event, context)
-
-    expect(result.statusCode).toBe(302)
-    expect(result.headers?.Location).toContain('https://auth.example.com/authorize')
-  })
-
-  it.each(['', 'invalid', '@no-local', 'no-domain@'])(
-    'メールアドレス「%s」が不正な場合に400を返す',
-    async (email) => {
-      const event = createApiGatewayEvent({ body: JSON.stringify({ email }) })
-
-      const result = await sut(event, context)
-
-      expect(result.statusCode).toBe(400)
-    }
-  )
-
-  it('必須パラメータが欠落している場合に400を返す', async () => {
-    // Arrange
-    const event = createApiGatewayEvent({
-      queryStringParameters: {}
-    })
-
-    // Act
-    const result = await sut(event, context)
-
-    // Assert
-    const body = JSON.parse(result.body)
-    expect(result.statusCode).toBe(400)
-    expect(body.error).toBe('invalid_request')
-  })
-})
-```
-
-**生成例（フロントエンド: コンポーネントテスト）**:
-
-```typescript
-// src/components/__tests__/LoginForm.test.tsx
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-
-import { LoginForm } from '../LoginForm'
-
-describe('ログインフォーム', () => {
-  it('フォーム送信失敗時にエラーメッセージを表示する', async () => {
-    render(<LoginForm />)
-
-    await userEvent.click(screen.getByRole('button', { name: '送信' }))
-
-    expect(screen.getByText('入力内容を確認してください')).toBeInTheDocument()
-  })
-})
-```
+**テストフレームワークの検出**: Glob で `package.json` を検索し、Read で依存関係を確認する（`jest` → Jest形式、`vitest` → Vitest形式）。
 
 #### ステップ 2-3: テスト方針準拠チェック
 
-生成したテストコードを、ステップ 2-0 で読み込んだテスト方針の全項目に照らしてチェック:
-
-各項目の NG/OK パターンは [references/test-policy-checks.md](references/test-policy-checks.md) を読む。
-
-**チェック項目**:
-
-1. **SUT の明示**
-   - ✅ `const sut = handler` 等でテスト対象を明示
-   - ❌ SUT が明示されていない → 修正
-
-2. **AAAパターン**
-   - ✅ Arrange → Act（1行） → Assert の構成
-   - ❌ Act が複数行 → 警告（カプセル化の見直しを提案）
-
-3. **フェーズコメント**
-   - ✅ 準備 or 確認が複数行の場合のみ `// Arrange` `// Act` `// Assert` を記載
-   - ❌ シンプルなテストに不要なフェーズコメント → 削除
-   - ❌ 複数行なのにフェーズコメントなし → 追加
-
-4. **テストケース命名**
-   - ✅ 日本語、メソッド名なし、事実表現（「〜を返す」「〜される」）
-   - ❌ 英語 / メソッド名を含む / 曖昧な表現 → 修正
-
-5. **テストダブル方針**
-   - ✅ モック未使用、またはポリシーが名指しする限定例外に当たり、そのテストに理由コメントがある
-   - ✅ プロセス外依存・速度や決定性を壊す依存のみスタブ使用
-   - ❌ プライベート依存のスタブ / 内部関数のモック → 警告
-   - ❌ 限定例外に当たらないモックによる呼び出し検証 → 警告
-   - ❌ スタブに対する `toHaveBeenCalledWith` 等の検証 → 警告（過剰検証）
-
-6. **テストデータの配置**
-   - ✅ テスト関数内に直接記述、または Object Mother パターン
-   - ❌ fixture ファイル使用 / `beforeEach` にテスト固有データ → 警告
-
-7. **テストケースの分離**
-   - ✅ 仕様上の条件ごとにテストケースを分離
-   - ✅ 正常系と異常系が分離されている
-   - ❌ 異なる仕様条件が1テストにまとまっている → 分離を提案
-
-8. **パラメータ化テスト**
-   - ✅ 同一仕様条件のバリエーションに `it.each` を使用
-   - ❌ 異なる仕様条件を `it.each` にまとめている → 分離を提案
-
-9. **検証対象**
-   - ✅ 観察可能な振る舞い（出力・戻り値・状態変化）を検証
-   - ❌ 実装の詳細（内部メソッドの呼び出し順序、内部変数の中間状態）を検証 → 警告
-
-10. **テスト対象の妥当性**
-    - ✅ ビジネスロジック / 事前条件チェック / サポートログ
-    - ❌ private メソッド / 単純な委譲 / 診断ログ / ライブラリ内部 → テスト不要と警告
-
-11. **テスト内 if 文**
-    - ✅ if 文なし
-    - ❌ if 文あり → テストケースの分割を提案
-
-12. **フロントエンド固有**（UIコンポーネントのテストの場合のみ）
-    - ✅ ユーザーが認識できる属性で要素取得（クエリの優先順位は react.md が定める）
-    - ❌ 内部 state / props の直接検証 → 警告
-
-**違反時の警告例**:
-
-```
-⚠️ テスト方針違反を検出
-
-Phase 2: テスト作成
-
-違反内容:
-- SUT が明示されていません → `const sut = handler` を追加してください
-- フェーズコメントが不要です（準備・確認が1行のため）→ 削除して空白行区切りにしてください
-- スタブに対する toHaveBeenCalledWith は過剰検証です → 最終結果のみを検証してください
-
-対処方法:
-1. `const sut = handler` を追加
-2. 不要なフェーズコメントを削除
-3. スタブの呼び出し検証を削除し、最終結果の検証に変更
-
-修正しますか？
-[はい / このまま続行]
-```
+生成したテストコードを [references/test-policy-checks.md](references/test-policy-checks.md) の Phase 2 チェック項目すべてに照らして確認する。違反があれば、同ファイルの警告フォーマットで内容と対処方法を提示し、修正するか続行するかを確認する。
 
 #### ステップ 2-4: テストファイルの作成/更新
 
-**新規ファイルの場合**:
-
-Write ツールで作成:
-
-```
-file_path: {testFile}
-content: <生成したテストコード>
-```
-
-**既存ファイルへの追加の場合**:
-
-Read でファイルを読み込み、Edit で追加:
-
-```
-file_path: {testFile}
-old_string: <describeブロックの末尾>
-new_string: <describeブロックの末尾> + <新しいテストケース>
-```
+新規なら Write でテストファイルを作成する。既存ファイルへの追加なら Read で読み込み、Edit で describe ブロックにテストケースを追加する。
 
 #### ステップ 2-5: テストコードの確認
 
-生成したテストコードをユーザーに確認:
-
-```
-作成したテストコード:
-{生成したテストコード}
-
-TDD原則チェック:
-✓ テストデータはテスト関数内に記述
-✓ テストダブル方針に準拠（モックは限定例外のみ）
-✓ WHYコメント記載
-✓ 小さな単位のテスト
-
-このテストで進めますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "このテストで進めますか？"
-header: "Red Phase"
-options: [
-  { label: "はい、進めます", description: "Phase 3（Red確認）に進みます" },
-  { label: "修正する", description: "テストコードを修正します" }
-]
-```
-
-**出力**:
-
-- テストファイルパス
-- 生成したテストコード
+生成したテストコードを phase-reports.md の「作成したテストコードの提示」フォーマットで表示し、AskUserQuestion で「進める / 修正する」を確認する。
 
 ### Phase 3: テスト実行（Red確認）
 
@@ -576,107 +165,28 @@ Task({
 
 #### ステップ 3-2: テスト結果の解析
 
-テスト実行結果を解析:
+失敗の種別を見分ける。
 
-**期待される失敗の例**:
-
-- `Cannot find module './state'` → 実装が存在しない
-- `verifyState is not a function` → 関数が未定義
-- `ReferenceError: verifyState is not defined` → export忘れ
-
-**予期しない失敗の例**:
-
-- `SyntaxError: Unexpected token` → 構文エラー
-- `Error: Cannot find module` (テスト側) → importパスエラー
+| 種別           | 例                                                                                                 |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| 期待される失敗 | `Cannot find module './state'`（実装が存在しない）、`... is not a function`（関数が未定義）        |
+| 予期しない失敗 | `SyntaxError: Unexpected token`（構文エラー）、テスト側の `Cannot find module`（importパスエラー） |
 
 #### ステップ 3-3: 結果判定と報告
 
-**期待通りの失敗の場合**:
+phase-reports.md の「Red Phase の結果報告」フォーマットで報告し、判定基準に従って遷移する。
 
-```
-🔴 Red Phase: テストが期待通り失敗しました
-
-エラー内容:
-- Cannot find module './state' from 'state.test.ts'
-
-理由: まだ実装されていないため（期待通り）
-
-次のフェーズ（Green: 実装）に進みますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "次のフェーズ（Green: 実装）に進みますか？"
-header: "Red Phase 完了"
-options: [
-  { label: "はい、進めます", description: "Phase 4（実装）に進みます" },
-  { label: "テストを修正", description: "Phase 2に戻ります" }
-]
-```
-
-**予期しない失敗の場合**:
-
-```
-❌ Red Phase: 予期しないエラーが発生しました
-
-エラー内容:
-- SyntaxError: Unexpected token 'export' at state.test.ts:1
-
-理由: テストコードに構文エラーがあります
-
-Phase 2（テスト作成）に戻って修正しますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "Phase 2に戻って修正しますか？"
-header: "エラー検出"
-options: [
-  { label: "はい、修正します", description: "Phase 2に戻ります" },
-  { label: "中断する", description: "コマンドを終了します" }
-]
-```
-
-**判定基準**:
-
-- ✅ 実装が存在しない → Phase 4へ
-- ✅ 関数が未定義 → Phase 4へ
-- ❌ 構文エラー → Phase 2へ戻る
-- ❌ importエラー → Phase 2へ戻る
-- ❌ テストが成功してしまった → 警告表示、Phase 2へ戻る
-
-**出力**:
-
-- テスト実行結果
-- 失敗理由の分析
-- 次フェーズへの遷移指示
+| 判定                           | 遷移                                      |
+| ------------------------------ | ----------------------------------------- |
+| 実装が存在しない／関数が未定義 | Phase 4へ（AskUserQuestion で進行を確認） |
+| 構文エラー／importエラー       | Phase 2へ戻る（または中断）               |
+| テストが成功してしまった       | 警告を表示し Phase 2へ戻る                |
 
 ### Phase 4: 緑フェーズ（Green）- 最小限の実装
 
 #### ステップ 4-1: テストコードの解析
 
-Phase 2で作成したテストコードを解析し、実装すべき内容を抽出:
-
-**抽出する情報**:
-
-- 関数名（例: `verifyState`）
-- 引数の型と名前（例: `state: string, expectedState: string`）
-- 戻り値の型（例: `boolean`）
-- 期待される動作（テストケースから推測）
-
-**解析例**:
-
-```
-テストから抽出した要件:
-- 関数名: verifyState
-- 引数: state: string, expectedState: string
-- 戻り値: boolean
-- 動作:
-  - 引数が一致する場合: true
-  - 引数が不一致の場合: false
-```
+Phase 2で作成したテストコードから、関数名・引数の型と名前・戻り値の型・期待される動作を抽出する。抽出結果は phase-reports.md の「テストからの要件抽出」フォーマットで表示する。
 
 #### ステップ 4-2: 最小限の実装コードの生成
 
@@ -686,119 +196,19 @@ Phase 2で作成したテストコードを解析し、実装すべき内容を�
 - 過剰な実装や最適化は避ける
 - コメント・JSDoc は `docs/policy/code-comment-policy.md` に従う（実装コメントは WHY、doc comment は契約を書く。コードが語る WHAT/HOW は書かない）
 
-**生成例**:
-
-```typescript
-// src/utils/state.ts
-
-/**
- * OIDC stateパラメータを検証する
- *
- * WHY: CSRF攻撃を防ぐため、認可リクエスト時に生成したstateと
- *      コールバック時に受け取ったstateが一致することを確認する
- *
- * @param state - コールバックで受け取ったstate
- * @param expectedState - 認可リクエスト時に生成したstate
- * @returns stateが一致する場合true、それ以外false
- */
-export function verifyState(state: string, expectedState: string): boolean {
-  return state === expectedState
-}
-```
+書き方の具体例は code-examples.md の実装コード例を読む。
 
 #### ステップ 4-3: TDD原則チェック
 
-生成した実装コードをチェック:
-
-各項目の NG/OK パターンは [references/test-policy-checks.md](references/test-policy-checks.md) を読む。
-
-**チェック項目**:
-
-1. **最小限の実装**
-   - ✅ テストを通すために必要な最小限のコード
-   - ❌ テストにない機能の追加 → 警告、削除を提案
-
-2. **最適化の禁止**
-   - ✅ シンプルな実装
-   - ❌ パフォーマンス最適化 → 警告、リファクタリングフェーズへ延期を提案
-
-3. **コメント**
-   - ✅ WHYコメント記載
-   - ❌ WHATコメントのみ → 警告
-
-**違反時の警告例**:
-
-```
-⚠️ TDD原則違反を検出
-
-Phase 4: 実装
-
-違反内容:
-- テストにない機能が実装されています（引数のバリデーション）
-
-TDD原則:
-- テストを通す最小限のコードのみ実装する
-
-対処方法:
-1. テストにない機能を削除
-2. 必要であれば、先にテストを追加
-
-修正しますか？
-[はい / このまま続行]
-```
+生成した実装コードを test-policy-checks.md の Phase 4 チェック項目に照らして確認する。違反があれば、同ファイルの警告フォーマットで内容と対処方法を提示し、修正するか続行するかを確認する。
 
 #### ステップ 4-4: 実装ファイルの作成/更新
 
-**新規ファイルの場合**:
-
-Write ツールで作成:
-
-```
-file_path: {implementationFile}
-content: <生成した実装コード>
-```
-
-**既存ファイルへの追加の場合**:
-
-Read でファイルを読み込み、Edit で追加:
-
-```
-file_path: {implementationFile}
-old_string: <ファイルの末尾>
-new_string: <ファイルの末尾> + <新しい関数>
-```
+新規なら Write で実装ファイルを作成する。既存ファイルへの追加なら Read で読み込み、Edit で関数を追加する。
 
 #### ステップ 4-5: 実装コードの確認
 
-生成した実装コードをユーザーに確認:
-
-```
-実装コード:
-{生成した実装コード}
-
-Green Phase原則チェック:
-✓ 最小限の実装
-✓ テストを通すことに集中
-✓ WHYコメント記載
-
-この実装で進めますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "この実装で進めますか？"
-header: "Green Phase"
-options: [
-  { label: "はい、進めます", description: "Phase 5（Green確認）に進みます" },
-  { label: "修正する", description: "実装コードを修正します" }
-]
-```
-
-**出力**:
-
-- 実装ファイルパス
-- 生成した実装コード
+生成した実装コードを phase-reports.md の「生成した実装コードの提示」フォーマットで表示し、AskUserQuestion で「進める / 修正する」を確認する。
 
 ### Phase 5: テスト実行（Green確認）
 
@@ -816,232 +226,36 @@ Task({
 
 #### ステップ 5-2: テスト結果の解析
 
-テスト実行結果を解析:
-
-**期待される成功**:
-
-```
-PASS  src/utils/state.test.ts
-✓ 正しいstateが渡された場合にtrueを返す (3 ms)
-✓ 異なるstateが渡された場合にfalseを返す (1 ms)
-
-Test Suites: 1 passed, 1 total
-Tests:       2 passed, 2 total
-```
-
-**失敗の例**:
-
-```
-FAIL  src/utils/state.test.ts
-✕ 正しいstateが渡された場合にtrueを返す (5 ms)
-
-Expected: true
-Received: false
-```
+全テストが成功したか、どのテストがどの期待値で失敗したかを読み取る。
 
 #### ステップ 5-3: 結果判定と報告
 
-**成功の場合**:
+phase-reports.md の「Green Phase の結果報告」フォーマットで報告する。
 
-```
-🟢 Green Phase: 全テストが成功しました
-
-テスト結果:
-✓ 正しいstateが渡された場合にtrueを返す
-✓ 異なるstateが渡された場合にfalseを返す
-
-次のフェーズ（Refactor）に進みますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "次のフェーズ（Refactor）に進みますか？"
-header: "Green Phase 完了"
-options: [
-  { label: "はい、進めます", description: "Phase 6（リファクタリング）に進みます" },
-  { label: "実装を修正", description: "Phase 4に戻ります" },
-  { label: "リファクタリングをスキップ", description: "Phase 7（最終確認）に進みます" }
-]
-```
-
-**失敗の場合**:
-
-```
-❌ Green Phase: テストが失敗しました
-
-失敗したテスト:
-✕ 正しいstateが渡された場合にtrueを返す
-
-エラー内容:
-- Expected: true
-- Received: false
-
-Phase 4（実装）に戻って修正しますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "Phase 4に戻って修正しますか？"
-header: "テスト失敗"
-options: [
-  { label: "はい、修正します", description: "Phase 4に戻ります" },
-  { label: "中断する", description: "コマンドを終了します" }
-]
-```
-
-**判定基準**:
-
-- ✅ 全テスト成功 → Phase 6へ
-- ❌ 一部/全部失敗 → Phase 4へ戻る
-
-**出力**:
-
-- テスト実行結果
-- 成功/失敗の判定
-- 次フェーズへの遷移指示
+| 判定             | 遷移                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| ✅ 全テスト成功  | AskUserQuestion で「Phase 6へ / Phase 4へ戻る / リファクタリングをスキップして Phase 7へ」を確認 |
+| ❌ 一部/全部失敗 | Phase 4へ戻る（または中断）                                                                      |
 
 ### Phase 6: リファクタリング（Refactor）
 
 #### ステップ 6-1: リファクタリング可能性の分析
 
-テストと実装のコードを解析し、リファクタリング候補を抽出:
+実装コード（重複排除、変数名改善、可読性向上）とテストコード（共通ロジック抽出、可読性向上）からリファクタリング候補を抽出する。
 
-**対象**:
-
-- 実装コード（重複排除、変数名改善、可読性向上）
-- テストコード（共通ロジック抽出、可読性向上）
-
-**リファクタリング候補の例**:
-
-```
-リファクタリング候補:
-
-実装コード:
-- なし（既に最小限）
-
-テストコード:
-1. 変数名の明確化
-   - state → actualState
-   - expectedState はそのまま
-
-2. 期待値の定数化
-   - VALID_STATE = 'abc123'
-   - INVALID_STATE = 'xyz789'
-```
-
-**リファクタリング原則**:
-
-- 動作を変えない
-- テストが通ることを前提とする
-- 過度な最適化は避ける（YAGNI原則）
+**原則**: 動作を変えない／テストが通ることを前提とする／過度な最適化は避ける（YAGNI原則）。
 
 #### ステップ 6-2: リファクタリング提案の提示
 
-リファクタリング候補をユーザーに提示:
-
-```
-リファクタリング提案:
-
-1. テストコードの変数名を明確化
-   - state → actualState
-   - expectedState はそのまま
-
-2. 期待値を定数化
-   - VALID_STATE = 'abc123'
-   - INVALID_STATE = 'xyz789'
-
-リファクタリングを実行しますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "リファクタリングを実行しますか？"
-header: "Refactor Phase"
-options: [
-  { label: "全て実行", description: "すべての提案を実行します" },
-  { label: "選択", description: "実行する提案を選択します" },
-  { label: "スキップ", description: "リファクタリングをスキップします" }
-]
-```
-
-**「選択」が選択された場合**:
-
-各提案について個別に確認:
-
-```
-question: "提案 {番号}: {提案内容} を実行しますか？"
-header: "リファクタリング選択"
-options: [
-  { label: "はい", description: "この提案を実行します" },
-  { label: "いいえ", description: "スキップします" }
-]
-```
+候補を phase-reports.md の「リファクタリング提案」フォーマットで提示し、AskUserQuestion で「全て実行 / 選択 / スキップ」を確認する。「選択」なら各提案について個別に実行可否を尋ねる。
 
 #### ステップ 6-3: リファクタリングの実行
 
-Edit ツールでリファクタリングを実行:
-
-**テストコードのリファクタリング例**:
-
-```typescript
-// src/utils/state.test.ts
-import { verifyState } from './state'
-
-describe('verifyState', () => {
-  const VALID_STATE = 'abc123'
-  const INVALID_STATE = 'xyz789'
-
-  test('正しいstateが渡された場合にtrueを返す', () => {
-    // WHY: OIDC認可フローでstateパラメータが改ざんされていないことを確認するため
-    const actualState = VALID_STATE
-    const expectedState = VALID_STATE
-
-    const result = verifyState(actualState, expectedState)
-
-    expect(result).toBe(true)
-  })
-
-  test('異なるstateが渡された場合にfalseを返す', () => {
-    // WHY: CSRF攻撃を防ぐため、不正なstateは拒否する必要がある
-    const actualState = INVALID_STATE
-    const expectedState = VALID_STATE
-
-    const result = verifyState(actualState, expectedState)
-
-    expect(result).toBe(false)
-  })
-})
-```
+Edit ツールでリファクタリングを実行する。テストコードのリファクタリング例は code-examples.md を読む。
 
 #### ステップ 6-4: リファクタリング内容の確認
 
-リファクタリング後のコードをユーザーに確認:
-
-```
-リファクタリング完了:
-{差分表示}
-
-次のフェーズ（最終確認）に進みますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "次のフェーズ（最終確認）に進みますか？"
-header: "Refactor Phase 完了"
-options: [
-  { label: "はい、進めます", description: "Phase 7（最終確認）に進みます" },
-  { label: "さらにリファクタリング", description: "追加のリファクタリングを実施します" }
-]
-```
-
-**出力**:
-
-- リファクタリング後のコード
-- 変更内容の差分
+差分を表示し、AskUserQuestion で「Phase 7（最終確認）へ進む / さらにリファクタリングする」を確認する。
 
 ### Phase 7: 最終確認（Final Verification）
 
@@ -1059,45 +273,14 @@ Task({
 
 #### ステップ 7-2: テスト結果の解析
 
-テスト実行結果を解析:
-
-**期待される結果**: 全テスト成功（リファクタリング前と同じ）
-
-**失敗の場合**: リファクタリングでバグが混入
+期待される結果は全テスト成功（リファクタリング前と同じ）。失敗した場合はリファクタリングでバグが混入している。
 
 #### ステップ 7-3: 結果判定
 
-**成功の場合**:
-
-Phase 8（設計書整合性チェック）へ進む
-
-**失敗の場合**:
-
-```
-❌ 最終確認: リファクタリング後にテストが失敗しました
-
-失敗したテスト:
-✕ 正しいstateが渡された場合にtrueを返す
-
-リファクタリングをロールバックしますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "リファクタリングをロールバックしますか？"
-header: "リファクタリング失敗"
-options: [
-  { label: "はい、ロールバックします", description: "Phase 6に戻ります" },
-  { label: "修正する", description: "Phase 6に戻って修正します" },
-  { label: "中断する", description: "コマンドを終了します" }
-]
-```
-
-**判定基準**:
-
-- ✅ 全テスト成功 → Phase 8へ
-- ❌ 失敗 → Phase 6へ戻る
+| 判定            | 遷移                                                                                                                                            |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| ✅ 全テスト成功 | Phase 8へ                                                                                                                                       |
+| ❌ 失敗         | phase-reports.md の「最終確認の失敗報告」フォーマットで報告し、AskUserQuestion で「ロールバック / 修正する / 中断する」を確認して Phase 6へ戻る |
 
 ### Phase 8: 設計書とのテスト整合性チェック（Design Verification）
 
@@ -1129,81 +312,21 @@ Phase 2（ステップ 2-0）で読み込んだテスト方針ポリシー・関
 
 **照合ルール**:
 
-- 設計書に明記されているがテストされていないケース → **不足**として報告
-- テスト方針ポリシーで「テスト対象としないもの」に該当するテスト → **過剰**として報告
-- 設計書の型定義・ステータスコードとテストの期待値が不一致 → **不整合**として報告
-- 設計書に記載がないが、ビジネスロジック上テストすべきケース → **推奨追加**として報告（強制はしない）
+| 検出した状態                                             | 報告区分                     |
+| -------------------------------------------------------- | ---------------------------- |
+| 設計書に明記されているがテストされていない               | **不足**                     |
+| テスト方針ポリシーで「テスト対象としないもの」に該当する | **過剰**                     |
+| 設計書の型定義・ステータスコードとテストの期待値が不一致 | **不整合**                   |
+| 設計書に記載がないが、ビジネスロジック上テストすべき     | **推奨追加**（強制はしない） |
 
 #### ステップ 8-3: チェック結果の報告
 
-照合結果をユーザーに報告:
+照合結果を phase-reports.md の「設計書とのテスト整合性チェック結果」フォーマットで報告し、AskUserQuestion で対応を確認する。
 
-**報告フォーマット**:
-
-```
-=== 設計書とのテスト整合性チェック ===
-
-参照した設計書:
-- {テスト方針ポリシー}
-- {ステップ2-0で特定した関連設計書}
-
-■ テストケースの過不足
-
-  不足しているテストケース:
-  - {設計書に記載があるがテストされていないケースと、その根拠（設計書のどのセクション）}
-
-  過剰なテストケース:
-  - {テスト方針の基準に照らしてテスト不要なケースと、その理由}
-
-  ※ 不足・過剰なし の場合: 「過不足なし」と表示
-
-■ インターフェース整合性
-  - {設計書の定義とテストの入出力が一致しているか、不一致がある場合はその内容}
-
-■ テスト方針への準拠
-  - {テスト方針に準拠しているか、違反がある場合はその内容}
-
-総合判定: ✅ 問題なし / ⚠️ 要対応
-```
-
-**問題なしの場合**:
-
-AskUserQuestion で確認:
-
-```
-question: "設計書との整合性チェックが完了しました。問題は見つかりませんでした。完了処理に進みますか？"
-header: "整合性チェック完了"
-options: [
-  { label: "はい、進めます", description: "Phase 9（完了処理）に進みます" },
-  { label: "テストを追加する", description: "追加テストを実装します（Phase 2に戻る）" }
-]
-```
-
-**要対応の場合**:
-
-AskUserQuestion で確認:
-
-```
-question: "設計書との整合性に問題が見つかりました。どのように対応しますか？"
-header: "整合性チェック"
-options: [
-  { label: "不足テストを追加", description: "Phase 2に戻って不足テストを追加します" },
-  { label: "問題なしとして続行", description: "現状のまま完了処理に進みます" },
-  { label: "中断する", description: "コマンドを終了します" }
-]
-```
-
-**分岐処理**:
-
-- 「不足テストを追加」→ Phase 2へ戻る（追加テストのTDDサイクル開始。Phase 2〜8を繰り返す）
-- 「はい、進めます」/「問題なしとして続行」→ Phase 9へ
-- 「中断する」→ 処理を中止
-
-**出力**:
-
-- 照合結果レポート
-- 不足・過剰・不整合の一覧
-- 次フェーズへの遷移指示
+| 総合判定    | 選択肢                                                                                  |
+| ----------- | --------------------------------------------------------------------------------------- |
+| ✅ 問題なし | Phase 9へ進む / テストを追加する（Phase 2へ戻る）                                       |
+| ⚠️ 要対応   | 不足テストを追加（Phase 2へ戻り、Phase 2〜8を繰り返す） / 問題なしとして続行 / 中断する |
 
 ### Phase 9: 完了処理（Completion）
 
@@ -1222,65 +345,12 @@ gh issue edit {番号} --body "$UPDATED_BODY"
 
 #### ステップ 9-2: TDDサイクル完了レポート
 
-TDDサイクル完了を報告:
-
-```
-✅ TDDサイクル完了！
-
-作成されたファイル:
-- {実装ファイルパス} (実装)
-- {テストファイルパス} (テスト)
-
-テスト結果:
-✓ 全テスト成功 ({テスト数} tests, 0 failures)
-
-TDD原則チェック:
-✓ Red → Green → Refactor サイクル完遂
-
-テスト方針準拠チェック:
-✓ SUT 明示（const sut = ...）
-✓ AAAパターン・フェーズコメント規則
-✓ テストケース命名（日本語、メソッド名なし）
-✓ テストダブル方針（モックは限定例外のみ / スタブ検証なし）
-✓ テストデータ配置（関数内 / Object Mother）
-✓ テストケース分離（仕様条件ごと / 正常系・異常系分離）
-✓ 検証対象（振る舞いのみ、実装詳細なし）
-
-設計書整合性チェック:
-✓ テストケースの過不足なし（または対応済み）
-✓ インターフェース定義と一致
-✓ テスト方針に準拠
-
-GitHub Issue更新:
-✓ Issue #{番号} のタスクチェックリストを更新しました
-
-Next Actions:
-1. git commit でコミット作成
-2. 次の機能のTDDサイクルを開始
-3. /ci で静的解析・全テスト実行
-
-次の機能を実装しますか？
-```
-
-AskUserQuestion で確認:
-
-```
-question: "次の機能を実装しますか？"
-header: "TDDサイクル完了"
-options: [
-  { label: "/tdd を再実行", description: "別のIssueでTDDサイクルを開始します" },
-  { label: "終了", description: "コマンドを終了します" }
-]
-```
-
-**出力**:
-
-- 最終テスト結果
-- TDDサイクル完了レポート
-- Next Action提案
+phase-reports.md の「TDDサイクル完了レポート」フォーマットで完了を報告し、AskUserQuestion で「`/tdd` を再実行 / 終了」を確認する。
 
 ## 参照
 
-- [references/test-policy-checks.md](references/test-policy-checks.md) — テスト方針準拠チェックの NG/OK パターン（ステップ 2-3・4-3 で読む）
+- [references/phase-reports.md](references/phase-reports.md) — 各フェーズでユーザーに提示する文面
+- [references/code-examples.md](references/code-examples.md) — テスト・実装・リファクタリングの生成例
+- [references/test-policy-checks.md](references/test-policy-checks.md) — 準拠チェックの項目と NG/OK パターン
 - [references/error-handling.md](references/error-handling.md) — エラー条件と処理内容の一覧
 - [references/implementation-notes.md](references/implementation-notes.md) — 使用するツールと実装上の注意点
