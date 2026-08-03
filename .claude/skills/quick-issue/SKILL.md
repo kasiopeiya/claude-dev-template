@@ -200,6 +200,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - [ ] 「実装フロー（使用するSkill）」が埋まっている
 - [ ] 既存 Issue と重複しないか `gh issue list --search "<タイトルの主要語>"` で確認した
 - [ ] 該当するポリシー・rules を探した（見つからなければ `policy-gap` を付けた）
+- [ ] 見つかったポリシー・rules と「タスク一覧」「完了条件」を照合し、反する作業を指示していない（反していたらタスク側を直した）
 - [ ] `ai-fixable` / `issue:needs-human-decision` のどちらか一方を決めた
 - [ ] `issue:needs-human-decision` を付けたなら、名指し例外のどれに当たるかを言えて、「人間に決めてほしいこと」に論点と選択肢を書いた
 - [ ] `ai-fixable` を付けたなら「対応方針」に採る案・根拠・却下案を書いた
