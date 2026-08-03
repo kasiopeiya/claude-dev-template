@@ -202,6 +202,70 @@ flowchart LR
 
 （Won't（今回のスコープ外）：会員ランク別の付与率変動。理由は「スコープ外」節参照）
 
+### アクター×機能図
+
+誰が何をできるかを1枚で示す。機能ごとの詳細（次節）に入る前に、アクター起点の全体像を先に渡す。
+
+```mermaid
+flowchart LR
+    subgraph TRIGGER["起動アクター（システムに要求を出す）"]
+        t_ecpos["🏬 EC / POS"]
+        t_member["👤 会員"]
+        t_staff["👤 店舗スタッフ"]
+        t_ops["👤 運用担当"]
+        t_sched["⏰ スケジューラ"]
+        t_auto["⚙️ システム（常時）"]
+    end
+
+    subgraph SYS["📦 会員ポイント管理システム"]
+        f1["F-01 ポイント付与"]
+        f2["F-02 ポイント利用"]
+        f4["F-04 残高・履歴照会"]
+        f5["F-05 手動ポイント調整"]
+        f3["F-03 失効処理"]
+        f6["F-06 失効予告通知"]
+        f7["F-07 稼働監視"]
+        f8["F-08 データ保全"]
+    end
+
+    subgraph BENEFIT["受益アクター（結果を受け取る）"]
+        b_member["👤 会員"]
+        b_staff["👤 店舗スタッフ"]
+        b_ops["👤 運用担当"]
+    end
+
+    t_ecpos ==> f1
+    t_ecpos ==> f2
+    t_member ==> f4
+    t_staff ==> f4
+    t_staff ==> f5
+    t_ops ==> f5
+    t_sched ==> f3
+    t_sched ==> f6
+    t_auto ==> f7
+    t_auto ==> f8
+
+    f1 --> b_member
+    f2 --> b_member
+    f4 --> b_member
+    f4 --> b_staff
+    f5 --> b_member
+    f3 --> b_member
+    f3 --> b_ops
+    f6 --> b_member
+    f7 --> b_ops
+    f8 --> b_ops
+
+    classDef human fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef ext fill:#FFF3B0,stroke:#333,stroke-width:2px,color:#333
+    classDef func fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    class t_member,t_staff,t_ops,b_member,b_staff,b_ops human
+    class t_ecpos,t_sched,t_auto ext
+    class f1,f2,f3,f4,f5,f6,f7,f8 func
+```
+
+**凡例：** 🟦 青＝人のアクター ／ 🟨 黄＝外部システム・自動起動 ／ 🟩 緑＝本システムの機能。太線＝起動（システムに要求を出す）、細線＝受益（結果を受け取る）。同じアクターが左右の両方に現れる（例：会員は F-04 を自分で起動し、F-01・F-02 の結果も受け取る）。会員は付与・利用を POS/EC 経由で行うため、起動側には現れず受益側に現れる。
+
 ### 機能仕様（ユースケース記述）
 
 一覧の**全機能**について UI 非依存の振る舞いを書く。入力/出力は入出力情報を ID で、判断/計算はビジネスルールを ID で参照する。
@@ -217,9 +281,91 @@ flowchart LR
 | F-07   | システム           | 監視対象の異常発生（対象は C. 監視） | 稼働状況（内部データ）                         | —                          | IO-08                                             | 異常が運用担当に通知される                        | 通知手段の障害→未通知を検知できること（C. 監視）                                           |
 | F-08   | システム           | 常時（A. RPO を満たす鮮度で）        | 残高・トランザクション（内部データ）           | —                          | 復旧可能な保全データ（C. バックアップ準拠）       | 障害時に RPO/RTO（A）内で復旧できる状態が保たれる | 保全の失敗→IO-08 で運用担当へ通知                                                          |
 
+### 機能×入出力×ルール図
+
+上表は入力・適用ルール・出力を ID で持つため、ID を目で追わないと繋がりが見えない。その参照の網を1枚にする。
+
+```mermaid
+flowchart LR
+    subgraph IN["入力"]
+        io1["IO-01 購入確定情報"]
+        io2["IO-02 ポイント利用要求"]
+        io7["IO-07 残高照会要求"]
+        io6["IO-06 手動調整申請"]
+        d1["有効期限切れロット<br/>（内部データ）"]
+        d2["翌月末までに期限到来するロット<br/>（内部データ）"]
+        d3["稼働状況<br/>（内部データ）"]
+        d4["残高・トランザクション<br/>（内部データ）"]
+    end
+
+    subgraph FUNC["機能（適用するビジネスルール）"]
+        f1["F-01 ポイント付与<br/>BR-01 BR-02 BR-03 BR-08"]
+        f2["F-02 ポイント利用<br/>BR-04 BR-05"]
+        f4["F-04 残高・履歴照会"]
+        f5["F-05 手動ポイント調整<br/>BR-07"]
+        f3["F-03 失効処理<br/>BR-03"]
+        f6["F-06 失効予告通知<br/>BR-09"]
+        f7["F-07 稼働監視"]
+        f8["F-08 データ保全"]
+    end
+
+    subgraph OUT["出力"]
+        io3["IO-03 付与/利用結果"]
+        io4["IO-04 残高・履歴"]
+        io5["IO-05 失効予告通知"]
+        io8["IO-08 異常通知"]
+        bk["復旧可能な保全データ"]
+    end
+
+    io1 --> f1 --> io3
+    io2 --> f2 --> io3
+    io7 --> f4 --> io4
+    io6 --> f5 --> io4
+    d1 --> f3 --> io4
+    d2 --> f6 --> io5
+    d3 --> f7 --> io8
+    d4 --> f8 --> bk
+
+    f3 -.->|例外| io8
+    f6 -.->|例外| io8
+    f8 -.->|例外| io8
+
+    classDef io fill:#FFF3B0,stroke:#333,stroke-width:1px,color:#333
+    classDef func fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    class io1,io2,io6,io7,d1,d2,d3,d4,io3,io4,io5,io8,bk io
+    class f1,f2,f3,f4,f5,f6,f7,f8 func
+```
+
+**凡例：** 🟩 緑＝機能（下段に適用するビジネスルールIDを併記） ／ 🟨 黄＝入出力情報。実線＝正常時の流れ、点線＝例外時の流れ。入出力情報一覧の IPO 図がシステム全体の入出力を示すのに対し、この図は機能ごとの入出力とルールを示す（切り口が違うので重なってよい）。
+
+### 機能ごとのアクティビティ図
+
+#### F-01（ポイント付与）— 受付判定と付与
+
+会員番号の適合判定と重複イベント判定という独立した2つの分岐があるため、アクティビティ図を併記する。
+
+```mermaid
+flowchart TD
+    start([購入確定イベント受信 IO-01]) --> valid{会員番号は BR-06 に適合?}
+    valid -->|不適合| reject([受付拒否・エラー返却 IO-03])
+    valid -->|適合| dup{同一イベントを受信済み? BR-08}
+    dup -->|受信済み| ack([付与せず受領済みを返す IO-03])
+    dup -->|初回| target[⚙️ 付与対象金額を算出 BR-02]
+    target --> calc[⚙️ 付与ポイントを計算 BR-01]
+    calc --> lot[💾 ロットを発行・有効期限を設定 BR-03]
+    lot --> resp([付与結果・新残高を返却 IO-03])
+
+    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+    class target,calc,lot step
+    class valid,dup decision
+    class reject error
+```
+
 #### F-02（ポイント利用）— 先入れ先出しの引き当て
 
-複数ロットを期限順に消費するループと残高不足の分岐があるため、逆変換テストによりアクティビティ図を併記する。
+複数ロットを期限順に消費するループと残高不足の分岐があるため、アクティビティ図を併記する。
 
 ```mermaid
 flowchart TD
@@ -266,7 +412,30 @@ flowchart TD
     class alert error
 ```
 
-（その他の機能は分岐が単一で、機能仕様の表と例外欄で情報が落ちないため図は付けない＝逆変換テストで不要と判断）
+#### F-06（失効予告通知）— 配信と再送
+
+配信失敗時に失効日まで再送を繰り返すループがあるため、アクティビティ図を併記する。
+
+```mermaid
+flowchart TD
+    start([🚀 スケジューラ起動（月次）]) --> load[⚙️ 翌月末までに期限が到来するロットを持つ会員を抽出 BR-09]
+    load --> send[📨 メール配信サービスへ配信を依頼 IO-05]
+    send --> result{配信に成功した?}
+    result -->|成功| done([✅ 正常終了・配信結果を記録])
+    result -->|失敗| grace{失効日まで猶予がある?}
+    grace -->|ある| send
+    grace -->|ない| alert[🚨 運用担当へ異常通知 IO-08]
+    alert --> done2([✅ 終了・未達を記録])
+
+    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+    class load,send step
+    class result,grace decision
+    class alert error
+```
+
+（F-04・F-05・F-07・F-08 は例外が1つずつで、正常系と例外の2分岐しかない。機能仕様の表の「主要な例外」欄で書けるので図は付けない）
 
 ### 状態遷移
 
