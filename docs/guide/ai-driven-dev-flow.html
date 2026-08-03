@@ -1128,6 +1128,17 @@
         border-style: dashed;
         background: #fbfcfe;
       }
+      .step .cond {
+        align-self: flex-start;
+        margin-bottom: 6px;
+        font-size: 10.5px;
+        font-weight: 700;
+        color: var(--sub);
+        background: #eceff5;
+        border: 1px dashed var(--line);
+        border-radius: 999px;
+        padding: 1px 9px;
+      }
       .step .lane {
         display: flex;
         align-items: center;
@@ -1398,7 +1409,7 @@
             <li>
               <a href="#ap-progressive">Progressive Disclosure：必要な分だけ読ませる文書構造</a>
             </li>
-            <li><a href="#ap-triage">PRのトリアージ：人間がレビューすべきPRだけに絞る</a></li>
+            <li><a href="#ap-triage">PRのトリアージ：人間がレビューすべきPRを絞る</a></li>
             <li>
               <a href="#ap-boyscout">ボーイスカウトルールの仕組み化：気づいた課題を失わない</a>
             </li>
@@ -2253,7 +2264,7 @@
       <section>
         <h2 id="hook">policy-loader hook：AIに必要なポリシーを読ませる仕組み</h2>
 
-        <div class="core">芯：Policy が読まれるかどうかを、AIの記憶に任せない</div>
+        <div class="core">Policy が読まれるかどうかを、AIの記憶に任せない</div>
 
         <div class="harness">
           <svg class="diag" viewBox="0 24 800 232" role="img">
@@ -2301,7 +2312,7 @@
       <section>
         <h2 id="three-layers">判断基準をどこに置くか<span class="tag">増やすときのルール</span></h2>
 
-        <div class="core">芯：ポリシーを増やすときのルール自体を、ポリシーとして持っている</div>
+        <div class="core">ポリシーを増やすときのルール自体を、ポリシーとして持っている</div>
 
         <div class="harness">
           <svg class="diag" viewBox="0 44 800 290" role="img">
@@ -2771,15 +2782,18 @@
             <div class="step">
               <div class="lane">
                 <div class="no">7</div>
-                <svg class="pict"><use href="#pict-inspect" /></svg>
-                <span class="mode-label">検品</span>
+                <svg class="pict"><use href="#pict-either" /></svg>
+                <span class="mode-label">どちらでも</span>
               </div>
               <div class="body">
                 <div class="title-row">
                   <h4>コードレビュー</h4>
-                  <span class="badge b-human">人間</span>
+                  <span class="badge b-either">人間 or AI</span>
                 </div>
-                <div class="desc">エディタ上で実装差分を確認する（最初の人間ゲート）</div>
+                <div class="desc">
+                  エディタ上で実装差分を確認する。<code>/code-dev</code>
+                  のAIレビューだけで済ませることもある
+                </div>
                 <div class="io">
                   <span class="io-label">IN</span><span class="chip c-code">💻 コード差分</span>
                   <span class="io-sep">→</span>
@@ -2852,19 +2866,20 @@
                 </div>
               </div>
             </div>
-            <div class="step">
+            <div class="step optional">
               <div class="lane">
                 <div class="no">11</div>
                 <svg class="pict"><use href="#pict-inspect" /></svg>
                 <span class="mode-label">検品</span>
               </div>
               <div class="body">
+                <span class="cond">10の判定次第でスキップ</span>
                 <div class="title-row">
                   <h4>PRのレビュー → マージ</h4>
                   <span class="badge b-human">人間</span>
                 </div>
                 <div class="desc">
-                  10で「人間レビューが必要」と判定されたPRのみ差分を確認する。問題なければマージ
+                  差分を確認し、問題なければマージ。レビュー不要と判定されたPRは人間を通らずauto-mergeされる
                 </div>
                 <div class="io">
                   <span class="io-label">IN</span><span class="chip c-pr">🔀 PR</span
@@ -2911,7 +2926,7 @@
 
       <section class="feat">
         <h3 id="ap-progressive">Progressive Disclosure：必要な分だけ読ませる文書構造</h3>
-        <div class="core">芯：読ませる量を絞ることが、そのままAIの精度を守る手段になっている</div>
+        <div class="core">必要な時に必要なものだけを読ませる</div>
 
         <svg class="diag" viewBox="0 0 800 320" role="img">
           <title>全ポリシーを常に読ませる場合と、ハブ経由で必要な分だけ辿らせる場合の対比</title>
@@ -2951,18 +2966,19 @@
           <rect class="fbox" x="408" y="24" width="384" height="268" rx="12" />
           <text class="fnm" x="424" y="50">✅ ハブから必要な分だけ辿らせる</text>
 
-          <rect class="box ref" x="424" y="76" width="160" height="56" rx="10" />
-          <text class="fnm" x="438" y="102">🗂 ハブ文書</text>
-          <text class="ex" x="438" y="122">design-hub / policy-hub</text>
+          <rect class="box ref" x="424" y="68" width="176" height="78" rx="10" />
+          <text class="fnm" x="438" y="94">🗂 ハブ文書</text>
+          <text class="ex" x="438" y="114">design-hub / policy-hub</text>
+          <text class="ex" x="438" y="136">＋ 各文書の参照タイミング</text>
 
-          <path class="e pol" d="M586,94 L606,84" />
-          <path class="e pol" d="M586,114 L606,128" />
-          <rect class="fbox" x="610" y="62" width="172" height="36" rx="8" />
-          <text class="ex" x="622" y="85">いま効くポリシー</text>
-          <rect class="fbox" x="610" y="112" width="172" height="36" rx="8" />
-          <text class="ex" x="622" y="135">いま効くポリシー</text>
+          <path class="e pol" d="M602,102 L616,84" />
+          <path class="e pol" d="M602,118 L616,128" />
+          <rect class="fbox" x="620" y="62" width="162" height="36" rx="8" />
+          <text class="ex" x="632" y="85">いま効くポリシー</text>
+          <rect class="fbox" x="620" y="112" width="162" height="36" rx="8" />
+          <text class="ex" x="632" y="135">いま効くポリシー</text>
 
-          <path class="e step" d="M696,148 C696,172 620,168 604,176" />
+          <path class="e step" d="M701,148 C701,172 620,168 604,176" />
           <rect class="aibox" x="424" y="172" width="358" height="52" rx="10" />
           <text class="fnm" x="440" y="204">🤖 AI が読むのは数本だけ</text>
 
@@ -2972,12 +2988,13 @@
       </section>
 
       <section class="feat">
-        <h3 id="ap-triage">PRのトリアージ：人間がレビューすべきPRだけに絞る</h3>
-        <div class="core">芯：人間のレビューを廃止するのではなく、機械が絞った対象に集中させる</div>
+        <h3 id="ap-triage">PRのトリアージ：人間がレビューすべきPRを絞る</h3>
+        <div class="core">ポリシーに基づき人間レビュー要否を判定する</div>
 
         <svg class="diag" viewBox="0 0 800 292" role="img">
           <title>
-            CIが成功したPRだけをAIがトリアージし、人間レビューとauto-mergeに振り分ける流れ
+            CIが成功したPRだけをAIがトリアージし、pr-review-policy
+            に照らして人間レビューとauto-mergeに振り分ける流れ
           </title>
 
           <rect class="fbox" x="8" y="40" width="112" height="52" rx="9" />
@@ -3009,41 +3026,46 @@
           <text class="fnm" x="644" y="238">⚙ auto-merge</text>
           <text class="ex" x="644" y="258">AI非関与の別job</text>
 
-          <path class="e gate" d="M244,100 L244,208" />
-          <text class="lab" x="252" y="150">マージ可否はここだけ</text>
-          <rect class="box gate" x="8" y="212" width="400" height="60" rx="10" />
-          <text class="fnm" x="22" y="238">🚧 cicd-gate（マージ可否の必須チェック）</text>
-          <text class="ex" x="22" y="258">AIは一切関与しない</text>
+          <rect class="box ref" x="24" y="184" width="372" height="60" rx="10" />
+          <text class="fnm" x="40" y="210">📕 pr-review-policy</text>
+          <text class="li" x="40" y="230">どの変更に人間レビューが要るかを定める</text>
+          <path class="e pol" d="M340,182 L374,104" />
         </svg>
       </section>
 
       <section class="feat">
         <h3 id="ap-boyscout">ボーイスカウトルールの仕組み化：気づいた課題を失わない</h3>
-        <div class="core">芯：直すことではなく、失わないこと</div>
+        <div class="core">課題を見つけたら自動で起票させる</div>
 
         <svg class="diag" viewBox="0 34 800 232" role="img">
           <title>
-            割れ窓を見つけたらその場で直さず起票し、ラベルで振り分けて改善をレールへ戻すループ
+            AIが割れ窓を見つけたらその場で直さず起票し、ラベルで振り分けて、ai-fixable は /sweep
+            がまとめて片付けるループ
           </title>
 
-          <rect class="fbox" x="8" y="100" width="176" height="62" rx="9" />
-          <text class="fnm" x="22" y="126">🔍 割れ窓を見つける</text>
+          <rect class="aibox" x="8" y="100" width="200" height="62" rx="9" />
+          <text class="fnm" x="22" y="126">🤖 AIが割れ窓を見つける</text>
           <text class="li" x="22" y="148">本筋とは別の品質課題</text>
-          <path class="e step" d="M186,131 L204,131" />
+          <path class="e step" d="M210,131 L224,131" />
 
-          <rect class="fbox" x="208" y="100" width="176" height="62" rx="9" />
-          <text class="fnm" x="222" y="126">🚫 その場で直さない</text>
-          <text class="li" x="222" y="148">脱線と衝突を避ける</text>
-          <path class="e step" d="M386,131 L404,131" />
+          <rect class="fbox" x="230" y="100" width="160" height="62" rx="9" />
+          <text class="fnm" x="244" y="126">🚫 その場で直さない</text>
+          <text class="li" x="244" y="148">脱線と衝突を避ける</text>
+          <path class="e step" d="M392,131 L406,131" />
 
-          <rect class="box ref" x="408" y="100" width="176" height="62" rx="9" />
-          <text class="fnm" x="422" y="126">🎫 /quick-issue</text>
-          <text class="li" x="422" y="148">確認なしで起票する</text>
+          <rect class="box ref" x="412" y="100" width="172" height="62" rx="9" />
+          <text class="fnm" x="426" y="126">🎫 /quick-issue</text>
+          <text class="li" x="426" y="148">確認なしで起票する</text>
 
-          <path class="e ai" d="M586,120 C598,96 592,74 604,74" />
-          <rect class="fbox" x="608" y="48" width="184" height="52" rx="9" />
-          <text class="fnm" x="620" y="74">🏷 ai-fixable</text>
-          <text class="ex" x="620" y="92">AIがまとめて片付ける</text>
+          <path class="e ai" d="M586,120 C598,98 592,62 604,62" />
+          <rect class="fbox" x="608" y="36" width="184" height="52" rx="9" />
+          <text class="fnm" x="620" y="62">🏷 ai-fixable</text>
+          <text class="ex" x="620" y="80">AIが直せる課題</text>
+
+          <path class="e ai" d="M700,90 L700,104" />
+          <rect class="box ref" x="608" y="108" width="184" height="52" rx="9" />
+          <text class="fnm" x="620" y="134">🧹 /sweep</text>
+          <text class="ex" x="620" y="152">まとめて直して close</text>
 
           <path class="e hum" d="M586,142 C598,166 592,196 604,196" />
           <rect class="humbox" x="608" y="170" width="184" height="52" rx="9" />
@@ -3059,7 +3081,7 @@
 
       <section class="feat">
         <h3 id="ap-devil">AIに自己ディベートさせる：指摘されるとすぐ意見を変える問題への対策</h3>
-        <div class="core">芯：起票が事後に拾うループなら、こちらは事前に誤りを潰すループ</div>
+        <div class="core">反論エージェントによりアイデアを洗練させる</div>
 
         <svg class="diag" viewBox="0 0 800 300" role="img">
           <title>
@@ -3116,7 +3138,6 @@
 
       <section class="feat">
         <h3 id="ap-misc">その他の仕組み：SubAgent・ドリフト検出・ADR</h3>
-        <div class="core">芯：文脈を分けて、ズレを検出する</div>
 
         <svg class="diag" viewBox="0 0 800 214" role="img">
           <title>
