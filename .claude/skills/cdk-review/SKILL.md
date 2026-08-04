@@ -28,7 +28,7 @@ AWS CDK インフラコードをレビューしてください。以下の手順
 各コードファイルに対してエージェント定義のレビュー項目でレビューを実施する。
 
 - Read でファイル内容を取得
-- `.claude/rules/cdk.md` を必ず Read し、各ルール（Import 形式・順序、L2 優先、差分検知ルールの各項目）を1項目ずつ照合。違反は1件残らずレポートに反映
+- `.claude/rules/cdk.md` を必ず Read し、そこに書かれた全ルールを1項目ずつ照合。違反は1件残らずレポートに反映
 - Bash で `git log` から変更履歴を確認
 - Grep で型安全性（`any` 使用）・Import 形式・L2 Construct 使用状況・差分検知アンチパターンを確認
 - コメントは `docs/policy/code-comment-policy.md` に照らして評価（実装コメントは WHY、doc comment は契約、コードが語る WHAT/HOW は不要）
