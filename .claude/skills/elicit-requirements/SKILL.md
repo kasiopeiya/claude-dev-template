@@ -84,4 +84,4 @@ ultrathink
 
 ## 完了後
 
-requirements.md はこの後 `/doc-review`（PRD 観点でのレビュー）や `/grill-me`・`/to-plan`（設計・計画への展開）に渡せる。必要なら次工程を案内する。
+requirements.md はこの後 `/requirements-review`（凍結してよい品質かの判定）や `/grill-me`・`/to-plan`（設計・計画への展開）に渡せる。必要なら次工程を案内する。
