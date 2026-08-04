@@ -843,20 +843,17 @@ sequenceDiagram
 
 ### 2. **Use Consistent Symbols**
 
-Create a legend or use the same Unicode symbols throughout:
+Create a legend or use the same Unicode symbols throughout. The node shape carries meaning too, so keep the symbol and the shape paired:
 
-```mermaid
-graph LR
-    subgraph "Legend"
-        User([👤 User/Actor])
-        Service[⚙️ Service/Component]
-        Database[(💾 Database)]
-        Queue[📬 Message Queue]
-        Cache[(⚡ Cache)]
-        API[🔌 API/Interface]
-        External[☁️ External System]
-    end
-```
+| Symbol | Meaning             | Node syntax           |
+| ------ | ------------------- | --------------------- |
+| 👤     | User / Actor        | `User([👤 User])`     |
+| ⚙️     | Service / Component | `Service[⚙️ Service]` |
+| 💾     | Database            | `DB[(💾 Database)]`   |
+| 📬     | Message Queue       | `Queue[📬 Queue]`     |
+| ⚡     | Cache               | `Cache[(⚡ Cache)]`   |
+| 🔌     | API / Interface     | `API[🔌 API]`         |
+| ☁️     | External System     | `Ext[☁️ External]`    |
 
 ### 3. **Label Communication Protocols**
 
@@ -878,26 +875,22 @@ Use subgraphs to indicate:
 
 ### 5. **Indicate Technology Choices**
 
-```mermaid
-graph TB
-    Service[⚙️ Order Service<br/>Java 17<br/>Spring Boot 3.2<br/>Port 8080]
-    Database[(💾 PostgreSQL 15<br/>Primary + 2 Replicas<br/>Connection Pool: 20)]
+技術スタックはノードラベルに `<br/>` で積む。**記法の例なので描画しない**（1〜2ノードに構造は無く、図にすると Value Gate を素通りする手本になる）。
+
+```text
+Service[⚙️ Order Service<br/>Java 17<br/>Spring Boot 3.2<br/>Port 8080]
+Database[(💾 PostgreSQL 15<br/>Primary + 2 Replicas<br/>Connection Pool: 20)]
 ```
 
 ### 6. **Document Key Decisions**
 
-Add notes for architectural decisions:
+決定はエッジラベルと注記ノードで残す。**記法の例なので描画しない**。
 
-```mermaid
-graph TB
-    A[⚙️ Service A]
-    B[⚙️ Service B]
+```text
+A -->|Async via Kafka| B
 
-    A -->|Async via Kafka| B
-
-    Note1[📝 Decision: Use async messaging<br/>to decouple services and improve<br/>resilience. Eventual consistency OK.]
-
-    style Note1 fill:#FFF9C4,stroke:#F9A825,color:#000
+Note1[📝 Decision: Use async messaging<br/>to decouple services and improve<br/>resilience. Eventual consistency OK.]
+style Note1 fill:#FFF9C4,stroke:#F9A825,color:#000
 ```
 
 ### 7. **High-Contrast Styling**

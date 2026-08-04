@@ -944,21 +944,12 @@ graph LR
 
 ### 3. Use Consistent Naming
 
-**Bad:**
+ノード ID は略さず、同じ実体は同じ名前で書く。良し悪しの1対1の対比なので、図にせず表で示す。
 
-```mermaid
-graph LR
-    usr --> sys
-    system --> db1
-```
-
-**Good:**
-
-```mermaid
-graph LR
-    User --> System
-    System --> Database
-```
+| 判定 | Node IDs                       | なぜ                                             |
+| ---- | ------------------------------ | ------------------------------------------------ |
+| ❌   | `usr`, `sys` / `system`, `db1` | 略語が読めず、`sys` と `system` が同じ実体か不明 |
+| ✅   | `User`, `System`, `Database`   | 略さず、同じ実体を同じ名前で書いている           |
 
 ### 4. Add Context
 
@@ -973,17 +964,18 @@ sequenceDiagram
 
 ### 5. Document Technical Decisions
 
-```mermaid
-graph TB
-    A[Option A: REST API]
-    B[Option B: GraphQL]
-    C[Decision: REST API]
+選択肢と決定は注記ノードで残す。**記法の例なので描画しない**。
 
-    note1[Pros: Simple, cacheable]
-    note2[Cons: Over-fetching]
+```text
+A[Option A: REST API]
+B[Option B: GraphQL]
+C[Decision: REST API]
 
-    C --> note1
-    B --> note2
+note1[Pros: Simple, cacheable]
+note2[Cons: Over-fetching]
+
+C --> note1
+B --> note2
 ```
 
 ### 6. CRITICAL - Ensure High-Contrast Accessibility

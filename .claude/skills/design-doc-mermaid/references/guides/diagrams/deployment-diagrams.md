@@ -456,11 +456,12 @@ graph TB
 
 ### 1. Show Resource Specifications
 
-```mermaid
-graph TB
-    EC2[⚙️ EC2 Instance<br/>Type: t3.xlarge<br/>CPU: 4 vCPU<br/>Memory: 16GB<br/>AZ: us-east-1a]
+スペックはノードラベルに `<br/>` で積む。**記法の例なので描画しない**（1〜2ノードに構造は無く、図にすると Value Gate を素通りする手本になる）。
 
-    RDS[(💾 RDS PostgreSQL<br/>Instance: db.r5.2xlarge<br/>vCPU: 8<br/>RAM: 64GB<br/>Storage: 1TB SSD<br/>Multi-AZ: Yes)]
+```text
+EC2[⚙️ EC2 Instance<br/>Type: t3.xlarge<br/>CPU: 4 vCPU<br/>Memory: 16GB<br/>AZ: us-east-1a]
+
+RDS[(💾 RDS PostgreSQL<br/>Instance: db.r5.2xlarge<br/>vCPU: 8<br/>RAM: 64GB<br/>Storage: 1TB SSD<br/>Multi-AZ: Yes)]
 ```
 
 ### 2. Indicate Network Boundaries
@@ -489,13 +490,14 @@ graph TB
 
 ### 4. Document Ports and Protocols
 
-```mermaid
-graph LR
-    Client -->|HTTPS 443| ALB
-    ALB -->|HTTP 8080| App
-    App -->|PostgreSQL 5432| DB
-    App -->|Redis 6379| Cache
-```
+エッジラベルに `プロトコル ポート` を書く（記法：`App -->|PostgreSQL 5432| DB`）。区間ごとの1対1の対応なので、一覧は表で持つ。
+
+| From   | To    | Protocol   | Port |
+| ------ | ----- | ---------- | ---- |
+| Client | ALB   | HTTPS      | 443  |
+| ALB    | App   | HTTP       | 8080 |
+| App    | DB    | PostgreSQL | 5432 |
+| App    | Cache | Redis      | 6379 |
 
 ### 5. Indicate High Availability
 
