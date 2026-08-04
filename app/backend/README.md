@@ -10,6 +10,8 @@ app/backend/
 │   ├── user.ts                   #   User エンティティ（値オブジェクトを合成）
 │   ├── email.ts                  #   Email 値オブジェクト（形式の不変条件）
 │   ├── userId.ts                 #   UserId 値オブジェクト（非空の不変条件）
+│   ├── businessError.ts          #   ビジネス例外の基底（利用者が直せる失敗）
+│   ├── technicalError.ts         #   技術的例外の基底（開発者・運用者が直す失敗）
 │   └── userRepository.ts         #   永続化のポート（抽象）
 ├── usecase/
 │   └── registerUser.ts           # → domain（ポートに依存＝依存性逆転）
@@ -27,7 +29,7 @@ app/backend/
 ```bash
 npm install        # 依存を導入
 npm run typecheck  # 型検査（app/backend のみ。infra は対象外）
-npm run test       # アーキテクチャテスト（境界・循環依存・凝集度）を実行
+npm run test       # 単体テストとアーキテクチャテスト（境界・循環依存・凝集度）を実行
 ```
 
 リント・フォーマットはルート（リポジトリ直下）に共通化しているため、リポジトリ直下で `npm run lint` / `npm run format` を実行する。

@@ -1,5 +1,7 @@
 // 責務: メールアドレスという値オブジェクト——形式の不変条件を生成時に保証する
 
+import { BusinessError } from './businessError'
+
 /**
  * メールアドレスを表す値オブジェクト。
  * `create` を通した値だけが存在でき、不正な形式のインスタンスは作れない。
@@ -12,11 +14,11 @@ export class Email {
    * メールアドレスを生成する。形式が不正な場合は生成を拒否する。
    * @param value メールアドレス文字列
    * @returns 生成された Email
-   * @throws {Error} メール形式が不正な場合
+   * @throws {BusinessError} メール形式が不正な場合
    */
   static create(value: string): Email {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) {
-      throw new Error(`invalid email: ${value}`)
+      throw new BusinessError(`invalid email: ${value}`)
     }
     return new Email(value)
   }
