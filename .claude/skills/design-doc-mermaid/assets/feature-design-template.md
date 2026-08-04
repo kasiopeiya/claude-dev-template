@@ -107,6 +107,14 @@ flowchart TD
     Execute --> Success
     Success --> End
     Error --> Input
+
+    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+
+    class Input,Process,Display,Execute,Success step
+    class Validate,Confirm decision
+    class Error error
 ```
 
 ### 3.3 UI/UX Mockups
@@ -149,6 +157,14 @@ graph TB
     Service --> Data
     Service --> Ext1
     Service --> Ext2
+
+    classDef frontend fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef backend fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef external fill:#FFF3B0,stroke:#333,stroke-width:2px,color:#333
+
+    class UI,State frontend
+    class API,Service,Data backend
+    class Ext1,Ext2 external
 ```
 
 ### 4.2 Component Design
@@ -354,6 +370,14 @@ flowchart TD
     Process -->|Failure| ErrorServer
     SaveData --> Notify
     Notify --> Return
+
+    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+
+    class Process,SaveData,Notify,Return step
+    class Validate,CheckAuth,CheckQuota decision
+    class ErrorAuth,ErrorValidation,ErrorQuota,ErrorServer error
 ```
 
 ---
@@ -418,17 +442,11 @@ flowchart TD
 
 ### 12.1 Test Coverage
 
-```mermaid
-graph TB
-    subgraph "Testing Pyramid"
-        Unit[Unit Tests<br/>70%]
-        Integration[Integration Tests<br/>20%]
-        E2E[E2E Tests<br/>10%]
-    end
-
-    Unit --> Integration
-    Integration --> E2E
-```
+| Level             | Share of tests | Scope                              |
+| ----------------- | -------------- | ---------------------------------- |
+| Unit tests        | 70%            | One module in isolation            |
+| Integration tests | 20%            | Modules wired to their neighbours  |
+| E2E tests         | 10%            | The feature as a user exercises it |
 
 ### 12.2 Test Cases
 
@@ -478,25 +496,16 @@ gantt
 
 ### 14.1 Key Metrics
 
-```mermaid
-graph LR
-    subgraph "User Metrics"
-        M1[Adoption Rate]
-        M2[Usage Frequency]
-        M3[User Satisfaction]
-    end
-
-    subgraph "Technical Metrics"
-        M4[Response Time]
-        M5[Error Rate]
-        M6[Availability]
-    end
-
-    subgraph "Business Metrics"
-        M7[Conversion Rate]
-        M8[Revenue Impact]
-    end
-```
+| Category  | Metric            | Target       |
+| --------- | ----------------- | ------------ |
+| User      | Adoption rate     | [X %]        |
+| User      | Usage frequency   | [X / week]   |
+| User      | User satisfaction | [X / 5]      |
+| Technical | Response time     | [p95 < X ms] |
+| Technical | Error rate        | [< X %]      |
+| Technical | Availability      | [X %]        |
+| Business  | Conversion rate   | [X %]        |
+| Business  | Revenue impact    | [X]          |
 
 ### 14.2 Alerts
 

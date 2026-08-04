@@ -116,6 +116,16 @@ graph TB
     DataService --> DB
     DataService --> Cache
     NotificationService --> Cache
+
+    classDef client fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef edge fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef service fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class WebApp,MobileApp client
+    class Gateway edge
+    class AuthService,DataService,NotificationService service
+    class DB,Cache store
 ```
 
 ---
@@ -124,21 +134,12 @@ graph TB
 
 ### 5.1 Component Overview
 
-```mermaid
-graph LR
-    subgraph "Component A"
-        A1[Module A1]
-        A2[Module A2]
-    end
-
-    subgraph "Component B"
-        B1[Module B1]
-        B2[Module B2]
-    end
-
-    A1 --> B1
-    A2 --> B2
-```
+| Component   | Module    | Depends on              |
+| ----------- | --------- | ----------------------- |
+| Component A | Module A1 | Component B / Module B1 |
+| Component A | Module A2 | Component B / Module B2 |
+| Component B | Module B1 | —                       |
+| Component B | Module B2 | —                       |
 
 ### 5.2 Component Descriptions
 
@@ -189,14 +190,14 @@ erDiagram
 
 ### 6.2 Data Flow
 
-```mermaid
-flowchart LR
-    A[User Input] --> B[Validation]
-    B --> C[Business Logic]
-    C --> D[Data Persistence]
-    D --> E[Cache Update]
-    E --> F[Response]
-```
+A write request passes through these stages:
+
+1. User input
+2. Validation
+3. Business logic
+4. Data persistence
+5. Cache update
+6. Response
 
 ---
 
@@ -234,22 +235,15 @@ sequenceDiagram
 
 ### 8.1 Security Layers
 
-```mermaid
-graph TB
-    subgraph "Security Layers"
-        WAF[Web Application Firewall]
-        TLS[TLS/SSL Encryption]
-        Auth[Authentication]
-        Authz[Authorization]
-        Encryption[Data Encryption]
-    end
+A request from the internet passes these layers:
 
-    Internet --> WAF
-    WAF --> TLS
-    TLS --> Auth
-    Auth --> Authz
-    Authz --> Encryption
-```
+| Order | Layer                     | Rejects                                     |
+| ----- | ------------------------- | ------------------------------------------- |
+| 1     | Web Application Firewall  | Known attack patterns, abusive clients      |
+| 2     | TLS/SSL encryption        | Plaintext transport                         |
+| 3     | Authentication            | Callers without a valid identity            |
+| 4     | Authorization             | Identities without rights on the resource   |
+| 5     | Data encryption (at rest) | Readable data on a compromised storage tier |
 
 ### 8.2 Authentication Flow
 
@@ -300,6 +294,14 @@ graph TB
     App3 --> DB2
     App4 --> DB2
     DB1 -.Replication.-> DB2
+
+    classDef entry fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef app fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class DNS,LB1,LB2 entry
+    class App1,App2,App3,App4 app
+    class DB1,DB2 store
 ```
 
 ---
@@ -324,25 +326,12 @@ graph TB
 
 ### 11.1 Key Metrics
 
-```mermaid
-graph LR
-    subgraph "Metrics"
-        M1[Request Rate]
-        M2[Error Rate]
-        M3[Response Time]
-        M4[Resource Usage]
-    end
-
-    subgraph "Alerts"
-        A1[High Error Rate]
-        A2[Slow Response]
-        A3[Resource Exhaustion]
-    end
-
-    M2 --> A1
-    M3 --> A2
-    M4 --> A3
-```
+| Metric         | Alert it raises     | Threshold    |
+| -------------- | ------------------- | ------------ |
+| Request rate   | — (capacity signal) | —            |
+| Error rate     | High error rate     | [> X %]      |
+| Response time  | Slow response       | [p95 > X ms] |
+| Resource usage | Resource exhaustion | [> X %]      |
 
 ---
 

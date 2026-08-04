@@ -63,29 +63,20 @@ sequenceDiagram
 
 ### 3.1 Endpoint Overview
 
-```mermaid
-graph LR
-    subgraph "Authentication"
-        Auth1[POST /auth/login]
-        Auth2[POST /auth/refresh]
-    end
-
-    subgraph "Users"
-        User1[GET /users]
-        User2[GET /users/:id]
-        User3[POST /users]
-        User4[PUT /users/:id]
-        User5[DELETE /users/:id]
-    end
-
-    subgraph "Resources"
-        Res1[GET /resources]
-        Res2[GET /resources/:id]
-        Res3[POST /resources]
-        Res4[PUT /resources/:id]
-        Res5[DELETE /resources/:id]
-    end
-```
+| Group          | Method | Path             | Purpose                 |
+| -------------- | ------ | ---------------- | ----------------------- |
+| Authentication | POST   | `/auth/login`    | Issue an access token   |
+| Authentication | POST   | `/auth/refresh`  | Refresh an access token |
+| Users          | GET    | `/users`         | List users              |
+| Users          | GET    | `/users/:id`     | Fetch one user          |
+| Users          | POST   | `/users`         | Create a user           |
+| Users          | PUT    | `/users/:id`     | Replace a user          |
+| Users          | DELETE | `/users/:id`     | Delete a user           |
+| Resources      | GET    | `/resources`     | List resources          |
+| Resources      | GET    | `/resources/:id` | Fetch one resource      |
+| Resources      | POST   | `/resources`     | Create a resource       |
+| Resources      | PUT    | `/resources/:id` | Replace a resource      |
+| Resources      | DELETE | `/resources/:id` | Delete a resource       |
 
 ### 3.2 Detailed Endpoints
 
@@ -489,21 +480,13 @@ API-Sunset-Date: null
 
 ### 14.1 Test Coverage
 
-```mermaid
-graph TB
-    subgraph "API Testing Layers"
-        Unit[Unit Tests]
-        Integration[Integration Tests]
-        Contract[Contract Tests]
-        E2E[End-to-End Tests]
-        Load[Load Tests]
-    end
-
-    Unit --> Integration
-    Integration --> Contract
-    Contract --> E2E
-    E2E --> Load
-```
+| Layer             | Scope                                  | What it verifies                    |
+| ----------------- | -------------------------------------- | ----------------------------------- |
+| Unit tests        | One function / handler in isolation    | Branching and edge cases            |
+| Integration tests | Handler + datastore + adjacent modules | Wiring between components           |
+| Contract tests    | Request / response schema              | The published contract stays intact |
+| End-to-end tests  | A full request path through the API    | User-visible behaviour              |
+| Load tests        | The API under target traffic           | The Performance Targets are met     |
 
 ---
 

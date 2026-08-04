@@ -141,6 +141,16 @@ graph TB
 
     User --> ObjectStore
     Order --> SearchIndex
+
+    classDef client fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef edge fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef service fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class Web,Mobile,API_Client client
+    class CDN,WAF,LB,Gateway,RateLimit edge
+    class Auth,User,Order,Payment,Notification service
+    class PrimaryDB,ReplicaDB,Cache,Queue,ObjectStore,SearchIndex store
 ```
 
 ---
@@ -187,6 +197,16 @@ graph TB
     PS_API --> PS_Logic
     PS_Logic --> PS_Data
     PS_Logic --> PS_External
+
+    classDef client fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef api fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef logic fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class Client client
+    class US_API,OS_API,PS_API api
+    class US_Logic,OS_Logic,PS_Logic logic
+    class US_Data,US_Cache,OS_Data,OS_Queue,PS_Data,PS_External store
 ```
 
 ---
@@ -326,6 +346,14 @@ graph TB
     App --> Router
     Router -->|user_id hash % 2 == 0| Shard1
     Router -->|user_id hash % 2 == 1| Shard2
+
+    classDef app fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef router fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class App app
+    class Router router
+    class Shard1,Shard2 store
 ```
 
 **Sharding Key:** `user_id`
@@ -400,6 +428,14 @@ graph TB
 
     Metrics -->|CPU > 70%| AutoScale[Auto Scaling Policy]
     AutoScale -->|Add Instances| App1
+
+    classDef app fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef edge fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef control fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+
+    class App1,App2,App3,AppN app
+    class LB edge
+    class Metrics,AutoScale control
 ```
 
 ### 9.2 Database Scaling
@@ -424,6 +460,12 @@ graph TB
     Primary -.Replication.-> Replica1
     Primary -.Replication.-> Replica2
     Primary -.Replication.-> Replica3
+
+    classDef op fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class AppWrite,AppRead op
+    class Primary,Replica1,Replica2,Replica3 store
 ```
 
 ---
@@ -445,6 +487,14 @@ graph TB
     DB -->|Data| AppCache
     AppCache -->|Update| CDN
     AppCache -->|Response| User
+
+    classDef client fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef cache fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class User client
+    class CDN,AppCache cache
+    class DB store
 ```
 
 ### 10.2 Cache Invalidation
@@ -480,6 +530,12 @@ graph LR
     PaymentService -->|PaymentProcessed| Queue
     Queue -->|Consume| OrderService
     Queue -->|Consume| NotificationService
+
+    classDef service fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef broker fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+
+    class OrderService,PaymentService,NotificationService,InventoryService service
+    class Queue broker
 ```
 
 ### 11.2 Message Flow
@@ -506,25 +562,17 @@ sequenceDiagram
 
 ### 12.1 Security Layers
 
-```mermaid
-graph TB
-    Internet[Internet]
-    WAF[WAF + DDoS Protection]
-    TLS[TLS Termination]
-    AuthN[Authentication]
-    AuthZ[Authorization]
-    Validation[Input Validation]
-    Encryption[Data Encryption]
-    Audit[Audit Logging]
+A request from the internet passes these layers:
 
-    Internet --> WAF
-    WAF --> TLS
-    TLS --> AuthN
-    AuthN --> AuthZ
-    AuthZ --> Validation
-    Validation --> Encryption
-    Encryption --> Audit
-```
+| Order | Layer                 | Rejects / records                             |
+| ----- | --------------------- | --------------------------------------------- |
+| 1     | WAF + DDoS protection | Known attack patterns, volumetric floods      |
+| 2     | TLS termination       | Plaintext transport                           |
+| 3     | Authentication        | Callers without a valid identity              |
+| 4     | Authorization         | Identities without rights on the resource     |
+| 5     | Input validation      | Malformed or out-of-range payloads            |
+| 6     | Data encryption       | Readable data at rest and in transit          |
+| 7     | Audit logging         | Records who did what, for later investigation |
 
 ### 12.2 Authentication Flow
 
@@ -588,6 +636,14 @@ graph TB
     Prometheus --> AlertManager
     AlertManager --> PagerDuty
     AlertManager --> Slack
+
+    classDef app fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef stack fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef alert fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+
+    class App,Metrics,Logs,Traces app
+    class Prometheus,Loki,Jaeger,Grafana stack
+    class AlertManager,PagerDuty,Slack alert
 ```
 
 ### 13.2 Key Metrics
@@ -617,6 +673,12 @@ graph TB
     Production -->|Daily| Snapshot
     Snapshot --> Backup
     Production -.Replication.-> DR
+
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+    classDef job fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+
+    class Production,Backup,DR store
+    class Snapshot job
 ```
 
 ### 14.2 Recovery Procedures
@@ -667,6 +729,14 @@ graph TB
     App2 --> DB1
     DB1 -.Sync Replication.-> DB2
     DB1 -.Async Replication.-> DB3
+
+    classDef edge fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef app fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class DNS,LB1,LB2 edge
+    class App1,App2,App3 app
+    class DB1,DB2,DB3 store
 ```
 
 ---

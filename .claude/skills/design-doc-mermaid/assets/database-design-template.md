@@ -269,30 +269,13 @@ ALTER TABLE products ADD CONSTRAINT check_price_non_negative
 
 ### 6.1 Index Overview
 
-```mermaid
-graph TB
-    subgraph "Index Types"
-        PK[Primary Keys<br/>B-tree]
-        UK[Unique Indexes<br/>B-tree]
-        FK[Foreign Key Indexes<br/>B-tree]
-        Partial[Partial Indexes<br/>Filtered]
-        Composite[Composite Indexes<br/>Multi-column]
-    end
-
-    subgraph "Query Patterns"
-        Q1[Lookup by ID]
-        Q2[Search by email]
-        Q3[Filter by status]
-        Q4[Sort by date]
-        Q5[Join tables]
-    end
-
-    PK --> Q1
-    UK --> Q2
-    FK --> Q5
-    Partial --> Q3
-    Composite --> Q4
-```
+| Index type        | Structure    | Query pattern it serves |
+| ----------------- | ------------ | ----------------------- |
+| Primary key       | B-tree       | Lookup by ID            |
+| Unique index      | B-tree       | Search by email         |
+| Foreign key index | B-tree       | Join tables             |
+| Partial index     | Filtered     | Filter by status        |
+| Composite index   | Multi-column | Sort by date            |
 
 ### 6.2 Critical Indexes
 
@@ -412,14 +395,10 @@ CREATE TABLE orders_2024_q2 PARTITION OF orders
 
 ### 10.1 Migration Strategy
 
-```mermaid
-graph LR
-    V1[Schema v1.0] -->|Migration| V2[Schema v1.1]
-    V2 -->|Migration| V3[Schema v2.0]
-
-    V1 -.->|Backward Compatible| V2
-    V2 -.->|Breaking Change| V3
-```
+| From        | To          | Compatibility       | Consequence                                           |
+| ----------- | ----------- | ------------------- | ----------------------------------------------------- |
+| Schema v1.0 | Schema v1.1 | Backward compatible | Old and new application versions can run side by side |
+| Schema v1.1 | Schema v2.0 | Breaking change     | Application must be deployed with the migration       |
 
 ### 10.2 Migration Example
 
@@ -466,6 +445,14 @@ flowchart TD
     PointInTime --> Verify
     FullRestore --> Verify
     Verify --> Resume
+
+    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+
+    class PointInTime,FullRestore,Verify,Resume step
+    class Assess decision
+    class Incident error
 ```
 
 ---
@@ -499,6 +486,14 @@ graph TB
     Redis -->|Miss| DB
     DB -->|2. Query| App
     App -->|3. Update cache| Redis
+
+    classDef app fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef cache fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class App app
+    class Redis cache
+    class DB store
 ```
 
 ---
@@ -534,20 +529,14 @@ CREATE ROLE admin WITH SUPERUSER;
 
 ### 14.1 Key Metrics
 
-```mermaid
-graph LR
-    subgraph "Performance Metrics"
-        M1[Query Response Time]
-        M2[Transactions/sec]
-        M3[Connection Pool Usage]
-    end
-
-    subgraph "Health Metrics"
-        M4[Replication Lag]
-        M5[Disk Usage]
-        M6[Table Bloat]
-    end
-```
+| Category    | Metric                | Alert threshold |
+| ----------- | --------------------- | --------------- |
+| Performance | Query response time   | [p95 > X ms]    |
+| Performance | Transactions/sec      | [< X tps]       |
+| Performance | Connection pool usage | [> X %]         |
+| Health      | Replication lag       | [> X s]         |
+| Health      | Disk usage            | [> X %]         |
+| Health      | Table bloat           | [> X %]         |
 
 ### 14.2 Maintenance Tasks
 
@@ -564,22 +553,10 @@ graph LR
 
 ### 15.1 Vertical vs Horizontal
 
-```mermaid
-graph TB
-    subgraph "Vertical Scaling"
-        V1[Single Server]
-        V2[Larger Server]
-        V1 --> V2
-    end
-
-    subgraph "Horizontal Scaling"
-        H1[Primary]
-        H2[Read Replica 1]
-        H3[Read Replica 2]
-        H1 --> H2
-        H1 --> H3
-    end
-```
+| Approach   | Move                                | Limit                                       |
+| ---------- | ----------------------------------- | ------------------------------------------- |
+| Vertical   | Single server → larger server       | Capped by the largest instance available    |
+| Horizontal | Primary → primary + N read replicas | Reads scale out; writes stay on the primary |
 
 ### 15.2 Replication Architecture
 
@@ -595,6 +572,12 @@ graph TB
 
     Primary -.Async Replication.-> Replica1
     Primary -.Async Replication.-> Replica2
+
+    classDef app fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+
+    class App app
+    class Primary,Replica1,Replica2 store
 ```
 
 ---
