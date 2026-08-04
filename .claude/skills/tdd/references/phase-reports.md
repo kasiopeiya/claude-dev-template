@@ -228,9 +228,9 @@ GitHub Issue更新:
 ✓ Issue #{番号} のタスクチェックリストを更新しました
 
 Next Actions:
-1. git commit でコミット作成
+1. /git-commit でコミット作成
 2. 次の機能のTDDサイクルを開始
-3. /ci で静的解析・全テスト実行
+3. /code-ci で静的解析・全テスト実行
 
 次の機能を実装しますか？
 ```
