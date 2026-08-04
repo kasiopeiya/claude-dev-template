@@ -84,6 +84,8 @@ C4Context
 
 ### 4.2 High-Level Architecture
 
+`graph` を選んだ理由：グループが4つあり、`architecture-beta` の適用条件を超える規模のため。この規模ではノードが枠からはみ出してラベルが重なる。
+
 ```mermaid
 graph TB
     subgraph "Client Layer"
@@ -264,6 +266,8 @@ stateDiagram-v2
 ## 9. Deployment Architecture
 
 ### 9.1 Infrastructure
+
+`graph` を選んだ理由：構成要素間のプロトコルをエッジラベルで示すため。`architecture-beta` には書く構文が無い。
 
 ```mermaid
 graph TB

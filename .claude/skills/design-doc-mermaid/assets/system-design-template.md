@@ -77,6 +77,8 @@ C4Context
 
 ### 4.1 Architecture Overview
 
+`graph` を選んだ理由：層が4つあり、`architecture-beta` の適用条件を超える規模のため。この規模ではグループ枠が重なって層の区別が消える。
+
 ```mermaid
 graph TB
     subgraph "Client Layer"
@@ -158,6 +160,8 @@ graph TB
 ## 5. Component Design
 
 ### 5.1 Service Architecture
+
+`graph` を選んだ理由：描いているのはインフラ構成ではなくサービス内部のモジュール構成であり、`architecture-beta` の対象外。
 
 ```mermaid
 graph TB
@@ -336,6 +340,8 @@ erDiagram
 
 ### 7.2 Sharding Strategy
 
+`graph` を選んだ理由：どのキー範囲がどのシャードへ振り分けられるかをエッジラベルで示すため。
+
 ```mermaid
 graph TB
     App[Application]
@@ -404,6 +410,8 @@ sequenceDiagram
 
 ### 9.1 Horizontal Scaling
 
+`graph` を選んだ理由：振り分けの方式とスケール条件をエッジラベルで示すため。
+
 ```mermaid
 graph TB
     subgraph "Auto Scaling Group"
@@ -440,6 +448,8 @@ graph TB
 
 ### 9.2 Database Scaling
 
+`graph` を選んだ理由：読み書きの振り分けと複製をエッジラベルで区別するため。
+
 ```mermaid
 graph TB
     subgraph "Database Cluster"
@@ -473,6 +483,8 @@ graph TB
 ## 10. Caching Strategy
 
 ### 10.1 Multi-Layer Cache
+
+`graph` を選んだ理由：各層のヒット・ミス時にどこへ問い合わせるかをエッジラベルで示すため。
 
 ```mermaid
 graph TB
@@ -513,6 +525,8 @@ graph TB
 ## 11. Message Queue Architecture
 
 ### 11.1 Event-Driven Architecture
+
+`graph` を選んだ理由：発行するイベント名（`OrderCreated` など）と購読関係をエッジラベルで示すため。
 
 ```mermaid
 graph LR
@@ -599,6 +613,8 @@ sequenceDiagram
 
 ### 13.1 Monitoring Architecture
 
+`graph` を選んだ理由：グループが3つあり、`architecture-beta` の適用条件を超える規模のため。この規模ではラベルが重なって判読できない。
+
 ```mermaid
 graph TB
     subgraph "Application"
@@ -663,6 +679,8 @@ graph TB
 
 ### 14.1 Backup Strategy
 
+`graph` を選んだ理由：バックアップの頻度と保存先をエッジラベルで示すため。
+
 ```mermaid
 graph TB
     Production[(Production DB)]
@@ -695,6 +713,8 @@ graph TB
 ## 15. Deployment Architecture
 
 ### 15.1 Infrastructure
+
+`graph` を選んだ理由：構成要素間のプロトコルをエッジラベルで示すため。`architecture-beta` には書く構文が無い。
 
 ```mermaid
 graph TB

@@ -83,6 +83,8 @@ journey
 
 ### 3.2 User Flow
 
+`flowchart` を選んだ理由：状態が移るのではなく操作が分岐する流れであり、主体も1つなので `stateDiagram-v2` でも `sequenceDiagram` でもない。
+
 ```mermaid
 flowchart TD
     Start([User starts])
@@ -132,6 +134,8 @@ flowchart TD
 ## 4. Technical Design
 
 ### 4.1 System Architecture
+
+`graph` を選んだ理由：描いているのはインフラ構成ではなくアプリの層構造であり、`architecture-beta` の対象外。
 
 ```mermaid
 graph TB
@@ -343,6 +347,8 @@ stateDiagram-v2
 ## 8. Business Logic
 
 ### 8.1 Processing Flow
+
+`flowchart` を選んだ理由：処理の分岐とエラー時の合流を描いており、状態遷移でも主体間のやり取りでもないため。
 
 ```mermaid
 flowchart TD

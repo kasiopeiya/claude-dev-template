@@ -430,6 +430,8 @@ ALTER TABLE users ALTER COLUMN phone SET NOT NULL;
 
 ### 11.2 Recovery Flow
 
+`flowchart` を選んだ理由：復旧手順の分岐を描いており、状態遷移でも主体間のやり取りでもないため。
+
 ```mermaid
 flowchart TD
     Incident[Incident Detected]
@@ -474,6 +476,8 @@ WHERE order_date >= '2024-01-01'
 ```
 
 ### 12.2 Caching Strategy
+
+`graph` を選んだ理由：ヒット・ミス時にどこへ問い合わせるかをエッジラベルで示すため。
 
 ```mermaid
 graph TB
@@ -559,6 +563,8 @@ CREATE ROLE admin WITH SUPERUSER;
 | Horizontal | Primary → primary + N read replicas | Reads scale out; writes stay on the primary |
 
 ### 15.2 Replication Architecture
+
+`graph` を選んだ理由：同期・非同期の複製方式をエッジラベルで区別するため。`architecture-beta` では両者が同じ線になる。
 
 ```mermaid
 graph TB

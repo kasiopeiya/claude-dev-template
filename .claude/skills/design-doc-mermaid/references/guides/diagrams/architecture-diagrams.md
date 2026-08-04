@@ -60,37 +60,32 @@ The **C4 model** provides hierarchical views of system architecture at four leve
 
 **Pattern - E-commerce System Context:**
 
+「システム境界と外部アクター」という形なので、選択表どおり `C4Context` を使う。`graph` では境界の内と外が同じ箱になり、人・自システム・外部システムの区別が色分けの慣習頼みになる。
+
 ```mermaid
-graph TB
-    Customer([👤 Customer])
-    Admin([👤 Admin User])
+C4Context
+    title E-commerce Platform - System Context
 
-    subgraph "System Boundary"
-        EcommSystem[🛒 E-commerce Platform]
-    end
+    Person(customer, "Customer", "Browses products, places orders, tracks shipments")
+    Person(admin, "Admin User", "Manages products, views reports")
 
-    PaymentGateway[💳 Stripe Payment Gateway]
-    EmailService[📧 SendGrid Email Service]
-    Analytics[📊 Google Analytics]
-    InventorySystem[📦 Legacy Inventory System<br/>SOAP API]
+    System_Boundary(b1, "Our Responsibility") {
+        System(ecomm, "E-commerce Platform", "Product catalog, orders, fulfilment")
+    }
 
-    Customer -->|Browse products<br/>Place orders<br/>Track shipments| EcommSystem
-    Admin -->|Manage products<br/>View reports| EcommSystem
+    System_Ext(payment, "Stripe", "Payment gateway")
+    System_Ext(email, "SendGrid", "Transactional email")
+    System_Ext(analytics, "Google Analytics", "Behaviour tracking")
+    System_Ext(inventory, "Legacy Inventory System", "Stock levels")
 
-    EcommSystem -->|Process payments<br/>HTTPS REST| PaymentGateway
-    EcommSystem -->|Send order confirmations<br/>SMTP| EmailService
-    EcommSystem -->|Track user behavior<br/>JavaScript SDK| Analytics
-    EcommSystem -->|Check stock levels<br/>Update inventory<br/>SOAP/XML| InventorySystem
+    Rel(customer, ecomm, "Browse, order, track", "HTTPS")
+    Rel(admin, ecomm, "Manage products, view reports", "HTTPS")
+    BiRel(ecomm, payment, "Process payments / webhooks", "HTTPS REST")
+    Rel(ecomm, email, "Send order confirmations", "SMTP")
+    Rel(ecomm, analytics, "Track user behaviour", "JavaScript SDK")
+    BiRel(ecomm, inventory, "Check stock / update inventory", "SOAP/XML")
 
-    PaymentGateway -->|Payment webhooks| EcommSystem
-
-    classDef systemBoundary fill:#4ECDC4,stroke:#0B7285,color:#fff
-    classDef external fill:#A8DADC,stroke:#1864AB,color:#000
-    classDef user fill:#FFE66D,stroke:#F08C00,color:#000
-
-    class EcommSystem systemBoundary
-    class PaymentGateway,EmailService,Analytics,InventorySystem external
-    class Customer,Admin user
+    UpdateLayoutConfig($c4ShapeInRow="2", $c4BoundaryInRow="1")
 ```
 
 **Key Characteristics:**
@@ -99,7 +94,8 @@ graph TB
 - Clear system boundary
 - All external actors and systems shown
 - Communication protocols labeled
-- User personas identified with emoji
+- `Person` / `System` / `System_Ext` carry the role, so no colour convention is needed
+- Two-way exchanges use `BiRel`, never two `Rel` lines (their labels would overlap)
 
 ---
 
@@ -116,6 +112,8 @@ graph TB
 - Technology stack for each container
 
 **Pattern - E-commerce Containers:**
+
+`graph` を選んだ理由：コンテナ間のプロトコルとポート（`HTTPS/8080`・`AMQP` など）をエッジに載せるため。規模も `architecture-beta` の適用条件を超える。
 
 ```mermaid
 graph TB
@@ -214,6 +212,8 @@ Always include:
 
 **Pattern - Product Service Components:**
 
+`graph` を選んだ理由：描いているのはインフラ構成ではなくコンテナ内部のモジュール依存であり、`architecture-beta` の対象外。レイヤーごとの入れ子を保つ必要もある。
+
 ```mermaid
 graph TB
     APIGateway[🚪 API Gateway]
@@ -307,6 +307,8 @@ Component diagrams focus on **modular structure** without necessarily following 
 
 ### Pattern - Plugin Architecture
 
+`graph` を選んだ理由：インターフェース実装（`Implement`）とイベント購読（`Subscribe to`）という別種の関係を、線種とラベルで区別するため。`classDiagram` は実装関係を描けるが、外部システムへの接続を同じ図に載せられない。
+
 ```mermaid
 graph TB
     subgraph "Core Application"
@@ -376,6 +378,8 @@ interface IPlugin {
 **Layered architecture** organizes the system into horizontal layers with strict dependency rules (typically top-to-bottom).
 
 ### Pattern - Three-Tier Web Application
+
+`graph` を選んだ理由：層をまたぐ依存（実線）と横断的関心事の利用（点線）を線種で区別し、この図の主題である依存の向きを示すため。
 
 ```mermaid
 graph TB
@@ -455,6 +459,8 @@ graph TB
 - ❌ Cross-cutting concerns → Specific layers (should be generic)
 
 ### Pattern - Hexagonal Architecture (Ports & Adapters)
+
+`graph` を選んだ理由：ポートを「使う」関係と「実装する」関係の区別がこのパターンの核であり、両者を線種とラベルで描き分ける必要があるため。
 
 ```mermaid
 graph TB
@@ -536,6 +542,8 @@ Microservices diagrams emphasize **service boundaries, independence, and communi
 
 ### Pattern - Microservices with API Gateway
 
+`graph` を選んだ理由：同期呼び出し（REST）・イベント発行・サービス登録という3種類の関係をエッジラベルで区別するため。この区別が消えるとマイクロサービス設計の要点が伝わらない。
+
 ```mermaid
 graph TB
     Client[👤 Client App]
@@ -613,6 +621,8 @@ graph TB
 - ✅ API Gateway as single entry point
 
 ### Pattern - Service Mesh
+
+`graph` を選んだ理由：設定配布・証明書配布・mTLS通信・メトリクス送信をエッジラベルで区別するため。すべて同じ線になるとサイドカーの役割が読み取れない。
 
 ```mermaid
 graph TB
@@ -694,6 +704,8 @@ graph TB
 Event-driven diagrams emphasize **event flows, producers, consumers, and event brokers**.
 
 ### Pattern - Event Sourcing with CQRS
+
+`graph` を選んだ理由：コマンド・イベント追記・購読・読み取りをエッジラベルで区別し、書き込み側と読み取り側の分離を示すため。
 
 ```mermaid
 graph TB
@@ -906,6 +918,8 @@ classDef external fill:#D4A5A5,stroke:#7D4E57,color:#fff  /* Muted red */
 
 ### Pattern - Backend for Frontend (BFF)
 
+`graph` を選んだ理由：各BFFがすべてのAPIを呼ぶ多対多の関係を描くため。`architecture-beta` はノードの側面が4つしかなく、この本数のエッジを引くと線が箱を貫通する。
+
 ```mermaid
 graph TB
     WebClient[🌐 Web Client]
@@ -939,6 +953,8 @@ graph TB
 ```
 
 ### Pattern - Strangler Fig (Legacy Migration)
+
+`graph` を選んだ理由：どのURLパスが新旧どちらへ振り分けられるかがこの図の主題であり、その情報はエッジラベルに載るため。
 
 ```mermaid
 graph TB

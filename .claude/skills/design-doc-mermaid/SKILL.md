@@ -53,13 +53,14 @@ Once you have decided to draw, **read `references/diagram-type-selection.md` and
 
 `flowchart` / `graph` is the **last resort**, not the default. It can express almost anything, and that is exactly why it is chosen too often — being able to express something is not the same as being suited to it.
 
-| Rule                          |                                                                                          |
-| ----------------------------- | ---------------------------------------------------------------------------------------- |
-| Pick from the shape           | Read `references/diagram-type-selection.md` and take the first matching row              |
-| flowchart needs justification | Choose it only when every other row fails. Then state in one line why no other type fits |
-| Cannot justify it?            | Choose again — the inability to explain means the shape was never checked                |
+| Rule                            |                                                                                                                             |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Pick from the shape             | Read `references/diagram-type-selection.md` and take the first matching row                                                 |
+| flowchart needs justification   | Choose it only when every other row fails. Then state in one line why no other type fits                                    |
+| Cannot justify it?              | Choose again — the inability to explain means the shape was never checked                                                   |
+| A matching row is not a licence | Some types have narrow limits (`architecture-beta` cannot label edges at all). Check the row's conditions before committing |
 
-GitHub renders all 26 Mermaid diagram types (verified by rendering probe), so availability is never a reason to fall back to `flowchart`.
+GitHub renders all 26 Mermaid diagram types (verified by rendering probe), so availability is never a reason to fall back to `flowchart`. Expressiveness is a separate question: when the chosen type cannot carry the information, `graph` with a stated reason is the correct answer, not a failure.
 
 **User Intent Analysis:**
 

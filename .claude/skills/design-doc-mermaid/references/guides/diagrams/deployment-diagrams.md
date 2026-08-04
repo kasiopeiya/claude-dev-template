@@ -14,42 +14,31 @@ Deployment diagrams visualize infrastructure, server architecture, network topol
 
 ### Simple Deployment
 
+エッジにラベルが要らず要素も少ないので、選択表どおり `architecture-beta` を使う。
+
 ```mermaid
-graph TB
-    subgraph "Production Environment"
-        LB[Load Balancer<br/>📊 NGINX]
-        subgraph "Application Tier"
-            App1[App Server 1<br/>⚙️ Node.js]
-            App2[App Server 2<br/>⚙️ Node.js]
-        end
-        subgraph "Data Tier"
-            DB[(Database<br/>💾 PostgreSQL)]
-            Cache[(Cache<br/>⚡ Redis)]
-        end
-    end
+architecture-beta
+    service client(internet)["👤 Client"]
 
-    Client[👤 Client] --> LB
-    LB --> App1
-    LB --> App2
-    App1 --> DB
-    App1 --> Cache
-    App2 --> DB
-    App2 --> Cache
+    group prod(cloud)["Production Environment"]
+    service lb(internet)["🌐 Load Balancer / NGINX"] in prod
+    service app1(server)["⚙️ App Server 1 / Node.js"] in prod
+    service app2(server)["⚙️ App Server 2 / Node.js"] in prod
+    service db(database)["💾 Database / PostgreSQL"] in prod
+    service cache(disk)["⚡ Cache / Redis"] in prod
 
-    classDef client fill:#FFE4B5,stroke:#333,stroke-width:2px,color:black
-    classDef loadbalancer fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
-    classDef appServer fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
-    classDef database fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
-
-    class Client client
-    class LB loadbalancer
-    class App1,App2 appServer
-    class DB,Cache database
+    client:R --> L:lb
+    lb:T --> B:app1
+    lb:B --> T:app2
+    app1:R --> L:db
+    app2:R --> L:cache
 ```
 
 ## Common Deployment Patterns
 
 ### Three-Tier Architecture
+
+`graph` を選んだ理由：Auto Scaling Group からインスタンスへの「manages」という関係の種別をエッジに載せるため。`architecture-beta` にはエッジラベルの構文が無く、この区別が消える。
 
 ```mermaid
 graph TB
@@ -103,6 +92,8 @@ graph TB
 ```
 
 ### Microservices Deployment (Kubernetes)
+
+`graph` を選んだ理由：入れ子が3階層あり、`architecture-beta` の適用条件を超える規模のため。この規模ではラベルが重なり、ノードがグループ枠からはみ出す。
 
 ```mermaid
 graph TB
@@ -181,6 +172,8 @@ graph TB
 
 ### Serverless Architecture
 
+`graph` を選んだ理由：グループが5つあり、`architecture-beta` の適用条件を超える規模のため。この規模ではLambda同士のラベルが重なって判読できなくなる。
+
 ```mermaid
 graph TB
     subgraph "AWS Serverless Architecture"
@@ -249,6 +242,8 @@ graph TB
 
 When you have IaC code, map resources to deployment diagrams:
 
+`graph` を選んだ理由：サービスアカウントから Cloud Run への「identity」という関係の種別をエッジに載せるため。`architecture-beta` では通信経路と権限付与の区別が消える。
+
 ```mermaid
 graph TB
     subgraph "GCP Project: my-project"
@@ -313,6 +308,8 @@ graph TB
 
 ### Docker Compose to Deployment Diagram
 
+`graph` を選んだ理由：ネットワークごとの入れ子を保つ必要があり、`architecture-beta` の適用条件を超える規模のため。この規模ではコンテナがネットワークの枠外に配置されてしまう。
+
 ```mermaid
 graph TB
     subgraph "Docker Compose Stack"
@@ -367,6 +364,8 @@ graph TB
 ```
 
 ## Network Security Zones
+
+`graph` を選んだ理由：どのゾーン間がどのプロトコル・ポートで通れるかがこの図の主題であり、その情報はすべてエッジラベルに載るため。`architecture-beta` では書く構文が無い。
 
 ```mermaid
 graph TB
@@ -476,6 +475,8 @@ Use subgraphs for:
 
 ### 3. Show Scaling Configuration
 
+`graph` を選んだ理由：Auto Scaling Group とインスタンスの関係が通信ではなく「manages」であることをエッジラベルで示すため。
+
 ```mermaid
 graph TB
     ASG[📊 Auto Scaling Group<br/>Min: 2<br/>Desired: 4<br/>Max: 20<br/>Target CPU: 70%]
@@ -497,6 +498,8 @@ graph LR
 ```
 
 ### 5. Indicate High Availability
+
+`graph` を選んだ理由：Primary から Standby への複製をエッジラベルで示すため。`architecture-beta` ではアプリからの接続と見分けがつかなくなる。
 
 ```mermaid
 graph TB
@@ -530,6 +533,8 @@ graph TB
 ## Deployment Diagram Templates
 
 ### Template: Multi-Region Deployment
+
+`graph` を選んだ理由：リージョン間のレプリケーションをエッジラベルで示すため。`architecture-beta` では通常の通信との区別が消える。
 
 ```mermaid
 graph TB
@@ -571,6 +576,8 @@ graph TB
 ```
 
 ### Template: Hybrid Cloud
+
+`graph` を選んだ理由：VPNトンネル経由の接続とオンプレDBへの読み取りをエッジラベルで区別するため。`architecture-beta` では両者が同じ線になる。
 
 ```mermaid
 graph TB
