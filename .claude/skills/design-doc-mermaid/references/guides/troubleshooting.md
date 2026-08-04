@@ -37,7 +37,7 @@ python scripts/mermaid_to_image.py diagram.mmd output.png
 
 **Common Quick Fixes:**
 
-- ✅ Wrap reserved words in double quotes
+- ✅ Move reserved words into a node label (`endNode["end"]`), never use them as node IDs
 - ✅ Check for missing closing `end` keywords in blocks
 - ✅ Ensure colons exist before message text in sequence diagrams
 - ✅ Verify arrow syntax (must be `-->`, not `->`)
@@ -61,7 +61,7 @@ python scripts/mermaid_to_image.py diagram.mmd output.png
 
 **Incorrect:**
 
-```mermaid
+```text
 flowchart TD
     start --> end
     call --> style
@@ -71,9 +71,11 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    start --> "end"
-    "call" --> "style"
+    start --> endNode["end"]
+    callNode["call"] --> styleNode["style"]
 ```
+
+予約語はノードIDに使えない。別のIDを付け、予約語はラベル側に置く。
 
 **Error Message:**
 
@@ -101,7 +103,7 @@ flowchart TD
 
 **Incorrect:**
 
-```mermaid
+```text
 flowchart TD
     A[Say "hello"]
     B[Domain\User1]
@@ -138,28 +140,27 @@ flowchart TD
 
 **Problem:** Using curly braces or semicolons in classDef declarations.
 
+`classDef` の記法だけを示すので、以下は**描画しない**（ノードが1つも無く、図にしても何も見えない）。
+
 **Incorrect:**
 
-```mermaid
-flowchart TD
-    classDef myClass {
-        fill: #ff0000;
-        stroke: #333;
-    }
+```text
+classDef myClass {
+    fill: #ff0000;
+    stroke: #333;
+}
 ```
 
 **Also Incorrect:**
 
-```mermaid
-stateDiagram-v2
-    classDef badEvent fill:#f00;color:white
+```text
+classDef badEvent fill:#f00;color:white
 ```
 
 **Correct:**
 
-```mermaid
-flowchart TD
-    classDef myClass fill:#ff0000,stroke:#333,color:#fff
+```text
+classDef myClass fill:#ff0000,stroke:#333,color:#fff
 ```
 
 **Explanation:**
@@ -210,7 +211,7 @@ gantt
 
 **Incorrect:**
 
-```mermaid
+```text
 flowchart TD
     start --> end
 ```
@@ -221,9 +222,7 @@ flowchart TD
 flowchart TD
     start --> End
     %% OR
-    start --> "end"
-    %% OR
-    start --> endNode[end]
+    start --> endNode["end"]
 ```
 
 **Error Message:** Parser treats "end" as keyword, not node ID
@@ -266,7 +265,7 @@ flowchart LR
 
 **Incorrect:**
 
-```mermaid
+```text
 flowchart TD
     A - B
     %% Single dash
@@ -306,7 +305,7 @@ flowchart TD
 
 **Incorrect:**
 
-```mermaid
+```text
 flowchart TD
     A[Start --> B[Process]]
 ```
@@ -339,7 +338,7 @@ flowchart TD
 
 **Incorrect:**
 
-```mermaid
+```text
 flowchart TD A --> B
 ```
 
@@ -400,7 +399,7 @@ flowchart TD
 
 **Incorrect:**
 
-```mermaid
+```text
 sequenceDiagram
     Alice->>Bob Message
 ```
@@ -422,7 +421,7 @@ sequenceDiagram
 
 **Incorrect:**
 
-```mermaid
+```text
 sequenceDiagram
     participantAlice
 ```
@@ -444,7 +443,7 @@ sequenceDiagram
 
 **Incorrect:**
 
-```mermaid
+```text
 sequenceDiagram
     Alice->>Bob: Request
     alt Success
@@ -512,7 +511,7 @@ sequenceDiagram
 
 **Incorrect:**
 
-```mermaid
+```text
 sequenceDiagram
     xAlice->>+John: Hello
     John-->>-xAlice: Hi
@@ -541,7 +540,7 @@ sequenceDiagram
 
 **Incorrect:**
 
-```mermaid
+```text
 classDiagram
     Customer 1 --> * Order
 ```
@@ -587,7 +586,7 @@ classDiagram
 
 **Severity:** 🟡 Medium
 
-**Problem:** Static ($) and abstract (*) must come AFTER the signature.
+**Problem:** Static ($) and abstract (\*) must come AFTER the signature.
 
 **Incorrect:**
 
@@ -645,7 +644,7 @@ stateDiagram-v2
 
 **Incorrect:**
 
-```mermaid
+```text
 stateDiagram-v2
     state "This is a description": s2
 ```
@@ -667,7 +666,7 @@ stateDiagram-v2
 
 **Incorrect:**
 
-```mermaid
+```text
 stateDiagram-v2
     classDef myClass fill:#f00
     class [*] myClass
@@ -724,7 +723,7 @@ erDiagram
 
 **Incorrect:**
 
-```mermaid
+```text
 erDiagram
     Order |-- Customer
 ```
@@ -733,7 +732,7 @@ erDiagram
 
 ```mermaid
 erDiagram
-    Order }|..|{ Customer
+    Order }|..|{ Customer : places
 ```
 
 **Relationship Notation:**
@@ -741,6 +740,7 @@ erDiagram
 - First marker: `}|` (many), `||` (one), `o|` (zero or one)
 - Relationship line: `--` (identifying), `..` (non-identifying)
 - Second marker: `|{` (many), `||` (one), `|o` (zero or one)
+- ラベル（`: places`）は必須。省くと構文エラーになる
 
 ---
 
@@ -754,7 +754,7 @@ erDiagram
 
 **Incorrect:**
 
-```mermaid
+```text
 gantt
     dateFormat YYYY-MM-DD
     section Section
@@ -813,7 +813,7 @@ gantt
 
 **Incorrect:**
 
-```mermaid
+```text
 gantt
     section Tasks
     Task#1 : 2024-01-01, 3d
@@ -847,7 +847,7 @@ gantt
 
 **Incorrect:**
 
-```mermaid
+```text
 gantt
     dateFormat YYYY-MM-DD
     VM : ps2, 2w

@@ -420,16 +420,13 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 
 ## High-Contrast Styling
 
-**ALL diagrams MUST use high-contrast colors:**
+**ALL diagrams MUST use high-contrast colors.** 既定の `classDef` は次のとおり。**記法の例なので描画しない**（ノードが1つも無く、図にしても何も見えない）。
 
-```mermaid
-graph TB
-    classDef primary fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
-    classDef secondary fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
-    classDef database fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
-    classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
-
-    %% Every classDef MUST have color: property
+```text
+classDef primary fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+classDef secondary fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+classDef database fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
 ```
 
 **Rules:**
