@@ -23,6 +23,11 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-empty-gh-body-overwrite.mjs\"",
             "statusMessage": "本文を消すgh操作を確認中..."
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-unlabeled-gh-issue-create.mjs\"",
+            "statusMessage": "Issueのラベル指定を確認中..."
           }
         ]
       }
