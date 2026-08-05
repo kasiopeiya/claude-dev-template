@@ -155,6 +155,24 @@ jobs:
 
       - run: npm run check:links
 
+  # CLAUDE.md（@ import 先を含む）の文字数上限の検査。ci-format・ci-hooks・ci-links と同じ
+  # 「常に実行する軽量ジョブ」で、理由は cicd-design を参照する。CLAUDE.md だけを直す PR は
+  # docs_only 判定になるため、ci-common に置くと上限を破る変更でこそ走らない。
+  # 検査スクリプトが外部依存を使わないため npm ci も要らない。
+  ci-claude-md:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - run: npm run check:claude-md
+
   # リポジトリ全体を1回で舐めるツール。静的解析はルールを1箇所で定義しているため
   # 階層ごとに分割・スキップできない（cicd-design）。
   ci-common:
@@ -329,6 +347,7 @@ jobs:
         ci-format,
         ci-hooks,
         ci-links,
+        ci-claude-md,
         ci-common,
         ci-app,
         ci-cdk,

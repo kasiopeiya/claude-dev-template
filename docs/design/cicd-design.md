@@ -26,11 +26,13 @@ flowchart TD
     Push --> Format
     Push --> PolicyHook
     Push --> LinkCheck
+    Push --> ClaudeMdSize
 
     subgraph Checks["🔀 検査（並行実行）"]
         Format[✓ 整形チェック<br/>常に実行・docs のみでも]
         PolicyHook[✓ policy hook 検査<br/>常に実行・docs のみでも]
         LinkCheck[✓ リンク切れ検査<br/>常に実行・docs のみでも]
+        ClaudeMdSize[✓ CLAUDE.md 文字数検査<br/>常に実行・docs のみでも]
         Common[✓ 全体を舐める検査<br/>docs のみなら skip]
         App[✓ アプリ検査<br/>アプリ変更時のみ]
         Cdk[✓ CDK 検査<br/>CDK 変更時のみ]
@@ -53,6 +55,7 @@ flowchart TD
     Format --> Gate
     PolicyHook --> Gate
     LinkCheck --> Gate
+    ClaudeMdSize --> Gate
     Common --> Gate
     App --> Gate
     Cdk --> Gate
@@ -73,7 +76,7 @@ flowchart TD
     classDef advisory fill:#FFF9C4,stroke:#F57F17,stroke-width:2px,color:#7f4f00
 
     class Push,Merge startEnd
-    class PR,Detect,Format,PolicyHook,LinkCheck,Common,App,Cdk process
+    class PR,Detect,Format,PolicyHook,LinkCheck,ClaudeMdSize,Common,App,Cdk process
     class DeployCheck decision
     class Deploy,IT hollow
     class Gate gate
@@ -95,6 +98,7 @@ flowchart TD
 | 整形チェックだけは切り出して**変更種別に関わらず常に実行**する                                                         | prettier は `.md` も検査対象にしている以上、「docs だから検査不要」は事実に反する。docs のみの PR で飛ばすと、整形の崩れた `.md` がゲートを緑のまま通り、**被害は後続の無関係な PR に出る**（自分が触っていない `.md` で落ちる）。root の依存だけで完結し型情報を要らないため、3階層分の依存が要る全体検査から切り離せる                                                                                                                                                                                                                                                                                    |
 | policy hook の検査も切り出して**変更種別に関わらず常に実行**する                                                       | ポリシーの発火対象は `docs/policy/*.md` の frontmatter が宣言する。それだけを直す PR は docs のみの変更と判定され全体検査がスキップされるため、hook の検査を全体検査に含めると**hook を壊す変更でこそ走らない**。整形チェックと同型の判断で、独立ジョブとして常に走らせる（root の依存だけで完結し軽量）                                                                                                                                                                                                                                                                                                    |
 | リンク切れ検査も切り出して**変更種別に関わらず常に実行**する                                                           | 整形チェック・policy hook 検査と同型の判断。Markdown の相対リンクは参照先の移動・改名や書き間違いで壊れ、**docs だけを直す PR でも起きる**。全体検査に含めると、その PR では検査ごとスキップされる。この検査は外部依存を1つも使わないため、依存のインストールすら要らない最も軽いジョブになる                                                                                                                                                                                                                                                                                                               |
+| CLAUDE.md の文字数検査も切り出して**変更種別に関わらず常に実行**する                                                   | 先行する常時実行ジョブと同型の判断。CLAUDE.md だけを直す PR は docs のみの変更と判定されるため、全体検査に含めると**上限を破る変更でこそ走らない**。判定は単一のスクリプトに閉じていて外部依存を使わないので、依存のインストールが要らない軽いジョブになる                                                                                                                                                                                                                                                                                                                                                  |
 | **アプリ変更でも** deploy する                                                                                         | アプリは CDK が deploy する。変更を反映するには deploy が要る                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | required check をゲート1つに集約する                                                                                   | ジョブを個別登録すると、required の一覧がリポジトリ設定（コード外）に住む。ジョブを増やしたときの登録漏れが静かに穴を開け、テンプレートとしてコピーされた先に設定は付いてこない                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | ゲートは上流の結果に関わらず必ず実行し、一つずつ成功を確認する                                                         | GitHub は「実行しなかった」を「成功」と同じものとして扱う。上流に繋ぐだけのゲートは、検査が丸ごと走らなかったときに——赤くならずに——静かに開く。**未実行は検証の不在であって、検証の成功ではない**                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -140,6 +144,8 @@ flowchart TD
 | リンク切れ検査でアンカー（見出し）・外部URLまで見る                               | アンカーは見出しの slug 化を自前で再現する必要があり、ずれれば偽陽性になる。外部URLは相手側の停止・rate limit で、自分の変更と無関係にゲートが赤くなる                                                                                                          |
 | リンク切れ検査に無視コメント・除外パスリストを用意する                            | 逃げ道は本物のリンク切れも黙らせる。実在しないファイルを指す記述はリンクではなく例示なので、除外機構を足さず**バッククォートで囲む書き方に直す**（検査の失敗メッセージがその道案内を兼ねる）                                                                    |
 | リンク切れ検査を pre-commit に置く（CI との併用を含む）                           | 今の pre-commit は自動で整形して再ステージする＝人を止めない設計で、落ちる検査は性格が違う。`--no-verify` が習慣化するとフック全体が無力化する。pre-commit だけに置く案は、フック未設定の環境で素通りするため論外——**マージを止められない検査はゲートではない** |
+| CLAUDE.md の文字数検査を CI だけに置き、hook を作らない                           | CI だけだと、AI が CLAUDE.md に書いた直後ではなく push 後まで気づけない。その場で差し戻せば手戻りが最小になる（シフトレフト）                                                                                                                                   |
+| CLAUDE.md の文字数検査を hook だけに任せ、CI に置かない                           | hook が効くのは Claude Code 経由の編集だけで、人間がエディタで直接 CLAUDE.md を書き換えると素通りする。**マージを止められない検査はゲートではない**（リンク切れ検査を pre-commit だけに置く案と同じ理由）                                                       |
 | auto-merge 経路に `/code-review` を必須化する・pr-review-policy を改訂する        | 実装フローの各 Skill が実装時点で AI セルフレビューを実施済みであり、重複対応になる                                                                                                                                                                             |
 | 直せない脆弱性がある階層だけ、脆弱性検査の対象から外す                            | その階層の**他の**脆弱性まで見えなくなる。1件を通すために監視ごと捨てる取引になっている                                                                                                                                                                         |
 | 直せない脆弱性は、上流が直すまでゲートを赤いまま放置する                          | 脆弱性検査は required check なので、赤が続く限りデプロイが止まる。上流の修正時期は自分たちで決められない                                                                                                                                                        |

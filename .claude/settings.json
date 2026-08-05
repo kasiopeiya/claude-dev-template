@@ -32,6 +32,18 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-oversized-claude-md.mjs\"",
+            "statusMessage": "CLAUDE.md の文字数を確認中..."
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

@@ -10,6 +10,7 @@
     "lint:fix": "eslint . --fix",
     "check:static": "npm run lint && npm run knip && (cd app/backend && npm run typecheck) && (cd infra && npm run typecheck)",
     "check:links": "node scripts/check-markdown-links.mjs",
+    "check:claude-md": "node scripts/check-claude-md-size.mjs",
     "check:audit": "node scripts/audit-dependencies.mjs",
     "test:hooks": "node --test .claude/hooks/policyMatcher.test.mjs .claude/hooks/policy-loader.test.mjs",
     "gen:adr-index": "node scripts/generate-adr-index.mjs",
