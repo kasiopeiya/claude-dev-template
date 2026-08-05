@@ -23,10 +23,12 @@ disable-model-invocation: true
 ### Phase 1: 対象の決定
 
 ```bash
-gh issue list --state open --limit 50 --search 'label:ai-fixable -label:"issue:needs-clean-session"' --json number,title --jq 'sort_by(.number) | .[] | "\(.number)\t\(.title)"'
+gh issue list --state open --limit 50 --search 'label:ai-fixable label:boy-scout -label:"issue:needs-clean-session"' --json number,title --jq 'sort_by(.number) | .[] | "\(.number)\t\(.title)"'
 ```
 
 `issue:needs-clean-session` を除外するのは、**過去の `/sweep` が着手したうえで「一括では直しきれない」と判定した印**だから。同じやり方で選び直しても同じ結果になる（2-2 参照）。
+
+`label:boy-scout` を条件に足すのは、`/to-issues` 産の Issue（`ai-fixable` は付くが `boy-scout` は付かない）を一斉対応から除くため。正式フローで計画した Issue は、対応する開発フロー Skill（`/code-dev` 等）で個別に着手する。
 
 引数の解釈は次のとおり。
 

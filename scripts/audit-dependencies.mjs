@@ -27,11 +27,11 @@ const ALLOWED_VULNERABILITIES = [
   {
     directory: 'infra',
     packageName: 'brace-expansion',
-    advisoryUrl: 'https://github.com/advisories/GHSA-mh99-v99m-4gvg',
+    advisoryUrl: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
     nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/',
     reason:
       'aws-cdk-lib の bundledDependencies として tarball に同梱されており、overrides も npm audit fix も届かない。' +
-      '最新の aws-cdk-lib も脆弱版を同梱しているため、手元に打てる手がない（Issue #110）',
+      '最新の aws-cdk-lib も脆弱版を同梱しているため、手元に打てる手がない（Issue #242）',
     removeWhen:
       'aws-cdk-lib が修正版を同梱したら、この例外は未使用になりこのスクリプト自身がエラーで知らせる'
   }
