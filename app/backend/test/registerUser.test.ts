@@ -22,4 +22,25 @@ describe('ユーザー登録ユースケース', () => {
       BusinessError
     )
   })
+
+  it('同一IDで並行に呼ばれた場合に1件だけ登録して残りを拒否する', async () => {
+    const sut = new RegisterUser(new InMemoryUserRepository())
+
+    const results = await Promise.allSettled([
+      sut.execute({ id: 'user-001', email: 'user@example.com' }),
+      sut.execute({ id: 'user-001', email: 'other@example.com' })
+    ])
+
+    expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
+    expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1)
+  })
+
+  it('前後に空白を含むIDが既に登録済みの場合に同一IDとしてビジネス例外を投げる', async () => {
+    const sut = new RegisterUser(new InMemoryUserRepository())
+    await sut.execute({ id: ' user-001 ', email: 'user@example.com' })
+
+    await expect(sut.execute({ id: 'user-001', email: 'other@example.com' })).rejects.toThrow(
+      BusinessError
+    )
+  })
 })

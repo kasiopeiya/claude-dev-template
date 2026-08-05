@@ -13,7 +13,7 @@ class UnavailableUserRepository implements UserRepository {
     return Promise.reject(new TechnicalError('connection to user store lost'))
   }
 
-  save(): Promise<void> {
+  saveNewUser(): Promise<void> {
     return Promise.reject(new TechnicalError('connection to user store lost'))
   }
 }

@@ -1,6 +1,5 @@
 // 責務: 「ユーザーを登録する」ユースケースのオーケストレーションのみを担う
 
-import { BusinessError } from '../domain/businessError'
 import { Email } from '../domain/email'
 import { User } from '../domain/user'
 import { UserId } from '../domain/userId'
@@ -23,19 +22,16 @@ export class RegisterUser {
    * ユーザーを登録する。同一 ID が既に存在する場合は登録を拒否する。
    * @param input 登録するユーザーの入力
    * @returns 登録された User
-   * @throws {BusinessError} 同一 ID が既に存在する場合、ID が空の場合、またはメール形式が不正な場合
+   * @throws {UserAlreadyExistsError} 同一 ID が既に存在する場合
+   * @throws {BusinessError} ID が空の場合、またはメール形式が不正な場合
    */
   async execute(input: RegisterUserInput): Promise<User> {
     const id = UserId.create(input.id)
     const email = Email.create(input.email)
 
-    const existingUser = await this.userRepository.findById(id)
-    if (existingUser !== null) {
-      throw new BusinessError(`user already exists: ${id.value}`)
-    }
-
+    // 存在確認を自分で行うと確認と保存の間に別の登録が割り込むため、重複の判定ごと永続化へ委ねる
     const user = User.create(id, email)
-    await this.userRepository.save(user)
+    await this.userRepository.saveNewUser(user)
     return user
   }
 }

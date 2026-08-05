@@ -10,15 +10,17 @@ export class UserId {
   private constructor(public readonly value: string) {}
 
   /**
-   * UserId を生成する。空文字（空白のみを含む）の場合は生成を拒否する。
+   * UserId を生成する。前後の空白は取り除いて保持し、空文字（空白のみを含む）の場合は生成を拒否する。
    * @param value ID 文字列
    * @returns 生成された UserId
    * @throws {BusinessError} 空の場合
    */
   static create(value: string): UserId {
-    if (value.trim() === '') {
+    // 空白の有無だけが違う値を別 ID にしないため、判定だけでなく保持する値も trim 済みに揃える
+    const trimmedValue = value.trim()
+    if (trimmedValue === '') {
       throw new BusinessError('userId must not be empty')
     }
-    return new UserId(value)
+    return new UserId(trimmedValue)
   }
 }

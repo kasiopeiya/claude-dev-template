@@ -1,6 +1,7 @@
 // 責務: UserRepository ポートのインメモリ実装（詳細）。テスト・ローカル用の差し替え可能なアダプタ
 
 import { User } from '../domain/user'
+import { UserAlreadyExistsError } from '../domain/userAlreadyExistsError'
 import { UserId } from '../domain/userId'
 import { UserRepository } from '../domain/userRepository'
 
@@ -16,7 +17,11 @@ export class InMemoryUserRepository implements UserRepository {
     return this.userStore.get(id.value) ?? null
   }
 
-  async save(user: User): Promise<void> {
+  async saveNewUser(user: User): Promise<void> {
+    // 存在確認と格納の間に await を挟まない限り、単一スレッドの JS では他の保存が割り込めない＝原子的になる
+    if (this.userStore.has(user.id.value)) {
+      throw new UserAlreadyExistsError(user.id)
+    }
     this.userStore.set(user.id.value, user)
   }
 }
