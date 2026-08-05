@@ -121,8 +121,9 @@ export default tseslint.config(
       // ⑩ 非同期: await 忘れ(浮いた Promise)と Promise の誤用は実バグにつながるため error
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
-      // require-await は「async ポートを満たすための await なし async 実装」を誤検知するため warn 止め（ratchet）
-      '@typescript-eslint/require-await': 'warn'
+      // await を伴わない async は非同期処理の書き忘れを疑うため error。
+      // 非同期ポートを同期処理で満たす実装は async を外して Promise を直接返す
+      '@typescript-eslint/require-await': 'error'
     }
   }
 )

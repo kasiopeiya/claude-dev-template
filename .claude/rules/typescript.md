@@ -139,6 +139,26 @@ const flag = expiresAt < Date.now()
 const getData = async () => { ... }
 ```
 
+## 非同期
+
+`await` を含まない `async` 関数を書かない（CI ゲート：`@typescript-eslint/require-await`）。`async` は「中で待つ処理がある」という宣言であり、待たない関数に付けると読み手に非同期処理の存在を誤解させる。
+
+非同期のインターフェースを同期処理で満たす場合は、`async` を外して `Promise` を直接返す。
+
+```typescript
+// ✅ 良い例：待つものがないので Promise を直接返す
+findById(id: UserId): Promise<User | null> {
+  return Promise.resolve(this.userStore.get(id.value) ?? null)
+}
+
+// ❌ 避けるべき例：await が無いのに async
+async findById(id: UserId): Promise<User | null> {
+  return this.userStore.get(id.value) ?? null
+}
+```
+
+`async` を外すと `throw` は同期例外になり、呼び出し側の捕捉経路が変わる。エラーは `Promise.reject()` で返す。
+
 ## コメント
 
 コメントの規約は言語に依らないため、基準も記法も [code-comment-policy](../../docs/policy/code-comment-policy.md) が定める。要点は、実装コメントは WHY・doc comment は契約（投げる例外は `@throws {型}`）・ファイル冒頭は責務と前提・TODO は Issue 番号を併記・重要箇所バナーは1ファイル1個。
