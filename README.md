@@ -2,6 +2,8 @@
 
 AI が主体で開発を進めるためのリポジトリテンプレート。人間は成果物を1つずつ検品する代わりに、AI が走る**レール**を設計・改善する（Human-on-the-Loop）。
 
+読むのは、**このテンプレートを自分のプロジェクトの土台にするか判断したい人 / AI が、思想とレールの仕組みを最初に掴みたいとき**。
+
 思想・開発フローの全体像は [AI 駆動開発フローガイド](https://kasiopeiya.github.io/claude-dev-template/) を参照（実体は `docs/guide/ai-driven-dev-flow.html`）。
 
 ## 2本のレール
