@@ -63,10 +63,15 @@ flowchart TD
 
     Gate --> Merge([🎯 マージ可否<br/>★唯一の required check])
 
-    Merge --> AiJob["🤖 AI ジョブ（advisory）<br/>PR説明書き換え・pr-label・pr-check"]
-    AiJob --> AutoMergeCheck{人間レビュー不要と<br/>AIが判定?}
-    AutoMergeCheck -->|Yes| AutoMerge(["🔀 auto-merge<br/>gh pr merge --auto（merge commit）"])
-    AutoMergeCheck -->|No| HumanReview(["👤 人間レビュー"])
+    Merge --> PolicyCheck{判断基準（Policy・CLAUDE.md）<br/>に変更?}
+    PolicyCheck -->|Yes| PolicyLabel["🏷️ policy + needs-human-review を付与<br/>決定論・AI ジョブより前"]
+    PolicyCheck -->|No| AiJob
+    PolicyLabel --> AiJob
+
+    AiJob["🤖 AI ジョブ（advisory）<br/>PR説明書き換え・pr-label・pr-check"]
+    AiJob --> AutoMergeCheck{needs-human-review<br/>が付いている?}
+    AutoMergeCheck -->|No| AutoMerge(["🔀 auto-merge<br/>gh pr merge --auto（merge commit）"])
+    AutoMergeCheck -->|Yes| HumanReview(["👤 人間レビュー"])
 
     classDef startEnd fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
     classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
@@ -76,7 +81,8 @@ flowchart TD
     classDef advisory fill:#FFF9C4,stroke:#F57F17,stroke-width:2px,color:#7f4f00
 
     class Push,Merge startEnd
-    class PR,Detect,Format,PolicyHook,LinkCheck,ClaudeMdSize,Common,App,Cdk process
+    class PR,Detect,Format,PolicyHook,LinkCheck,ClaudeMdSize,Common,App,Cdk,PolicyLabel process
+    class PolicyCheck decision
     class DeployCheck decision
     class Deploy,IT hollow
     class Gate gate
@@ -111,6 +117,7 @@ flowchart TD
 | PR 説明の最終稿は AI が書き換える（push 直後の `--fill` は暫定にとどめる）                                             | commit メッセージの機械的な要約（`--fill`）は「何を・なぜ変えたか」を人間の言葉で語れない。cicd-gate 通過後に AI が差分全体を見て本文を書き直すことで、pr-review-policy が求める「PR説明の記載」の質を上げる。push 直後は差分がまだ変わりうるため、他ジョブが PR 番号を参照できるよう `--fill` で即座に PR を存在させておく                                                                                                                                                                                                                                                                                 |
 | AI 実行方式に公式 `anthropics/claude-code-action` を Claude サブスク OAuth 認証（`CLAUDE_CODE_OAUTH_TOKEN`）で採用する | 「サードパーティ製 Action を使わない」方針（本表参照）の例外。AI 実行の自前実装（プロンプトインジェクション対応・API 管理）のコストは、Anthropic 公式が保守する Action を使う利点を上回らない。サブスク認証にすることで API 従量課金も避けられる                                                                                                                                                                                                                                                                                                                                                            |
 | AI は **advisory**（マージ可否の required check には含めない）                                                         | AI の判断は非決定的（同じ差分でも出力が揺れうる）。cicd-gate の芯は決定論——required check は一意に決まる作業の結果でなければならない。AI を cicd-gate に入れると、Claude の障害やブレでマージが止まる                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `policy` ラベルの付与を AI に預けず、AI ステップより前の決定論ステップで行う                                           | 判断基準（Policy・CLAUDE.md）が壊れると、以後すべての AI 判断が静かに歪む。対象かどうかはパスだけで決まる決定論的な判定なので、AI の見落としに賭けず機械に落とす。対象パスの正は pr-review-policy の policy 行で、ワークフローの grep はその写し。AI 側（pr-label）にも同じ判定を残すのは、手元で単体実行したときにも再現するため                                                                                                                                                                                                                                                                           |
 | AI ジョブ（PR説明書き換え・pr-label・pr-check）を **cicd-gate 成功後の単一ジョブに集約**する                           | 別ジョブに分けると AI ロジックが複数箇所に散り、サブスク枠の消費と pr-check コメントの重複騒音が増える（却下案参照）。cicd-gate を通過した PR にだけ AI を回せば、枠と騒音を最小化できる                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | AI・auto-merge を pipeline とは別の **workflow_run ワークフロー**に置く                                                | `claude-code-action` は push イベントを非対応（`Unsupported event type: push`）。pipeline は push トリガーのため AI ジョブを同居できない。pipeline 完了を workflow_run で受ければ、①gate 成功後という順序 ②push＝信頼済み push 権限者のみが起点（fork PR は起点になれない）③ワークフロー定義は main 固定で PR から AI 実行手順を改変されない、を同時に満たす                                                                                                                                                                                                                                                |
 | auto-merge は GitHub ネイティブ機能（`gh pr merge --auto`）・merge commit を使う                                       | 「cicd-gate 成功待ち」を自前のワークフローで再実装すると、コード量と落とし穴が増える（却下案参照）。GitHub に待機を委ねれば、cicd-gate が required check である限り自動的に守られる。merge commit を選ぶのは、git-policy が rebase を禁じているのと同じ理由（履歴の書き換えを避ける）                                                                                                                                                                                                                                                                                                                       |

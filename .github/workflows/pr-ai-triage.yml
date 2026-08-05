@@ -1,5 +1,6 @@
-# 責務: pipeline 完了後に、その PR へ advisory な AI 処理（本文書き換え・pr-label・pr-check）と
-#       auto-merge を行う。マージ可否の判定（cicd-gate）には一切関与しない。
+# 責務: pipeline 完了後に、その PR へ判断基準（Policy・CLAUDE.md）変更の決定論ラベル付与と、
+#       advisory な AI 処理（本文書き換え・pr-label・pr-check）、auto-merge を行う。
+#       マージ可否の判定（cicd-gate）には一切関与しない。
 # なぜこの構成なのかは docs/design/cicd-design.md を参照する。
 
 name: pr-ai-triage
@@ -23,7 +24,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 対象 PR に対し ①本文の AI 書き換え ②pr-label ③（needs-human-review 付与時のみ）pr-check を行う。
+  # 対象 PR に対し ⓪policy パスの決定論ラベル付与 ①本文の AI 書き換え ②pr-label
+  # ③（needs-human-review が付いていれば）pr-check を行う。
   # 権限は prompt injection 前提で設計する——contents: read 固定・Bash は gh 限定
   # （#65/#66。理由は cicd-design「採用理由」を参照）。Write は本文・コメントを
   # ファイル経由（--body-file）で渡すためにスコープ無しで許可する（理由は prompt 内に記載）。
@@ -58,6 +60,29 @@ jobs:
             echo "::warning::no open PR found for $BRANCH; skipping AI advisory"
           fi
           echo "number=$num" | tee -a "$GITHUB_OUTPUT"
+
+      # 判断基準（Policy・CLAUDE.md）に触れた PR は、AI の見落としに関係なく人間レビューへ寄せる。
+      # パス判定は決定論的なので AI ステップより前で機械が落とす（policy-driven-development-policy
+      # 「自動検知できる rules は、その場でガードレールにする」）。対象パスの正は
+      # docs/policy/pr-review-policy.md の policy 行で、ここはその写し。
+      - name: Label policy changes for human review
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          if ! gh pr diff "$PR" --name-only |
+            grep -qE '^(docs/policy/|docs/policy-hub\.md$|CLAUDE\.md$)'; then
+            echo "no policy path touched; skipping"
+            exit 0
+          fi
+          # ラベルが未作成のリポジトリでも動くよう、無ければ作る（既存なら何もしない）。
+          existing=$(gh label list --limit 200 --json name --jq '.[].name')
+          grep -qx 'policy' <<< "$existing" ||
+            gh label create policy --description "判断基準の変更" --color D93F0B
+          grep -qx 'needs-human-review' <<< "$existing" ||
+            gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
+          gh pr edit "$PR" --add-label policy,needs-human-review
 
       # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet 5 単一。
       # allowedTools を絞る理由は cicd-design「採用理由」を参照。
@@ -111,7 +136,9 @@ jobs:
             needs-human-review / needs-manual-triage を付与する。
 
             ## タスク3: 前提条件チェック（pr-check・条件付き）
-            タスク2で **needs-human-review ラベルを付けた場合のみ** 実行する。付けていなければスキップする。
+            `gh pr view ${{ steps.pr.outputs.number }} --json labels` で確認し、**PR に
+            needs-human-review ラベルが付いていれば** 実行する（タスク2で付けた場合に限らない。
+            前段の決定論ステップが付けている場合もある）。付いていなければスキップする。
             `.claude/skills/pr-check/SKILL.md` を読み、その手順に従って
             PR #${{ steps.pr.outputs.number }} をチェックする（NG のときだけ PR に1件コメントする）。
 
