@@ -581,6 +581,7 @@ exports[`dev 環境 > kasio-dev-base-stack のテンプレートがスナップ�
   },
   "Resources": {
     "TopicBFC7AF6E": {
+      "DeletionPolicy": "Retain",
       "Properties": {
         "DisplayName": "kasio-dev-base-stack-topic",
         "KmsMasterKeyId": {
@@ -601,6 +602,7 @@ exports[`dev 環境 > kasio-dev-base-stack のテンプレートがスナップ�
         },
       },
       "Type": "AWS::SNS::Topic",
+      "UpdateReplacePolicy": "Retain",
     },
     "TopicPolicyA1747468": {
       "Properties": {
@@ -1269,6 +1271,7 @@ exports[`prd 環境 > kasio-prd-base-stack のテンプレートがスナップ�
   },
   "Resources": {
     "TopicBFC7AF6E": {
+      "DeletionPolicy": "Retain",
       "Properties": {
         "DisplayName": "kasio-prd-base-stack-topic",
         "KmsMasterKeyId": {
@@ -1289,6 +1292,7 @@ exports[`prd 環境 > kasio-prd-base-stack のテンプレートがスナップ�
         },
       },
       "Type": "AWS::SNS::Topic",
+      "UpdateReplacePolicy": "Retain",
     },
     "TopicPolicyA1747468": {
       "Properties": {
@@ -1931,6 +1935,7 @@ exports[`stg 環境 > kasio-stg-base-stack のテンプレートがスナップ�
   },
   "Resources": {
     "TopicBFC7AF6E": {
+      "DeletionPolicy": "Retain",
       "Properties": {
         "DisplayName": "kasio-stg-base-stack-topic",
         "KmsMasterKeyId": {
@@ -1951,6 +1956,7 @@ exports[`stg 環境 > kasio-stg-base-stack のテンプレートがスナップ�
         },
       },
       "Type": "AWS::SNS::Topic",
+      "UpdateReplacePolicy": "Retain",
     },
     "TopicPolicyA1747468": {
       "Properties": {

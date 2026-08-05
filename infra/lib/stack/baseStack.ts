@@ -1,4 +1,4 @@
-import { Stack, type StackProps } from 'aws-cdk-lib'
+import { RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib'
 import { aws_kms as kms } from 'aws-cdk-lib'
 import { aws_sns as sns } from 'aws-cdk-lib'
 import { type Construct } from 'constructs'
@@ -20,5 +20,7 @@ export class BaseStack extends Stack {
       masterKey: kms.Alias.fromAliasName(this, 'SnsManagedKey', 'alias/aws/sns'),
       enforceSSL: true
     })
+    // Topic を消すと購読設定ごと失われ復旧できないため、既定の Delete を上書きして残す
+    this.topic.applyRemovalPolicy(RemovalPolicy.RETAIN)
   }
 }
