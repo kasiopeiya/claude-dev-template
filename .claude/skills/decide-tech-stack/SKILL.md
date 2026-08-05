@@ -50,7 +50,7 @@ ultrathink
 
 - **WHY を書く**：各決定の採用理由と却下した代替案（テンプレートの該当セクション）。
 - **保留した詳細を明記**：あえて今決めなかった項目（FW・DB・外部サービス 等）を「意図的に保留（曳光弾で確かめる）」として1セクションに列挙する（遅らせた決定を見えるようにする）。
-- **index 生成**：作成後、`npm run gen:adr-index` を実行し `docs/adr/adr-index.md` の一覧表を再生成する（表は手で編集しない。CLAUDE.md ルール）。
+- **index 生成**：作成後、`npm run gen:adr-index` を実行し `docs/adr/adr-index.md` の一覧表を再生成する（表は手で編集しない。`docs/adr/adr-index.md` 冒頭の注記のとおり、`.githooks/pre-commit` でも自動再生成される）。
 
 ## 完了後
 

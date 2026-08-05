@@ -64,19 +64,19 @@ stateDiagram-v2
 | 縦スライスの分割と依存順序     | 起点Issueの単位と前後関係。Blocked by の素になる            |
 | 保留した詳細の実体化タイミング | スタブした FW/DB/外部サービスを、どのスライスで本物にするか |
 
-作った起点Issueは、以降 [CLAUDE.md の開発フロー](../../CLAUDE.md) に沿って**各Issue単位**で回す（`/grill-me` → sub-issue 化 → `/design` → 実装 …）。
+作った起点Issueは、以降 [開発フローガイド](development-flow.md) に沿って**各Issue単位**で回す（`/grill-me` → sub-issue 化 → `/design` → 実装 …）。
 
 ## 既存フローとの関係
 
 立ち上げと各Issueの開発は、`grill-me → to-plan → to-issues` という**同じスキル列を共有**する。同じ営みが2つの高度で自己相似に回っているだけと捉えれば全体像がすっきりする。
 
-|                  | 立ち上げ（プロダクト全体）                                             | 各起点Issue（CLAUDE.md 開発フロー） |
-| ---------------- | ---------------------------------------------------------------------- | ----------------------------------- |
-| 対象             | プロダクト全体                                                         | 1つの起点Issue                      |
-| 粒度             | 粗い                                                                   | 細かい                              |
-| 前段             | `/elicit-requirements` → `/requirements-review` → `/decide-tech-stack` | なし                                |
-| 共有するスキル列 | `grill-me → to-plan → to-issues`                                       | `grill-me → to-plan → to-issues`    |
-| その後           | 起点Issue群を産む                                                      | `/design` → 実装 → … → `/sre-prr`   |
+|                  | 立ち上げ（プロダクト全体）                                             | 各起点Issue（開発フローガイド）   |
+| ---------------- | ---------------------------------------------------------------------- | --------------------------------- |
+| 対象             | プロダクト全体                                                         | 1つの起点Issue                    |
+| 粒度             | 粗い                                                                   | 細かい                            |
+| 前段             | `/elicit-requirements` → `/requirements-review` → `/decide-tech-stack` | なし                              |
+| 共有するスキル列 | `grill-me → to-plan → to-issues`                                       | `grill-me → to-plan → to-issues`  |
+| その後           | 起点Issue群を産む                                                      | `/design` → 実装 → … → `/sre-prr` |
 
 立ち上げ固有の差分は、対象がプロダクト全体で粒度が粗いことと、前段に `/elicit-requirements`・`/requirements-review`・`/decide-tech-stack` が付くことだけ。つまり立ち上げは「requirements.md と技術スタックを決め、既存フローを粗い粒度で1回回す」ことに等しい。
 

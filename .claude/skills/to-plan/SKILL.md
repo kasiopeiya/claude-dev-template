@@ -5,7 +5,7 @@ description: grill-me の対話や事前調査の結果を Plan ファイルに�
 
 # To Plan
 
-`/grill-me` の対話・Plan モードでの調査結果を、後続の `/check-plan` → `/to-issues` に渡せる **Plan ファイル** に構造化して書き出す。開発フロー（CLAUDE.md）の「Plan作成＋チェック」工程に対応する。
+`/grill-me` の対話・Plan モードでの調査結果を、後続の `/check-plan` → `/to-issues` に渡せる **Plan ファイル** に構造化して書き出す。開発フロー（`docs/guide/development-flow.md`）の「Plan作成＋チェック」工程に対応する。
 
 ## 出力先
 
