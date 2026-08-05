@@ -21,11 +21,11 @@ class UnavailableUserRepository implements UserRepository {
 const buildControllerWith = (repository: UserRepository): RegisterUserController =>
   new RegisterUserController(new RegisterUser(repository))
 
-describe('ユーザー登録コントローラ', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
-  })
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
+describe('ユーザー登録コントローラ', () => {
   it('登録できた場合に成功として登録されたIDを返す', async () => {
     const sut = buildControllerWith(new InMemoryUserRepository())
 
@@ -76,4 +76,52 @@ describe('ユーザー登録コントローラ', () => {
 
     expect(String(errorLog.mock.calls[0]?.[0])).not.toContain('user@example.com')
   })
+})
+
+describe('ユーザー登録コントローラの境界検証', () => {
+  it.each([
+    ['idが欠けている', { email: 'user@example.com' }],
+    ['idが文字列でない', { id: 12345, email: 'user@example.com' }]
+  ])('%s場合に技術的例外にせず直し方が伝わるメッセージを返す', async (_label, rawInput) => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const sut = buildControllerWith(new InMemoryUserRepository())
+
+    const result = await sut.handle(rawInput)
+
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('id')
+    expect(errorLog).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['emailが欠けている', { id: 'user-001' }],
+    ['emailが文字列でない', { id: 'user-001', email: 12345 }]
+  ])('%s場合に技術的例外にせず直し方が伝わるメッセージを返す', async (_label, rawInput) => {
+    const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const sut = buildControllerWith(new InMemoryUserRepository())
+
+    const result = await sut.handle(rawInput)
+
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('email')
+    expect(errorLog).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['nullの', null],
+    ['undefinedの', undefined],
+    ['文字列の', 'not-an-object'],
+    ['配列の', ['user-001', 'user@example.com']]
+  ])(
+    'リクエストボディが%s場合に技術的例外にせず直し方が伝わるメッセージを返す',
+    async (_label, rawInput) => {
+      const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const sut = buildControllerWith(new InMemoryUserRepository())
+
+      const result = await sut.handle(rawInput)
+
+      expect(result.ok).toBe(false)
+      expect(errorLog).not.toHaveBeenCalled()
+    }
+  )
 })
