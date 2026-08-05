@@ -51,6 +51,7 @@ export class EventNotificationS3Bucket extends Construct {
     -------------------------------------------------------------------------- */
     const bucket = new s3.Bucket(this, 'Bucket', {
       ...props,
+      // 置くのは通知の起点となる一時データだけで、失っても復元が要らないため全環境で削除する
       autoDeleteObjects: props.autoDeleteObjects ?? true,
       removalPolicy: props.removalPolicy ?? RemovalPolicy.DESTROY,
       encryption: props.encryption ?? s3.BucketEncryption.S3_MANAGED,
