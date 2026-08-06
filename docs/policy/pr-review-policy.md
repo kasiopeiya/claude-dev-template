@@ -131,6 +131,32 @@ PRレビューは開発のボトルネックになりやすい。レビュー待
 
 複数のラベルが付いたPRは、最も厚いレビュー方針を採る。迷ったときも、より厚いレビュー方針を選ぶ。
 
+```mermaid
+flowchart TD
+    PR([📤 PR を出す]) --> Gate{❓ 前提条件を満たすか}
+    Gate -->|欠けている| Reject[↩️ レビューを拒否し差し戻す]
+    Reject --> PR
+    Gate -->|満たす| AI[🤖 AI セルフレビュー<br/>どの方針でも必ず実施]
+    AI --> Decide{❓ ラベル × レビュイーの経験}
+    Decide --> Thick[👀 承認後マージ]
+    Decide --> Mid[📝 事後レビュー]
+    Decide --> Thin[⚡ レビューなし]
+    Thick --> Merge([🎉 マージ])
+    Mid --> Merge
+    Thin --> Merge
+    Multi[/🏷️ 複数ラベル・迷ったときは<br/>厚い方針へ寄せる/] -.-> Decide
+
+    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef terminal fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef warn fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+
+    class AI,Thick,Mid,Thin,Multi step
+    class Gate,Decide decision
+    class PR,Merge terminal
+    class Reject warn
+```
+
 ---
 
 ## PRは小さく保つほどレビュー品質が上がる

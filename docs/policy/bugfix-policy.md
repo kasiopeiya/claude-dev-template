@@ -41,6 +41,27 @@
 6. **3 で書いたテストが通ることを確認する。** これで修正の有効性が証明される
 7. **既存の全テストを実行し、修正が他を壊していないかを確認する。** 1つのバグを直して別の機能を壊しては意味がない。全テストの緑をもって完了とする
 
+```mermaid
+flowchart TD
+    Start([🐛 バグ Issue]) --> Repro[🔁 手元で再現させる]
+    Repro --> Narrow[🔍 原因を最小まで絞り込む]
+    Narrow --> Write[✍️ 最小単位の再現テストを書く]
+    Write --> Red{❓ そのテストは落ちるか}
+    Red -->|落ちない＝バグを捉えていない| Narrow
+    Red -->|落ちる| Fix[🔧 プロダクトコードを直す]
+    Fix --> Green[✅ 再現テストが通ることを確認]
+    Green --> All[🧪 既存の全テストを実行]
+    All --> Done([🎉 修正完了])
+
+    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef terminal fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+
+    class Repro,Narrow,Write,Fix,Green,All step
+    class Red decision
+    class Start,Done terminal
+```
+
 ### なぜ「再現テストを先に書く」のか
 
 バグ修正は本質的に**「当て物」**である。どこが原因かを推測してから直すしかなく、**「ここが原因だと思って修正したら、全然違う場所が原因だった」**という事故が起こりやすい。再現テストを先に書くことは、この推測（当て）を修正前に検証可能にし、的外れな修正を炙り出すためのアプローチである。

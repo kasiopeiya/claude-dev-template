@@ -91,6 +91,27 @@ const endpoint = config.apiEndpoint
 
 環境差分の値をどこで決めるかと、アプリがどう受け取るかは別レイヤーの関心である。アプリ側は「アプリでの受け取り方」の config モジュールで受け取り、**値そのものの決定には関与しない**。
 
+```mermaid
+flowchart LR
+    Deploy[🏗️ デプロイ層<br/>値を決める] -->|供給| Env[(🌐 環境変数など)]
+    Env --> Config[⚙️ config モジュール<br/>読む・検証する・型を付ける]
+    Config --> Gate{❓ 必須の値が揃っているか}
+    Gate -->|欠損・不正| Fail([❌ 起動時に落とす])
+    Gate -->|揃っている| Typed[📦 型付きの構成値]
+    Typed --> App[🧩 アプリの各モジュール]
+    Env -. ❌ 直接は読まない .-> App
+
+    classDef supply fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef boundary fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+
+    class Deploy,Env supply
+    class Config,Typed,App boundary
+    class Gate decision
+    class Fail error
+```
+
 | 関心             | 担当                                                               | 本ポリシーの扱い     |
 | ---------------- | ------------------------------------------------------------------ | -------------------- |
 | 値の決定（SSOT） | デプロイ層（供給元）                                               | 供給元の選択は範囲外 |

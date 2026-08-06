@@ -169,6 +169,24 @@ hook:
 - 追跡列：業務一覧に「関連ビジネスルールID」、入出力情報一覧に「利用業務」、システム化機能一覧に「対象業務（または業務維持／基盤）」、受入基準に「検証対象」。
 - これにより要件から後工程（Issue・テスト・データモデル）まで一貫してたどれる。
 
+```mermaid
+flowchart LR
+    IO[📦 入出力情報一覧] -->|利用業務| Gyomu[📋 業務一覧]
+    Func[⚙️ システム化機能一覧] -->|対象業務| Gyomu
+    Gyomu -->|関連ビジネスルールID| Rule[📐 ビジネスルール一覧]
+    Accept[✅ 受入基準] -->|検証対象：業務名| Gyomu
+    Accept -->|検証対象：機能ID| Func
+    Accept -->|検証対象：SLO・非機能の分類名| NF[📊 非機能要件]
+
+    classDef hub fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef table fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef verify fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+
+    class Gyomu hub
+    class IO,Func,Rule,NF table
+    class Accept verify
+```
+
 ### エコシステムマップ
 
 開発対象を1つの黒箱として中央に置き、取り巻く外部アクター（ユーザー・関係組織・外部サービス）との関係と授受（データ・価値）を1枚で俯瞰する。スコープ境界の明確化・影響範囲のモレ防止・非エンジニアとの共通言語を担う。
