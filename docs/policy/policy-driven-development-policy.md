@@ -27,7 +27,51 @@ hook:
 | **ガードレール**（静的解析・メトリクス・テスト・hook） | rules のうち、機械が合否を出せるもの         | 機械が落とす          |
 | **CLAUDE.md**（リポジトリ内の各ディレクトリ）          | 発火点を機械が判定できない、常時効く指示     | AI が毎回読む         |
 
-図にはしない。並びは分岐もループも持たず、表のままで一目で掴めるため（逆変換テスト）。
+## 置き場所は、上から順に問いを通して決める
+
+以降の各節は、この手順の1つの問いを担う。
+
+```mermaid
+flowchart TD
+    Start(["新しい判断基準を書きたい"]) --> Q1{"コードをどう書くかの話か"}
+
+    Q1 -->|Yes| Rules["📄 rules"]
+    Q1 -->|No| Q2{"判断が割れる事柄への<br/>立場・なぜか"}
+
+    Rules --> Q3{"決定論的に合否を出せるか"}
+    Q3 -->|No| RulesOnly["📄 rules だけで守る"]
+    Q3 -->|Yes| Guard["⚙️ ガードレールも同じ作業で実装<br/>rules は残す"]
+
+    Guard --> Q4{"残ったものを後から見て<br/>判定できるか"}
+    Q4 -->|"Yes・既定"| CI["✅ 後段のゲート CI"]
+    Q4 -->|No| Q5{"hook にしてよい役割か"}
+    Q5 -->|Yes| Hook["🪝 hook"]
+    Q5 -->|No| Prose["📝 Skill・CLAUDE.md に書く<br/>確率論に落とす"]
+
+    Q2 -->|Yes| Policy["📘 Policy"]
+    Q2 -->|"No・常時効く指示"| Q7{"発火点を何で言えるか"}
+
+    Policy --> Q6{"発火点をファイルパスで言えるか"}
+    Q6 -->|Yes| Applies["🔗 applies-to を付ける"]
+    Q6 -->|"No・行為で発火"| NoApplies["hook・Skill・CLAUDE.md に<br/>読ませる責任を渡す"]
+
+    Q7 -->|コマンド| Hook
+    Q7 -->|"Skill 名"| SkillPlace["🛠️ その Skill"]
+    Q7 -->|"どれでも言えない"| Claude["📕 CLAUDE.md<br/>6,000字上限"]
+    Claude --> Q8{"上限を超えたか"}
+    Q8 -->|Yes| Move["圧縮せず移す"]
+    Move --> Start
+
+    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef place fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef machine fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef weak fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+
+    class Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8 decision
+    class Rules,RulesOnly,Policy,Applies,NoApplies,SkillPlace,Claude,Move place
+    class Guard,CI,Hook machine
+    class Prose weak
+```
 
 ## 「なぜ」は自前で作らず、上位原則から引く
 
@@ -154,7 +198,7 @@ hook は魅力的に見える。その場で止めて、書いた本人にすぐ
 | 対象を絞れない | 発火条件はツール単位でしか書けない。コマンドを検査する hook は、無関係なコマンドの実行にも全部乗る                                                  |
 | 積み上がる     | 増えても誰も困らないので減らない。1本ずつは軽くても、全ツール実行に課される固定費として積み上がる                                                   |
 
-後段のゲートにこれは無い。変更したときに1回走り、落ちれば必ず見える。**だから hook にするのは、後段のゲートでは原理的に届かないときだけにする。** シフトレフトの利得は、上の代償を常には上回らない（「すべてはトレードオフ」）。
+後段のゲートにこれは無い。変更したときに1回走り、落ちれば必ず見える。**だから hook にするのは、後段のゲートでは原理的に届かないときだけにする。** 後段が見られるのは残ったものだけである。残らないもの、その瞬間にしか無いものは、後段からは判定できない。これが「届かない」の中身である。 シフトレフトの利得は、上の代償を常には上回らない（「すべてはトレードオフ」）。
 
 ### hook にしてよい役割
 
