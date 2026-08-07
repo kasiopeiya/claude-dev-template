@@ -13,6 +13,14 @@
 //   必須／条件付き項目の一覧は requirements-doc-policy.md の「項目一覧」から、
 //   非機能要件の分類は non-functional-requirement-items.md の見出しから、実行時に抽出する。
 //   抽出できなければ判定できないので、それも違反として落とす。
+//
+// 属性突合だけは違反にせず警告にする（Issue #268）:
+//   入出力情報一覧の `内容` 列にあってビジネスルール一覧に一度も現れない属性名は、警告として出すだけで
+//   exit code を変えない。ルールの不在は読んでも目に入らないので探索は機械の仕事だが、
+//   `内容` 列からの属性名の切り出しは自然文のパースで、ID 参照のように一意には決まらない。
+//   機械が違反として落とすと偽陽性で執筆が止まるため、探索は機械・判定は AI と役割を分ける。
+//   同じ理由で ASPECTS には載せない——載せると AI レビューが担当から外し、誰も判定しなくなる。
+//   区切り文字などの切り出し規則は contentAttributes に書いてある。
 
 import { existsSync, readFileSync } from 'fs'
 import { dirname, join, resolve } from 'path'
@@ -137,6 +145,9 @@ const ID_REFERENCES = [
 
 // 「参照が無い」ことを明示したセル。書き忘れの空セルとは区別する（policy「空欄にすると書き忘れと区別できない」）
 const NO_REFERENCE_TOKENS = new Set(['—', '–', '-', 'ー', 'なし', '該当なし', 'N/A', 'n/a'])
+
+// 属性名として拾わない語。列挙の締めくくりであって、ルールを引く対象にならない
+const NON_ATTRIBUTE_TOKENS = new Set(['等', 'など', 'ほか', '他', 'その他', '一式', '各種'])
 
 // 空欄を許さない列。policy が「無いと書き忘れと区別できない」と名指しするもの
 const NON_EMPTY_COLUMNS = ['出所', '送り手', '受け手', '解決の相手', '解消期限', '検証対象']
@@ -501,6 +512,60 @@ function checkIdReferences(doc, tables) {
   }
 
   return violations
+}
+
+/**
+ * 入出力情報一覧の `内容` 列から属性名を切り出す。
+ *
+ * 区切りは読点・カンマ・中黒・スラッシュ・縦棒・改行タグ・空白。丸括弧の補足（`会員ID（8桁）`）は
+ * 属性名ではないので落とす。切り出しは自然文のパースなので、取りこぼしも取りすぎも起きる。
+ * だから結果は違反ではなく警告に留める（ファイル冒頭の注記）。
+ *
+ * @param {string} cell `内容` セルの値
+ * @returns {string[]} 属性名
+ */
+function contentAttributes(cell) {
+  return normalizeCell(cell)
+    .replace(/<br\s*\/?>/gi, '、')
+    .replace(/[（(][^）)]*[）)]/g, ' ')
+    .split(/[、，,／/・|｜\s]+/)
+    .map((token) => token.trim())
+    .filter(
+      (token) => token !== '' && !NO_REFERENCE_TOKENS.has(token) && !NON_ATTRIBUTE_TOKENS.has(token)
+    )
+}
+
+/**
+ * ビジネスルールが1行も無い属性を警告として集める。
+ *
+ * ルールの不在は読んでも目に入らないが、`内容` 列の属性名とビジネスルール一覧の語の差集合を取るのは
+ * 機械の仕事である（policy「あるべきルールの不在の判定」）。同じ属性が複数行に現れても警告は1件にまとめる。
+ *
+ * @param {{ source: string }} input 対象の全文
+ * @returns {{ line: number, message: string, quote: string }[]} 警告（違反ではない）
+ */
+export function findAttributeWarnings({ source }) {
+  const doc = parseMarkdown(source)
+  const { tables } = checkTableDefinitions(doc)
+  if (!tables.io || !tables.businessRule) return []
+
+  const ruleText = tables.businessRule.rows.map((row) => row.cells.join(' ')).join('\n')
+  const warnings = []
+  const seen = new Set()
+
+  for (const cell of columnCells(tables.io, '内容')) {
+    for (const attribute of contentAttributes(cell.value)) {
+      if (seen.has(attribute) || ruleText.includes(attribute)) continue
+      seen.add(attribute)
+      warnings.push({
+        line: cell.line,
+        message: `「${attribute}」を縛るビジネスルールがビジネスルール一覧に1行も無い`,
+        quote: (doc.lines[cell.line - 1] ?? '').trim()
+      })
+    }
+  }
+
+  return warnings
 }
 
 /**
@@ -1000,6 +1065,29 @@ export function findViolations({ source, policySource, catalogSource }) {
   return violations.sort((left, right) => left.line - right.line)
 }
 
+/**
+ * 警告を出力する。違反と混ぜないよう見出しで分け、exit code を変えないことを出力自体に書く。
+ *
+ * @param {string} targetPath 対象パス
+ * @param {{ line: number, message: string, quote: string }[]} warnings 警告
+ */
+function printWarnings(targetPath, warnings) {
+  if (warnings.length === 0) return
+
+  console.log(
+    `\n[警告] ビジネスルールが1行も無い属性が ${warnings.length} 件あります（違反ではありません。exit code は変わりません）。`
+  )
+  for (const warning of warnings) {
+    console.log(`\n  ${targetPath}:${warning.line}`)
+    console.log(`    ${warning.message}`)
+    console.log(`    原文: ${warning.quote}`)
+  }
+  console.log(
+    '\n  これは候補です。属性名の切り出しは自然文のパースなので、ルールが不要な語や表記の違うルールが混じります。'
+  )
+  console.log('  違反かどうかは AI レビューが本文を読んで判定します。')
+}
+
 /** 判定した観点名を出力する。AI レビューはこの一覧を担当から外す */
 function printAspects() {
   console.log('\nこのスクリプトが判定した観点:')
@@ -1030,14 +1118,17 @@ function main() {
     return
   }
 
+  const source = readFileSync(absolutePath, 'utf8')
   const violations = findViolations({
-    source: readFileSync(absolutePath, 'utf8'),
+    source,
     policySource: readRepoFile(POLICY_PATH),
     catalogSource: readRepoFile(NON_FUNCTIONAL_CATALOG_PATH)
   })
+  const warnings = findAttributeWarnings({ source })
 
   if (violations.length === 0) {
     console.log(`${targetPath} は機械判定した観点をすべて満たしています。`)
+    printWarnings(targetPath, warnings)
     printAspects()
     return
   }
@@ -1048,6 +1139,7 @@ function main() {
     console.error(`    ${violation.message}`)
     console.error(`    原文: ${violation.quote}`)
   }
+  printWarnings(targetPath, warnings)
   printAspects()
   process.exit(1)
 }
