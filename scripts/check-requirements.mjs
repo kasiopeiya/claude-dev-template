@@ -702,7 +702,7 @@ function checkEmptyCells(doc) {
  * @returns {object[]} 違反
  */
 function checkPriorityReason(doc, table) {
-  if (columnIndex(table, '優先度') === -1) return []
+  if (columnIndex(table, '優先度') <= 0) return []
 
   const reasonColumn = table.headers.find((header) => header.includes('理由'))
   if (!reasonColumn) {
