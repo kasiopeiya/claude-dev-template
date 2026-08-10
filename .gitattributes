@@ -1,0 +1,4 @@
+# Windows の Git は既定が core.autocrlf=true で、checkout 時に作業ツリーが CRLF になる。
+# すると Prettier（endOfLine の既定は lf）が全ファイルを LF に書き戻し、
+# `npm run format` のたびに全件が modified 表示になる。これを防ぐため作業ツリーの改行を LF に固定する。
+* text=auto eol=lf
