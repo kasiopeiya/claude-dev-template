@@ -15,7 +15,7 @@
 //   抽出できなければ判定できないので、それも違反として落とす。
 //
 // 属性突合だけは違反にせず警告にする（Issue #268）:
-//   入出力情報一覧の `内容` 列にあってビジネスルール一覧に一度も現れない属性名は、警告として出すだけで
+//   入出力情報一覧の `内容` 列にあって属性の値制約一覧・ビジネスルール一覧に一度も現れない属性名は、警告として出すだけで
 //   exit code を変えない。ルールの不在は読んでも目に入らないので探索は機械の仕事だが、
 //   `内容` 列からの属性名の切り出しは自然文のパースで、ID 参照のように一意には決まらない。
 //   機械が違反として落とすと偽陽性で執筆が止まるため、探索は機械・判定は AI と役割を分ける。
@@ -75,6 +75,11 @@ const TABLE_SPECS = [
     columns: ['ID', 'ルール名', 'ルール内容', 'タイプ', '関連ルール', '出所']
   },
   {
+    key: 'attributeConstraint',
+    heading: '属性の値制約一覧',
+    columns: ['ID', '属性名', '取りうる値', '必須・任意', '桁', '形式', '関連ルール', '出所']
+  },
+  {
     key: 'functionList',
     heading: 'システム化機能一覧',
     // 優先度は受入基準のカバレッジを差集合で判定するために要る（policy「優先順位」は列に持たせることを許す）
@@ -97,7 +102,7 @@ const TABLE_SPECS = [
   {
     key: 'businessTask',
     heading: '業務一覧',
-    columns: ['概要', 'システム化区分', '関連ビジネスルールID']
+    columns: ['概要', 'システム化区分', '関連ルールID']
   },
   {
     key: 'acceptance',
@@ -130,16 +135,25 @@ const TABLE_SPECS = [
   }
 ]
 
-/** ID を列挙する列 → 参照先の表と列。書けるのは参照先に実在する ID だけ（policy「相互参照」） */
+/**
+ * ID を列挙する列 → 参照先の表と列。書けるのは参照先に実在する ID だけ（policy「相互参照」）。
+ * `to` が複数あるのは、ルールの ID が `BR-`（ビジネスルール一覧）と `AC-`（属性の値制約一覧）に分かれており、
+ * 参照側はどちらも引けるため（policy「属性の値制約一覧」）。
+ */
 const ID_REFERENCES = [
-  { from: 'functionSpec', column: '入力', to: 'io', toLabel: '入出力情報一覧' },
-  { from: 'functionSpec', column: '出力', to: 'io', toLabel: '入出力情報一覧' },
-  { from: 'functionSpec', column: '適用ルール', to: 'businessRule', toLabel: 'ビジネスルール一覧' },
+  { from: 'functionSpec', column: '入力', to: ['io'], toLabel: '入出力情報一覧' },
+  { from: 'functionSpec', column: '出力', to: ['io'], toLabel: '入出力情報一覧' },
+  {
+    from: 'functionSpec',
+    column: '適用ルール',
+    to: ['businessRule', 'attributeConstraint'],
+    toLabel: 'ビジネスルール一覧・属性の値制約一覧'
+  },
   {
     from: 'businessTask',
-    column: '関連ビジネスルールID',
-    to: 'businessRule',
-    toLabel: 'ビジネスルール一覧'
+    column: '関連ルールID',
+    to: ['businessRule', 'attributeConstraint'],
+    toLabel: 'ビジネスルール一覧・属性の値制約一覧'
   }
 ]
 
@@ -493,10 +507,12 @@ function checkIdReferences(doc, tables) {
 
   for (const reference of ID_REFERENCES) {
     const source = tables[reference.from]
-    const target = tables[reference.to]
-    if (!source || !target) continue
+    const targets = reference.to.map((key) => tables[key]).filter(Boolean)
+    if (!source || targets.length === 0) continue
 
-    const validIds = new Set(columnCells(target, 'ID').map((cell) => cell.value))
+    const validIds = new Set(
+      targets.flatMap((target) => columnCells(target, 'ID').map((cell) => cell.value))
+    )
     for (const cell of columnCells(source, reference.column)) {
       for (const token of referenceTokens(cell.value)) {
         if (validIds.has(token)) continue
@@ -536,9 +552,9 @@ function contentAttributes(cell) {
 }
 
 /**
- * ビジネスルールが1行も無い属性を警告として集める。
+ * 値制約のルールが1行も無い属性を警告として集める。
  *
- * ルールの不在は読んでも目に入らないが、`内容` 列の属性名とビジネスルール一覧の語の差集合を取るのは
+ * ルールの不在は読んでも目に入らないが、`内容` 列の属性名と、属性の値制約一覧・ビジネスルール一覧の語の差集合を取るのは
  * 機械の仕事である（policy「あるべきルールの不在の判定」）。同じ属性が複数行に現れても警告は1件にまとめる。
  *
  * @param {{ source: string }} input 対象の全文
@@ -547,9 +563,14 @@ function contentAttributes(cell) {
 export function findAttributeWarnings({ source }) {
   const doc = parseMarkdown(source)
   const { tables } = checkTableDefinitions(doc)
-  if (!tables.io || !tables.businessRule) return []
+  if (!tables.io || !tables.attributeConstraint) return []
 
-  const ruleText = tables.businessRule.rows.map((row) => row.cells.join(' ')).join('\n')
+  // 属性の値制約は属性の値制約一覧が持つが、多重度など属性名を含むルールはビジネスルール一覧にも載る。
+  // 片方だけを見ると、もう片方に書かれた属性を「ルール無し」と誤って拾う
+  const ruleText = [tables.attributeConstraint, tables.businessRule]
+    .filter(Boolean)
+    .flatMap((table) => table.rows.map((row) => row.cells.join(' ')))
+    .join('\n')
   const warnings = []
   const seen = new Set()
 
@@ -559,7 +580,7 @@ export function findAttributeWarnings({ source }) {
       seen.add(attribute)
       warnings.push({
         line: cell.line,
-        message: `「${attribute}」を縛るビジネスルールがビジネスルール一覧に1行も無い`,
+        message: `「${attribute}」を縛るルールが属性の値制約一覧・ビジネスルール一覧のどちらにも1行も無い`,
         quote: (doc.lines[cell.line - 1] ?? '').trim()
       })
     }
@@ -1107,7 +1128,7 @@ function printWarnings(targetPath, warnings) {
   if (warnings.length === 0) return
 
   console.log(
-    `\n[警告] ビジネスルールが1行も無い属性が ${warnings.length} 件あります（違反ではありません。exit code は変わりません）。`
+    `\n[警告] 値制約のルールが1行も無い属性が ${warnings.length} 件あります（違反ではありません。exit code は変わりません）。`
   )
   for (const warning of warnings) {
     console.log(`\n  ${targetPath}:${warning.line}`)
