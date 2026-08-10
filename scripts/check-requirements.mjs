@@ -626,6 +626,21 @@ function checkAcceptanceTargets(doc, tables, classifications) {
 }
 
 /**
+ * テキストが ID を含むかを、後続が数字・ハイフンでないことまで見て判定する。
+ * 素の部分一致だと `F-10` を含む文が `F-1` もカバー済みと見なし、機能の漏れを見逃す。
+ *
+ * @param {string} text 探す先の文字列
+ * @param {string} id 機能ID
+ * @returns {boolean} ID を含むか
+ */
+function containsId(text, id) {
+  for (let index = text.indexOf(id); index !== -1; index = text.indexOf(id, index + 1)) {
+    if (!/[0-9０-９-]/.test(text[index + id.length] ?? '')) return true
+  }
+  return false
+}
+
+/**
  * 受入基準が Must・Should の機能を漏れなくカバーしているかを差集合で検査する。
  *
  * @param {object} doc parseMarkdown の結果
@@ -650,13 +665,15 @@ function checkAcceptanceCoverage(doc, tables) {
   }
 
   const ids = columnCells(functionList, '機能ID')
-  const covered = new Set(
-    columnCells(acceptance, '検証対象').flatMap((cell) => referenceTokens(cell.value))
-  )
+  // 照合は checkAcceptanceTargets と同じ部分一致にする。同じ列を見る2つの検査が違う基準で判定すると、
+  // 「F-01の正常系が動くこと」のような検証対象が、片方は通り片方は落ちる
+  const targets = columnCells(acceptance, '検証対象').map((cell) => cell.value)
 
   return mustCover
     .map((cell) => ids.find((id) => id.line === cell.line))
-    .filter((id) => id && id.value !== '' && !covered.has(id.value))
+    .filter(
+      (id) => id && id.value !== '' && !targets.some((target) => containsId(target, id.value))
+    )
     .map((id) =>
       violationAt(doc, {
         aspect: ASPECTS.acceptanceCoverage,
@@ -930,11 +947,26 @@ function checkRequiredDiagrams(doc, diagramNames) {
 function checkFormats(doc, tables) {
   const violations = []
 
-  for (const { text, line } of doc.textLines) {
+  // 表のセルは textLines に入らないので、走査対象へ明示的に足す。
+  // セル単位で当てるのは、行を連結すると無関係な列の語が共起してしまうため
+  // （ビジネスルールの「100円で1ポイント」が、別列の「初期費用検討会」と結合して金額違反になる）。
+  // 「制約と前提」の表だけは行を連結して当てる。金額・工数はここに最も混入しやすく、
+  // かつ費用の語（初期費用）と数値（500万円）が別の列に分かれて書かれるため、セル単位では届かない。
+  const estimateTargets = [
+    ...doc.textLines.map(({ text, line }) => ({ text, line })),
+    ...doc.tables.flatMap((table) =>
+      table.rows.flatMap((row) => row.cells.map((cell) => ({ text: cell, line: row.line })))
+    ),
+    ...(tables.constraint?.rows ?? []).map((row) => ({ text: row.cells.join(' '), line: row.line }))
+  ]
+
+  // 「制約と前提」の行は連結とセルの両方で当たるので、同じ行・同じ内容の重複を落とす
+  const reported = new Set()
+  for (const { text, line } of estimateTargets) {
     for (const { pattern, message } of ESTIMATE_PATTERNS) {
-      if (pattern.test(text)) {
-        violations.push(violationAt(doc, { aspect: ASPECTS.format, line, message }))
-      }
+      if (!pattern.test(text) || reported.has(`${line}\t${message}`)) continue
+      reported.add(`${line}\t${message}`)
+      violations.push(violationAt(doc, { aspect: ASPECTS.format, line, message }))
     }
   }
 
