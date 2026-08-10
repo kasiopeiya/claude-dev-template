@@ -45,7 +45,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 | `issue:needs-human-decision` | 下記の名指し例外のいずれかに当たる             | 人間が1件ずつ方針を決める対象を選ぶ          |
 | `policy-gap`                 | 判定時に該当ポリシー・rules が見つからなかった | 後でポリシーを足す候補を拾う                 |
 
-`issue:needs-clean-session` は**起票時には付けない**。`/sweep` が着手したうえで観測した事実で貼るラベルなので、起票時には判断材料が無い。
+`issue:needs-clean-session` と `issue:decided` は**起票時には付けない**。前者は `/sweep` が着手したうえで観測した事実で貼り、後者は `/issue-decide` で人間が方針を決めたときに貼る。どちらも起票時には判断材料が無い。
 
 `ai-fixable` と `issue:needs-human-decision` は排他で、**必ずどちらか一方だけを付ける**。どちらも付かない Issue は、一斉対応からも個別相談からも漏れて誰の目にも触れなくなる。`policy-gap` はこの2値と直交する付加ラベルで、どちらに重ねてもよい。
 
