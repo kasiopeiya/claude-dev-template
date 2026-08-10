@@ -23,13 +23,13 @@ stateDiagram-v2
     Pending --> Decided: /issue-decide で人間が方針を決めた
     Pending --> Pending: /issue-decide で保留
     Pending --> [*]: /issue-decide で「対応しない」を選んだ
-    Fixable --> Pending: /sweep・/issue-check が名指し例外に当たると判定
+    Fixable --> Pending: /issue-check が名指し例外に当たると判定
     Decided --> Pending: /issue-check が方針をポリシー違反と判定
     Decided --> [*]: /sweep が実装して close
     Fixable --> [*]: /sweep が実装して close
 ```
 
-「決定済み」に `/sweep` からの差し戻しが無いのが要点である。人間が例外を承知で決めた方針を、同じ例外で押し戻さない。
+「決定済み」が名指し例外では押し戻されないのが要点である。人間が例外を承知で決めた方針を、同じ例外で戻さない。
 
 ## 前提
 
@@ -142,7 +142,7 @@ gh issue view <番号> --json body --jq .body | diff - <スクラッチパッド
 
 1. **「人間に決めてほしいこと」を削除し、同じ位置に「対応方針」を書く。** `/quick-issue` はこの2セクションを排他と定めている（[quick-issue のテンプレート](../quick-issue/SKILL.md)）。書式もそこに従う（採る案・根拠・却下した案）。
 2. 根拠に **「人間が決定（YYYY-MM-DD）」** を明記し、選ばれなかった案を「却下した案」へ移す。
-3. **タスク一覧から「案を人間が決める」タスクを消し、決まった案に沿って書き直す。** 残すと `/sweep` が着手できない。
+3. **タスク一覧から「案を人間が決める」タスクを消し、決まった案に沿って書き直す。** 残すと `/sweep` が何を直すか決められず、離脱する。
 4. 完了条件が案に依存していれば直す。
 
 ```bash
@@ -157,7 +157,7 @@ gh issue edit <番号> --add-label ai-fixable,issue:decided --remove-label issue
 
 Issue 番号を直接指定して処理し、`issue:needs-human-decision` が付いていなかったときは `--remove-label` を省く。
 
-`issue:decided` は「**人間が名指し例外を承知のうえで方針を決めた**」印である。これが無いと、`/sweep` と `issue-auditor-agent` が着手前に同じ名指し例外を再判定し、`issue:needs-human-decision` へ押し戻す。名指し例外の多くは作業そのものの性質（不可逆である・新設である）で、方針が決まっても消えないからである。
+`issue:decided` は「**人間が名指し例外を承知のうえで方針を決めた**」印である。これが無いと、`issue-auditor-agent` が同じ名指し例外を再判定し、`issue:needs-human-decision` へ押し戻す。名指し例外の多くは作業そのものの性質（不可逆である・新設である）で、方針が決まっても消えないからである。
 
 #### 決定をコメントで残す
 
