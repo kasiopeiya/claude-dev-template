@@ -1,0 +1,1421 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>初心者向けコーディングエージェント活用本質ガイド</title>
+    <style>
+      :root {
+        --ink: #1f2430;
+        --sub: #5b6272;
+        --line: #d8dce6;
+        --bg: #f6f7fa;
+        --card: #ffffff;
+        --human: #d97706;
+        --human-bg: #fff4e0;
+        --ai: #2563eb;
+        --ai-bg: #e7efff;
+        --key: #7c3aed;
+        --key-bg: #f1e9ff;
+        --ok: #059669;
+        --ok-bg: #e2f6ef;
+        --ng: #dc2626;
+        --ng-bg: #fdf3f3;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        line-height: 1.7;
+        padding: 40px 16px 80px;
+      }
+      .page {
+        max-width: 1060px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 26px;
+        letter-spacing: 0.02em;
+      }
+      .lead {
+        color: var(--sub);
+        margin-top: 8px;
+        font-size: 14px;
+      }
+      .banner {
+        display: inline-block;
+        margin-top: 12px;
+        background: var(--key-bg);
+        border: 1.5px solid var(--key);
+        border-radius: 999px;
+        padding: 5px 18px;
+        font-size: 14px;
+        color: var(--key);
+        font-weight: 700;
+      }
+
+      /* 目次 */
+      .toc {
+        margin-top: 20px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 18px 16px;
+        display: flex;
+        gap: 10px 24px;
+        flex-wrap: wrap;
+      }
+      .toc-col {
+        flex: 1 1 300px;
+      }
+      .toc-col > b {
+        display: block;
+        font-size: 11.5px;
+        letter-spacing: 0.06em;
+        color: var(--sub);
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 6px;
+      }
+      .toc ul {
+        margin: 8px 0 0;
+        padding-left: 18px;
+      }
+      .toc li {
+        font-size: 12.5px;
+        padding: 2.5px 0;
+      }
+      .toc a {
+        color: var(--ink);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--line);
+      }
+      .toc a:hover {
+        color: var(--key);
+        border-bottom-color: var(--key);
+      }
+
+      /* 部の帯 */
+      .part {
+        margin-top: 48px;
+        background: var(--ink);
+        color: #fff;
+        border-radius: 12px;
+        padding: 12px 20px;
+      }
+      .part .no {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        opacity: 0.7;
+      }
+      .part b {
+        display: block;
+        font-size: 17px;
+      }
+      .part p {
+        font-size: 12.5px;
+        opacity: 0.8;
+        margin-top: 2px;
+      }
+
+      section {
+        margin-top: 40px;
+      }
+      h2 {
+        font-size: 20px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--ink);
+      }
+      h2 .no {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--key);
+        letter-spacing: 0.08em;
+        margin-right: 10px;
+      }
+      .topic {
+        margin-top: 14px;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--key);
+        background: var(--key-bg);
+        border-left: 5px solid var(--key);
+        border-radius: 0 10px 10px 0;
+        padding: 12px 18px;
+      }
+      section p {
+        margin-top: 14px;
+        font-size: 14px;
+      }
+      section p.note {
+        font-size: 13px;
+        color: var(--sub);
+      }
+      h3 {
+        margin-top: 24px;
+        font-size: 15px;
+      }
+      b.hl {
+        background: linear-gradient(transparent 62%, #ffe8a3 62%);
+      }
+      .kill {
+        margin-top: 16px;
+        background: var(--ng-bg);
+        border: 1.5px solid var(--ng);
+        border-radius: 10px;
+        padding: 12px 16px;
+        font-size: 14px;
+      }
+      .kill b {
+        color: var(--ng);
+        font-size: 15px;
+      }
+      .kill p {
+        margin-top: 4px;
+        font-size: 13px;
+        color: var(--sub);
+      }
+      .keyline {
+        margin-top: 18px;
+        font-size: 14.5px;
+        font-weight: 700;
+        color: var(--key);
+        background: var(--key-bg);
+        border-radius: 10px;
+        padding: 12px 16px;
+        text-align: center;
+      }
+
+      /* 用語の補足 */
+      .aside {
+        margin-top: 16px;
+        background: var(--card);
+        border: 1px dashed var(--line);
+        border-left: 4px solid var(--sub);
+        border-radius: 0 10px 10px 0;
+        padding: 10px 16px;
+        font-size: 13px;
+        color: var(--sub);
+      }
+      .aside b {
+        color: var(--ink);
+      }
+
+      /* 表 */
+      table {
+        margin-top: 16px;
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--card);
+        font-size: 13px;
+      }
+      caption {
+        caption-side: top;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--sub);
+        padding-bottom: 6px;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 8px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: #eceff5;
+        font-size: 12px;
+        color: var(--sub);
+        white-space: nowrap;
+      }
+      td.ng {
+        color: var(--ng);
+      }
+      td.ok {
+        color: var(--ok);
+      }
+      tr.pick td {
+        background: var(--key-bg);
+        font-weight: 700;
+      }
+
+      /* 系譜チップ */
+      .chain {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .chain span {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 14px;
+        font-size: 12.5px;
+      }
+      .chain span.last {
+        border: 1.5px solid var(--key);
+        color: var(--key);
+        font-weight: 700;
+      }
+      .chain i {
+        color: var(--sub);
+        font-style: normal;
+      }
+
+      /* 図 */
+      .fig {
+        margin-top: 20px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 16px 14px;
+      }
+      .fig .cap-under {
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: var(--sub);
+        text-align: center;
+      }
+      .diag {
+        width: 100%;
+        max-width: 900px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        font-family: inherit;
+      }
+      .diag .box {
+        fill: #fbfcfe;
+        stroke: var(--line);
+        stroke-width: 1.5;
+      }
+      .diag .panel {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.5;
+      }
+      .diag .panel.bad {
+        stroke-dasharray: 6 5;
+      }
+      .diag .aibox {
+        fill: var(--ai-bg);
+        stroke: #b9cdf5;
+        stroke-width: 1.5;
+      }
+      .diag .humbox {
+        fill: var(--human-bg);
+        stroke: var(--human);
+        stroke-width: 1.5;
+      }
+      .diag .keybox {
+        fill: var(--key-bg);
+        stroke: var(--key);
+        stroke-width: 2;
+      }
+      .diag .okbox {
+        fill: var(--ok-bg);
+        stroke: var(--ok);
+        stroke-width: 1.5;
+      }
+      .diag .ngbox {
+        fill: var(--ng-bg);
+        stroke: #f0b4b4;
+        stroke-width: 1.5;
+      }
+      .diag .greybox {
+        fill: #eceff5;
+        stroke: #cfd5e0;
+        stroke-width: 1.5;
+      }
+      .diag .nm {
+        font-size: 15px;
+        font-weight: 700;
+        fill: var(--ink);
+      }
+      .diag .li {
+        font-size: 12.5px;
+        fill: var(--ink);
+      }
+      .diag .ex {
+        font-size: 11.5px;
+        fill: var(--sub);
+      }
+      .diag .cap {
+        font-size: 12.5px;
+        fill: var(--sub);
+      }
+      .diag .lab {
+        font-size: 11.5px;
+        font-weight: 700;
+        fill: var(--key);
+        paint-order: stroke;
+        stroke: #fff;
+        stroke-width: 4px;
+        stroke-linejoin: round;
+      }
+      .diag .lab.ng {
+        fill: var(--ng);
+      }
+      .diag .lab.ok {
+        fill: var(--ok);
+      }
+      .diag .hd {
+        font-size: 14px;
+        font-weight: 700;
+        fill: var(--ink);
+      }
+      .diag .hd.ng {
+        fill: var(--ng);
+      }
+      .diag .hd.ok {
+        fill: var(--ok);
+      }
+      .diag .e {
+        fill: none;
+        stroke: #98a0b0;
+        stroke-width: 1.8;
+        marker-end: url(#a-step);
+      }
+      .diag .e.ai {
+        stroke: var(--ai);
+        marker-end: url(#a-ai);
+      }
+      .diag .e.hum {
+        stroke: var(--human);
+        marker-end: url(#a-hum);
+      }
+      .diag .e.key {
+        stroke: var(--key);
+        marker-end: url(#a-key);
+      }
+      .diag .e.ok {
+        stroke: var(--ok);
+        marker-end: url(#a-ok);
+      }
+      .diag .e.ng {
+        stroke: var(--ng);
+        marker-end: url(#a-ng);
+      }
+      .diag .e.dash {
+        stroke-dasharray: 6 5;
+      }
+      .diag .axis {
+        stroke: var(--ink);
+        stroke-width: 2;
+        fill: none;
+      }
+      .diag .axis-t {
+        font-size: 12px;
+        font-weight: 700;
+        fill: var(--sub);
+      }
+
+      footer {
+        margin-top: 56px;
+        font-size: 11.5px;
+        color: var(--sub);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>初心者向けコーディングエージェント活用本質ガイド</h1>
+      <p class="lead">
+        これからコーディングエージェントを使い始めるソフトウェアエンジニアが、最初に押さえるべきことを掴むためのガイド。前提とする道具は
+        Claude Code。
+      </p>
+      <p class="banner">コーディングエージェントは、超ハイスペック新人である</p>
+
+      <nav class="toc">
+        <div class="toc-col">
+          <b>第1部 — 新人だと思えば、やることは決まる</b>
+          <ul>
+            <li><a href="#intro">序章：コーディングエージェントは、超ハイスペック新人である</a></li>
+            <li><a href="#s1">1. 人間の仕事は、AIが働きやすい環境を整備することである</a></li>
+            <li><a href="#s2">2. 目的を書け。手段はAIが知っている</a></li>
+            <li><a href="#s3">3. 自分の答案を、自分に採点させてはいけない</a></li>
+            <li><a href="#s4">4. 毎回指示するな。仕組みを作れ</a></li>
+          </ul>
+        </div>
+        <div class="toc-col">
+          <b>第2部 — ただし、新人とは決定的に違う</b>
+          <ul>
+            <li><a href="#s5">5. AIは増幅器である</a></li>
+            <li><a href="#s6">6. AIの記憶は、有限で、汚れていく</a></li>
+            <li><a href="#s7">7. AIは暴れ馬である。手綱を握るのが、あなたの仕事</a></li>
+            <li><a href="#last">終章：それでも、理解だけは委譲できない</a></li>
+          </ul>
+        </div>
+      </nav>
+
+      <!-- 矢印マーカー（文書全体で共有） -->
+      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <defs>
+          <marker
+            id="a-step"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#98a0b0" />
+          </marker>
+          <marker
+            id="a-ai"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#2563eb" />
+          </marker>
+          <marker
+            id="a-hum"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#d97706" />
+          </marker>
+          <marker
+            id="a-key"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#7c3aed" />
+          </marker>
+          <marker
+            id="a-ok"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#059669" />
+          </marker>
+          <marker
+            id="a-ng"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#dc2626" />
+          </marker>
+        </defs>
+      </svg>
+
+      <!-- ============ 序章 ============ -->
+      <section>
+        <h2 id="intro">序章：コーディングエージェントは、超ハイスペック新人である</h2>
+        <p class="topic">
+          コーディングエージェントは、何でも知っているのに、あなたの会社のことは何も知りません。
+        </p>
+
+        <p>
+          一般的な技術知識では、AIはすでに人間を超えています。言語も、ライブラリも、設計手法も、あなたより多く知っている。
+          それなのに、あなたの会社のルールも、プロダクトの事情も、去年その設計にした理由も、何ひとつ知りません。
+        </p>
+        <p>
+          この状態には、見慣れた名前があります。<b class="hl">新人</b>です。
+          だから最初にやることも同じ ──
+          <b>オンボーディング</b>。仕事の環境を用意し、目的を伝え、成果物を別の人に見てもらう。
+          人間の新人に対してやってきたことが、そのまま効きます。
+        </p>
+
+        <div class="aside">
+          <b>コーディングエージェント</b
+          >とは、指示を受けて、自分でファイルを読み書きし、コマンドを実行して作業を進めるAIのこと。
+          チャットに答えを出すだけのAIとの違いは、<b>手を動かすところ</b>にあります。
+        </div>
+
+        <h3>このガイドの読み方</h3>
+        <p>
+          ただし、新人のたとえはどこかで壊れます。壊れる場所を知らないまま使うと、事故になります。
+          そこでこのガイドは、<b>新人のたとえで説明できることを第1部</b>、<b>できないことを第2部</b>に分けました。
+        </p>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 470" role="img">
+            <title>
+              超ハイスペック新人というたとえから、たとえが効く第1部の4節と、たとえが効かない第2部の3節に分かれ、最後に終章へ合流する構成
+            </title>
+
+            <rect class="aibox" x="200" y="14" width="400" height="92" rx="12" />
+            <text class="nm" x="400" y="46" text-anchor="middle">🤖 コーディングエージェント</text>
+            <text class="li" x="400" y="70" text-anchor="middle">
+              何でも知っている。でも、あなたの会社のことは何も知らない
+            </text>
+            <text class="li" x="400" y="92" text-anchor="middle" fill="#2563eb">
+              ＝ 超ハイスペックな新人
+            </text>
+
+            <path class="e" d="M400,106 L400,124 L200,124 L200,138" />
+            <path class="e" d="M400,106 L400,124 L600,124 L600,138" />
+
+            <!-- 第1部 -->
+            <rect class="panel" x="16" y="142" width="376" height="224" rx="12" />
+            <text class="hd" x="36" y="172">第1部　新人だと思えば、やることは決まる</text>
+            <rect class="box" x="36" y="186" width="336" height="32" rx="7" />
+            <text class="li" x="52" y="207">1　AIが働きやすい環境を整える</text>
+            <rect class="box" x="36" y="222" width="336" height="32" rx="7" />
+            <text class="li" x="52" y="243">2　目的を書く。手段はAIが知っている</text>
+            <rect class="box" x="36" y="258" width="336" height="32" rx="7" />
+            <text class="li" x="52" y="279">3　答案を、本人に採点させない</text>
+            <rect class="box" x="36" y="294" width="336" height="32" rx="7" />
+            <text class="li" x="52" y="315">4　毎回指示せず、仕組みを作る</text>
+            <text class="ex" x="36" y="348">人間の新人にやってきたことが、そのまま効く</text>
+
+            <!-- 第2部 -->
+            <rect class="panel" x="408" y="142" width="376" height="224" rx="12" />
+            <text class="hd" x="428" y="172">第2部　ただし、新人とは決定的に違う</text>
+            <rect class="box" x="428" y="186" width="336" height="32" rx="7" />
+            <text class="li" x="444" y="207">5　AIは増幅器である</text>
+            <rect class="box" x="428" y="222" width="336" height="32" rx="7" />
+            <text class="li" x="444" y="243">6　記憶は有限で、汚れていく</text>
+            <rect class="box" x="428" y="258" width="336" height="32" rx="7" />
+            <text class="li" x="444" y="279">7　AIは暴れ馬である</text>
+            <text class="ex" x="428" y="348">たとえが壊れる場所。知らずに使うと事故になる</text>
+
+            <path class="e" d="M204,366 L204,388 L340,388 L340,404" />
+            <path class="e" d="M596,366 L596,388 L460,388 L460,404" />
+
+            <rect class="keybox" x="220" y="406" width="360" height="52" rx="12" />
+            <text class="nm" x="400" y="438" text-anchor="middle" fill="#7c3aed">
+              終章　理解だけは委譲できない
+            </text>
+          </svg>
+        </div>
+      </section>
+
+      <div class="part">
+        <span class="no">PART 1</span>
+        <b>新人だと思えば、やることは決まる</b>
+        <p>環境を整え、目的を伝え、採点役を分け、最後は仕組みに任せる。</p>
+      </div>
+
+      <!-- ============ 節1 ============ -->
+      <section>
+        <h2 id="s1">
+          <span class="no">01</span>人間の仕事は、AIが働きやすい環境を整備することである
+        </h2>
+        <p class="topic">AIの精度が悪いのは、あなたのせいかもしれません。</p>
+
+        <p>
+          出力がひどいとき、私たちはAIを疑います。でも原因は、たいてい<b class="hl">渡した情報</b
+          >の方にあります。
+          情報がAIに届いていないなら、どれだけ賢くても答えようがありません。壁は2つあります。
+        </p>
+
+        <h3>壁① 場所 ── 手が届かない情報は、無いのと同じ</h3>
+        <p>
+          個人のOneDrive、社内Wikiの奥、Slackの会話、そしてあなたの頭の中。
+          そこにある情報は、AIから見れば存在しません。
+        </p>
+
+        <h3>壁② 形式 ── 問うべきは「読めるか」ではない</h3>
+        <p>
+          今のAIはPDFもExcelも読めます。だから「AIが読める形式か」を基準にすると、判断を間違えます。
+          問題はその先です。情報は一度書いて終わりではなく、<b>探され、一部だけ読まれ、直され続ける</b>ものだからです。
+        </p>
+
+        <table>
+          <caption>
+            形式の違いは、書いた後に効いてくる
+          </caption>
+          <thead>
+            <tr>
+              <th></th>
+              <th>Markdown（テキスト）</th>
+              <th>PDF・Excel（バイナリ）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>探す</th>
+              <td class="ok">必要な箇所だけ検索して読める</td>
+              <td class="ng">まるごと読むしかない</td>
+            </tr>
+            <tr>
+              <th>直す</th>
+              <td class="ok">AI自身が直せる</td>
+              <td class="ng">AIが直せない</td>
+            </tr>
+            <tr>
+              <th>変更を見る</th>
+              <td class="ok">差分が見え、人間がレビューできる</td>
+              <td class="ng">何が変わったか見えない</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          つまり正しい基準は「AIが読める形式」ではなく、<b class="hl">AIが探せて、直せる形式</b
+          >です。
+        </p>
+
+        <div class="kill">
+          <b>Excel方眼紙・神Excelは、絶対にやめる</b>
+          <p>
+            結合セル・セルの色・配置で意味を表した文書は、テキストになった瞬間にその意味が落ちます。読み込めたのに、内容が伝わらない。
+            Excelは表計算の道具であって、ドキュメントの道具ではありません。
+          </p>
+        </div>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 400" role="img">
+            <title>
+              情報を「AIが手を伸ばせるか」と「探せて直せるか」の2軸で分類した4象限図。右上のリポジトリ内のMarkdownだけが目指す場所になる
+            </title>
+
+            <path class="axis" d="M120,40 L120,340 L770,340" />
+            <text class="axis-t" x="132" y="32">探せて、直せる ↑</text>
+            <text class="axis-t" x="768" y="366" text-anchor="end">AIが手を伸ばせる →</text>
+
+            <rect class="box" x="140" y="56" width="290" height="120" rx="10" />
+            <text class="hd" x="158" y="84">△ 形式は良いが、届かない</text>
+            <text class="ex" x="158" y="110">個人PCのメモ</text>
+            <text class="ex" x="158" y="132">社内Wikiの奥</text>
+            <text class="ex" x="158" y="154">Slackの会話</text>
+
+            <rect class="keybox" x="450" y="56" width="300" height="120" rx="10" />
+            <text class="hd" x="468" y="84" fill="#7c3aed">✅ ここに置く</text>
+            <text class="ex" x="468" y="110">リポジトリの中の Markdown</text>
+            <text class="ex" x="468" y="132">コードと同じ場所にある</text>
+            <text class="ex" x="468" y="154">検索・部分読み・修正・差分が全部できる</text>
+
+            <rect class="ngbox" x="140" y="196" width="290" height="120" rx="10" />
+            <text class="hd ng" x="158" y="224">✕ 最悪</text>
+            <text class="ex" x="158" y="250">個人OneDrive の Excel方眼紙</text>
+            <text class="ex" x="158" y="272">人の頭の中</text>
+            <text class="ex" x="158" y="294">AIから見れば、存在しない</text>
+
+            <rect class="box" x="450" y="196" width="300" height="120" rx="10" />
+            <text class="hd" x="468" y="224">△ 読めるが、直せない</text>
+            <text class="ex" x="468" y="250">リポジトリの中の PDF・Excel</text>
+            <text class="ex" x="468" y="272">まるごと読むしかない</text>
+            <text class="ex" x="468" y="294">直せない・差分が見えない</text>
+
+            <path class="e key dash" d="M600,192 L600,180" />
+            <text class="lab" x="612" y="188">まずここへ動かす</text>
+          </svg>
+          <p class="cap-under">
+            最初の仕事は、AIが探せて直せる形式で、AIが手を伸ばせる場所に情報を置くこと
+          </p>
+        </div>
+
+        <div class="keyline">
+          一度整えれば、以降すべての作業で効き続ける。いちばん費用対効果が高い投資です
+        </div>
+      </section>
+
+      <!-- ============ 節2 ============ -->
+      <section>
+        <h2 id="s2"><span class="no">02</span>目的を書け。手段はAIが知っている</h2>
+        <p class="topic">
+          カーナビに、曲がる場所を一つずつ教える人はいません。行き先を告げれば済むからです。
+        </p>
+
+        <p>
+          AIは手段を大量に知っています。言語、ライブラリ、設計手法、アルゴリズム。その量ではすでに人間を超えています。
+          一方で、AIは<b class="hl">目的を持ちません</b
+          >。何のためにやるのかを持っているのは、あなただけです。
+        </p>
+        <p>
+          目的が決まらなければ、手段は選べません。同じ「ログを出す」でも、障害調査のためか監査のためかで設計は変わります。
+          だから指示に書くのは「<b>何のために</b>」。「どうやるか」は書かなくていい ──
+          そちらはAIの方が詳しいのですから。
+        </p>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 320" role="img">
+            <title>
+              手順を渡すと成果物の質が指示した人の知識で頭打ちになるのに対し、目的を渡すとAIが複数の手段から選べるようになる対比
+            </title>
+
+            <!-- 左：手順を渡す -->
+            <rect class="panel bad" x="8" y="24" width="384" height="276" rx="12" />
+            <text class="hd ng" x="24" y="52">❌ 手段（手順）を渡す</text>
+
+            <rect class="humbox" x="24" y="68" width="160" height="48" rx="9" />
+            <text class="li" x="40" y="90">🧑 手順を指示</text>
+            <text class="ex" x="40" y="108">「try-catchを入れて」</text>
+            <path class="e" d="M104,118 L104,136" />
+            <rect class="aibox" x="24" y="140" width="160" height="48" rx="9" />
+            <text class="li" x="40" y="170">🤖 言われた通り作る</text>
+            <path class="e" d="M104,190 L104,208" />
+            <rect class="box" x="24" y="212" width="160" height="48" rx="9" />
+            <text class="li" x="40" y="242">📦 手順どおりの成果</text>
+
+            <path class="e ng dash" d="M196,150 L380,150" style="marker-end: none" />
+            <text class="lab ng" x="196" y="142">あなたの知識 ＝ 天井</text>
+            <text class="ex" x="196" y="176">あなたが知っているより</text>
+            <text class="ex" x="196" y="196">良い手段は、選ばれない</text>
+            <text class="ex" x="196" y="230">成果物の質が</text>
+            <text class="ex" x="196" y="250">頭打ちになる</text>
+
+            <!-- 右：目的を渡す -->
+            <rect class="panel" x="408" y="24" width="384" height="276" rx="12" />
+            <text class="hd ok" x="424" y="52">⭕ 目的（と制約）を渡す</text>
+
+            <rect class="humbox" x="424" y="68" width="164" height="48" rx="9" />
+            <text class="li" x="440" y="90">🧑 目的を伝える</text>
+            <text class="ex" x="440" y="108">＋ 守るべき制約</text>
+            <path class="e" d="M506,118 L506,136" />
+            <rect class="aibox" x="424" y="140" width="164" height="48" rx="9" />
+            <text class="li" x="440" y="170">🤖 手段を選ぶ</text>
+
+            <path class="e ai" d="M592,158 L616,132" />
+            <path class="e ai" d="M592,164 L616,164" />
+            <path class="e ai" d="M592,170 L616,196" />
+            <rect class="box" x="620" y="112" width="160" height="36" rx="7" />
+            <text class="ex" x="636" y="135">案A</text>
+            <rect class="okbox" x="620" y="148" width="160" height="36" rx="7" />
+            <text class="ex" x="636" y="171" fill="#059669">案B ← 最良を選ぶ</text>
+            <rect class="box" x="620" y="184" width="160" height="36" rx="7" />
+            <text class="ex" x="636" y="207">案C</text>
+
+            <path class="e ok" d="M700,222 L700,240 L620,240" />
+            <rect class="keybox" x="424" y="220" width="192" height="48" rx="9" />
+            <text class="li" x="440" y="250" fill="#7c3aed">📦 天井を超える成果</text>
+          </svg>
+        </div>
+
+        <table>
+          <caption>
+            同じ依頼を、手段で書くか目的で書くか
+          </caption>
+          <thead>
+            <tr>
+              <th>書き方</th>
+              <th>指示の例</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th class="ng">❌ 手段</th>
+              <td>この関数に try-catch を入れて</td>
+            </tr>
+            <tr class="pick">
+              <th>⭕ 目的</th>
+              <td>この処理が失敗したとき、利用者に何が起きたか分かるようにしたい</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p>
+          ただし<b>制約は書きます</b>。使ってよいライブラリ、守るべき規約、越えてはいけない予算。
+          制約は目的の一部であって、手段の指定ではありません。見分け方は簡単です ──
+          <b>越えてはいけない線を引くなら制約、やり方を決めるなら手段</b>。
+        </p>
+      </section>
+
+      <!-- ============ 節3 ============ -->
+      <section>
+        <h2 id="s3"><span class="no">03</span>自分の答案を、自分に採点させてはいけない</h2>
+        <p class="topic">
+          自分の書いた文章の誤字は見つからないのに、他人の文章の誤字はすぐ見つかる。AIも同じです。
+        </p>
+
+        <p>
+          AIは、自分が作ったものを甘く評価します。<b class="hl">自己偏愛バイアス</b
+          >と呼ばれる現象です。
+          理由は単純で、自分の出力を「正しい」という前提で読んでしまうから。人間が自分の文章を校正できないのと、同じ構造です。
+          そして同じ構造である以上、<b>意欲や指示の強さでは直りません</b>。
+        </p>
+        <p>
+          だから同じセッションで「レビューして」と頼んでも、意味のある指摘は出ません。返ってくるのは「問題ありません」です。
+          効かないのは<b>採点</b>だけで、「なぜこう書いたのか説明して」と聞くのは別物です。そちらは同じセッションでも効きます。
+        </p>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 300" role="img">
+            <title>
+              同じセッションで自己レビューさせると「問題ありません」しか返らないのに対し、成果物だけを別のAIに渡すと遠慮のない指摘が返る対比
+            </title>
+
+            <!-- 左：自己レビュー -->
+            <rect class="panel bad" x="8" y="24" width="384" height="252" rx="12" />
+            <text class="hd ng" x="24" y="52">❌ 同じセッションで自己レビュー</text>
+
+            <rect class="aibox" x="80" y="72" width="200" height="50" rx="9" />
+            <text class="li" x="98" y="103">🤖 作ったAI</text>
+            <path class="e ng" d="M284,88 C336,80 336,122 286,112" />
+            <text class="ex" x="298" y="86">自分で</text>
+            <text class="ex" x="298" y="128">採点する</text>
+
+            <path class="e" d="M180,124 L180,150" />
+            <rect class="box" x="60" y="154" width="240" height="46" rx="9" />
+            <text class="li" x="78" y="183">💬「問題ありません」</text>
+
+            <text class="ex" x="24" y="228">自分の出力を「正しい」前提で読んでいる</text>
+            <text class="ex" x="24" y="252">指示を強めても直らない</text>
+
+            <!-- 右：役を分ける -->
+            <rect class="panel" x="408" y="24" width="384" height="252" rx="12" />
+            <text class="hd ok" x="424" y="52">⭕ 作る役と、見る役を分ける</text>
+
+            <rect class="aibox" x="424" y="72" width="150" height="46" rx="9" />
+            <text class="li" x="440" y="101">🤖 作ったAI</text>
+            <path class="e" d="M578,95 L596,95" />
+            <rect class="box" x="600" y="72" width="176" height="46" rx="9" />
+            <text class="li" x="616" y="101">📦 成果物だけ渡す</text>
+
+            <path class="e" d="M688,120 L688,148" />
+            <rect class="okbox" x="560" y="152" width="216" height="58" rx="9" />
+            <text class="li" x="576" y="176">👥 別のAI（SubAgent）</text>
+            <text class="ex" x="576" y="198">会話の経緯を知らない</text>
+
+            <path class="e ok" d="M668,212 L668,232 L604,232" />
+            <rect class="keybox" x="424" y="212" width="176" height="46" rx="9" />
+            <text class="li" x="440" y="241" fill="#7c3aed">🔎 遠慮のない指摘</text>
+          </svg>
+        </div>
+
+        <div class="aside">
+          <b>SubAgent</b
+          >とは、元のセッションとは別に立ち上がる独立したAIのこと。会話の経緯を引き継がないので、作った側の都合を知りません。
+          <b>知らないことが、ここでは強みになります。</b>
+        </div>
+
+        <p>
+          さらに効く言い方があります ── 「<b class="hl"
+            >これは新人が書いたコードです。徹底的にレビューしてください</b
+          >」。 作者が自分ではないという前提を与えると、遠慮が消えます。
+        </p>
+        <p class="note">
+          これはAI特有の話ではありません。人間の開発でも、コードレビューやQAで役を分けてきました。同じ仕組みを、AIにも持ち込むだけです。
+        </p>
+      </section>
+
+      <!-- ============ 節4 ============ -->
+      <section>
+        <h2 id="s4"><span class="no">04</span>毎回指示するな。仕組みを作れ</h2>
+        <p class="topic">
+          新人が一人前になった合図は、あなたが席を外せるようになったことです。AIも同じです。
+        </p>
+
+        <p>
+          いまの使い方を思い出してください。あなたが指示する → AIが作る → あなたが見る →
+          また指示する。
+          <b class="hl">この輪の中に、あなたが座っています</b
+          >。AIは、あなたが次の一言を打つまで止まっています。
+        </p>
+        <p>
+          <b>Loop Engineering</b> とは、その席から降りることです。やることは一つ ──
+          <b class="hl">プロンプトを出す役を、人間からシステムへ移す</b>。 2026年6月に Addy Osmani
+          が名付けた考え方で、Claude Code を率いる Boris Cherny
+          も、プロンプトする相手はループの方だと述べています。
+        </p>
+
+        <div class="chain">
+          <span>Prompt ── モデルへの話し方</span>
+          <i>→</i>
+          <span>Context ── モデルに見せるもの</span>
+          <i>→</i>
+          <span>Harness ── 足場全体</span>
+          <i>→</i>
+          <span class="last">Loop ── 回し方</span>
+        </div>
+
+        <div class="aside">
+          <b>ハーネス</b
+          >とは、AIが仕事をするための足場一式のこと。読ませる文書、使える道具、守らせるルール、走らせる手順
+          ── Claude Code そのものと、あなたがリポジトリに置いた設定が、これにあたります。
+        </div>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 300" role="img">
+            <title>
+              人間が指示・確認の輪の中に座っている状態と、自動起動・作成・検証・記録が自律的に回り人間が輪の外に立つ状態の対比
+            </title>
+
+            <!-- 左：中にいる -->
+            <rect class="panel bad" x="8" y="24" width="384" height="252" rx="12" />
+            <text class="hd ng" x="24" y="52">❌ あなたが輪の中にいる</text>
+
+            <rect class="humbox" x="24" y="72" width="150" height="42" rx="9" />
+            <text class="li" x="40" y="99">🧑 指示する</text>
+            <rect class="aibox" x="202" y="72" width="150" height="42" rx="9" />
+            <text class="li" x="218" y="99">🤖 作る</text>
+            <rect class="humbox" x="202" y="158" width="150" height="42" rx="9" />
+            <text class="li" x="218" y="185">🧑 見る</text>
+            <rect class="humbox" x="24" y="158" width="150" height="42" rx="9" />
+            <text class="li" x="40" y="185">🧑 また指示する</text>
+
+            <path class="e" d="M178,93 L198,93" />
+            <path class="e" d="M277,118 L277,154" />
+            <path class="e" d="M198,179 L178,179" />
+            <path class="e" d="M99,154 L99,118" />
+
+            <text class="ex" x="24" y="230">🧑 この輪の中に、あなたが座っている</text>
+            <text class="ex" x="24" y="254">次の一言を打つまで、AIは止まっている</text>
+
+            <!-- 右：外に出る -->
+            <rect class="panel" x="408" y="24" width="384" height="252" rx="12" />
+            <text class="hd ok" x="424" y="52">⭕ 席から降りる（Loop Engineering）</text>
+
+            <rect class="okbox" x="424" y="72" width="150" height="42" rx="9" />
+            <text class="li" x="440" y="99">⏰ 自動で始まる</text>
+            <rect class="aibox" x="602" y="72" width="150" height="42" rx="9" />
+            <text class="li" x="618" y="99">🤖 作る</text>
+            <rect class="okbox" x="602" y="158" width="150" height="42" rx="9" />
+            <text class="li" x="618" y="185">👥 別のAIが検証</text>
+            <rect class="box" x="424" y="158" width="150" height="42" rx="9" />
+            <text class="li" x="440" y="185">📄 ファイルに残す</text>
+
+            <path class="e ok" d="M578,93 L598,93" />
+            <path class="e ok" d="M677,118 L677,154" />
+            <path class="e ok" d="M598,179 L578,179" />
+            <path class="e ok" d="M499,154 L499,118" />
+
+            <rect class="keybox" x="424" y="216" width="328" height="42" rx="9" />
+            <text class="li" x="440" y="243" fill="#7c3aed">🏁 完了条件を満たしたら、止まる</text>
+            <path class="e key" d="M677,202 L677,212" />
+          </svg>
+          <p class="cap-under">
+            ループが回るために要るのは4つ ── 自動起動・検証役・ディスク上の記憶・完了条件
+          </p>
+        </div>
+
+        <p>
+          注目してほしいのは<b>検証役</b>です。作った本人に採点させない（節3）が、そのままループの部品になっています。
+          そして<b>記憶は会話ではなくファイルに置く</b>。会話は次の周回へ渡せませんが、ファイルは渡せます。
+        </p>
+
+        <h3>人間の居場所が変わる</h3>
+        <table>
+          <caption>
+            ループに対して、人間がどこに立つか
+          </caption>
+          <thead>
+            <tr>
+              <th>立ち位置</th>
+              <th>やること</th>
+              <th>弱点</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>Human-in-the-Loop</th>
+              <td>ループの<b>中</b>で、成果物を一つずつ検品する</td>
+              <td>あなたが席を外せない</td>
+            </tr>
+            <tr class="pick">
+              <th>Human-on-the-Loop</th>
+              <td>ループの<b>外</b>で、レールを設計する</td>
+              <td>レールを作る手間が先に要る</td>
+            </tr>
+            <tr>
+              <th>ダークファクトリー</th>
+              <td>人間はコードを見ない</td>
+              <td>速いが、中身がブラックボックスになる</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>落とし穴を、先に知っておく</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>落とし穴</th>
+              <th>何が起きるか</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th>理解負債</th>
+              <td>コードは増えるのに、あなたの理解は増えない。技術的負債と違って警告が出ない</td>
+            </tr>
+            <tr>
+              <th>思考の放棄</th>
+              <td>回るのが快適で、自分の意見を持つのをやめる</td>
+            </tr>
+            <tr>
+              <th>コストの暴走</th>
+              <td>止め方のないループは、予算を溶かす</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="keyline">
+          ループを作る前に、止め方を決める。新しい時代の仕事は、指示を出すことではなくループを設計すること
+        </div>
+      </section>
+
+      <div class="part">
+        <span class="no">PART 2</span>
+        <b>ただし、新人とは決定的に違う</b>
+        <p>たとえが壊れるのは3か所 ── 真似る速さ、記憶の持ち方、そして手が止まらないこと。</p>
+      </div>
+
+      <!-- ============ 節5 ============ -->
+      <section>
+        <h2 id="s5"><span class="no">05</span>AIは増幅器である</h2>
+        <p class="topic">
+          ゴミしか作れない人がAIを使っても、ゴミを高速に作れるようになるだけです。
+        </p>
+
+        <p>
+          AIは既存のコードを見て、それに合わせて書きます。ここまでは人間の新人と同じです。
+          <b class="hl">違うのは倍率</b
+          >。新人が1日かけて真似る量を、AIは数分で真似ます。ここから先、たとえは効きません。
+        </p>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 300" role="img">
+            <title>
+              手本が汚ければ汚いコードが大量に、質が高ければ質の高いコードが大量に増える。増幅器は方向を選ばないことを示す図
+            </title>
+
+            <rect class="ngbox" x="16" y="46" width="240" height="66" rx="10" />
+            <text class="li" x="34" y="76">🗑 汚い手本が1つ</text>
+            <text class="ex" x="34" y="98">読めない・直せないコード</text>
+            <path class="e ng" d="M260,79 L300,79" />
+            <polygon
+              points="306,44 306,114 406,79"
+              fill="#fdf3f3"
+              stroke="#f0b4b4"
+              stroke-width="1.5"
+            />
+            <text class="li" x="330" y="85">🤖 ×</text>
+            <path class="e ng" d="M410,79 L450,79" />
+            <rect class="ngbox" x="470" y="38" width="300" height="66" rx="10" />
+            <rect class="ngbox" x="462" y="46" width="300" height="66" rx="10" />
+            <rect class="ngbox" x="454" y="54" width="300" height="66" rx="10" />
+            <text class="li" x="472" y="84">汚いコードが、大量に</text>
+            <text class="ex" x="472" y="106">数分で横展開される</text>
+
+            <text class="hd" x="400" y="158" text-anchor="middle">増幅器は、方向を選ばない</text>
+            <text class="cap" x="400" y="180" text-anchor="middle">
+              足し算ではなく掛け算。元がマイナスなら、大きなマイナスになる
+            </text>
+
+            <rect class="okbox" x="16" y="200" width="240" height="66" rx="10" />
+            <text class="li" x="34" y="230">✨ 質の高い手本が1つ</text>
+            <text class="ex" x="34" y="252">読めて、直せるコード</text>
+            <path class="e ok" d="M260,233 L300,233" />
+            <polygon
+              points="306,198 306,268 406,233"
+              fill="#e2f6ef"
+              stroke="#a9dfcb"
+              stroke-width="1.5"
+            />
+            <text class="li" x="330" y="239">🤖 ×</text>
+            <path class="e ok" d="M410,233 L450,233" />
+            <rect class="okbox" x="470" y="192" width="300" height="66" rx="10" />
+            <rect class="okbox" x="462" y="200" width="300" height="66" rx="10" />
+            <rect class="okbox" x="454" y="208" width="300" height="66" rx="10" />
+            <text class="li" x="472" y="238">質の高いコードが、大量に</text>
+            <text class="ex" x="472" y="260">同じ速さで横展開される</text>
+          </svg>
+        </div>
+
+        <p>
+          AIは、あなたの平均を引き上げてはくれません。<b class="hl">あなたの質を掛け算する</b
+          >だけです。
+          だから「最初が肝心」。最初の1ファイル、最初の1つの設計書に、いちばん時間をかけてください。
+        </p>
+
+        <div class="keyline">
+          今日からできること ──
+          新しいパターンは手本を1つだけ丁寧に作り、「これに倣って」と言う。10個まとめて作らせない
+        </div>
+
+        <p class="note">
+          起きるのはコードだけではありません。ドキュメントも、テストも、コミットメッセージも、同じように増幅されます。
+        </p>
+      </section>
+
+      <!-- ============ 節6 ============ -->
+      <section>
+        <h2 id="s6"><span class="no">06</span>AIの記憶は、有限で、汚れていく</h2>
+        <p class="topic">同じセッションで粘るほど、AIはバカになります。</p>
+
+        <p>
+          AIが一度に見られる情報には上限があります。会話を続けるほど、そこに過去のやり取りが積み上がっていきます。
+          そして2つのことが起きます ── <b>埋もれる</b>ことと、<b>汚れる</b>ことです。
+        </p>
+
+        <div class="aside">
+          <b>コンテキストウィンドウ</b>とは、AIが一度に見られる情報の上限のこと。
+          これまでの会話も、読んだファイルも、すべてここに載ります。載りきらなくなると、古いものから押し出されます。
+        </div>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 320" role="img">
+            <title>
+              会話が長くなるほどコンテキストが埋まり、最初の大事な指示が中央に押し込まれて見落とされ、捨てた案や失敗が残り続ける様子
+            </title>
+
+            <text class="ex" x="16" y="34">セッション序盤</text>
+            <rect class="box" x="150" y="18" width="600" height="44" rx="8" />
+            <rect x="152" y="20" width="150" height="40" rx="7" fill="#f1e9ff" />
+            <text class="ex" x="166" y="45" fill="#7c3aed">大事な指示</text>
+            <text class="ex" x="320" y="45">空きが多い ── 指示は端にあって、よく効く</text>
+
+            <text class="ex" x="16" y="116">しばらく続けた後</text>
+            <rect class="box" x="150" y="100" width="600" height="44" rx="8" />
+            <rect x="152" y="102" width="170" height="40" rx="7" fill="#eceff5" />
+            <text class="ex" x="166" y="127">やり取り</text>
+            <rect x="322" y="102" width="120" height="40" fill="#f1e9ff" />
+            <text class="ex" x="332" y="127" fill="#7c3aed">大事な指示</text>
+            <rect x="442" y="102" width="210" height="40" fill="#eceff5" />
+            <text class="ex" x="456" y="127">調査結果・試行錯誤</text>
+
+            <text class="ex" x="16" y="198">長く続けた後</text>
+            <rect class="box" x="150" y="182" width="600" height="44" rx="8" />
+            <rect x="152" y="184" width="228" height="40" rx="7" fill="#eceff5" />
+            <text class="ex" x="166" y="209">捨てた案・失敗した試行</text>
+            <rect x="380" y="184" width="96" height="40" fill="#f1e9ff" opacity="0.55" />
+            <text class="ex" x="386" y="209" fill="#7c3aed" opacity="0.8">大事な指示</text>
+            <rect x="476" y="184" width="272" height="40" rx="7" fill="#eceff5" />
+            <text class="ex" x="492" y="209">もう関係ない調査結果</text>
+
+            <path class="e ng" d="M428,252 L428,230" />
+            <text class="lab ng" x="428" y="272" text-anchor="middle">
+              真ん中に置かれた情報は、見落とされやすい（Lost in the Middle）
+            </text>
+            <text class="cap" x="400" y="302" text-anchor="middle">
+              上限は変わらないのに、中身だけが過去で埋まっていく
+            </text>
+          </svg>
+        </div>
+
+        <p>
+          症状はこうです ──
+          一度直した間違いを繰り返す。さっき決めた方針を無視する。急に的外れなことを言い出す。
+          <b class="hl">これはAIの性能ではなく、会話の長さの問題</b>です。
+        </p>
+        <p>
+          ここが人間と決定的に違うところです。人間は忘れることで整理します。AIは<b>全部抱えたまま</b>質が落ちます。
+          しかも本人に自覚がないので、最後まで自信たっぷりに「分かりました」と答え続けます。
+        </p>
+
+        <table>
+          <caption>
+            対処 ── 会話を捨てるか、圧縮するか、外に出すか
+          </caption>
+          <thead>
+            <tr>
+              <th>手段</th>
+              <th>使いどころ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th><code>/clear</code></th>
+              <td>会話を捨てて最初から。<b>タスクが変わったら切る</b>が原則</td>
+            </tr>
+            <tr>
+              <th><code>/compact</code></th>
+              <td>要約して圧縮する。同じ作業を続けたいときはこちら</td>
+            </tr>
+            <tr class="pick">
+              <th>ファイルに書く</th>
+              <td>大事なことは会話ではなくファイルへ。汚れないし、次のセッションにも渡せる</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="keyline">
+          情報は多いほど良い、ではない。必要な時に、必要な分だけ渡す。長い会話は積み上げではなく劣化です
+        </div>
+      </section>
+
+      <!-- ============ 節7 ============ -->
+      <section>
+        <h2 id="s7"><span class="no">07</span>AIは暴れ馬である。手綱を握るのが、あなたの仕事</h2>
+        <p class="topic">放っておくと、AIは足し算しかしません。引き算は、あなたの仕事です。</p>
+
+        <p>
+          AIは放っておくと、必ず何かを作ります。そして必ず長くなります。
+          設計書を頼めば章が増える。コードを頼めば使わない抽象化が入る。説明を頼めば表と箇条書きが山盛りになる。
+        </p>
+        <p>
+          理由は、AIが「網羅的で具体的なもの＝良いもの」として扱うからです。<b>足りないより多い方が安全</b>な側に倒れます。
+          ここも新人とは違います。人間の新人は迷って手が止まり、遠慮して聞いてきます。AIは止まらないし、疲れない。しかも自信満々に出してきます。
+        </p>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 210" role="img">
+            <title>
+              AIが足して量が膨らみ、人間が削って戻すが、次の指示でまた膨らむという周回。削る作業は一度で終わらない
+            </title>
+
+            <rect class="aibox" x="24" y="30" width="220" height="62" rx="10" />
+            <text class="li" x="42" y="58">🤖 放っておくと足す</text>
+            <text class="ex" x="42" y="80">章・抽象化・箇条書きが増える</text>
+            <path class="e" d="M248,61 L288,61" />
+
+            <rect class="ngbox" x="292" y="30" width="216" height="62" rx="10" />
+            <text class="li" x="310" y="58">📚 誰も読めない量に</text>
+            <text class="ex" x="310" y="80">量は、品質ではない</text>
+            <path class="e" d="M512,61 L552,61" />
+
+            <rect class="humbox" x="556" y="30" width="220" height="62" rx="10" />
+            <text class="li" x="574" y="58">🧑 あなたが削る</text>
+            <text class="ex" x="574" y="80">「短く」「シンプルに」「消して」</text>
+
+            <path class="e hum" d="M666,96 L666,140 L134,140 L134,96" />
+            <text class="lab" x="400" y="134" text-anchor="middle" fill="#d97706">
+              次の指示で、また膨らむ ── だから毎回削る
+            </text>
+            <text class="cap" x="400" y="182" text-anchor="middle">
+              読まれない文書は、存在しないのと同じ
+            </text>
+          </svg>
+        </div>
+
+        <p>
+          だからあなたの指示は、いつも同じ形になります
+          ──「もっと短く」「もっとシンプルに」「ここは要らないから消して」。
+          これは使い方が下手なのではありません。<b class="hl">正常な作業</b>です。
+        </p>
+        <p>
+          節4と矛盾するように見えるかもしれません。繰り返す指示は仕組みへ移す ──
+          ただし移せるのは<b>いつも同じ言い方で済む部分</b>だけです。何を残して何を消すかは、目的を持っている人にしか決められません。だから削る判断は、最後まであなたの手に残ります。
+        </p>
+
+        <p>
+          削る背骨になる原則は2つ。<b>YAGNI</b>（You Aren't Gonna Need It ──
+          必要になるまで作らない）と<b>Less is more</b>（少ないほど豊か）。
+          <b class="hl">AIはどちらも知っているのに、放っておくと守りません。</b
+          >守らせるのが人間の仕事です。
+        </p>
+
+        <div class="kill">
+          <b>削除テスト ── その行を消したとき、読者は困るか</b>
+          <p>困らないなら消す。「具体的な方が親切そう」は、残す理由になりません。</p>
+        </div>
+
+        <div class="keyline">
+          手綱の握り方は「作らせない」ことではない。AIに書かせ、人間が削る ── その方が速い
+        </div>
+      </section>
+
+      <!-- ============ 終章 ============ -->
+      <section>
+        <h2 id="last">終章：それでも、理解だけは委譲できない</h2>
+        <p class="topic">
+          「なぜこの実装なんですか」と聞かれて「AIがそう書いたので」と答える日が来ます。
+        </p>
+
+        <p>
+          ここまで、設計も実装も判断もAIに任せられると書いてきました。実際、任せられます。
+          ただ一つ、<b class="hl">理解だけは任せられません</b>。
+        </p>
+        <p>
+          なぜか。<b>責任が人間に残るから</b>です。障害が起きたとき、直すのも説明するのも人間です。
+          「なぜこの設計なのか」に答えられないプロダクトは、もう変更できません。
+        </p>
+        <p>
+          しかもAIは、<b class="hl">自信満々に嘘をつきます</b
+          >。存在しないAPI、それらしい根拠、もっともらしい説明 ──
+          口調は、正しいときと寸分違いません（ハルシネーション）。<b>理解していない人には、見抜く手段がありません</b>。
+          これは節3の「自己採点が甘い」とは別の問題です。あちらは評価の甘さ、こちらは事実そのものの誤りです。
+        </p>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 360" role="img">
+            <title>
+              設計・実装・判断はAIに委譲できるが理解だけは委譲できず、同じ道具が「理解を避けるために使う」か「理解するために使う」かで正反対の結果になる分岐
+            </title>
+
+            <text class="ex" x="16" y="34">委譲できる</text>
+            <rect class="box" x="16" y="42" width="130" height="30" rx="7" />
+            <text class="li" x="32" y="63">設計</text>
+            <rect class="box" x="16" y="78" width="130" height="30" rx="7" />
+            <text class="li" x="32" y="99">実装</text>
+            <rect class="box" x="16" y="114" width="130" height="30" rx="7" />
+            <text class="li" x="32" y="135">判断</text>
+
+            <path class="e ai" d="M150,57 L172,80" />
+            <path class="e ai" d="M150,93 L172,93" />
+            <path class="e ai" d="M150,129 L172,106" />
+
+            <rect class="aibox" x="176" y="62" width="150" height="62" rx="10" />
+            <text class="nm" x="251" y="99" text-anchor="middle">🤖 AI</text>
+
+            <path class="e ng" d="M470,93 L336,93" />
+            <text class="lab ng" x="404" y="76" text-anchor="middle">委譲できない</text>
+            <text class="lab ng" x="404" y="99" text-anchor="middle" font-size="18">✕</text>
+
+            <rect class="humbox" x="474" y="52" width="310" height="82" rx="10" />
+            <text class="nm" x="629" y="84" text-anchor="middle" fill="#d97706">🧑 理解</text>
+            <text class="ex" x="629" y="110" text-anchor="middle">説明する責任は、人間に残る</text>
+
+            <path
+              d="M16,154 L784,154"
+              fill="none"
+              stroke="#d8dce6"
+              stroke-width="1.5"
+              stroke-dasharray="6 6"
+            />
+            <rect class="keybox" x="300" y="176" width="200" height="44" rx="10" />
+            <text class="li" x="400" y="204" text-anchor="middle" fill="#7c3aed">
+              🛠 道具は、同じ
+            </text>
+
+            <path class="e ng" d="M340,222 L340,240 L200,240 L200,258" />
+            <path class="e ok" d="M460,222 L460,240 L600,240 L600,258" />
+
+            <rect class="ngbox" x="16" y="260" width="376" height="86" rx="10" />
+            <text class="hd ng" x="34" y="286">理解を避けるために使う</text>
+            <text class="ex" x="34" y="310">丸投げする／説明を読まない</text>
+            <text class="ex" x="34" y="332">→ 嘘を見抜けない。理解負債が静かに溜まる</text>
+
+            <rect class="okbox" x="408" y="260" width="376" height="86" rx="10" />
+            <text class="hd ok" x="426" y="286">理解するために使う</text>
+            <text class="ex" x="426" y="310">生成後に質問を重ねる／説明もセットで求める</text>
+            <text class="ex" x="426" y="332">→ 自分の言葉で説明できる</text>
+          </svg>
+        </div>
+
+        <p>
+          ジュニアエンジニアを対象にした実験でも、AIを使った群は理解度テストの点が低く出ました。
+          ただし中身は二分していました。低かったのは、丸投げした人と、最初は質問していたのに次第に全部任せるようになった人。
+          高かったのは、生成後に質問を重ねた人と、コードと説明をセットで求めた人です。
+        </p>
+        <p>
+          だから最良の使い方は、<b class="hl">理解するためにAIを使うこと</b>。
+          AIは、何でも知っているメンターでもあります。「なぜこう書いたのか説明して」「他にどんな選択肢があったか」「この設計の弱点は」。
+        </p>
+
+        <div class="keyline">
+          AIを使って理解を深める人と、理解を避けるために使う人がいる。道具は同じ。どちらになるかは、あなたが決める
+        </div>
+      </section>
+
+      <footer>
+        対象読者：これからコーディングエージェントを使い始めるソフトウェアエンジニア ／
+        前提とする道具：Claude Code
+      </footer>
+    </div>
+  </body>
+</html>
