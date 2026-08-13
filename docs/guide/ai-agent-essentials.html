@@ -254,31 +254,6 @@
         font-weight: 700;
       }
 
-      /* 系譜チップ */
-      .chain {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-top: 16px;
-      }
-      .chain span {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 999px;
-        padding: 4px 14px;
-        font-size: 12.5px;
-      }
-      .chain span.last {
-        border: 1.5px solid var(--key);
-        color: var(--key);
-        font-weight: 700;
-      }
-      .chain i {
-        color: var(--sub);
-        font-style: normal;
-      }
-
       /* 図 */
       .fig {
         margin-top: 20px;
@@ -451,15 +426,14 @@
             <li><a href="#s1">1. 人間の仕事は、AIが働きやすい環境を整備することである</a></li>
             <li><a href="#s2">2. 目的を書け。手段はAIが知っている</a></li>
             <li><a href="#s3">3. 自分の答案を、自分に採点させてはいけない</a></li>
-            <li><a href="#s4">4. 毎回指示するな。仕組みを作れ</a></li>
           </ul>
         </div>
         <div class="toc-col">
           <b>第2部 — ただし、新人とは決定的に違う</b>
           <ul>
-            <li><a href="#s5">5. AIは増幅器である</a></li>
-            <li><a href="#s6">6. AIの記憶は、有限で、汚れていく</a></li>
-            <li><a href="#s7">7. AIは暴れ馬である。手綱を握るのが、あなたの仕事</a></li>
+            <li><a href="#s4">4. AIは増幅器である</a></li>
+            <li><a href="#s5">5. AIの記憶は、有限で、汚れていく</a></li>
+            <li><a href="#s6">6. AIは暴れ馬である。手綱を握るのが、あなたの仕事</a></li>
             <li><a href="#last">終章：それでも、理解だけは委譲できない</a></li>
           </ul>
         </div>
@@ -571,9 +545,9 @@
         </p>
 
         <div class="fig">
-          <svg class="diag" viewBox="0 0 800 470" role="img">
+          <svg class="diag" viewBox="0 0 800 440" role="img">
             <title>
-              超ハイスペック新人というベースから、新人と同じに扱える第1部の4節と、人間とは性質が違う第2部の3節に分かれ、最後に終章へ合流する構成
+              超ハイスペック新人というベースから、新人と同じに扱える第1部と、人間とは性質が違う第2部に分かれ、最後に終章へ合流する構成
             </title>
 
             <rect class="aibox" x="200" y="14" width="400" height="92" rx="12" />
@@ -589,7 +563,7 @@
             <path class="e" d="M400,106 L400,124 L600,124 L600,138" />
 
             <!-- 第1部 -->
-            <rect class="panel" x="16" y="142" width="376" height="224" rx="12" />
+            <rect class="panel" x="16" y="142" width="376" height="188" rx="12" />
             <text class="hd" x="36" y="172">第1部　新人だと思えば、やることは決まる</text>
             <rect class="box" x="36" y="186" width="336" height="32" rx="7" />
             <text class="li" x="52" y="207">1　AIが働きやすい環境を整える</text>
@@ -597,24 +571,22 @@
             <text class="li" x="52" y="243">2　目的を書く。手段はAIが知っている</text>
             <rect class="box" x="36" y="258" width="336" height="32" rx="7" />
             <text class="li" x="52" y="279">3　答案を、本人に採点させない</text>
-            <rect class="box" x="36" y="294" width="336" height="32" rx="7" />
-            <text class="li" x="52" y="315">4　毎回指示せず、仕組みを作る</text>
 
             <!-- 第2部 -->
-            <rect class="panel" x="408" y="142" width="376" height="224" rx="12" />
+            <rect class="panel" x="408" y="142" width="376" height="188" rx="12" />
             <text class="hd" x="428" y="172">第2部　ただし、新人とは決定的に違う</text>
             <rect class="box" x="428" y="186" width="336" height="32" rx="7" />
-            <text class="li" x="444" y="207">5　AIは増幅器である</text>
+            <text class="li" x="444" y="207">4　AIは増幅器である</text>
             <rect class="box" x="428" y="222" width="336" height="32" rx="7" />
-            <text class="li" x="444" y="243">6　記憶は有限で、汚れていく</text>
+            <text class="li" x="444" y="243">5　記憶は有限で、汚れていく</text>
             <rect class="box" x="428" y="258" width="336" height="32" rx="7" />
-            <text class="li" x="444" y="279">7　AIは暴れ馬である</text>
+            <text class="li" x="444" y="279">6　AIは暴れ馬である</text>
 
-            <path class="e" d="M204,366 L204,388 L340,388 L340,404" />
-            <path class="e" d="M596,366 L596,388 L460,388 L460,404" />
+            <path class="e" d="M204,330 L204,354 L340,354 L340,372" />
+            <path class="e" d="M596,330 L596,354 L460,354 L460,372" />
 
-            <rect class="keybox" x="220" y="406" width="360" height="52" rx="12" />
-            <text class="nm" x="400" y="438" text-anchor="middle" fill="#7c3aed">
+            <rect class="keybox" x="220" y="374" width="360" height="52" rx="12" />
+            <text class="nm" x="400" y="406" text-anchor="middle" fill="#7c3aed">
               終章　理解だけは委譲できない
             </text>
           </svg>
@@ -919,112 +891,14 @@
         </p>
       </section>
 
-      <!-- ============ 節4 ============ -->
-      <section>
-        <h2 id="s4"><span class="no">04</span>毎回指示するな。仕組みを作れ</h2>
-        <p class="topic">
-          新人が一人前になった合図は、あなたが席を外せるようになったことです。AIも同じです。
-        </p>
-
-        <p>
-          あなたが指示する → AIが作る → あなたが見る → また指示する。
-          <b class="hl">この輪の中に、あなたが座っています</b
-          >。AIは、あなたが次の一言を打つまで止まっています。
-        </p>
-        <p>
-          <b>Loop Engineering</b> とは、その席から降りることです。やることは一つ ──
-          <b class="hl">プロンプトを出す役を、人間からシステムへ移す</b>。 2026年6月に Addy Osmani
-          が名付けた考え方で、Claude Code を率いる Boris Cherny
-          も、プロンプトする相手はループの方だと述べています。
-        </p>
-
-        <div class="chain">
-          <span>Prompt ── モデルへの話し方</span>
-          <i>→</i>
-          <span>Context ── モデルに見せるもの</span>
-          <i>→</i>
-          <span>Harness ── 足場全体</span>
-          <i>→</i>
-          <span class="last">Loop ── 回し方</span>
-        </div>
-
-        <div class="aside">
-          <b>ハーネス</b
-          >とは、AIが仕事をするための足場一式のこと。読ませる文書、使える道具、守らせるルール、走らせる手順
-          ── Claude Code そのものと、あなたがリポジトリに置いた設定が、これにあたります。
-        </div>
-
-        <div class="fig">
-          <svg class="diag" viewBox="0 0 800 300" role="img">
-            <title>
-              人間が指示・確認の輪の中に座っている状態と、自動起動・作成・検証・記録が自律的に回り人間が輪の外に立つ状態の対比
-            </title>
-
-            <!-- 左：中にいる -->
-            <rect class="panel bad" x="8" y="24" width="384" height="252" rx="12" />
-            <text class="hd ng" x="24" y="52">❌ あなたが輪の中にいる</text>
-
-            <rect class="humbox" x="24" y="72" width="150" height="42" rx="9" />
-            <text class="li" x="40" y="99">🧑 指示する</text>
-            <rect class="aibox" x="202" y="72" width="150" height="42" rx="9" />
-            <text class="li" x="218" y="99">🤖 作る</text>
-            <rect class="humbox" x="202" y="158" width="150" height="42" rx="9" />
-            <text class="li" x="218" y="185">🧑 見る</text>
-            <rect class="humbox" x="24" y="158" width="150" height="42" rx="9" />
-            <text class="li" x="40" y="185">🧑 また指示する</text>
-
-            <path class="e" d="M178,93 L198,93" />
-            <path class="e" d="M277,118 L277,154" />
-            <path class="e" d="M198,179 L178,179" />
-            <path class="e" d="M99,154 L99,118" />
-
-            <text class="ex" x="24" y="230">🧑 この輪の中に、あなたが座っている</text>
-            <text class="ex" x="24" y="254">次の一言を打つまで、AIは止まっている</text>
-
-            <!-- 右：外に出る -->
-            <rect class="panel" x="408" y="24" width="384" height="252" rx="12" />
-            <text class="hd ok" x="424" y="52">⭕ 席から降りる（Loop Engineering）</text>
-
-            <rect class="okbox" x="424" y="72" width="150" height="42" rx="9" />
-            <text class="li" x="440" y="99">⏰ 自動で始まる</text>
-            <rect class="aibox" x="602" y="72" width="150" height="42" rx="9" />
-            <text class="li" x="618" y="99">🤖 作る</text>
-            <rect class="okbox" x="602" y="158" width="150" height="42" rx="9" />
-            <text class="li" x="618" y="185">👥 別のAIが検証</text>
-            <rect class="box" x="424" y="158" width="150" height="42" rx="9" />
-            <text class="li" x="440" y="185">📄 Issueに残す</text>
-
-            <path class="e ok" d="M578,93 L598,93" />
-            <path class="e ok" d="M677,118 L677,154" />
-            <path class="e ok" d="M598,179 L578,179" />
-            <path class="e ok" d="M499,154 L499,118" />
-
-            <rect class="keybox" x="424" y="216" width="328" height="42" rx="9" />
-            <text class="li" x="440" y="243" fill="#7c3aed">🏁 完了条件を満たしたら、止まる</text>
-            <path class="e key" d="M677,202 L677,212" />
-          </svg>
-        </div>
-
-        <p>
-          注目してほしいのは<b>検証役</b>です。作った本人に採点させない（節3）が、そのままループの部品になっています。
-          そして<b>記憶は会話ではなくIssueに置く</b>。会話は次の周回へ渡せませんが、Issueは渡せます。
-        </p>
-
-        <p>そして、止め方のないループは予算を溶かします。</p>
-
-        <div class="keyline">
-          ループを作る前に、止め方を決める。新しい時代の仕事は、指示を出すことではなくループを設計すること
-        </div>
-      </section>
-
       <div class="part">
         <span class="no">PART 2</span>
         <b>ただし、新人とは決定的に違う</b>
       </div>
 
-      <!-- ============ 節5 ============ -->
+      <!-- ============ 節4 ============ -->
       <section>
-        <h2 id="s5"><span class="no">05</span>AIは増幅器である</h2>
+        <h2 id="s4"><span class="no">04</span>AIは増幅器である</h2>
         <p class="topic">
           ゴミしか作れない人がAIを使っても、ゴミを高速に作れるようになるだけです。
         </p>
@@ -1098,9 +972,9 @@
         </p>
       </section>
 
-      <!-- ============ 節6 ============ -->
+      <!-- ============ 節5 ============ -->
       <section>
-        <h2 id="s6"><span class="no">06</span>AIの記憶は、有限で、汚れていく</h2>
+        <h2 id="s5"><span class="no">05</span>AIの記憶は、有限で、汚れていく</h2>
         <p class="topic">同じセッションで粘るほど、AIはバカになります。</p>
 
         <p>
@@ -1196,9 +1070,9 @@
         </div>
       </section>
 
-      <!-- ============ 節7 ============ -->
+      <!-- ============ 節6 ============ -->
       <section>
-        <h2 id="s7"><span class="no">07</span>AIは暴れ馬である。手綱を握るのが、あなたの仕事</h2>
+        <h2 id="s6"><span class="no">06</span>AIは暴れ馬である。手綱を握るのが、あなたの仕事</h2>
         <p class="topic">放っておくと、AIは足し算しかしません。引き算は、あなたの仕事です。</p>
 
         <p>
@@ -1232,7 +1106,7 @@
 
             <path class="e ng dash" d="M646,96 L646,138 L134,138 L134,98" />
             <text class="lab ng" x="390" y="134" text-anchor="middle">
-              基準が書かれていないと、毎回これを繰り返す ── 輪の中に座ったまま
+              基準が書かれていないと、毎回これを繰り返す
             </text>
 
             <path class="e ok" d="M746,96 L746,206 L612,206" />
@@ -1255,7 +1129,7 @@
           だからあなたの指示は、いつも同じ形になります
           ──「もっと短く」「もっとシンプルに」「ここは要らないから消して」。
           そして、これを毎回打っている状態は、効率的ではありません。
-          同じ指示を繰り返しているなら、それは節4で見た「輪の中に座っている」サインです。
+          同じ指示を繰り返しているなら、それは基準がどこにも書かれていないサインです。
         </p>
 
         <p>
@@ -1305,9 +1179,11 @@
           「なぜこの設計なのか」に答えられないプロダクトは、もう変更できません。
         </p>
         <p>
-          しかもAIは、<b class="hl">自信満々に嘘をつきます</b
-          >。存在しないAPI、それらしい根拠、もっともらしい説明 ──
-          口調は、正しいときと寸分違いません（ハルシネーション）。<b>理解していない人には、見抜く手段がありません</b>。
+          しかもAIは、<b>自信満々に嘘をつきます</b>。存在しないAPI、それらしい根拠、もっともらしい説明
+          ── 口調は、正しいときと寸分違いません（ハルシネーション）。
+          序章では、AIを「超ハイスペック新人」と呼びました。正確には、<b class="hl"
+            >虚言癖のある超ハイスペック新人</b
+          >です。 <b>理解していない人には、見抜く手段がありません</b>。
           これは節3の「自己採点が甘い」とは別の問題です。あちらは評価の甘さ、こちらは事実そのものの誤りです。
         </p>
 
