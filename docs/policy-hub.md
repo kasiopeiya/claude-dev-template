@@ -43,7 +43,7 @@
 
 ### [documentation-policy.md](policy/documentation-policy.md)
 
-**概要**: ドキュメント作成の基本原則（対象読者と目的・なぜを書く・Progressive Disclosure・DRY・可視化・文章の書き方）
+**概要**: ドキュメント作成の基本原則（対象読者と目的・なぜを書く・Progressive Disclosure＝文書の分割と1文書内の俯瞰先出し・DRY・可視化・文章の書き方）
 **参照タイミング**: 設計書・ドキュメントを作成・編集・レビューする前
 
 ---
