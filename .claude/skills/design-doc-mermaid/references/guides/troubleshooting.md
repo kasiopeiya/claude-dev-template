@@ -19,7 +19,8 @@ This guide documents the top 20+ most common Mermaid syntax errors discovered th
 7. [ER Diagrams](#er-diagrams)
 8. [Gantt Charts](#gantt-charts)
 9. [Pie Charts](#pie-charts)
-10. [General Resources](#general-resources)
+10. [Layout Issues (Renders but Unreadable)](#layout-issues-renders-but-unreadable)
+11. [General Resources](#general-resources)
 
 ---
 
@@ -894,6 +895,49 @@ pie
 ```
 
 **Note:** Pie charts fail silently without helpful error messages for this issue.
+
+---
+
+## Layout Issues (Renders but Unreadable)
+
+構文は正しく、mmdc も通るのに、描画結果が読めない崩れを扱う。**構文チェックでは検知できない**ので、実際の描画を目で見るまで気づけない（mmdc が無い環境での確認手順は [resilient-workflow.md](resilient-workflow.md) の Step 4b）。
+
+### ⚠️ 自己ループのラベルが隣のエッジのラベルと重なる
+
+**Severity:** 🟠 High
+
+**Applies to:** `stateDiagram-v2`（自己ループを持つ他の図種でも同じ条件で起きうる）
+
+**Problem:** 同じノードから自己ループと別のエッジが出ていて、ラベルがノード幅より長いと、既定の縦方向レイアウトではラベル同士が重なる。パースは成功するのでエラーは出ない。
+
+**Incorrect（ラベルが重なる）:**
+
+```text
+stateDiagram-v2
+    有効 --> 有効: 残高を一部利用
+    有効 --> 利用済み: 残高を全額利用
+```
+
+**Correct:**
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    有効 --> 有効: 残高を一部利用
+    有効 --> 利用済み: 残高を全額利用
+```
+
+**Fix:** `direction LR` を指定する。横方向に並べると自己ループのラベルがノードの上へ逃げ、隣のエッジのラベルと干渉しなくなる。
+
+**効かない対処:**
+
+| 対処案                 | 結果                           |
+| ---------------------- | ------------------------------ |
+| ラベルを短くする       | 縦方向のままだと重なる         |
+| 自己ループを最後に書く | 記述順はレイアウトに影響しない |
+
+> [!TIP]
+> **（AI・推奨）** レンダラとバージョンでレイアウトは変わる。直したら、その図が実際に表示される場所（GitHub・Pages など）でも見て確かめる。
 
 ---
 

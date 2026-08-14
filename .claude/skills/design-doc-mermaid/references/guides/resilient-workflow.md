@@ -42,7 +42,8 @@ flowchart TD
     Save --> Validate[Step 4: Validate with mmdc]
     Validate --> Success{Valid?}
 
-    Success -->|Yes| AddRef[Step 5: Add Image Reference to Markdown]
+    Success -->|Yes| Look[Step 4b: Check Rendered Result]
+    Look --> AddRef[Step 5: Add Image Reference to Markdown]
     Success -->|No| Troubleshoot[Check Troubleshooting Guide]
 
     Troubleshoot --> Found{Fix Found?}
@@ -64,7 +65,7 @@ flowchart TD
     classDef error fill:#E63946,stroke:#9D0208,color:#fff
 
     class Start,Complete start
-    class Type,Reference,Generate,Save,Validate,AddRef,Apply,Troubleshoot,Search process
+    class Type,Reference,Generate,Save,Validate,Look,AddRef,Apply,Troubleshoot,Search process
     class Success,Found,SearchResult decision
 ```
 
@@ -152,6 +153,21 @@ If troubleshooting guide doesn't have a match:
 1. Use **search tools** (see [Search Tool Priority](#search-tool-priority))
 2. Apply the found solution
 3. Retry validation
+
+### Step 4b: Check the Rendered Result
+
+mmdc は構文エラーしか見ない。ラベルの重なりのような「描画は成功するが読めない」崩れ（troubleshooting.md の [Layout Issues](troubleshooting.md#layout-issues-renders-but-unreadable)）は、描画を目で見ないと分からない。
+
+mmdc が入っていない環境では、次の手順で実描画を確認する。
+
+```bash
+# 1. mermaid を CDN から読み込む HTML を scratchpad に書き、候補を並べる
+# 2. そのディレクトリを HTTP で配信する
+python3 -m http.server 8731
+# 3. http://localhost:8731/<file>.html を Chrome で開き、スクリーンショットで比較する
+```
+
+**`file://` では開けない。** Chrome 拡張が拒否するので、必ず HTTP で配信する。
 
 ### Step 5: Add to Markdown
 
@@ -611,7 +627,8 @@ flowchart TD
 3. SAVE     → Create ./diagrams/<name>.mmd
 4. VALIDATE → Run mmdc, check exit code
 5. RECOVER  → If failed: troubleshooting.md → search tools
-6. ADD      → Only after validation: ![](./diagrams/name.png)
+6. LOOK     → View the rendered image; check for overlapping labels
+7. ADD      → Only after validation: ![](./diagrams/name.png)
 ```
 
 ### File Naming
