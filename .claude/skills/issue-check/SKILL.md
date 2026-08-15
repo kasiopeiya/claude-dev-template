@@ -1,7 +1,7 @@
 ---
 name: issue-check
 description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、本文とラベルを直す。/sweep で着手する前に人間が打つ。「issue-check」「issueを検査して」と指示されたとき。
-argument-hint: '[件数 or Issue番号（省略可・複数可）]'
+argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: Task, Bash, Read, Edit, Write
 ---
@@ -20,7 +20,7 @@ boy-scout Issue を監査してください。あなたは判定本体を行わ�
 ## Phase 1: 対象の決定
 
 ```bash
-gh issue list --state open --limit 50 --search 'label:boy-scout' \
+gh issue list --state open --limit 100 --search 'label:boy-scout' \
   --json number,title,labels --jq 'sort_by(.number) | .[] | "\(.number)\t\([.labels[].name]|join(","))\t\(.title)"'
 ```
 
@@ -28,13 +28,15 @@ gh issue list --state open --limit 50 --search 'label:boy-scout' \
 
 **`issue:checked` が付いた Issue も除外しません。** 判定のうち「前提が現物と食い違う」は、リポジトリが動けば真偽が変わります。前回の判定を貼った時点で凍結できないので、毎回すべて見直します。ラベルを検索条件に使わないことで、Issue 番号を直接指定した経路との食い違いも起きません。
 
-引数の解釈は次のとおりです。
+取得件数がちょうど100件なら上限で切れている可能性があるので、その旨を伝えてから処理します。
 
-| 引数           | 対象                                      |
-| -------------- | ----------------------------------------- |
-| なし           | 一覧の全件                                |
-| 数字1つ（≤20） | 一覧の古い順にその件数                    |
-| Issue番号の列  | その Issue だけ（ラベルの有無を問わない） |
+引数の解釈は次のとおりです。**素の数字は常に件数**として読みます——同じ形の入力が件数にも Issue 番号にもなると、誤用を防げないからです。
+
+| 引数                   | 対象                                      |
+| ---------------------- | ----------------------------------------- |
+| なし                   | 一覧の全件                                |
+| 数字1つ                | 一覧の古い順にその件数                    |
+| `#` 付き番号（複数可） | その Issue だけ（ラベルの有無を問わない） |
 
 対象が0件なら、その旨を伝えて終了します。決めた対象リストを表示してから Phase 2 へ進みます。
 
@@ -131,9 +133,9 @@ gh issue list --state open --search 'label:boy-scout -label:"issue:checked"' \
 ## 使用方法
 
 ```
-/issue-check          # boy-scout の open Issue を全件
-/issue-check 3        # 古い順に3件だけ
-/issue-check 123 124  # 指定した Issue だけ
+/issue-check            # boy-scout の open Issue を全件
+/issue-check 3          # 古い順に3件だけ
+/issue-check #123 #124  # 指定した Issue だけ
 ```
 
 引数: $ARGUMENTS

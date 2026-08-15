@@ -1,7 +1,7 @@
 ---
 name: issue-decide
 description: issue:needs-human-decision が付いた boy-scout Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable に変換する。/sweep の前処理として人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
-argument-hint: '[件数 or Issue番号（省略可・複数可）]'
+argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 ---
@@ -41,17 +41,19 @@ stateDiagram-v2
 ## Phase 1: 対象の決定
 
 ```bash
-gh issue list --state open --limit 50 --search 'label:boy-scout label:"issue:needs-human-decision"' \
+gh issue list --state open --limit 100 --search 'label:boy-scout label:"issue:needs-human-decision"' \
   --json number,title --jq 'sort_by(.number) | .[] | "\(.number)\t\(.title)"'
 ```
 
-引数の解釈は次のとおり。
+取得件数がちょうど100件なら上限で切れている可能性があるので、その旨を伝えてから処理する。
 
-| 引数           | 対象                                      |
-| -------------- | ----------------------------------------- |
-| なし           | 一覧の全件                                |
-| 数字1つ（≤20） | 一覧の古い順にその件数                    |
-| Issue番号の列  | その Issue だけ（ラベルの有無を問わない） |
+引数の解釈は次のとおり。**素の数字は常に件数**として読む——同じ形の入力が件数にも Issue 番号にもなると、誤用を防げないからである。
+
+| 引数                   | 対象                                      |
+| ---------------------- | ----------------------------------------- |
+| なし                   | 一覧の全件                                |
+| 数字1つ                | 一覧の古い順にその件数                    |
+| `#` 付き番号（複数可） | その Issue だけ（ラベルの有無を問わない） |
 
 対象が0件なら、その旨を伝えて終了する。決めた対象リストを表示してから Phase 2 へ進む。
 
@@ -203,9 +205,9 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 ## 使用方法
 
 ```
-/issue-decide          # issue:needs-human-decision の open Issue を全件
-/issue-decide 3        # 古い順に3件だけ
-/issue-decide 271 280  # 指定した Issue だけ
+/issue-decide            # issue:needs-human-decision の open Issue を全件
+/issue-decide 3          # 古い順に3件だけ
+/issue-decide #271 #280  # 指定した Issue だけ
 ```
 
 引数: $ARGUMENTS

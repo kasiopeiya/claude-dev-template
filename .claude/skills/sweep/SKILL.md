@@ -1,7 +1,7 @@
 ---
 name: sweep
 description: ai-fixable が付いた open Issue を1件ずつ片付け、コミットして close する。人間が `/sweep` と打ったときだけ起動する。
-argument-hint: '[件数 or Issue番号（省略可・複数可）]'
+argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 ---
 
@@ -23,20 +23,22 @@ disable-model-invocation: true
 ### Phase 1: 対象の決定
 
 ```bash
-gh issue list --state open --limit 50 --search 'label:ai-fixable label:boy-scout -label:"issue:needs-clean-session"' --json number,title --jq 'sort_by(.number) | .[] | "\(.number)\t\(.title)"'
+gh issue list --state open --limit 100 --search 'label:ai-fixable label:boy-scout -label:"issue:needs-clean-session"' --json number,title --jq 'sort_by(.number) | .[] | "\(.number)\t\(.title)"'
 ```
+
+取得件数がちょうど100件なら上限で切れている可能性があるので、その旨を伝えてから処理する。
 
 `issue:needs-clean-session` を除外するのは、**過去の `/sweep` が着手したうえで「一括では直しきれない」と判定した印**だから。同じやり方で選び直しても同じ結果になる（2-2 参照）。
 
 `label:boy-scout` を条件に足すのは、`/to-issues` 産の Issue（`ai-fixable` は付くが `boy-scout` は付かない）を一斉対応から除くため。正式フローで計画した Issue は、対応する開発フロー Skill（`/code-dev` 等）で個別に着手する。
 
-引数の解釈は次のとおり。
+引数の解釈は次のとおり。**素の数字は常に件数**として読む——同じ形の入力が件数にも Issue 番号にもなると、誤用を防げないからである。
 
-| 引数           | 対象                                      |
-| -------------- | ----------------------------------------- |
-| なし           | 一覧の全件                                |
-| 数字1つ（≤20） | 一覧の古い順にその件数                    |
-| Issue番号の列  | その Issue だけ（ラベルの有無を問わない） |
+| 引数                   | 対象                                      |
+| ---------------------- | ----------------------------------------- |
+| なし                   | 一覧の全件                                |
+| 数字1つ                | 一覧の古い順にその件数                    |
+| `#` 付き番号（複数可） | その Issue だけ（ラベルの有無を問わない） |
 
 対象が0件なら、その旨を伝えて終了する。決めた対象リストを表示してから Phase 2 へ進む。
 
@@ -129,7 +131,7 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 ## 使用方法
 
 ```
-/sweep        # ai-fixable の open Issue を全件
-/sweep 3      # 古い順に3件だけ
-/sweep 123 124  # 指定した Issue だけ
+/sweep            # ai-fixable の open Issue を全件
+/sweep 3          # 古い順に3件だけ
+/sweep #123 #124  # 指定した Issue だけ
 ```
