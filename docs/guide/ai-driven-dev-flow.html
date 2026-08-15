@@ -519,9 +519,76 @@
         stroke: #b9cdf5;
         stroke-width: 1.5;
       }
+      .diag .mechbox {
+        fill: var(--ci-bg);
+        stroke: #a9dfcb;
+        stroke-width: 1.5;
+      }
       .diag .li {
         font-size: 11.5px;
         fill: var(--ink);
+      }
+
+      /* 人間・AI・機械の役割表 */
+      .role-table-wrap {
+        margin-top: 20px;
+        overflow-x: auto;
+      }
+      .role-table {
+        width: 100%;
+        min-width: 520px;
+        border-collapse: collapse;
+        font-size: 12.5px;
+      }
+      .role-table caption {
+        text-align: left;
+        font-size: 11.5px;
+        color: var(--sub);
+        padding-bottom: 7px;
+      }
+      .role-table th,
+      .role-table td {
+        border: 1px solid var(--line);
+        padding: 7px 10px;
+        text-align: center;
+      }
+      .role-table thead th {
+        font-weight: 700;
+        background: #fbfcfe;
+      }
+      .role-table thead th.c-human {
+        color: var(--human);
+        background: var(--human-bg);
+      }
+      .role-table thead th.c-ai {
+        color: var(--ai);
+        background: var(--ai-bg);
+      }
+      .role-table thead th.c-mech {
+        color: var(--ci);
+        background: var(--ci-bg);
+      }
+      .role-table tbody th {
+        text-align: left;
+        font-weight: 600;
+        background: #fbfcfe;
+        white-space: nowrap;
+      }
+      .role-table td {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .role-table tr.example th,
+      .role-table tr.example td {
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--sub);
+        white-space: normal;
+      }
+      .role-caveat {
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: var(--sub);
       }
 
       .h-key {
@@ -1390,7 +1457,7 @@
           <ol>
             <li><a href="#why">なぜポリシー駆動開発なのか</a></li>
             <li><a href="#third-way">このテンプレートが目指すもの</a></li>
-            <li><a href="#roles">人間とAIの役割</a></li>
+            <li><a href="#roles">人間とAIと機械の役割</a></li>
             <li><a href="#harness">ポリシー駆動開発とは何か</a></li>
             <li><a href="#policy">Policy — 判断のレール</a></li>
             <li><a href="#guardrail">ガードレール — 品質のレール</a></li>
@@ -1791,16 +1858,18 @@
         </div>
       </section>
 
-      <!-- ============ 人間とAIの役割 ============ -->
+      <!-- ============ 人間とAIと機械の役割 ============ -->
       <section>
-        <h2 id="roles">人間とAIの役割<span class="tag">誰が何をするか</span></h2>
+        <h2 id="roles">人間とAIと機械の役割<span class="tag">誰が何をするか</span></h2>
         <p class="note">
-          AIはループの中で工程を回す。人間はループの外に立ち、そのループが走るレールを作る。
+          AIはループの中で工程を回し、人間はループの外でレールを作る。決まった基準の判定や繰り返しは機械が引き受ける。
         </p>
 
         <div class="harness">
-          <svg class="diag" viewBox="0 0 800 330" role="img">
-            <title>人間はループの外でレールを設計し、AIはループの中で工程を回す</title>
+          <svg class="diag" viewBox="0 0 800 344" role="img">
+            <title>
+              人間はループの外でレールを設計し、AIはループの中で工程を回す。ガードレールは機械が合否を出す
+            </title>
             <defs>
               <marker
                 id="a-ai"
@@ -1830,30 +1899,99 @@
             <text class="lab" x="288" y="222" text-anchor="middle">学びが返る</text>
 
             <!-- AI：ループの中 -->
-            <rect class="loopbox" x="330" y="70" width="446" height="230" rx="16" />
+            <rect class="loopbox" x="330" y="70" width="446" height="244" rx="16" />
             <text class="fnm" x="352" y="100" fill="#2563eb">🤖 AI — ループの中</text>
 
             <rect class="aibox" x="356" y="120" width="150" height="46" rx="9" />
             <text class="fnm" x="431" y="148" text-anchor="middle">💻 TDD実装</text>
             <rect class="aibox" x="600" y="120" width="150" height="46" rx="9" />
             <text class="fnm" x="675" y="148" text-anchor="middle">👥 レビュー</text>
-            <rect class="aibox" x="478" y="216" width="150" height="46" rx="9" />
-            <text class="fnm" x="553" y="244" text-anchor="middle">🚧 ガードレール</text>
+            <rect class="mechbox" x="478" y="210" width="150" height="58" rx="9" />
+            <text class="fnm" x="553" y="233" text-anchor="middle" fill="#059669">
+              🚧 ガードレール
+            </text>
+            <text class="ex" x="553" y="254" text-anchor="middle" fill="#059669">
+              機械が合否を出す
+            </text>
 
             <path class="e ai" d="M510,143 L594,143" />
-            <path class="e ai" d="M672,170 Q664,196 632,214" />
-            <path class="e ai" d="M478,232 Q432,224 431,172" />
+            <path class="e ai" d="M672,170 Q664,192 632,208" />
+            <path class="e ai" d="M478,239 Q432,230 431,172" />
             <text class="lab" x="404" y="204" text-anchor="middle">↩ 落ちたら直す</text>
-            <path class="e ai" d="M632,239 L690,239" />
-            <text class="ex" x="696" y="243" fill="#2563eb">✅ マージ</text>
+            <path class="e gate" d="M630,245 L690,245" />
+            <text class="ex" x="696" y="249" fill="#059669">✅ マージ</text>
 
-            <text class="cap" x="352" y="288">
+            <text class="cap" x="352" y="300">
               工程まるごとを自律実行し、迷ったらPolicyを読んで自分で決める
             </text>
           </svg>
 
+          <div class="role-table-wrap">
+            <table class="role-table">
+              <caption>
+                凡例：◎ 任せるべき／○ 任せてよい／△ 向かない／× 任せられない
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">仕事</th>
+                  <th scope="col" class="c-human">🧑 人間</th>
+                  <th scope="col" class="c-ai">🤖 AI</th>
+                  <th scope="col" class="c-mech">⚙️ 機械</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">判断の基準を決める</th>
+                  <td>◎</td>
+                  <td>△</td>
+                  <td>×</td>
+                </tr>
+                <tr>
+                  <th scope="row">基準に沿って個別に判断する</th>
+                  <td>○</td>
+                  <td>◎</td>
+                  <td>×</td>
+                </tr>
+                <tr>
+                  <th scope="row">曖昧な問題を扱う</th>
+                  <td>◎</td>
+                  <td>○</td>
+                  <td>×</td>
+                </tr>
+                <tr>
+                  <th scope="row">決まった基準で合否を出す</th>
+                  <td>△</td>
+                  <td>○</td>
+                  <td>◎</td>
+                </tr>
+                <tr>
+                  <th scope="row">何度やっても同じ結果を返す</th>
+                  <td>△</td>
+                  <td>△</td>
+                  <td>◎</td>
+                </tr>
+                <tr>
+                  <th scope="row">大量に、何度でも繰り返す</th>
+                  <td>×</td>
+                  <td>○</td>
+                  <td>◎</td>
+                </tr>
+                <tr class="example">
+                  <th scope="row">典型例</th>
+                  <td>目的を決める・レールを設計する</td>
+                  <td>設計・実装・レビュー</td>
+                  <td>静的解析・テスト・CI/CD</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="role-caveat">
+            AIは基準の下書きを作れるが、採るかどうかを決めるのは人間である。
+          </p>
+
           <div class="h-key">
-            成果物を1つずつ検品するのではなく、レールを設計・改善する——これがHuman-on-the-Loop
+            機械に落とせるものは機械へ、判断はAIへ、基準づくりは人間が持つ。だから人間は検品ではなくレール設計に回れる——これがHuman-on-the-Loop
           </div>
         </div>
       </section>
