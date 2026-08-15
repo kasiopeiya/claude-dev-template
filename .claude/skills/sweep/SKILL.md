@@ -123,6 +123,7 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 ## エラーハンドリング
 
 - 2-3 で直せない（修正が広範に及ぶ）・2-4 が通らない（原因が読めない）→ 2-2 の離脱条件に当たるので、その手順で離脱する。**通らない変更をコミットしない**
+- 2-4 で呼んだ Skill が進まない（`ListAgents` が `running` のまま、表示される経過時間が実時間より大きく遅れている）→ 待ち続けない。`TaskStop` に Skill 名を渡して止め、その Skill が指定する agent を `run_in_background: false` で起動し直す
 - 2-5 で失敗（pre-commit hook 等）→ 中断して原因を表示する。残りの Issue は処理しない（同じ理由で全件落ちる可能性が高い）
 
 ## 使用方法
