@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 責務: 追跡下の Markdown に書かれた相対リンクの参照先が実在するかを検査する。
+// 責務: Git が無視しない Markdown に書かれた相対リンクの参照先が実在するかを検査する。
 //   リンク切れはレビューで拾う欠陥ではなく機械が判定できる事実であり、放置すると静かに溜まる（Issue #107）。
 
 import { existsSync, readFileSync } from 'fs'
@@ -84,8 +84,13 @@ function findBrokenLinks(markdownPath, source) {
 }
 
 function main() {
-  // 検査対象は Git の追跡下にあるものだけ。node_modules や生成物を除外する設定を持たずに済む。
-  const files = execFileSync('git', ['ls-files', '*.md'], { cwd: repoRoot, encoding: 'utf8' })
+  // 検査対象は Git が無視しないものだけ。node_modules や生成物を除外する設定を持たずに済む。
+  // --others --exclude-standard で、まだ追跡されていない新規 Markdown も含める（Issue #321）。
+  const files = execFileSync(
+    'git',
+    ['ls-files', '--cached', '--others', '--exclude-standard', '*.md'],
+    { cwd: repoRoot, encoding: 'utf8' }
+  )
     .split('\n')
     .filter(Boolean)
 
