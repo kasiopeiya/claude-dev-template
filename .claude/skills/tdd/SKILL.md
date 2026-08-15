@@ -151,15 +151,14 @@ Issue内の「対象ファイル」セクションに実装ファイル・テス
 
 ### Phase 3: テスト実行（Red確認）
 
-#### ステップ 3-1: unit-test-runnerエージェント呼び出し
+#### ステップ 3-1: unit-test スキル呼び出し
 
-Task ツールを使用して `unit-test-runner` サブエージェントを起動:
+Skill ツールを使用して `unit-test` スキルを起動し、完了を待つ:
 
 ```typescript
-Task({
-  subagent_type: 'unit-test-runner',
-  prompt: '{testFile} のテストを実行してください',
-  description: 'Run Red phase tests'
+Skill({
+  skill: 'unit-test',
+  args: '{testFile} のテストを実行してください'
 })
 ```
 
@@ -212,15 +211,14 @@ Phase 2で作成したテストコードから、関数名・引数の型と名�
 
 ### Phase 5: テスト実行（Green確認）
 
-#### ステップ 5-1: unit-test-runnerエージェント呼び出し
+#### ステップ 5-1: unit-test スキル呼び出し
 
-Task ツールを使用して `unit-test-runner` サブエージェントを起動:
+Skill ツールを使用して `unit-test` スキルを起動し、完了を待つ:
 
 ```typescript
-Task({
-  subagent_type: 'unit-test-runner',
-  prompt: '{testFile} のテストを実行してください',
-  description: 'Run Green phase tests'
+Skill({
+  skill: 'unit-test',
+  args: '{testFile} のテストを実行してください'
 })
 ```
 
@@ -259,15 +257,14 @@ Edit ツールでリファクタリングを実行する。テストコードの
 
 ### Phase 7: 最終確認（Final Verification）
 
-#### ステップ 7-1: unit-test-runnerエージェント呼び出し
+#### ステップ 7-1: unit-test スキル呼び出し
 
-Task ツールを使用して `unit-test-runner` サブエージェントを起動:
+Skill ツールを使用して `unit-test` スキルを起動し、完了を待つ:
 
 ```typescript
-Task({
-  subagent_type: 'unit-test-runner',
-  prompt: '{testFile} のテストを実行してください',
-  description: 'Run final verification'
+Skill({
+  skill: 'unit-test',
+  args: '{testFile} のテストを実行してください'
 })
 ```
 
