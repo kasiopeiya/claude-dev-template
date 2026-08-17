@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{タイトル}}</title>
+    <style>
+      /* このスタイルは変更しない。背景色を消すと、暗いビューアで黒地に黒文字になり読めなくなる */
+      :root {
+        --ink: #1f2430;
+        --sub: #5b6272;
+        --line: #d8dce6;
+        --bg: #f6f7fa;
+        --card: #ffffff;
+        --key: #7c3aed;
+        --key-bg: #f1e9ff;
+        --ok: #059669;
+        --ok-bg: #e2f6ef;
+        --ng: #dc2626;
+        --ng-bg: #fdf3f3;
+        --warn: #d97706;
+        --warn-bg: #fff4e0;
+        --grey-bg: #eceff5;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        line-height: 1.7;
+        padding: 40px 16px 80px;
+      }
+      .page {
+        max-width: 1060px;
+        margin: 0 auto;
+      }
+      h1 {
+        font-size: 26px;
+        letter-spacing: 0.02em;
+      }
+      .lead {
+        color: var(--sub);
+        margin-top: 8px;
+        font-size: 14px;
+      }
+
+      /* 目次 */
+      .toc {
+        margin-top: 20px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 14px 18px 16px;
+      }
+      .toc ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .toc li {
+        font-size: 12.5px;
+        padding: 2.5px 0;
+      }
+      .toc a {
+        color: var(--ink);
+        text-decoration: none;
+        border-bottom: 1px dotted var(--line);
+      }
+      .toc a:hover {
+        color: var(--key);
+        border-bottom-color: var(--key);
+      }
+
+      section {
+        margin-top: 40px;
+      }
+      h2 {
+        font-size: 20px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid var(--ink);
+      }
+      h2 .no {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--key);
+        letter-spacing: 0.08em;
+        margin-right: 10px;
+      }
+      /* 節の芯を一文で置く。各節の先頭に1つだけ */
+      .topic {
+        margin-top: 14px;
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--key);
+        background: var(--key-bg);
+        border-left: 5px solid var(--key);
+        border-radius: 0 10px 10px 0;
+        padding: 12px 18px;
+      }
+      section p {
+        margin-top: 14px;
+        font-size: 14px;
+      }
+      b.hl {
+        background: linear-gradient(transparent 62%, #ffe8a3 62%);
+      }
+      /* 節の締めの一文。任意 */
+      .keyline {
+        margin-top: 18px;
+        font-size: 14.5px;
+        font-weight: 700;
+        color: var(--key);
+        background: var(--key-bg);
+        border-radius: 10px;
+        padding: 12px 16px;
+        text-align: center;
+      }
+      /* 用語の補足。任意 */
+      .aside {
+        margin-top: 16px;
+        background: var(--card);
+        border: 1px dashed var(--line);
+        border-left: 4px solid var(--sub);
+        border-radius: 0 10px 10px 0;
+        padding: 10px 16px;
+        font-size: 13px;
+        color: var(--sub);
+      }
+      .aside b {
+        color: var(--ink);
+      }
+
+      /* 表 */
+      table {
+        margin-top: 16px;
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--card);
+        font-size: 13px;
+      }
+      caption {
+        caption-side: top;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--sub);
+        padding-bottom: 6px;
+      }
+      th,
+      td {
+        border: 1px solid var(--line);
+        padding: 8px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+      th {
+        background: var(--grey-bg);
+        font-size: 12px;
+        color: var(--sub);
+        white-space: nowrap;
+      }
+      td.ng {
+        color: var(--ng);
+      }
+      td.ok {
+        color: var(--ok);
+      }
+      tr.pick td {
+        background: var(--key-bg);
+        font-weight: 700;
+      }
+
+      /* 図 */
+      .fig {
+        margin-top: 20px;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 18px 16px 14px;
+      }
+      .fig .cap-under {
+        margin-top: 10px;
+        font-size: 12.5px;
+        color: var(--sub);
+        text-align: center;
+      }
+      .diag {
+        width: 100%;
+        max-width: 900px;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        font-family: inherit;
+      }
+      /* 箱：中立・強調・良い・悪い・注意・その他 */
+      .diag .box {
+        fill: #fbfcfe;
+        stroke: var(--line);
+        stroke-width: 1.5;
+      }
+      .diag .keybox {
+        fill: var(--key-bg);
+        stroke: var(--key);
+        stroke-width: 2;
+      }
+      .diag .okbox {
+        fill: var(--ok-bg);
+        stroke: var(--ok);
+        stroke-width: 1.5;
+      }
+      .diag .ngbox {
+        fill: var(--ng-bg);
+        stroke: #f0b4b4;
+        stroke-width: 1.5;
+      }
+      .diag .warnbox {
+        fill: var(--warn-bg);
+        stroke: var(--warn);
+        stroke-width: 1.5;
+      }
+      .diag .greybox {
+        fill: var(--grey-bg);
+        stroke: #cfd5e0;
+        stroke-width: 1.5;
+      }
+      /* 囲い（グループの枠）。.bad は破線 */
+      .diag .panel {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 1.5;
+      }
+      .diag .panel.bad {
+        stroke-dasharray: 6 5;
+      }
+      /* 文字：見出し・主名称・本文・補足・キャプション・線の上のラベル */
+      .diag .hd {
+        font-size: 14px;
+        font-weight: 700;
+        fill: var(--ink);
+      }
+      .diag .hd.ng {
+        fill: var(--ng);
+      }
+      .diag .hd.ok {
+        fill: var(--ok);
+      }
+      .diag .hd.key {
+        fill: var(--key);
+      }
+      .diag .nm {
+        font-size: 15px;
+        font-weight: 700;
+        fill: var(--ink);
+      }
+      .diag .li {
+        font-size: 12.5px;
+        fill: var(--ink);
+      }
+      .diag .ex {
+        font-size: 11.5px;
+        fill: var(--sub);
+      }
+      .diag .cap {
+        font-size: 12.5px;
+        fill: var(--sub);
+      }
+      .diag .lab {
+        font-size: 11.5px;
+        font-weight: 700;
+        fill: var(--key);
+        paint-order: stroke;
+        stroke: #fff;
+        stroke-width: 4px;
+        stroke-linejoin: round;
+      }
+      .diag .lab.ng {
+        fill: var(--ng);
+      }
+      .diag .lab.ok {
+        fill: var(--ok);
+      }
+      /* 線：既定は灰。色付きは矢尻も揃う。.dash は破線 */
+      .diag .e {
+        fill: none;
+        stroke: #98a0b0;
+        stroke-width: 1.8;
+        marker-end: url(#a-step);
+      }
+      .diag .e.key {
+        stroke: var(--key);
+        marker-end: url(#a-key);
+      }
+      .diag .e.ok {
+        stroke: var(--ok);
+        marker-end: url(#a-ok);
+      }
+      .diag .e.ng {
+        stroke: var(--ng);
+        marker-end: url(#a-ng);
+      }
+      .diag .e.warn {
+        stroke: var(--warn);
+        marker-end: url(#a-warn);
+      }
+      .diag .e.dash {
+        stroke-dasharray: 6 5;
+      }
+      .diag .axis {
+        stroke: var(--ink);
+        stroke-width: 2;
+        fill: none;
+      }
+      .diag .axis-t {
+        font-size: 12px;
+        font-weight: 700;
+        fill: var(--sub);
+      }
+
+      footer {
+        margin-top: 56px;
+        font-size: 11.5px;
+        color: var(--sub);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1>{{タイトル}}</h1>
+      <p class="lead">{{この資料を読むと何が分かるかを一文で}}</p>
+
+      <nav class="toc">
+        <ul>
+          <li><a href="#s1">{{節1の見出し}}</a></li>
+          <li><a href="#s2">{{節2の見出し}}</a></li>
+        </ul>
+      </nav>
+
+      <!-- 矢印マーカー（文書全体で共有）。消さない -->
+      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <defs>
+          <marker
+            id="a-step"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#98a0b0" />
+          </marker>
+          <marker
+            id="a-key"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#7c3aed" />
+          </marker>
+          <marker
+            id="a-ok"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#059669" />
+          </marker>
+          <marker
+            id="a-ng"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#dc2626" />
+          </marker>
+          <marker
+            id="a-warn"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#d97706" />
+          </marker>
+        </defs>
+      </svg>
+
+      <!--
+        ここから下が節。下の1節は書き方の見本なので、書き始めるときに丸ごと消す。
+        1節の形：h2 → .topic（芯を一文）→ .fig（図）→ 本文3段落以内 →（任意）.keyline
+      -->
+      <section>
+        <h2 id="s1"><span class="no">01</span>{{節の見出し}}</h2>
+        <p class="topic">{{この節の芯を一文で}}</p>
+
+        <div class="fig">
+          <svg class="diag" viewBox="0 0 800 160" role="img">
+            <title>{{図が何を示しているかの説明。読み上げにも使われる}}</title>
+            <rect class="ngbox" x="24" y="40" width="300" height="72" rx="10" />
+            <text class="hd ng" x="44" y="72">{{左の見出し}}</text>
+            <text class="ex" x="44" y="96">{{補足}}</text>
+            <path class="e key" d="M336,76 L456,76" />
+            <text class="lab" x="396" y="66" text-anchor="middle">{{矢印のラベル}}</text>
+            <rect class="okbox" x="468" y="40" width="300" height="72" rx="10" />
+            <text class="hd ok" x="488" y="72">{{右の見出し}}</text>
+            <text class="ex" x="488" y="96">{{補足}}</text>
+          </svg>
+          <p class="cap-under">{{図の下の一行キャプション}}</p>
+        </div>
+
+        <p>{{図だけでは伝わらないことを補う。3段落以内・1段落2文以内}}</p>
+      </section>
+
+      <footer>{{対象読者や前提を一行で}}</footer>
+    </div>
+  </body>
+</html>
