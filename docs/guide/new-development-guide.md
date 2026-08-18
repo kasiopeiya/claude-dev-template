@@ -42,14 +42,14 @@ stateDiagram-v2
 
 図に出ない具体（input・output・プロンプト例）は次のとおり。
 
-| #   | ステップ                 | input                              | output                                     | プロンプト例                                             |
-| --- | ------------------------ | ---------------------------------- | ------------------------------------------ | -------------------------------------------------------- |
-| 1   | 要求を引き出す           | 顧客からのインプット資料（RFC等）  | `requirements.md`（PRD）                   | `/elicit-requirements input.md`                          |
-| 2   | 要件定義書をレビューする | `requirements.md`                  | 合否判定（凍結可 / 要修正）                | `/requirements-review`                                   |
-| 3   | 基盤技術を決める         | `requirements.md`                  | 初期技術スタックADR（`docs/adr/NNN-*.md`） | `/decide-tech-stack docs/requirements.md`                |
-| 4   | 計画を詰める             | `requirements.md`＋技術スタックADR | 確定した仕様（対話）                       | `/grill-me` 本ガイドの「計画で最低限詰めること」を論点に |
-| 5   | Plan 化する              | 確定した仕様                       | Plan ファイル（`~/.claude/plans/*.md`）    | `/to-plan`                                               |
-| 6   | 起点Issue を作る         | Plan ファイル                      | 起点Issue群（GitHub・依存順つき）          | `/to-issues <Planパス>`                                  |
+| #   | ステップ                 | input                              | output                                     | プロンプト例                                                               |
+| --- | ------------------------ | ---------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------- |
+| 1   | 要求を引き出す           | 顧客からのインプット資料（RFC等）  | `requirements.md`（PRD）                   | `/elicit-requirements input.md`                                            |
+| 2   | 要件定義書をレビューする | `requirements.md`                  | 合否判定（凍結可 / 要修正）                | `/requirements-review`                                                     |
+| 3   | 基盤技術を決める         | `requirements.md`                  | 初期技術スタックADR（`docs/adr/NNN-*.md`） | `/decide-tech-stack docs/requirements.md`                                  |
+| 4   | 計画を詰める             | `requirements.md`＋技術スタックADR | 確定した仕様（対話）                       | `/grill-me 新規開発ガイドの「計画で最低限詰めること」を論点に計画を詰めて` |
+| 5   | Plan 化する              | 確定した仕様                       | Plan ファイル（`~/.claude/plans/*.md`）    | `/to-plan`                                                                 |
+| 6   | 起点Issue を作る         | Plan ファイル                      | 起点Issue群（GitHub・依存順つき）          | `/to-issues <Planパス>`                                                    |
 
 - **レビューで要修正なら**：要求の引き出しに戻って `requirements.md` を直し、凍結可になってから基盤技術の決定へ進む（判定基準は [requirements-doc-policy](../policy/requirements-doc-policy.md)）。
 - **基盤技術を決める／保留する判定基準**：「決めないと足場（静的解析・CI・デプロイ）と最初の曳光弾が組めないか」で決める/保留を分ける。足場に効くもの（言語・クラウド・IaC・CI/CD・ディレクトリ方針 等）は決め、曳光弾でスタブできる詳細（FW・ORM・DBスキーマ・外部サービス）はあえて保留する——コアから着手し、詳細は境界の外に置いて決定を遅らせるためである。決める基盤項目の全リストは `/decide-tech-stack` が網羅する。決定は ADR（＝設計書の一種）に一本化。構成の絞り込みは [directory-structure-guide](directory-structure-guide.md)。
