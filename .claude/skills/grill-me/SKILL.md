@@ -7,6 +7,8 @@ Interview me relentlessly about every aspect of this plan until we reach a share
 
 Ask the questions one at a time.
 
+If the caller passed an explicit stopping condition in the arguments (another Skill may invoke this one), honor it: once that condition is met, end the interview and hand control back, instead of continuing indefinitely.
+
 When a question's answer can be narrowed to 3 or more concrete options, you MUST use the AskUserQuestion tool to present them.
 
 If a question can be answered by exploring the codebase, explore the codebase instead.
