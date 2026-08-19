@@ -84,7 +84,7 @@ export default tseslint.config(
   // アプリロジック(src)限定: マジックナンバーを定数へ切り出させる（typescript.md「定数は目的が伝わる名前に」）。
   // CDK はメモリ量・タイムアウト・しきい値など設定値としての数値リテラルが正当なため対象外にする（過剰ゲート化の回避）
   {
-    files: ['app/**/*.ts'],
+    files: ['app/**/*.ts', 'samples/app/**/*.ts'],
     rules: {
       'no-magic-numbers': [
         'error',
@@ -105,14 +105,21 @@ export default tseslint.config(
   },
 
   // 型情報が必要なルール(型対応 lint)。app と infra のソースを対象にし、型サービスを有効化する。
-  // infra/test は infra/tsconfig の対象外のため、ここでは含めない
+  // infra/test は infra/tsconfig の対象外のため、ここでは含めない。
+  // samples/ 配下は参照実装の置き場で、同じ規約で検査し続けるため同じ glob を併記する。
+  // app/・infra/ 側は現在ファイルが無いが、実装を置いた瞬間に効くよう残す
   {
     files: [
       'app/**/*.ts',
       'infra/bin/**/*.ts',
       'infra/lib/**/*.ts',
       'infra/stackBuilder.ts',
-      'infra/parameter.ts'
+      'infra/parameter.ts',
+      'samples/app/**/*.ts',
+      'samples/infra/bin/**/*.ts',
+      'samples/infra/lib/**/*.ts',
+      'samples/infra/stackBuilder.ts',
+      'samples/infra/parameter.ts'
     ],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname }

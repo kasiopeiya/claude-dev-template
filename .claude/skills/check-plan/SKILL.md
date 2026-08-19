@@ -72,7 +72,7 @@ Plan の「実装フロー（使用するSkill）」を確認する。Plan が�
 
 ### 静的解析タスクの明記
 
-Plan が **TypeScript（`app/`・`infra/`・`eslint-rules/` 等）または静的解析設定（`eslint.config.mjs`・`tsconfig.json`・`knip.jsonc`・`package.json` の scripts 等）を変更する**なら、タスク一覧に **静的解析を実行するタスク**（`npm run check:static`、または該当する `test:hooks`・`knip` 等）が含まれているか確認する。含まれていなければ `❌`。
+Plan が **TypeScript（`app/`・`infra/`・`samples/`・`eslint-rules/` 等）または静的解析設定（`eslint.config.mjs`・`tsconfig.json`・`knip.jsonc`・`package.json` の scripts 等）を変更する**なら、タスク一覧に **静的解析を実行するタスク**（`npm run check:static`、または該当する `test:hooks`・`knip` 等）が含まれているか確認する。含まれていなければ `❌`。
 
 狙いは、push 後に GitHub Actions で初めて落ちるのを防ぎ、ローカルで潰し切ること。アドホック編集はターン末ゲートの Stop フック（`turn-end-gate.mjs`）が担うが、Plan 経由の変更はこの観点でタスク化を担保する。
 

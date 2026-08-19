@@ -4,7 +4,7 @@
     ".": {
       "project": ["eslint-rules/**/*.mjs"]
     },
-    "infra": {
+    "samples/infra": {
       "entry": [
         "bin/app.ts",
         // Lambda ハンドラは CDK が実行時に文字列パス(entry: path.join(...))で参照するため、
@@ -17,7 +17,7 @@
       // esbuild: NodejsFunction のバンドルで aws-cdk-lib が内部起動する（コードからは import しない）
       "ignoreDependencies": ["tsx", "esbuild"]
     },
-    "app/backend": {
+    "samples/app/backend": {
       "entry": ["main.ts", "test/**/*.test.ts"],
       "project": ["**/*.ts"]
     }

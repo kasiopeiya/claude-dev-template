@@ -1,6 +1,12 @@
 ---
 hook:
-  applies-to: ['app/frontend/**/*.ts', 'app/frontend/**/*.tsx']
+  applies-to:
+    [
+      'app/frontend/**/*.ts',
+      'app/frontend/**/*.tsx',
+      'samples/app/frontend/**/*.ts',
+      'samples/app/frontend/**/*.tsx'
+    ]
 ---
 
 # フロントエンド設計ポリシー

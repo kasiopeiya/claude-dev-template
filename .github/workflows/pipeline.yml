@@ -193,16 +193,17 @@ jobs:
           cache: npm
           cache-dependency-path: |
             package-lock.json
-            app/backend/package-lock.json
-            infra/package-lock.json
+            samples/app/backend/package-lock.json
+            samples/infra/package-lock.json
 
       # eslint.config.mjs の型対応 lint（projectService: true）が TS の型情報を要求するため、
       # 3階層すべての node_modules が揃っていないと動かない。共通だから軽い、は誤り。
+      # 現在この階層は samples/ にしか無い。app/・infra/ に実装を置いたら、その分をここへ足す。
       - run: npm ci
       - run: npm ci
-        working-directory: app/backend
+        working-directory: samples/app/backend
       - run: npm ci
-        working-directory: infra
+        working-directory: samples/infra
       # プロジェクトのコーディング規約の適用
       - run: npm run lint
       # 未使用のexport・未使用のファイル・未使用の依存パッケージなどを検出

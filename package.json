@@ -8,7 +8,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "check:static": "npm run lint && npm run knip && (cd app/backend && npm run typecheck) && (cd infra && npm run typecheck)",
+    "check:static": "npm run lint && npm run knip && (cd samples/app/backend && npm run typecheck) && (cd samples/infra && npm run typecheck)",
     "check:links": "node scripts/check-markdown-links.mjs",
     "check:claude-md": "node scripts/check-claude-md-size.mjs",
     "check:audit": "node scripts/audit-dependencies.mjs",

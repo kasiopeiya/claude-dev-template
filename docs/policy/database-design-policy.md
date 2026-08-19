@@ -1,6 +1,12 @@
 ---
 hook:
-  applies-to: ['app/**/infrastructure/**/*.ts', '**/*table*.ts', '**/*Table*.ts']
+  applies-to:
+    [
+      'app/**/infrastructure/**/*.ts',
+      'samples/app/**/infrastructure/**/*.ts',
+      '**/*table*.ts',
+      '**/*Table*.ts'
+    ]
 ---
 
 # データベース設計ポリシー

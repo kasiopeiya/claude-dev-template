@@ -10,7 +10,7 @@ import { fileURLToPath } from 'url'
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
 // 脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実なので、階層を分けず全部舐める（cicd-design）
-const AUDIT_DIRECTORIES = ['.', 'app/backend', 'infra']
+const AUDIT_DIRECTORIES = ['.', 'samples/app/backend', 'samples/infra']
 
 // どこから落とすか。high 未満を落とさないのは、受容するかが人間の判断だから（cicd-design）
 const SEVERITY_ORDER = ['info', 'low', 'moderate', 'high', 'critical']
@@ -25,7 +25,7 @@ const FAILING_SEVERITY = 'high'
  */
 const ALLOWED_VULNERABILITIES = [
   {
-    directory: 'infra',
+    directory: 'samples/infra',
     packageName: 'brace-expansion',
     advisoryUrl: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
     nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/',

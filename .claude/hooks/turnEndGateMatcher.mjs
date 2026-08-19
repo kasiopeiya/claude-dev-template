@@ -17,8 +17,11 @@ function isStaticGateTarget(normalizedPath) {
   if (normalizedPath.includes('node_modules/')) return false
   if (normalizedPath.endsWith('.d.ts')) return false
 
+  // samples/ は参照実装の置き場。AI が手本にするため、実装コードと同じゲートで守る
+  const GATED_PREFIXES = ['app/', 'infra/', 'samples/']
+
   const isTypeScript = normalizedPath.endsWith('.ts') || normalizedPath.endsWith('.tsx')
-  return isTypeScript && (normalizedPath.startsWith('app/') || normalizedPath.startsWith('infra/'))
+  return isTypeScript && GATED_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix))
 }
 
 /**

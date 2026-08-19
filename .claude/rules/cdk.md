@@ -1,6 +1,7 @@
 ---
 paths:
   - 'infra/**/*.ts'
+  - 'samples/infra/**/*.ts'
 ---
 
 # CDK 実装ルール

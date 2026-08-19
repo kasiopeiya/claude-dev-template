@@ -64,9 +64,9 @@ AI の成果物はすべて関門を通る。**1つでも落ちたらマージ�
 | --------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
 | 静的解析（ESLint / 型検査） | 書き方の逸脱（`any`・import 順序・未使用変数・await 忘れ・型エラー など）          | `eslint.config.mjs`・各 `tsconfig.json`                                                             |
 | コードメトリクス            | 複雑さ（循環的/認知的複雑度・関数の行数・引数の数・ネストの深さ）                  | しきい値は `.claude/rules/typescript.md`、適用は `eslint.config.mjs`                                |
-| アーキテクチャテスト        | 構造の腐り（レイヤー依存の向き・循環依存・凝集度）                                 | `app/backend/test/`                                                                                 |
+| アーキテクチャテスト        | 構造の腐り（レイヤー依存の向き・循環依存・凝集度）                                 | `samples/app/backend/test/`                                                                         |
 | 不要物・脆弱性              | 増えっぱなし（未使用の export・ファイル・依存、脆弱性のある依存）                  | `knip.jsonc`・`scripts/audit-dependencies.mjs`                                                      |
-| テスト                      | 振る舞いの退行（単体テスト・CDK snapshot ＋ synth・dev 環境での結合テスト）        | 各ワークスペースの `*.test.ts`・`infra/test/`                                                       |
+| テスト                      | 振る舞いの退行（単体テスト・CDK snapshot ＋ synth・dev 環境での結合テスト）        | 各ワークスペースの `*.test.ts`・`samples/infra/test/`                                               |
 | CLAUDE.md 文字数検査        | 毎セッション消費する文脈の肥大（CLAUDE.md と `@` import 先の合計文字数が上限超過） | 上限は `docs/policy/policy-driven-development-policy.md`、判定は `scripts/check-claude-md-size.mjs` |
 
 ## 使い方
@@ -80,8 +80,9 @@ npm run format       # フォーマット
 このテンプレートを使う手順:
 
 1. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
-2. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
-3. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
+2. 実装は `app/`・`infra/` に書く。どちらも空なので、[`samples/`](samples/README.md) の参照実装を手本にして写す（`samples/` 自体は書き換えない）
+3. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
+4. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
 
 ## 変更してはならないパス
 
@@ -104,14 +105,17 @@ npm run format       # フォーマット
 
 ### トップレベル
 
-| パス                                     | 固定である根拠                                                                                                                                                                                                         |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `infra/`                                 | CI（`pipeline.yml`/`dev-destroy.yml`）の working-directory・変更検知、`knip.jsonc` の workspace キー、`eslint.config.mjs` のファイル glob、`cdk-design-policy.md` の `applies-to`、cdk-review スキルが直接ハードコード |
-| `app/`, `app/backend/`, `app/frontend/`  | 同様に CI・knip・eslint に加え `application-design-policy.md`/`application-logging-policy.md`（`app/**`）、`frontend-design-policy.md`（`app/frontend/**`）が `applies-to` でハードコード                              |
-| `eslint-rules/`                          | `eslint.config.mjs` が直接 import、`knip.jsonc` の `project` glob が参照                                                                                                                                               |
-| `scripts/`（ディレクトリ＋各ファイル名） | `package.json` の scripts がファイル名まで直接実行し、CI（`pipeline.yml`）と `.claude/hooks/` がそれを経由・相対 import する。中の個別スクリプトは自由に追加可                                                         |
+| パス                                     | 固定である根拠                                                                                                                                                                                                          |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `infra/`                                 | CI（`pipeline.yml` の `ci-cdk`・`cdk-deploy`、`dev-destroy.yml`）の変更検知・working-directory、`eslint.config.mjs` のファイル glob、`cdk-design-policy.md` の `applies-to`、cdk-review スキルが直接ハードコード        |
+| `app/`, `app/backend/`, `app/frontend/`  | 同様に CI（`ci-app`）・eslint に加え `application-design-policy.md`/`application-logging-policy.md`（`app/**`）、`frontend-design-policy.md`（`app/frontend/**`）が `applies-to` でハードコード                         |
+| `samples/`（＋配下の2ワークスペース）    | `knip.jsonc` の workspace キー、`eslint.config.mjs` の glob、`package.json` の `check:static`、`scripts/audit-dependencies.mjs` の監査対象、`pipeline.yml` の `ci-common`、各 policy の `applies-to` が直接ハードコード |
+| `eslint-rules/`                          | `eslint.config.mjs` が直接 import、`knip.jsonc` の `project` glob が参照                                                                                                                                                |
+| `scripts/`（ディレクトリ＋各ファイル名） | `package.json` の scripts がファイル名まで直接実行し、CI（`pipeline.yml`）と `.claude/hooks/` がそれを経由・相対 import する。中の個別スクリプトは自由に追加可                                                          |
 
-`infra/`・`app/` は**場所（ディレクトリ名）だけ**固定で、中身（`parameter.ts` の値、`lib/` 配下のスタック/Lambda 実装、`app/backend/domain` 等のサンプルロジック）は自由に差し替えてよい。
+`infra/`・`app/` は**場所（ディレクトリ名）だけ**固定で、中身は自由に書いてよい。
+
+**この2つは現在空である。** 参照実装は [`samples/`](samples/README.md) にあり、そこから写して実装を始める。空の間は CI の `ci-app`・`ci-cdk`・`cdk-deploy` がスキップされ続け、最初のファイルを置いた瞬間に動き出す。ポリシーの `applies-to` と `eslint.config.mjs` の glob も同じ扱いで、対象が無くても先に書いておく（[policy-driven-development-policy](docs/policy/policy-driven-development-policy.md)）。
 
 ### ルート静的解析ゲート設定
 

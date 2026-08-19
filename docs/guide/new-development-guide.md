@@ -53,6 +53,7 @@ stateDiagram-v2
 
 - **レビューで要修正なら**：要求の引き出しに戻って `requirements.md` を直し、凍結可になってから基盤技術の決定へ進む（判定基準は [requirements-doc-policy](../policy/requirements-doc-policy.md)）。
 - **基盤技術を決める／保留する判定基準**：「決めないと足場（静的解析・CI・デプロイ）と最初の曳光弾が組めないか」で決める/保留を分ける。足場に効くもの（言語・クラウド・IaC・CI/CD・ディレクトリ方針 等）は決め、曳光弾でスタブできる詳細（FW・ORM・DBスキーマ・外部サービス）はあえて保留する——コアから着手し、詳細は境界の外に置いて決定を遅らせるためである。決める基盤項目の全リストは `/decide-tech-stack` が網羅する。決定は ADR（＝設計書の一種）に一本化。構成の絞り込みは [directory-structure-guide](directory-structure-guide.md)。
+- **実装の置き場**：`app/`・`infra/` は空の状態から始める。構造・命名・テストの粒度は [`samples/`](../../samples/README.md) の参照実装を手本にする（構成そのものの方針は [directory-structure-guide](directory-structure-guide.md)）。
 - **Plan 化の後**：`/check-plan` が自動で走り、Plan の必須セクション充足を監査する。
 
 **計画で最低限詰めること**（new-development-policy の立場を計画に織り込む）：

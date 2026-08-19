@@ -48,6 +48,7 @@ TDD はテストを起点に実装を駆動する手法であり、テストの�
 `tdd` スキルは起動しない。Issue のタスク一覧（アプリケーションコードタスクのみ）を1つずつ実装する。
 
 - 対象は `app/` 配下のみ。CDK/インフラのディレクトリ（`infra/`）は変更しない
+- 新規ファイルを書き起こす前に `samples/app/backend/` を Read する（構造・命名・テストの粒度の手本）。`samples/` 自体は変更しない
 - コメント・JSDoc は `docs/policy/code-comment-policy.md` に従う（実装コメントは WHY、doc comment は契約を書く。コードが語る WHAT/HOW は書かない）
 - 各タスク完了ごとに `gh issue edit $ARGUMENTS` でチェックリストを更新する
 - 既存テストがある場合、変更後も壊れていないことを確認するため `unit-test` スキルを Skill ツールで起動して回帰確認する（既存テストが存在しない場合はスキップ）

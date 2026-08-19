@@ -1,6 +1,6 @@
 ---
 hook:
-  applies-to: ['infra/**/*.ts']
+  applies-to: ['infra/**/*.ts', 'samples/infra/**/*.ts']
 ---
 
 # CDK設計ポリシー
@@ -23,7 +23,7 @@ AWS CDK で**コードを書く・レビューする人**が、環境差分の�
 | CDK **コードの機械ルール** | import 形式・Construct レベル・差分検知の具体 DON'T/MUST               | `.claude/rules/cdk.md`                                        |
 | インフラ設計**書**（文書） | 全体像の図・設計判断・組織/運用の制約をどう書くか                      | [iac-infra-design-doc-policy](iac-infra-design-doc-policy.md) |
 
-`.claude/rules/cdk.md` は `infra/**/*` に一致する**既存ファイルを Read したとき**に自動ロードされる（新規 Stack/Construct を書き起こす場面では発火しない）。判断の根拠（なぜ）を本ポリシーに置き、機械ルールを cdk.md に残す配置は、この条件下でも成立する——新規ファイル作成時の抜けは `cdk-imp`/`cdk-dev` Skill が cdk.md を明示的に Read することで塞いでいるためである（Skill を経由しない直接編集は対象外）。
+`.claude/rules/cdk.md` は `infra/**/*`・`samples/infra/**/*` に一致する**既存ファイルを Read したとき**に自動ロードされる（新規 Stack/Construct を書き起こす場面では発火しない）。判断の根拠（なぜ）を本ポリシーに置き、機械ルールを cdk.md に残す配置は、この条件下でも成立する——新規ファイル作成時の抜けは `cdk-imp`/`cdk-dev` Skill が cdk.md を明示的に Read することで塞いでいるためである（Skill を経由しない直接編集は対象外）。
 
 ## 貫く原則：決定論的な構築を最優先する
 
