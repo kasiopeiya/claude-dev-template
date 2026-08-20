@@ -1,6 +1,6 @@
 ---
 hook:
-  applies-to: ['**/*.ts', '**/*.tsx']
+  applies-to: ['**/*.ts', '**/*.tsx', '.github/workflows/*.yml', '**/*.mjs']
 ---
 
 # コードコメント作成ポリシー
