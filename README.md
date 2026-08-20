@@ -105,17 +105,17 @@ npm run format       # フォーマット
 
 ### トップレベル
 
-| パス                                     | 固定である根拠                                                                                                                                                                                                          |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `infra/`                                 | CI（`pipeline.yml` の `ci-cdk`・`cdk-deploy`、`dev-destroy.yml`）の変更検知・working-directory、`eslint.config.mjs` のファイル glob、`cdk-design-policy.md` の `applies-to`、cdk-review スキルが直接ハードコード        |
-| `app/`, `app/backend/`, `app/frontend/`  | 同様に CI（`ci-app`）・eslint に加え `application-design-policy.md`/`application-logging-policy.md`（`app/**`）、`frontend-design-policy.md`（`app/frontend/**`）が `applies-to` でハードコード                         |
-| `samples/`（＋配下の2ワークスペース）    | `knip.jsonc` の workspace キー、`eslint.config.mjs` の glob、`package.json` の `check:static`、`scripts/audit-dependencies.mjs` の監査対象、`pipeline.yml` の `ci-common`、各 policy の `applies-to` が直接ハードコード |
-| `eslint-rules/`                          | `eslint.config.mjs` が直接 import、`knip.jsonc` の `project` glob が参照                                                                                                                                                |
-| `scripts/`（ディレクトリ＋各ファイル名） | `package.json` の scripts がファイル名まで直接実行し、CI（`pipeline.yml`）と `.claude/hooks/` がそれを経由・相対 import する。中の個別スクリプトは自由に追加可                                                          |
+| パス                                     | 固定である根拠                                                                                                                                                                                                                   |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `infra/`                                 | CI（`pipeline.yml` の `ci-cdk`・`cdk-diff`、`deploy-dev.yml`、`dev-destroy.yml`）の変更検知・working-directory、`eslint.config.mjs` のファイル glob、`cdk-design-policy.md` の `applies-to`、cdk-review スキルが直接ハードコード |
+| `app/`, `app/backend/`, `app/frontend/`  | 同様に CI（`ci-app`）・eslint に加え `application-design-policy.md`/`application-logging-policy.md`（`app/**`）、`frontend-design-policy.md`（`app/frontend/**`）が `applies-to` でハードコード                                  |
+| `samples/`（＋配下の2ワークスペース）    | `knip.jsonc` の workspace キー、`eslint.config.mjs` の glob、`package.json` の `check:static`、`scripts/audit-dependencies.mjs` の監査対象、`pipeline.yml` の `ci-common`、各 policy の `applies-to` が直接ハードコード          |
+| `eslint-rules/`                          | `eslint.config.mjs` が直接 import、`knip.jsonc` の `project` glob が参照                                                                                                                                                         |
+| `scripts/`（ディレクトリ＋各ファイル名） | `package.json` の scripts がファイル名まで直接実行し、CI（`pipeline.yml`）と `.claude/hooks/` がそれを経由・相対 import する。中の個別スクリプトは自由に追加可                                                                   |
 
 `infra/`・`app/` は**場所（ディレクトリ名）だけ**固定で、中身は自由に書いてよい。
 
-**この2つは現在空である。** 参照実装は [`samples/`](samples/README.md) にあり、そこから写して実装を始める。空の間は CI の `ci-app`・`ci-cdk`・`cdk-deploy` がスキップされ続け、最初のファイルを置いた瞬間に動き出す。ポリシーの `applies-to` と `eslint.config.mjs` の glob も同じ扱いで、対象が無くても先に書いておく（[policy-driven-development-policy](docs/policy/policy-driven-development-policy.md)）。
+**この2つは現在空である。** 参照実装は [`samples/`](samples/README.md) にあり、そこから写して実装を始める。空の間は CI の `ci-app`・`ci-cdk`・`cdk-diff` がスキップされ続け（`deploy-dev.yml` も発火しない）、最初のファイルを置いた瞬間に動き出す。ポリシーの `applies-to` と `eslint.config.mjs` の glob も同じ扱いで、対象が無くても先に書いておく（[policy-driven-development-policy](docs/policy/policy-driven-development-policy.md)）。
 
 ### ルート静的解析ゲート設定
 

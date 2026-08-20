@@ -2361,10 +2361,7 @@
 
             <div class="gate-item">
               <b>テスト</b><span class="what">振る舞いの退行を止める</span>
-              <div class="chips">
-                <span>単体テスト</span><span>CDK snapshot ＋ cdk synth</span
-                ><span>dev環境へ deploy して結合テスト</span>
-              </div>
+              <div class="chips"><span>単体テスト</span><span>CDK snapshot ＋ cdk synth</span></div>
             </div>
           </div>
 
@@ -2560,7 +2557,7 @@
           <div class="phase">
             <div class="num">PHASE 4</div>
             <h3>レビュー・マージ</h3>
-            <p>人間が差分を確認しコミット。CIがデプロイ・テスト後、PRをマージ</p>
+            <p>人間が差分を確認しコミット。CIの検査を通ったPRをマージし、マージ後にデプロイ</p>
             <code>/git-commit</code>
           </div>
         </div>
@@ -2967,17 +2964,16 @@
               </div>
               <div class="body">
                 <div class="title-row">
-                  <h4>push → デプロイ・結合テスト</h4>
+                  <h4>push → CI検査・PR作成</h4>
                   <span class="badge b-ci">CI（自動）</span>
                 </div>
                 <div class="desc">
-                  リモートブランチにpushすると、CIがdev環境へ自動デプロイし、結合テストを自動実行する
+                  リモートブランチにpushすると、CIが検査を回してPRを自動生成する。dev環境へのデプロイと結合テストはマージ後に走る
                 </div>
                 <div class="io">
                   <span class="io-label">IN</span><span class="chip c-code">📦 コミット</span>
                   <span class="io-sep">→</span>
-                  <span class="io-label">OUT</span
-                  ><span class="chip c-ok">✅ dev環境＋結合テスト結果</span
+                  <span class="io-label">OUT</span><span class="chip c-ok">✅ CI検査の結果</span
                   ><span class="chip c-pr">🔀 PR</span>
                 </div>
               </div>
@@ -3017,7 +3013,7 @@
                   <span class="badge b-human">人間</span>
                 </div>
                 <div class="desc">
-                  差分を確認し、問題なければマージ。レビュー不要と判定されたPRは人間を通らずauto-mergeされる
+                  差分を確認し、問題なければマージ。レビュー不要と判定されたPRは人間を通らずauto-mergeされる。マージされるとdev環境へ自動デプロイされ、結合テストが走る
                 </div>
                 <div class="io">
                   <span class="io-label">IN</span><span class="chip c-pr">🔀 PR</span
@@ -3141,7 +3137,7 @@
 
           <rect class="box gate" x="146" y="34" width="196" height="64" rx="10" />
           <text class="fnm" x="160" y="60">🔁 pipeline（CI）</text>
-          <text class="li" x="160" y="82">dev へ deploy して結合テスト</text>
+          <text class="li" x="160" y="82">検査してマージ可否を判定</text>
 
           <path class="e step" d="M344,66 L376,60" />
           <text class="lab" x="348" y="16">成功したときだけ</text>

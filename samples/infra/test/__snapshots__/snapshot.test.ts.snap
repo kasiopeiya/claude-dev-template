@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`dev 環境 > kasio-dev-app-stack のテンプレートがスナップショットと一致する 1`] = `
+exports[`dev 環境 > pdd-dev-app-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Parameters": {
     "BootstrapVersion": {
@@ -229,7 +229,7 @@ def sort_filter_rules(json_obj):
       },
       "Type": "AWS::IAM::Role",
     },
-    "EventNotificationS3BucketAllowBucketNotificationsTokasiodevappstackEventNotificationS3BucketFunctionBAE5C9AD115F261B": {
+    "EventNotificationS3BucketAllowBucketNotificationsTopdddevappstackEventNotificationS3BucketFunctionB4CBD576A2145086": {
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
@@ -310,7 +310,7 @@ def sort_filter_rules(json_obj):
         "Environment": {
           "Variables": {
             "TOPIC_ARN": {
-              "Fn::ImportValue": "kasio-dev-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+              "Fn::ImportValue": "pdd-dev-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
             },
           },
         },
@@ -366,7 +366,7 @@ def sort_filter_rules(json_obj):
               "Action": "sns:Publish",
               "Effect": "Allow",
               "Resource": {
-                "Fn::ImportValue": "kasio-dev-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+                "Fn::ImportValue": "pdd-dev-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
               },
             },
           ],
@@ -383,7 +383,7 @@ def sort_filter_rules(json_obj):
     },
     "EventNotificationS3BucketNotifications06B1A5C4": {
       "DependsOn": [
-        "EventNotificationS3BucketAllowBucketNotificationsTokasiodevappstackEventNotificationS3BucketFunctionBAE5C9AD115F261B",
+        "EventNotificationS3BucketAllowBucketNotificationsTopdddevappstackEventNotificationS3BucketFunctionB4CBD576A2145086",
         "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
         "EventNotificationS3BucketPolicy11F527D0",
       ],
@@ -560,12 +560,12 @@ def sort_filter_rules(json_obj):
 }
 `;
 
-exports[`dev 環境 > kasio-dev-base-stack のテンプレートがスナップショットと一致する 1`] = `
+exports[`dev 環境 > pdd-dev-base-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Outputs": {
     "ExportsOutputRefTopicBFC7AF6ECB4A357A": {
       "Export": {
-        "Name": "kasio-dev-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+        "Name": "pdd-dev-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
       },
       "Value": {
         "Ref": "TopicBFC7AF6E",
@@ -583,7 +583,7 @@ exports[`dev 環境 > kasio-dev-base-stack のテンプレートがスナップ�
     "TopicBFC7AF6E": {
       "DeletionPolicy": "Retain",
       "Properties": {
-        "DisplayName": "kasio-dev-base-stack-topic",
+        "DisplayName": "pdd-dev-base-stack-topic",
         "KmsMasterKeyId": {
           "Fn::Join": [
             "",
@@ -664,7 +664,7 @@ exports[`dev 環境 > kasio-dev-base-stack のテンプレートがスナップ�
 }
 `;
 
-exports[`prd 環境 > kasio-prd-app-stack のテンプレートがスナップショットと一致する 1`] = `
+exports[`prd 環境 > pdd-prd-app-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Parameters": {
     "BootstrapVersion": {
@@ -893,7 +893,7 @@ def sort_filter_rules(json_obj):
       },
       "Type": "AWS::IAM::Role",
     },
-    "EventNotificationS3BucketAllowBucketNotificationsTokasioprdappstackEventNotificationS3BucketFunction2B660081AA2B44F9": {
+    "EventNotificationS3BucketAllowBucketNotificationsTopddprdappstackEventNotificationS3BucketFunction2850F0DFEF843103": {
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
@@ -974,7 +974,7 @@ def sort_filter_rules(json_obj):
         "Environment": {
           "Variables": {
             "TOPIC_ARN": {
-              "Fn::ImportValue": "kasio-prd-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+              "Fn::ImportValue": "pdd-prd-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
             },
           },
         },
@@ -1030,7 +1030,7 @@ def sort_filter_rules(json_obj):
               "Action": "sns:Publish",
               "Effect": "Allow",
               "Resource": {
-                "Fn::ImportValue": "kasio-prd-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+                "Fn::ImportValue": "pdd-prd-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
               },
             },
           ],
@@ -1047,7 +1047,7 @@ def sort_filter_rules(json_obj):
     },
     "EventNotificationS3BucketNotifications06B1A5C4": {
       "DependsOn": [
-        "EventNotificationS3BucketAllowBucketNotificationsTokasioprdappstackEventNotificationS3BucketFunction2B660081AA2B44F9",
+        "EventNotificationS3BucketAllowBucketNotificationsTopddprdappstackEventNotificationS3BucketFunction2850F0DFEF843103",
         "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
         "EventNotificationS3BucketPolicy11F527D0",
       ],
@@ -1197,7 +1197,7 @@ def sort_filter_rules(json_obj):
       "Properties": {
         "AlarmActions": [
           {
-            "Fn::ImportValue": "kasio-prd-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+            "Fn::ImportValue": "pdd-prd-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
           },
         ],
         "ComparisonOperator": "GreaterThanOrEqualToThreshold",
@@ -1250,12 +1250,12 @@ def sort_filter_rules(json_obj):
 }
 `;
 
-exports[`prd 環境 > kasio-prd-base-stack のテンプレートがスナップショットと一致する 1`] = `
+exports[`prd 環境 > pdd-prd-base-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Outputs": {
     "ExportsOutputRefTopicBFC7AF6ECB4A357A": {
       "Export": {
-        "Name": "kasio-prd-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+        "Name": "pdd-prd-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
       },
       "Value": {
         "Ref": "TopicBFC7AF6E",
@@ -1273,7 +1273,7 @@ exports[`prd 環境 > kasio-prd-base-stack のテンプレートがスナップ�
     "TopicBFC7AF6E": {
       "DeletionPolicy": "Retain",
       "Properties": {
-        "DisplayName": "kasio-prd-base-stack-topic",
+        "DisplayName": "pdd-prd-base-stack-topic",
         "KmsMasterKeyId": {
           "Fn::Join": [
             "",
@@ -1354,7 +1354,7 @@ exports[`prd 環境 > kasio-prd-base-stack のテンプレートがスナップ�
 }
 `;
 
-exports[`stg 環境 > kasio-stg-app-stack のテンプレートがスナップショットと一致する 1`] = `
+exports[`stg 環境 > pdd-stg-app-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Parameters": {
     "BootstrapVersion": {
@@ -1583,7 +1583,7 @@ def sort_filter_rules(json_obj):
       },
       "Type": "AWS::IAM::Role",
     },
-    "EventNotificationS3BucketAllowBucketNotificationsTokasiostgappstackEventNotificationS3BucketFunction1D3529DEDF72F34F": {
+    "EventNotificationS3BucketAllowBucketNotificationsTopddstgappstackEventNotificationS3BucketFunctionF248017352F1F548": {
       "Properties": {
         "Action": "lambda:InvokeFunction",
         "FunctionName": {
@@ -1664,7 +1664,7 @@ def sort_filter_rules(json_obj):
         "Environment": {
           "Variables": {
             "TOPIC_ARN": {
-              "Fn::ImportValue": "kasio-stg-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+              "Fn::ImportValue": "pdd-stg-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
             },
           },
         },
@@ -1720,7 +1720,7 @@ def sort_filter_rules(json_obj):
               "Action": "sns:Publish",
               "Effect": "Allow",
               "Resource": {
-                "Fn::ImportValue": "kasio-stg-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+                "Fn::ImportValue": "pdd-stg-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
               },
             },
           ],
@@ -1737,7 +1737,7 @@ def sort_filter_rules(json_obj):
     },
     "EventNotificationS3BucketNotifications06B1A5C4": {
       "DependsOn": [
-        "EventNotificationS3BucketAllowBucketNotificationsTokasiostgappstackEventNotificationS3BucketFunction1D3529DEDF72F34F",
+        "EventNotificationS3BucketAllowBucketNotificationsTopddstgappstackEventNotificationS3BucketFunctionF248017352F1F548",
         "EventNotificationS3BucketNotificationsHandlerPolicy267CB7DF",
         "EventNotificationS3BucketPolicy11F527D0",
       ],
@@ -1914,12 +1914,12 @@ def sort_filter_rules(json_obj):
 }
 `;
 
-exports[`stg 環境 > kasio-stg-base-stack のテンプレートがスナップショットと一致する 1`] = `
+exports[`stg 環境 > pdd-stg-base-stack のテンプレートがスナップショットと一致する 1`] = `
 {
   "Outputs": {
     "ExportsOutputRefTopicBFC7AF6ECB4A357A": {
       "Export": {
-        "Name": "kasio-stg-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
+        "Name": "pdd-stg-base-stack:ExportsOutputRefTopicBFC7AF6ECB4A357A",
       },
       "Value": {
         "Ref": "TopicBFC7AF6E",
@@ -1937,7 +1937,7 @@ exports[`stg 環境 > kasio-stg-base-stack のテンプレートがスナップ�
     "TopicBFC7AF6E": {
       "DeletionPolicy": "Retain",
       "Properties": {
-        "DisplayName": "kasio-stg-base-stack-topic",
+        "DisplayName": "pdd-stg-base-stack-topic",
         "KmsMasterKeyId": {
           "Fn::Join": [
             "",

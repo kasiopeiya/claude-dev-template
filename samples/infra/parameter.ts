@@ -23,7 +23,7 @@ export interface Parameter {
 
 export const devParameter: Parameter = {
   env,
-  prefix: 'kasio-dev',
+  prefix: 'pdd-dev',
   // VPCは手動作成リソース
   vpcId: 'aaaaaaaaaa',
   // EC2インスタンスタイプは環境によって異なるためここで設定
@@ -32,14 +32,14 @@ export const devParameter: Parameter = {
 
 export const stgParameter: Parameter = {
   env,
-  prefix: 'kasio-stg',
+  prefix: 'pdd-stg',
   vpcId: 'bbbbbbbbbb',
   instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.SMALL)
 }
 
 export const prdParameter: Parameter = {
   env,
-  prefix: 'kasio-prd',
+  prefix: 'pdd-prd',
   vpcId: 'cccccccccc',
   instanceType: ec2.InstanceType.of(ec2.InstanceClass.T2, ec2.InstanceSize.SMALL)
 }
