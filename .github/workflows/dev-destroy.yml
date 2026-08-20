@@ -1,5 +1,5 @@
 # 責務: コスト節約のため、dev 環境のスタックをスケジュールで削除する。
-# この設計では PR を push すれば dev 環境が自動で作り直されるため、削除しっぱなしでも困らない。
+# この設計では main へマージすれば dev 環境が自動で作り直されるため、削除しっぱなしでも困らない。
 
 name: dev-destroy
 run-name: dev-destroy (${{ github.ref_name }})
@@ -12,9 +12,9 @@ on:
       stack:
         type: choice
         description: target stack
-        default: kasio-dev-*
+        default: pdd-dev-*
         options:
-          - kasio-dev-*
+          - pdd-dev-*
 
 permissions: {}
 
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     # dev を使う者は全員このグループで直列化する（理由は docs/design/cicd-design.md の変更可能境界）。
-    # グループ名は pipeline.yml の cdk-deploy と完全一致させること。別名にすると直列化が効かず、
+    # グループ名は deploy-dev.yml の cdk-deploy と完全一致させること。別名にすると直列化が効かず、
     # destroy と deploy が並行する。
     concurrency:
       group: cdk-deploy-dev
@@ -65,4 +65,4 @@ jobs:
       - run: npx cdk destroy -f "$STACK_NAME"
         working-directory: infra
         env:
-          STACK_NAME: ${{ github.event.inputs.stack || 'kasio-dev-*' }}
+          STACK_NAME: ${{ github.event.inputs.stack || 'pdd-dev-*' }}
