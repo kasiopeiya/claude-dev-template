@@ -65,7 +65,8 @@ flowchart LR
         Det["⓪ パス判定（決定論）<br/>Policy・CLAUDE.md に変更があれば<br/>policy も付与"]
         Ai["① AI advisory<br/>PR 説明の書き換え・pr-label"]
         Chk["② pr-check<br/>needs-human-review が付いていれば実行し<br/>前提条件が NG ならコメント"]
-        Det --> Ai --> Chk
+        Iss["③ Issue 起票（決定論）<br/>needs-human-review が付いていれば<br/>PR 番号だけの Issue を1件"]
+        Det --> Ai --> Chk --> Iss
     end
 
     Label{{"🏷️ needs-human-review<br/>マージ可否を決める"}}
@@ -83,6 +84,7 @@ flowchart LR
     Ai -. 付与 .-> Label
     Ai -. 振る舞い変更判定不能 .-> Triage2
     Label -. 判定材料 .-> Judge
+    Label -. 起票の条件 .-> Iss
     Judge -->|Yes| Human
     Judge -->|No| Merged
 
@@ -94,7 +96,7 @@ flowchart LR
     classDef substate fill:#EFE0F5,stroke:#4B0082,stroke-width:2px,stroke-dasharray: 4 4,color:#2b0047
 
     class Start,Human,Merged startEnd
-    class Det process
+    class Det,Iss process
     class Ai,Chk advisory
     class Judge decision
     class Label state
@@ -172,6 +174,7 @@ PR がゲートを通るまでに何を検査しているかの一覧。個々�
 | dev を触るものは、削除も含めて同じ直列化グループに入れる          | dev は1環境しかない。main への連続 push と dev の削除が並行すると CloudFormation スタックが壊れる                                                                                                                                                                                                                                                                                 |
 | PR の時点では deploy せず、`cdk diff` だけを確認する              | PRをレビューする時点でdeploy はしないが、cdk diffを実行することで、意図しない置換・削除はレビューで事前確認できる。                                                                                                                                                                                                                                                               |
 | main への deploy が失敗したら GitHub Issue を自動起票する         | 失敗が required check の外側で起きるため、デプロイ失敗は誰の担当にもならない。壊れた main はブランチ最新化の要求を通じて全ブランチへ配られるので、Issueを自動起票し対応させる。                                                                                                                                                                                                   |
+| `needs-human-review` が付いたら GitHub Issue を自動起票する       | ラベルだけでは、レビューすべき PR を人間が PR 一覧から拾い続けるしかない。拾い漏れても誰も気づかないので、Issue にして持ち主のある ToDo にする                                                                                                                                                                                                                                    |
 
 ### 変更対象を「常時実行・全体・アプリ・CDK」に分類し、検査対象を絞る
 

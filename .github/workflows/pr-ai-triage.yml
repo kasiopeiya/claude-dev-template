@@ -25,10 +25,8 @@ concurrency:
 
 jobs:
   # 対象 PR に対し ⓪policy パスの決定論ラベル付与 ①本文の AI 書き換え ②pr-label
-  # ③（needs-human-review が付いていれば）pr-check を行う。
+  # ③（needs-human-review が付いていれば）pr-check ④同じくレビュー用 Issue の起票を行う。
   # 権限は prompt injection 前提で設計する——contents: read 固定・Bash は gh 限定
-  # （#65/#66。理由は cicd-design「重要なポイント」を参照）。Write は本文・コメントを
-  # ファイル経由（--body-file）で渡すためにスコープ無しで許可する（理由は prompt 内に記載）。
   pr-triage:
     # pipeline が成功したときだけ走る。失敗・キャンセル時は advisory 不要。
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -84,8 +82,7 @@ jobs:
             gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
           gh pr edit "$PR" --add-label policy,needs-human-review
 
-      # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet 5 単一。
-      # allowedTools を絞る理由は cicd-design「重要なポイント」を参照。
+      # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet
       - name: Run AI advisory (rewrite body / pr-label / pr-check)
         id: advisory
         if: steps.pr.outputs.number != ''
@@ -175,6 +172,32 @@ jobs:
             echo "### permission_denials（拒否された具体コマンド）"
             echo "${denials:-_なし_}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      # needs-human-review の PR は人間の後追いレビューが要る。PR 一覧を見張る運用に頼らず、
+      # Issueを起票する。
+      # ラベルは ⓪決定論ステップと ①AI の両方から付くため、その両方の後ろで最終状態を読む。
+      # AI が失敗しても決定論ラベルは残るため !cancelled()（キャンセル時は後続ランが拾う）。
+      - name: Open a review issue for human-review PRs
+        if: ${{ !cancelled() && steps.pr.outputs.number != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          if ! gh pr view "$PR" --json labels --jq '.labels[].name' | grep -qx 'needs-human-review'; then
+            echo "no needs-human-review label on PR #$PR; skipping issue"
+            exit 0
+          fi
+          title="PR #$PR の人間レビュー"
+          # 同じブランチへ push するたび本 workflow は走る。閉じた Issue も含めて既存を見て量産を防ぐ
+          # （閉じた＝レビュー済み。再度追うかは人間が決める）。
+          existing=$(gh issue list --label needs-human-review --state all --limit 200 --json number,title |
+            jq -r --arg t "$title" 'map(select(.title == $t)) | .[0].number // empty')
+          if [ -n "$existing" ]; then
+            echo "issue #$existing already tracks PR #$PR; skipping"
+            exit 0
+          fi
+          # ラベルは PR に付いている＝リポジトリに存在するので、ここでの自己作成は要らない。
+          gh issue create --title "$title" --label needs-human-review --body "#$PR"
 
   # ラベルを読んで gh pr merge --auto するだけの決定論 job。merge に要る contents: write を
   # AI job から剥がすための分離（#66。詳細: cicd-design）。判定材料はラベルだけで、
