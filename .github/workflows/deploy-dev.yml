@@ -38,15 +38,14 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
-      # OIDC で AWS へ認証するために必要。下の AWS 認証と同時に解除する（#31）
+      # OIDC で AWS へ認証するために必要（下の AWS 認証ステップと対）
       # id-token: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
-      # ここから下は #31（OIDC ロールの構築）の完了まで動かせないため、コメントアウトしている。
-      # AWS アカウント・OIDC ロール・secrets.ROLE_TO_ASSUME がまだ無く、認証ステップが必ず落ちる。
-      # infra/ もまだ無いため、その依存を要る setup-node と npm ci も同じく動かせない。
-      # #31 の完了後、この段落全体のコメントを外し、上の id-token: write も併せて解除する。
+      # AWS アカウント・OIDC ロール・secrets.ROLE_TO_ASSUME が無いため、認証ステップが必ず落ちる。
+      # infra/ も無いため、その依存を要る setup-node と npm ci も同じく動かせない。
+      # 有効化には OIDC ロールの構築が要る。
       #
       # - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       #   with:
@@ -71,7 +70,7 @@ jobs:
       #     STACK_NAME: pdd-dev-*
       #   run: npx cdk deploy --require-approval never "$STACK_NAME"
 
-  # 器だけ置く。検証する対象がまだ無いため中身は空（#31 完了後の deploy が前提）。
+  # 器だけ置く。検証する対象が無いため中身は空（deploy が動くことが前提）。
   integration-test:
     needs: cdk-deploy
     runs-on: ubuntu-latest
