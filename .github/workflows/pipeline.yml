@@ -99,9 +99,10 @@ jobs:
           echo "app_changed=$app_changed" | tee -a "$GITHUB_OUTPUT"
           echo "cdk_changed=$cdk_changed" | tee -a "$GITHUB_OUTPUT"
 
-  # prettier は .md も検査対象にしており、docs_only でも整形崩れを検出する必要があるため
-  # ci-common から切り出し常に実行する。root の依存だけで完結し型情報を要らないので、
-  # 3階層分の npm ci が要る ci-common と違い軽量に保てる（cicd-design）。
+  # ここから ci-claude-md までは、変更種別に関わらず常に実行する軽量ジョブ。docs_only 判定で
+  # ci-common がスキップされても検査が要るもので、root の依存だけで完結するため軽い（cicd-design）。
+  #
+  # prettier は .md も検査対象にしており、docs_only でも整形崩れを検出する必要がある。
   ci-format:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -120,9 +121,7 @@ jobs:
       - run: npm run format:check
 
   # policy hook（.claude/hooks/policy-loader.mjs）の回帰検査。docs/policy の frontmatter だけを
-  # 直す PR は docs_only 判定で ci-common がスキップされるため、その中に置くと「hook を壊す変更で
-  # こそ検査が走らない」。ci-format と同じ理由で、変更種別に関わらず常に実行する独立ジョブにする。
-  # root の依存だけで完結し軽量（ci-format と同型）。
+  # 直す PR でも、hook を壊す変更なら検査が要る。
   ci-hooks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -140,8 +139,7 @@ jobs:
       - run: npm ci
       - run: npm run test:hooks
 
-  # Markdown の相対リンク切れ検査。ci-format・ci-hooks と同じ「常に実行する軽量ジョブ」で、
-  # 理由は cicd-design を参照する。検査スクリプトが外部依存を使わないため npm ci も要らない。
+  # Markdown の相対リンク切れ検査。検査スクリプトが外部依存を使わないため npm ci も要らない。
   ci-links:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -156,9 +154,7 @@ jobs:
 
       - run: npm run check:links
 
-  # CLAUDE.md（@ import 先を含む）の文字数上限の検査。ci-format・ci-hooks・ci-links と同じ
-  # 「常に実行する軽量ジョブ」で、理由は cicd-design を参照する。CLAUDE.md だけを直す PR は
-  # docs_only 判定になるため、ci-common に置くと上限を破る変更でこそ走らない。
+  # CLAUDE.md（@ import 先を含む）の文字数上限の検査。CLAUDE.md だけを直す PR でも上限を破りうる。
   # 検査スクリプトが外部依存を使わないため npm ci も要らない。
   ci-claude-md:
     runs-on: ubuntu-latest
@@ -199,13 +195,11 @@ jobs:
 
       # eslint.config.mjs の型対応 lint（projectService: true）が TS の型情報を要求するため、
       # 3階層すべての node_modules が揃っていないと動かない。共通だから軽い、は誤り。
-      # 現在この階層は samples/ にしか無い。app/・infra/ に実装を置いたら、その分をここへ足す。
       - run: npm ci
       - run: npm ci
         working-directory: samples/app/backend
       - run: npm ci
         working-directory: samples/infra
-      # プロジェクトのコーディング規約の適用
       - run: npm run lint
       # 未使用のexport・未使用のファイル・未使用の依存パッケージなどを検出
       - run: npm run knip
@@ -266,7 +260,7 @@ jobs:
         working-directory: infra
 
   # PR の時点では deploy せず、cdk diff だけをレビューの材料として出す。
-  # deploy はマージ後（deploy-dev.yml）へ移した。ここは read-only なので dev を奪わず、
+  # deploy はマージ後（deploy-dev.yml）が担う。ここは read-only なので dev を奪わず、
   # 直列化の待ちも作らない（concurrency を付けないのはこのため）。
   # cicd-gate には繋がない——実環境への疎通をマージ可否に持ち込むと AWS 側の一時障害で
   # マージが止まる。diff は判断材料であって合否ではない（cicd-design「重要なポイント」）。
