@@ -16,62 +16,89 @@
 
 ## パイプラインの全体像
 
-### マージまで
-
-AIへの指示：この図を２つに分割してください。cicd-gateまでとAI判定を分ける。図が大きすぎるので。
+### 検査からマージ可否の判定まで
 
 ```mermaid
-flowchart TD
-    Push([⚡ topic ブランチへ push]) --> PR[📝 PR を自動生成]
-    Push --> Detect[🔍 変更種別を判定<br/>docs のみ / アプリ / CDK]
-    Push --> Always
+flowchart LR
+    Push([⚡ topic ブランチへ push])
+    PR["📝 create-pull-request<br/>PR を自動生成"]
+    Detect["🔍 detect-changes<br/>変更種別を判定<br/>docs のみ / アプリ / CDK"]
+    Always["✓ 常時実行の検査<br/>ci-format / ci-hooks<br/>ci-links / ci-claude-md"]
+    Common["✓ ci-common<br/>全体を舐める検査<br/>docs のみなら skip"]
+    App["✓ ci-app<br/>app/ 変更時のみ"]
+    Cdk["✓ ci-cdk<br/>infra/ 変更時のみ"]
+    Diff["🔍 cdk-diff<br/>ジョブサマリへ出すだけ<br/>TODO(#31)"]
+    Gate["🛡️ cicd-gate<br/>未実行を成功とみなさない"]
+    Merge([🎯 マージ可否<br/>★唯一の required check])
 
-    subgraph Checks["🔀 検査（並行実行）"]
-        direction TB
-        Always["✓ 常時実行の検査<br/>整形・policy hook・リンク切れ・CLAUDE.md 文字数"]
-        Common["✓ 全体を舐める検査<br/>lint・未使用検出・依存の脆弱性<br/>docs のみなら skip"]
-        App["✓ アプリ検査<br/>app/ 変更時のみ"]
-        Cdk["✓ CDK 検査<br/>infra/ 変更時のみ"]
-        Always ~~~ Common ~~~ App ~~~ Cdk
+    Push --> PR --> Gate
+    Push --> Always --> Gate
+    Push --> Detect
+    Detect --> Common --> Gate
+    Detect --> App --> Gate
+    Detect --> Cdk --> Gate
+    Detect --> Gate
+    Detect -. ゲートに繋がない .-> Diff
+    Gate --> Merge
+
+    classDef startEnd fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef gate fill:#87CEEB,stroke:#00008B,stroke-width:4px,color:darkblue
+    classDef hollow fill:#FFE4B5,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5,color:black
+
+    class Push,Merge startEnd
+    class PR,Detect,Always,Common,App,Cdk process
+    class Diff hollow
+    class Gate gate
+```
+
+### 判定後の AI 処理と自動マージ
+
+マージするかどうかは `needs-human-review` ラベル1つで決まる。どの変更の種類が人間レビューを要するかは [pr-review-policy](../policy/pr-review-policy.md) が正。  
+人間レビューが必要かどうかはレビュイーにもよるが、ここでは常に人間レビュー不要のケースのみ、`needs-human-review` ラベルをつけないルールにしている。
+
+```mermaid
+flowchart LR
+    Start([🎯 cicd-gate 成功<br/>＝pipeline 完了])
+
+    subgraph Triage["🤖 pr-triage ジョブ（merge 権限なし）"]
+        Det["⓪ パス判定（決定論）<br/>Policy・CLAUDE.md に変更があれば<br/>policy も付与"]
+        Ai["① AI advisory<br/>PR 説明の書き換え・pr-label"]
+        Chk["② pr-check<br/>needs-human-review が付いていれば実行し<br/>前提条件が NG ならコメント"]
+        Det --> Ai --> Chk
     end
 
-    Detect --> Common
-    Detect --> App
-    Detect --> Cdk
-    Detect -->|app/ または infra/ の変更時| Diff["🔍 cdk diff をジョブサマリへ<br/>deploy はしない・ゲートに繋がない<br/>TODO(#31)"]
+    Label{{"🏷️ needs-human-review<br/>マージ可否を決める"}}
+    Triage2{{"🏷️ needs-manual-triage<br/>振る舞い変更のfeatureラベルを付けるべきかどうかの判定不能<br/>needs-human-reviewをつける"}}
 
-    Always --> Gate
-    Common --> Gate
-    App --> Gate
-    Cdk --> Gate
-    PR --> Gate
+    subgraph AutoJob["🔀 auto-merge ジョブ（merge 権限あり）"]
+        Judge{付いている?}
+    end
 
-    Gate["🛡️ cicd-gate<br/>未実行を成功とみなさない"]
-    Gate --> Merge([🎯 マージ可否<br/>★唯一の required check])
+    Human([👤 人間レビュー])
+    Merged([✅ auto-merge を有効化<br/>gate 成功後に GitHub がマージ])
 
-    Merge --> PolicyCheck{判断基準<br/>Policy・CLAUDE.md<br/>に変更?}
-    PolicyCheck -->|Yes| PolicyLabel["🏷️ policy + needs-human-review を付与<br/>AI より前の決定論ステップ"]
-    PolicyCheck -->|No| AiJob
-    PolicyLabel --> AiJob
-
-    AiJob["🤖 AI advisory<br/>PR 説明の書き換え・ラベル付与・前提条件チェック"]
-    AiJob --> AutoMergeCheck{needs-human-review<br/>が付いている?}
-    AutoMergeCheck -->|No| AutoMerge(["🔀 auto-merge<br/>merge 権限を持つ別ジョブ"])
-    AutoMergeCheck -->|Yes| HumanReview(["👤 人間レビュー"])
+    Start --> Det
+    Triage ==> AutoJob
+    Ai -. 付与 .-> Label
+    Ai -. 振る舞い変更判定不能 .-> Triage2
+    Label -. 判定材料 .-> Judge
+    Judge -->|Yes| Human
+    Judge -->|No| Merged
 
     classDef startEnd fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
     classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
-    classDef gate fill:#87CEEB,stroke:#00008B,stroke-width:4px,color:darkblue
-    classDef hollow fill:#FFE4B5,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5,color:black
     classDef advisory fill:#FFF9C4,stroke:#F57F17,stroke-width:2px,color:#7f4f00
+    classDef state fill:#D8BFD8,stroke:#4B0082,stroke-width:4px,color:#2b0047
+    classDef substate fill:#EFE0F5,stroke:#4B0082,stroke-width:2px,stroke-dasharray: 4 4,color:#2b0047
 
-    class Push,Merge startEnd
-    class PR,Detect,Always,Common,App,Cdk,PolicyLabel process
-    class PolicyCheck,AutoMergeCheck decision
-    class Diff hollow
-    class Gate gate
-    class AiJob,AutoMerge,HumanReview advisory
+    class Start,Human,Merged startEnd
+    class Det process
+    class Ai,Chk advisory
+    class Judge decision
+    class Label state
+    class Triage2 substate
 ```
 
 ### マージ後
@@ -85,10 +112,10 @@ flowchart LR
 
     subgraph Serial["🔒 直列化グループ cdk-deploy-dev（dev は1環境）"]
         direction TB
-        Deploy["🚀 dev 環境へ deploy<br/>TODO(#31)"]
+        Deploy["🚀 dev 環境へ deploy"]
     end
 
-    Deploy --> IT["🧪 結合テスト<br/>TODO(#31)"]
+    Deploy --> IT["🧪 結合テスト"]
     IT --> Done([✅ dev = main の姿])
     Deploy -. 失敗 .-> Issue
     IT -. 失敗 .-> Issue["📌 GitHub Issue を自動起票<br/>破損に持ち主を作る"]
@@ -99,25 +126,39 @@ flowchart LR
     classDef hollow fill:#FFE4B5,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5,color:black
 
     class Merged,Skip,Done,Pages startEnd
-    class Issue,Destroy process
+    class Issue process
     class PathCheck decision
     class Deploy,IT hollow
 ```
 
 ## GitHubリポジトリ設定
 
-<table class="markdown-table">
-  <tr><th>項目</th><th>設定内容</th><th>壊すとどうなる</th></tr>
-  <tr><td>status-check</td><td>cicd-gate を required check として登録 cicd-gateが成功しないと仕組みとしてPRマージできない</td><td>マージ可否をゲート1つに集約した決定が効かなくなり、検査を通っていない PR がマージできる</td></tr>
-  <tr><td>ブランチの最新取り込み</td><td>requiredに設定</td><td>検査したコードとマージされるコードがずれる。deploy がマージの後ろにある本設計では、マージ前に main の破損を防ぐのはこの設定だけになっている</td></tr>
-  <tr><td>auto-merge</td><td>有効、status-checkが成功していれば自動でマージ可能</td><td>「人間レビュー不要」と判定された PR も自動マージされず、人手待ちで滞留する</td></tr>
-  <tr><td>マージ済みブランチの自動削除</td><td>有効、PRをcloseすると自動でブランチ削除</td><td>topic ブランチが溜まり続ける。auto-merge はマージを予約して即返るため、ワークフロー側では消せない</td></tr>
-  <tr><td>secret</td><td>AI 実行用の OAuth トークン を設定している</td><td>AI ジョブが失敗する（advisory なのでゲートは赤くならず、AI 機能だけが静かに止まる）</td></tr>
-</table>
+| 項目                         | 設定内容                                                                                   | 壊すとどうなる                                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| status-check                 | cicd-gate を required check として登録 cicd-gateが成功しないと仕組みとしてPRマージできない | マージ可否をゲート1つに集約した決定が効かなくなり、検査を通っていない PR がマージできる                                                     |
+| ブランチの最新取り込み       | requiredに設定                                                                             | 検査したコードとマージされるコードがずれる。deploy がマージの後ろにある本設計では、マージ前に main の破損を防ぐのはこの設定だけになっている |
+| auto-merge                   | 有効、status-checkが成功していれば自動でマージ可能                                         | 「人間レビュー不要」と判定された PR も自動マージされず、人手待ちで滞留する                                                                  |
+| マージ済みブランチの自動削除 | 有効、PRをcloseすると自動でブランチ削除                                                    | topic ブランチが溜まり続ける。auto-merge はマージを予約して即返るため、ワークフロー側では消せない                                           |
+| secret                       | AI 実行用の OAuth トークン を設定している                                                  | AI ジョブが失敗する（advisory なのでゲートは赤くならず、AI 機能だけが静かに止まる）                                                         |
 
 ## CI実施内容一覧
 
-AIへの指示：CIとして実施している静的解析やテストなどをテーブルで一覧化する。コードを見ればわかるが、何をやっているのかを一覧して把握することはできないので、概要のみをまとめておく価値がある。
+PR がゲートを通るまでに何を検査しているかの一覧。個々のルールと閾値は設定ファイルとスクリプトが正で、ここは概要だけを置く。
+
+| ジョブ         | 検査（ツール）             | 何を見るか                                                                     |
+| -------------- | -------------------------- | ------------------------------------------------------------------------------ |
+| `ci-format`    | 整形（prettier）           | `.md` を含む全ファイルの整形崩れ                                               |
+| `ci-hooks`     | policy hook（node:test）   | ポリシーを読み込む hook が、`applies-to` の宣言どおりに発火するか              |
+| `ci-links`     | リンク切れ                 | Markdown の相対リンクの参照先が実在するか                                      |
+| `ci-claude-md` | CLAUDE.md 文字数           | CLAUDE.md と `@` import 先の合計が上限内か                                     |
+| `ci-common`    | コーディング規約（ESLint） | 規約違反・import の秩序・バグを生みやすい書き方                                |
+| `ci-common`    | 未使用検出（knip）         | 使われていない export・ファイル・依存パッケージ                                |
+| `ci-common`    | 依存の脆弱性               | npm 依存を全階層舐め、high 以上の脆弱性で落とす                                |
+| `ci-app`       | 型検査（tsc）              | アプリの型エラー                                                               |
+| `ci-app`       | 単体テスト（vitest）       | アプリの単体テストと、アーキテクチャ規約テスト（レイヤ依存・循環依存・凝集度） |
+| `ci-cdk`       | スナップショット（vitest） | 合成した CloudFormation テンプレート全体の意図しない差分                       |
+| `ci-cdk`       | 個別プロパティ（vitest）   | 暗号化設定・アラーム有無など、リソース単位の必須プロパティ                     |
+| `cdk-diff`     | `cdk diff`                 | 既存リソースの意図しない置換・削除（ゲートには繋がない判断材料）               |
 
 ## 重要なポイント
 
@@ -132,13 +173,20 @@ AIへの指示：CIとして実施している静的解析やテストなどを�
 | PR の時点では deploy せず、`cdk diff` だけを確認する              | PRをレビューする時点でdeploy はしないが、cdk diffを実行することで、意図しない置換・削除はレビューで事前確認できる。                                                                                                                                                                                                                                                               |
 | main への deploy が失敗したら GitHub Issue を自動起票する         | 失敗が required check の外側で起きるため、デプロイ失敗は誰の担当にもならない。壊れた main はブランチ最新化の要求を通じて全ブランチへ配られるので、Issueを自動起票し対応させる。                                                                                                                                                                                                   |
 
-### マージ可否は `cicd-gate` 1つだけで決める
-
-AIへの指示：図で説明する
-
 ### 変更対象を「常時実行・全体・アプリ・CDK」に分類し、検査対象を絞る
 
-AIへの指示：ジョブごとにどの条件（**.mdなど）で実行されるかを表で整理する
+各ジョブは変更されたパスで実行有無が決まる。yaml実装が多少複雑になるが、検査対象を絞ることによるスピード向上を優先した。
+
+| 分類     | ジョブ         | 実行条件（変更パス）                     | なぜこの条件か                                                          |
+| -------- | -------------- | ---------------------------------------- | ----------------------------------------------------------------------- |
+| 常時実行 | `ci-format`    | 常に                                     | prettier は `.md` も検査対象。docs だけの変更でも整形崩れで落ちうる     |
+| 常時実行 | `ci-hooks`     | 常に                                     | hook の発火対象は `docs/policy/*.md` の frontmatter が宣言する          |
+| 常時実行 | `ci-links`     | 常に                                     | 相対リンクは参照先の移動・改名で壊れる                                  |
+| 常時実行 | `ci-claude-md` | 常に                                     | CLAUDE.md 自体が docs と判定される                                      |
+| 全体     | `ci-common`    | `docs/` と直下 `*.md` **以外**に変更あり | 静的解析はルールを1箇所で定義しており、全階層の依存が揃わないと動かない |
+| アプリ   | `ci-app`       | `app/` に変更あり                        | 検査対象が `app/backend` に閉じている                                   |
+| CDK      | `ci-cdk`       | `infra/` に変更あり                      | 検査対象が `infra/` に閉じている                                        |
+| 検査外   | `cdk-diff`     | `app/` または `infra/` に変更あり        | アプリを CDK が deploy するため、app の変更も差分に出る                 |
 
 ## 受け入れた制約
 
