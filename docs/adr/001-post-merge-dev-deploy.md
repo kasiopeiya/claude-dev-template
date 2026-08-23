@@ -3,7 +3,7 @@ status: proposed
 date: 2026-08-20
 ---
 
-# ADR-002: dev への deploy を main マージ後に行う
+# ADR-001: dev への deploy を main マージ後に行う
 
 > [!IMPORTANT]
 > **TL;DR（この決定の要点）**
@@ -22,7 +22,7 @@ deploy をマージのどちら側に置くかは、この2つの力のどちら
 
 ## 決定（何を選んだか）
 
-dev への deploy と結合テストは `deploy-dev.yml`（main への push が起点）で実行し、`cicd-gate`（マージ可否を決める required check）には含めない。設計の芯は「**マージ可否の判定から、実環境への依存を外す**」。
+dev への deploy と結合テストは `deploy-dev.yml`（main への push が起点）で実行し、`cicd-gate`（マージ可否を決める required check）には含めない。**マージまでの経路には、速く答えが出るものだけを置く**。
 
 | 工程                 | 実行タイミング | `cicd-gate` に含むか |
 | -------------------- | -------------- | -------------------- |
