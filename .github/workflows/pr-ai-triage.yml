@@ -27,7 +27,7 @@ jobs:
   # 対象 PR に対し ⓪policy パスの決定論ラベル付与 ①本文の AI 書き換え ②pr-label
   # ③（needs-human-review が付いていれば）pr-check を行う。
   # 権限は prompt injection 前提で設計する——contents: read 固定・Bash は gh 限定
-  # （#65/#66。理由は cicd-design「採用理由」を参照）。Write は本文・コメントを
+  # （#65/#66。理由は cicd-design「重要なポイント」を参照）。Write は本文・コメントを
   # ファイル経由（--body-file）で渡すためにスコープ無しで許可する（理由は prompt 内に記載）。
   pr-triage:
     # pipeline が成功したときだけ走る。失敗・キャンセル時は advisory 不要。
@@ -85,7 +85,7 @@ jobs:
           gh pr edit "$PR" --add-label policy,needs-human-review
 
       # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet 5 単一。
-      # allowedTools を絞る理由は cicd-design「採用理由」を参照。
+      # allowedTools を絞る理由は cicd-design「重要なポイント」を参照。
       - name: Run AI advisory (rewrite body / pr-label / pr-check)
         id: advisory
         if: steps.pr.outputs.number != ''

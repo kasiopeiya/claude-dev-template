@@ -26,7 +26,7 @@ jobs:
   destroy:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    # dev を使う者は全員このグループで直列化する（理由は docs/design/cicd-design.md の変更可能境界）。
+    # dev を使う者は全員このグループで直列化する（理由は docs/design/cicd-design.md「重要なポイント」）。
     # グループ名は deploy-dev.yml の cdk-deploy と完全一致させること。別名にすると直列化が効かず、
     # destroy と deploy が並行する。
     concurrency:

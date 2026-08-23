@@ -1,5 +1,5 @@
 # 責務: 開発フロー解説 HTML（docs/guide/ai-driven-dev-flow.html）を GitHub Pages へ公開する。
-# なぜこの構成なのかは docs/design/cicd-design.md「ドキュメント公開（GitHub Pages）」を参照する。
+# なぜこの構成なのかは docs/design/cicd-design.md を参照する。
 
 name: publish-dev-flow-guide
 
@@ -50,7 +50,7 @@ jobs:
           enablement: true
 
       # 公開対象は開発フロー解説 HTML だけに絞る。docs/ をそのまま公開すると設計書等の
-      # Markdown まで一括で公開される（cicd-design の却下案を参照）。
+      # Markdown まで一括で公開される。
       # index.html として置き、サイトのルート URL でそのまま読めるようにする。
       - name: Stage the guide as the site root
         run: |

@@ -269,7 +269,7 @@ jobs:
   # deploy はマージ後（deploy-dev.yml）へ移した。ここは read-only なので dev を奪わず、
   # 直列化の待ちも作らない（concurrency を付けないのはこのため）。
   # cicd-gate には繋がない——実環境への疎通をマージ可否に持ち込むと AWS 側の一時障害で
-  # マージが止まる。diff は判断材料であって合否ではない（cicd-design「採用理由」）。
+  # マージが止まる。diff は判断材料であって合否ではない（cicd-design「重要なポイント」）。
   # app 変更でも走らせるのは、アプリを CDK が deploy する構成では app の変更も差分に出るため。
   cdk-diff:
     needs: detect-changes

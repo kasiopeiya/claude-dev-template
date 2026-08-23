@@ -6,7 +6,7 @@ name: deploy-dev
 run-name: deploy-dev (${{ github.sha }})
 
 # main に入った内容だけを dev へ流す。dev へ deploy する経路はここ1本だけで、
-# トピックブランチからの手動 deploy は用意しない（cicd-design「採用理由」）。
+# トピックブランチからの手動 deploy は用意しない（cicd-design「前提と制約」）。
 # paths で対象を絞れるのは、このワークフローが required check ではないため
 # （pipeline.yml と違い、スキップしてもマージ判定が pending のまま残らない）。
 # paths の対象は pipeline.yml の detect-changes（`^app/`・`^infra/`）と一致させること。
@@ -83,7 +83,7 @@ jobs:
 
   # deploy はマージの後ろにあるため、失敗しても required check は赤くならない。
   # 誰も見ない赤いランとして滞留し、壊れた main が全ブランチへ配られるのを防ぐため、
-  # 失敗に持ち主を作る（cicd-design「採用理由」）。
+  # 失敗に持ち主を作る（cicd-design「重要なポイント」）。
   report-failure:
     needs: [cdk-deploy, integration-test]
     # cancelled は対象にしない。直列化の押し出しで消えた実行は、後続の deploy が引き継ぐため。

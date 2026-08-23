@@ -2,7 +2,6 @@
 name: vis
 description: 会話で扱った内容や指定されたテーマを、図中心のHTML1枚にまとめて tmp/visual/ に出力する。複雑な話を可視化して掴みやすくするために使う。「vis」「図にして」「可視化して」「HTMLにまとめて」と指示されたとき。
 argument-hint: '[可視化するテーマ。省略時はここまでの会話] [--details で厚く書く]'
-disable-model-invocation: true
 ---
 
 # Vis
