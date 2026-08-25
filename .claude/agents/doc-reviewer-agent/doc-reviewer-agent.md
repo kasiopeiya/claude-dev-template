@@ -76,7 +76,7 @@ git diff --cached --name-only --diff-filter=ACMR
 
 **1. ディレクトリパターン（最優先・決定論）**:
 
-`docs/` 配下は**ディレクトリで種別が一意に決まる**（種別はディレクトリ構成が SSOT）。パスが以下のディレクトリ配下なら、ファイル名・セクション構造を見ずにこの表で確定する。
+種別は**ディレクトリで一意に決まる**（ディレクトリ構成が SSOT）。パスが以下のディレクトリ配下なら、ファイル名・セクション構造を見ずにこの表で確定する。
 
 | パス              | 種別      |
 | ----------------- | --------- |
@@ -87,6 +87,8 @@ git diff --cached --name-only --diff-filter=ACMR
 | `docs/design/`    | DESIGN    |
 | `docs/idea/`      | PROPOSAL  |
 | `.claude/rules/`  | GUIDELINE |
+| `.claude/skills/` | GUIDELINE |
+| `.claude/agents/` | GUIDELINE |
 
 **2. `docs/` 直下の個別ファイル（ディレクトリに属さないもの）**:
 
