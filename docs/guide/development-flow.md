@@ -3,7 +3,7 @@
 このリポジトリで1つの Issue を実装しようとしている人 / AI が、どのスラッシュコマンドをどの順で実行するのか確かめたいときに読む。
 
 > [!NOTE]
-> **新規立ち上げ（グリーンフィールド）時**は、まず [new-development-guide.md](new-development-guide.md) に従って requirements→plan→起点Issue を作り（requirements は `/requirements-review` で凍結前にレビューする）、その起点Issueから以下のフローに入る。
+> **新規立ち上げ（グリーンフィールド）時**は、まず [new-development-guide.md](new-development-guide.md) に従って requirements→起点Issue を作り（requirements は `/requirements-review` で凍結前にレビューする）、その起点Issueから以下のフローに入る。
 
 ## 1つのIssueは0〜12の順で回す
 
