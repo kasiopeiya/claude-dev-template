@@ -251,10 +251,11 @@ If the script is unavailable:
 1. **Identify diagram type** from first line (flowchart, sequence, etc.)
 2. **Load reference guide** from `references/guides/diagrams/`
 3. **Save to** `./diagrams/<markdown_file>_<num>_<type>_<title>.mmd`
-4. **Validate:** `mmdc -i file.mmd -o file.png -b transparent`
+4. **Validate:** `mmdc -i file.mmd -o file.png -b white`（mmdc が無ければ `npx -y @mermaid-js/mermaid-cli` に置き換える）
 5. **On error:** Search `references/guides/troubleshooting.md` for matching error
 6. **If not found:** Use search tools in priority order above
-7. **Add reference:** `![Description](./diagrams/filename.png)`
+7. **Check the rendering:** 生成した PNG を Read ツールで開いて目視する（構文が通っても読めない崩れは目で見ないと分からない）
+8. **Add reference:** `![Description](./diagrams/filename.png)`
 
 ### Pattern 6: Resilient Diagram Generation
 

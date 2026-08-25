@@ -125,7 +125,15 @@ Write the Mermaid diagram code following the patterns in the loaded reference gu
 Run the Mermaid CLI to validate and render the diagram:
 
 ```bash
-mmdc -i diagram.mmd -o diagram.png -b transparent
+mmdc -i diagram.mmd -o diagram.png -b white
+```
+
+背景は `-b white` にする。`transparent` だと Step 4b で背景が抜け、ラベルの重なりを見分けにくい。
+
+mmdc が入っていない環境では、`npx` で取得して同じことができる。初回は chromium を取りに行くので数分かかる（応答が返らなくても詰まりではない）。
+
+```bash
+npx -y @mermaid-js/mermaid-cli -i diagram.mmd -o diagram.png -b white
 ```
 
 **Success Criteria:**
@@ -158,16 +166,9 @@ If troubleshooting guide doesn't have a match:
 
 mmdc は構文エラーしか見ない。ラベルの重なりのような「描画は成功するが読めない」崩れ（troubleshooting.md の [Layout Issues](troubleshooting.md#layout-issues-renders-but-unreadable)）は、描画を目で見ないと分からない。
 
-mmdc が入っていない環境では、次の手順で実描画を確認する。
+Step 4 で作った PNG を **Read ツールで開いて目視する**。
 
-```bash
-# 1. mermaid を CDN から読み込む HTML を scratchpad に書き、候補を並べる
-# 2. そのディレクトリを HTTP で配信する
-python3 -m http.server 8731
-# 3. http://localhost:8731/<file>.html を Chrome で開き、スクリーンショットで比較する
-```
-
-**`file://` では開けない。** Chrome 拡張が拒否するので、必ず HTTP で配信する。
+**書き方の候補が複数あるときは、全部 PNG にしてから並べて見る。** 崩れるかどうかは実際のノード数・ラベルの長さで変わるので、片方だけ描いても選べない。
 
 ### Step 5: Add to Markdown
 
@@ -509,7 +510,7 @@ EOF
 ### Step 5: Validate and Render
 
 ```bash
-mmdc -i "./diagrams/${FILENAME}" -o "./diagrams/${FILENAME%.mmd}.png" -b transparent
+mmdc -i "./diagrams/${FILENAME}" -o "./diagrams/${FILENAME%.mmd}.png" -b white
 ```
 
 Check exit code:
@@ -650,7 +651,7 @@ flowchart TD
 ### Validation Command
 
 ```bash
-mmdc -i input.mmd -o output.png -b transparent
+mmdc -i input.mmd -o output.png -b white
 ```
 
 ---

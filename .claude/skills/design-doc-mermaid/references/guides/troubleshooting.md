@@ -900,7 +900,7 @@ pie
 
 ## Layout Issues (Renders but Unreadable)
 
-構文は正しく、mmdc も通るのに、描画結果が読めない崩れを扱う。**構文チェックでは検知できない**ので、実際の描画を目で見るまで気づけない（mmdc が無い環境での確認手順は [resilient-workflow.md](resilient-workflow.md) の Step 4b）。
+構文は正しく、mmdc も通るのに、描画結果が読めない崩れを扱う。**構文チェックでは検知できない**ので、実際の描画を目で見るまで気づけない（確認手順は [resilient-workflow.md](resilient-workflow.md) の Step 4b）。
 
 ### ⚠️ 自己ループのラベルが隣のエッジのラベルと重なる
 
