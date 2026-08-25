@@ -163,7 +163,7 @@ class MermaidExtractor:
 
             try:
                 result = subprocess.run(
-                    ['mmdc', '-i', str(input_file), '-o', str(output_file), '-b', 'transparent'],
+                    ['mmdc', '-i', str(input_file), '-o', str(output_file), '-b', 'white'],
                     capture_output=True,
                     text=True,
                     timeout=30

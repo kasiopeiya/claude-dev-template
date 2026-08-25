@@ -40,7 +40,7 @@ class MermaidRenderer:
     def __init__(
         self,
         theme: str = 'default',
-        background: str = 'transparent',
+        background: str = 'white',
         width: Optional[int] = None,
         height: Optional[int] = None,
         scale: int = 1,
@@ -252,8 +252,8 @@ Themes:
     # Rendering options
     parser.add_argument('--theme', '-t', choices=MermaidRenderer.VALID_THEMES,
                         default='default', help='Mermaid theme (default: default)')
-    parser.add_argument('--background', '-b', default='transparent',
-                        help='Background color (default: transparent)')
+    parser.add_argument('--background', '-b', default='white',
+                        help='Background color (default: white)')
     parser.add_argument('--width', '-w', type=int,
                         help='Output width in pixels')
     parser.add_argument('--height', '-H', type=int,

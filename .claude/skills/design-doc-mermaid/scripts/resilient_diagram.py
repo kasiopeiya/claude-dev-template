@@ -411,7 +411,7 @@ class ResilientDiagramGenerator:
 
         try:
             result = subprocess.run(
-                ['mmdc', '-i', str(mmd_path), '-o', str(image_path), '-b', 'transparent'],
+                ['mmdc', '-i', str(mmd_path), '-o', str(image_path), '-b', 'white'],
                 capture_output=True,
                 text=True,
                 timeout=60
