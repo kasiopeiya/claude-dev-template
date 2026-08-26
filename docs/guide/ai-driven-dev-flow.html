@@ -2684,65 +2684,23 @@
           <div class="step">
             <div class="lane">
               <div class="no">4</div>
-              <svg class="pict"><use href="#pict-dialog" /></svg>
-              <span class="mode-label">対話</span>
-            </div>
-            <div class="body">
-              <div class="title-row">
-                <h4>計画を詰める</h4>
-                <code>/grill-me</code><span class="badge b-both">人間＋AI</span>
-              </div>
-              <div class="desc">
-                AIが質問攻めにしてくる対話形式で、最初に通す縦スライス（曳光弾）・ドメインの核・Issueの分割と順序を確定する
-              </div>
-              <div class="io">
-                <span class="io-label">IN</span><span class="chip c-doc">📄 requirements.md</span
-                ><span class="chip c-doc">📄 ADR</span>
-                <span class="io-sep">→</span>
-                <span class="io-label">OUT</span
-                ><span class="chip c-talk">💬 確定した仕様・分割方針</span>
-              </div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="lane">
-              <div class="no">5</div>
-              <svg class="pict"><use href="#pict-delegate" /></svg>
-              <span class="mode-label">委譲</span>
-            </div>
-            <div class="body">
-              <div class="title-row">
-                <h4>Plan 化する</h4>
-                <code>/to-plan</code><span class="badge b-ai">AI</span>
-              </div>
-              <div class="desc">
-                確定した仕様をPlanファイルに構造化。続けて
-                <code>/check-plan</code> が自動で走り、必須セクションの充足を監査する
-              </div>
-              <div class="io">
-                <span class="io-label">IN</span
-                ><span class="chip c-talk">💬 確定した仕様・分割方針</span>
-                <span class="io-sep">→</span>
-                <span class="io-label">OUT</span><span class="chip c-doc">🗒 Plan（監査済み）</span>
-              </div>
-            </div>
-          </div>
-          <div class="step">
-            <div class="lane">
-              <div class="no">6</div>
               <svg class="pict"><use href="#pict-delegate" /></svg>
               <span class="mode-label">委譲</span>
             </div>
             <div class="body">
               <div class="title-row">
                 <h4>起点Issue を作る</h4>
-                <code>/to-issues</code><span class="badge b-ai">AI</span>
+                <span class="badge b-ai">AI</span>
               </div>
-              <div class="desc">Planを分割し、依存順つきの起点Issue群としてGitHubに登録する</div>
+              <div class="desc">
+                最初に通す縦スライス（曳光弾）の経路を選んだうえで、足場・曳光弾・機能・非機能などの起点Issueを着手順（段番号つき）で一度に起票する
+              </div>
               <div class="io">
-                <span class="io-label">IN</span><span class="chip c-doc">🗒 Plan（監査済み）</span>
+                <span class="io-label">IN</span><span class="chip c-doc">📄 requirements.md</span
+                ><span class="chip c-doc">📄 初期技術スタックADR</span>
                 <span class="io-sep">→</span>
-                <span class="io-label">OUT</span><span class="chip c-issue">🎫 起点Issue群</span>
+                <span class="io-label">OUT</span
+                ><span class="chip c-issue">🎫 起点Issue群（段番号つき）</span>
               </div>
             </div>
           </div>
@@ -2750,7 +2708,12 @@
 
         <div class="bridge">
           <span class="chip c-issue">🎫 起点Issue群</span>
-          <span>↓ この1件ずつを、下の「Issue単位の開発フロー」で消化する</span>
+          <span
+            >↓
+            起点Issueは着手単位ではなく親Issue。フェーズIssue（要件定義／開発準備／設計・実装／結合テスト／その他）の
+            sub-issue として並び、1件ずつを下の「Issue単位の開発フロー」に載せ、さらに sub-issue
+            に割って消化する</span
+          >
         </div>
       </section>
 
