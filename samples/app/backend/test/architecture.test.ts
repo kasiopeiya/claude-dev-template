@@ -1,51 +1,42 @@
 // 責務: クリーンアーキテクチャの一方向依存（内側→外側の import 禁止）を機械的に強制する
+// フォルダはプロジェクトルート起点で書く（`**/usecase/**` にしない）。
+// 先頭に `**/` を付けると test/usecase/ 配下のテストも実装として拾われ、
+// テストが張る正当な依存（ユースケースのテストが infrastructure の fake を使う等）が違反になる。
 
 import { projectFiles } from 'archunit'
 
 describe('レイヤー境界: 内側は外側を import しない', () => {
   it('domain は usecase を import しない', async () => {
     await expect(
-      projectFiles().inFolder('**/domain/**').shouldNot().dependOnFiles().inFolder('**/usecase/**')
+      projectFiles().inFolder('domain/**').shouldNot().dependOnFiles().inFolder('usecase/**')
     ).toPassAsync()
   })
 
   it('domain は infrastructure を import しない', async () => {
     await expect(
-      projectFiles()
-        .inFolder('**/domain/**')
-        .shouldNot()
-        .dependOnFiles()
-        .inFolder('**/infrastructure/**')
+      projectFiles().inFolder('domain/**').shouldNot().dependOnFiles().inFolder('infrastructure/**')
     ).toPassAsync()
   })
 
   it('domain は presentation を import しない', async () => {
     await expect(
-      projectFiles()
-        .inFolder('**/domain/**')
-        .shouldNot()
-        .dependOnFiles()
-        .inFolder('**/presentation/**')
+      projectFiles().inFolder('domain/**').shouldNot().dependOnFiles().inFolder('presentation/**')
     ).toPassAsync()
   })
 
   it('usecase は infrastructure を import しない', async () => {
     await expect(
       projectFiles()
-        .inFolder('**/usecase/**')
+        .inFolder('usecase/**')
         .shouldNot()
         .dependOnFiles()
-        .inFolder('**/infrastructure/**')
+        .inFolder('infrastructure/**')
     ).toPassAsync()
   })
 
   it('usecase は presentation を import しない', async () => {
     await expect(
-      projectFiles()
-        .inFolder('**/usecase/**')
-        .shouldNot()
-        .dependOnFiles()
-        .inFolder('**/presentation/**')
+      projectFiles().inFolder('usecase/**').shouldNot().dependOnFiles().inFolder('presentation/**')
     ).toPassAsync()
   })
 })

@@ -1,7 +1,7 @@
 // 責務: Email が生成時に形式の不変条件を保証し、破れたときにビジネス例外で拒否することを検証する
 
-import { BusinessError } from '../domain/businessError'
-import { Email } from '../domain/email'
+import { BusinessError } from '../../domain/businessError'
+import { Email } from '../../domain/email'
 
 describe('メールアドレスの値オブジェクト', () => {
   it('形式が有効な場合に元の文字列を保持して生成される', () => {

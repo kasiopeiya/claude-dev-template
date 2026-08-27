@@ -1,8 +1,8 @@
 // 責務: ユーザー登録ユースケースが登録の可否をビジネス例外で表すことを検証する
 
-import { BusinessError } from '../domain/businessError'
-import { InMemoryUserRepository } from '../infrastructure/inMemoryUserRepository'
-import { RegisterUser } from '../usecase/registerUser'
+import { BusinessError } from '../../domain/businessError'
+import { InMemoryUserRepository } from '../../infrastructure/inMemoryUserRepository'
+import { RegisterUser } from '../../usecase/registerUser'
 
 describe('ユーザー登録ユースケース', () => {
   it('未登録のIDの場合に登録したユーザーを返す', async () => {

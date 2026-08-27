@@ -1,11 +1,11 @@
 // 責務: 境界の集約 catch が例外を性質で振り分け、内部詳細を利用者へ漏らさないことを検証する
 
-import { TechnicalError } from '../domain/technicalError'
-import { User } from '../domain/user'
-import { UserRepository } from '../domain/userRepository'
-import { InMemoryUserRepository } from '../infrastructure/inMemoryUserRepository'
-import { RegisterUserController } from '../presentation/registerUserController'
-import { RegisterUser } from '../usecase/registerUser'
+import { TechnicalError } from '../../domain/technicalError'
+import { User } from '../../domain/user'
+import { UserRepository } from '../../domain/userRepository'
+import { InMemoryUserRepository } from '../../infrastructure/inMemoryUserRepository'
+import { RegisterUserController } from '../../presentation/registerUserController'
+import { RegisterUser } from '../../usecase/registerUser'
 
 /** 技術的例外の経路を再現するためのスタブ。永続化層の障害（接続断など）を模す。 */
 class UnavailableUserRepository implements UserRepository {
