@@ -226,7 +226,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - [ ] `ai-fixable` / `issue:needs-human-decision` のどちらか一方を決めた
 - [ ] `issue:needs-human-decision` を付けたなら、名指し例外のどれに当たるかを言えて、「人間に決めてほしいこと」に論点と選択肢を書いた
 - [ ] `ai-fixable` を付けたなら「対応方針」に採る案・「いま→変えた後」の対比・根拠・却下案を書き、対比には実際の文言（またはふるまい）を引用した
-- [ ] 親を付けるなら、その Issue のタスク一覧のどの行を割ったものかを `gh issue view` で確かめ、その行を引用できた（引用できなければ付けない）
+- [ ] Issueの階層ガイドの「主に触るもの」表のどの行に当たるかを言えて、親にするフェーズ（または「親を付けない」）を決めた
 
 ### 4. 起票
 
@@ -245,20 +245,19 @@ EOF
 
 - ラベル未作成でコマンドが失敗したら、`gh label create <名前> --description "<「付与するラベル」表の付与条件>"` で作ってから同じコマンドを再実行する。事前確認はしない（毎回の `gh label list` は速さを損なうため、失敗したときだけ払う）。
 
-### 5. 親に紐づける（名指しがあるときだけ）
+### 5. 親に紐づける
 
-セルフチェックの重複確認（`gh issue list --state all --search`）でヒットした open Issue のうち、**その「タスク一覧」から、いま起票する作業がどの行を割ったものかを1行そのまま引用できる**ものがあれば、その sub-issue にする。親候補を新しく探し直さない。
+親は[Issueの階層ガイド](../../../docs/guide/issue-hierarchy.md)の「主に触るもの」表で決める。**この Issue が主に触るものが `.claude/` 配下・`docs/policy/`・`docs/design/`・`docs/guide/` なら、親を付けない。** ハーネス・ポリシー・設計書の手直しは開発フローのどのフェーズの作業でもないからで、本スキルの起票はこれが最も多い。
 
-引用できるかを条件にするのは、それが書けるか書けないかで決まり、重要度の評価を挟まないからである。同じファイルを触るだけでは足りない。
-
-名指しが無ければ**親を付けない**。ハーネスの改善のように、分解元になる Issue がそもそも存在しない起票は多く、それでよい。フェーズIssue（`phase` ラベル）の直下にも付けない——1親あたり100件が GitHub の上限で、このスキルの起票量ではすぐ埋まる。階層の全体像は [Issueの階層ガイド](../../../docs/guide/issue-hierarchy.md) にある。
+それ以外は表のフェーズIssueの sub-issue にする。フェーズIssueは `phase` ラベルで引く。同じフェーズ名が複数あれば**いちばん番号が大きいもの**を使う。
 
 ```bash
+gh issue list --label phase --state open --json number,title,id
 gh api graphql -f query='mutation($parent:ID!,$childUrl:String!){addSubIssue(input:{issueId:$parent,subIssueUrl:$childUrl}){subIssue{number}}}' \
-  -F parent="$(gh issue view <親の番号> --json id --jq .id)" -F childUrl="<子のURL>"
+  -F parent="<親のnode ID>" -F childUrl="<子のURL>"
 ```
 
-紐付けに失敗しても、**起票そのものは成功している**。失敗したら親が付かなかったことを伝えて続行し、起票をやり直さない（同じ Issue を二重に立てることになる）。
+紐付けに失敗しても、**起票そのものは成功している**。失敗したら親が付かなかったことを伝えて続行し、起票をやり直さない（同じ Issue を二重に立てることになる）。上限100件で失敗したときは、階層ガイドの世代交代の手順に従う。
 
 起票した Issue の**番号と URL**（親を付けたならその番号も）を提示して完了とする。
 
