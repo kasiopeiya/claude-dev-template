@@ -45,7 +45,7 @@ stateDiagram-v2
 
 - **レビューで要修正なら**：要求の引き出しに戻って `requirements.md` を直し、凍結可になってから基盤技術の決定へ進む（判定基準は [requirements-doc-policy](../policy/requirements-doc-policy.md)）。
 - **基盤技術を決める／保留する判定基準**：「決めないと足場（静的解析・CI・デプロイ）と最初の曳光弾が組めないか」で決める/保留を分ける。足場に効くもの（言語・クラウド・IaC・CI/CD・ディレクトリ方針 等）は決め、曳光弾でスタブできる詳細（FW・ORM・DBスキーマ・外部サービス）はあえて保留する——コアから着手し、詳細は境界の外に置いて決定を遅らせるためである。決める基盤項目の全リストは `/decide-tech-stack` が網羅する。決定は ADR（＝設計書の一種）に一本化。構成の絞り込みは [directory-structure-guide](directory-structure-guide.md)。
-- **実装の置き場**：`app/`・`infra/` は空の状態から始める。構造・命名・テストの粒度は [`samples/`](../../samples/README.md) の参照実装を手本にする（構成そのものの方針は [directory-structure-guide](directory-structure-guide.md)）。
+- **実装の置き場**：`app/`・`infra/` は空の状態から始める。構造・命名・テストの粒度は [`samples/`](../../samples/README.md) の参照実装を手本にする（構成そのものの方針は directory-structure-guide が定める）。
 - **起点Issue はモデルを最大にして作る**：使用可能な最も性能の良いモデルを選び、effort も最大にして実行する。ここでの切り分けが以降のすべてのIssueの土台になり、誤ると作った Issue が丸ごと作り直しになるからである。
 
 ## 起票する起点Issue
@@ -104,8 +104,6 @@ stateDiagram-v2
 | 実装フロー（使用するSkill）      | 必須                                              | `/grill-me` → `/to-plan` → `/to-issues`。実装Skill（`/code-dev` 等）は sub-issue 側に書く                                                                                                                                                                         |
 | ブロッカー                       | 必須                                              | 前提にする成果物を作るIssueだけを名指しする。無ければ「なし（すぐ着手できる）」と書く。全体の順序は段番号が示すので、前の段のIssueを機械的に全部並べない                                                                                                          |
 | トレース（要件定義書との対応）   | 必須                                              | 根拠となる機能ID（非機能なら分類名）と、関連する BR・IO・AC。要件からIssueへ辿れなくなると、要件定義書から後工程までの追跡が切れる                                                                                                                                |
-
-「作るもの」は親Issueの節である。子Issueでは採る案が具体化するため、同じ役割が「対応方針」（`issue:needs-human-decision` なら「人間に決めてほしいこと」）に変わる。
 
 スタブ追跡Issueは残っているスタブの一覧だけを持ち、本物に置き換える作業そのものは対応する機能Issueのタスクにする（同じ作業を2箇所で管理しないため）。
 
