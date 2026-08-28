@@ -1,5 +1,7 @@
 # コードレビュー観点
 
+コードレビューを行う AI・人間が、どの観点をどう採点するか迷ったときに引く採点表。
+
 各観点を **3点満点** でスコアリングする。**該当しない観点（対象外）は分母から除外**し、レベルは**得点率**＝合計得点 ÷（適用観点数 × 3）で判定する（「総合レベル判定」参照）。得点率で判定するため、観点を増減しても総点・閾値の書き換えは不要（項目の増減が本表以外に波及しない）。
 
 観点には全ファイル共通のものと、**特定のファイル種別・要素にのみ適用される条件付き観点**がある。条件付き観点は対象外のファイルでは採点せず、分母からも除く。
@@ -14,17 +16,17 @@
 
 次の観点は ESLint / knip が **error で機械的に検知**するため、LLM の採点から外す（CI ゲートを SSOT とし、二重にスコア化しない）。設定の実体は `eslint.config.mjs` / `knip.jsonc`、しきい値の根拠は `.claude/rules/typescript.md` を参照。
 
-| 機械化された観点                        | 担保するゲート                                                           |
-| --------------------------------------- | ------------------------------------------------------------------------ |
-| 型安全性（`any` 禁止）                  | ESLint `@typescript-eslint/no-explicit-any`                              |
-| 関数の長さ（50行）                      | ESLint `max-lines-per-function`                                          |
-| 引数の数（3個）                         | ESLint `max-params`                                                      |
-| マジックナンバー                        | ESLint `no-magic-numbers`（src 限定）                                    |
-| 非同期処理（浮いた Promise・誤用）      | ESLint `@typescript-eslint/no-floating-promises` / `no-misused-promises` |
-| 未使用宣言（変数・引数・optional 含む） | ESLint `@typescript-eslint/no-unused-vars`（`args:'all'`）＋ knip        |
-| 不要な export                           | knip（未使用 export 検知）                                               |
-| Import 順序・冒頭集約                   | ESLint `import-x/order` / `import-x/first`                               |
-| ネスト深度・複雑度                      | ESLint `max-depth` / `complexity` / `sonarjs/cognitive-complexity`       |
+| 機械化された観点                        | 担保するゲート                                                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 型安全性（`any` 禁止）                  | ESLint `@typescript-eslint/no-explicit-any`                                                                         |
+| 関数の長さ（50行）                      | ESLint `max-lines-per-function`                                                                                     |
+| 引数の数（3個）                         | ESLint `max-params`                                                                                                 |
+| マジックナンバー                        | ESLint `no-magic-numbers`（src 限定）                                                                               |
+| 非同期処理（浮いた Promise・誤用）      | ESLint `@typescript-eslint/no-floating-promises` / `no-misused-promises`                                            |
+| 未使用宣言（変数・引数・optional 含む） | ESLint `@typescript-eslint/no-unused-vars`（`args:'all'`）＋ knip                                                   |
+| 不要な export（本番コードからも未参照） | knip（未使用 export 検知）。テストからのみ参照される export は検出しないため、下の採点表「テスト専用 export」で見る |
+| Import 順序・冒頭集約                   | ESLint `import-x/order` / `import-x/first`                                                                          |
+| ネスト深度・複雑度                      | ESLint `max-depth` / `complexity` / `sonarjs/cognitive-complexity`                                                  |
 
 下の採点表の観点は**観点名で識別する**（他ドキュメントからも観点名で参照する）。番号を振ると、観点の増減で番号がずれ、参照側が無言で壊れるためである。
 
@@ -43,6 +45,7 @@
 | **セキュリティ**                                                   | ハードコード・環境変数の適切な扱い・インジェクション対策                                                                                                                                                                                                                                                                                                                 | 3点: リスクなし / 2点: 軽微なリスク / 1点: 重大なリスク                                                                                               |
 | **tryブロックの長さ**                                              | try ブロック内のコード行数。長い try ブロックは例外発生箇所の特定を困難にし、意図しない例外の捕捉につながる                                                                                                                                                                                                                                                              | 3点: try ブロック20行以下 / 2点: 20〜40行 / 1点: 40行超（減点）                                                                                       |
 | **ネスト回避の小手先**                                             | ネスト深度そのものは CI ゲート（`max-depth`／複雑度）が担保する。ここでは**数を見た目だけ減らす回避**——ネスト逃れの `.then`/`.catch` チェーン化、多段三項など——を検出する。ヒットは即違反ではなく、複雑さを温存したまま平坦化しただけかを文脈で判定する。正しい対処は責務分割・早期return（`.claude/rules/typescript.md`「ネスト制限は『設計を見直せ』というシグナル」） | 3点: 小手先回避なし / 2点: 軽微な小手先回避あり / **1点: 明確な小手先回避が1箇所でもある（大減点）**                                                  |
+| **テスト専用 export**                                              | 本番コードからは呼ばれず、テストからだけ import されている `export` がないか（`.claude/rules/typescript.md`「`export` は外部から参照されるものだけに付ける」の違反）                                                                                                                                                                                                     | 3点: テスト専用 export なし / 2点: 軽微にあり / 1点: テスト専用 export が複数ある                                                                     |
 | **不要なpublic公開**                                               | クラスのメンバ変数・メソッドに `public`（または修飾子なし）が付いているが、クラス外から参照されていないか。外部から使われないメンバは `private` または `protected` にすること                                                                                                                                                                                            | 3点: 不要な public なし / 2点: 軽微な不要 public あり / 1点: 不要な public が複数ある                                                                 |
 | **構成管理ポリシー準拠**                                           | `docs/policy/configuration-policy.md` に準拠しているか。**判定基準は同ポリシーを唯一の正典（SSOT）とし本表には転記しない**（ポリシーの追補で本行を更新せずに済むよう、具体チェックはポリシー側だけに置く）。構成値を扱わないファイルは違反なしとして扱う                                                                                                                 | 3点: ポリシー準拠（構成値を扱わない場合を含む） / 2点: 軽微な違反 / **1点: 重大な違反（機密実値の埋め込み等。観点「セキュリティ」とも連動し大減点）** |
 | **アプリ設計ポリシー準拠**                                         | `docs/policy/application-design-policy.md` に準拠しているか（SSOT）。判定基準はポリシー側に置き本表に転記しない                                                                                                                                                                                                                                                          | 3点: ポリシー準拠 / 2点: 軽微な違反 / 1点: 重大な設計原則違反                                                                                         |
