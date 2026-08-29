@@ -59,6 +59,6 @@ dev へ deploy できる経路が main だけになる効果もある。dev 環�
 
 ## 参照
 
-- [cicd-design.md](../design/cicd-design.md) — 現在の CI/CD 設計
-- [pr-review-policy.md](../policy/pr-review-policy.md) — 人間レビューの要否を決めるラベルの方針
+- [cicd-design.md](../cicd-design.md) — 現在の CI/CD 設計（サンプル）
+- [pr-review-policy.md](../../../../docs/policy/pr-review-policy.md) — 人間レビューの要否を決めるラベルの方針
 - Issue #31 — deploy の中身（AWS 認証・`cdk deploy`）を有効化する前提作業
