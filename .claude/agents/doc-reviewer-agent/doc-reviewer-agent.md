@@ -85,12 +85,12 @@ git diff --cached --name-only --diff-filter=ACMR
 | `docs/reference/` | REFERENCE |
 | `docs/guide/`     | GUIDE     |
 | `docs/design/`    | DESIGN    |
-
-**例外**：`docs/design/interface-specification.md` は DESIGN として扱わない。契約の網羅を書く納品用の仕様書であり（[design-doc-policy](../../../docs/policy/design-doc-policy.md) の例外規定）、設計書特有観点（設計の理由・背景／却下案の不在）は N/A とする。3-2 の全ドキュメント共通観点だけを適用する。
-| `docs/idea/` | PROPOSAL |
-| `.claude/rules/` | GUIDELINE |
+| `docs/idea/`      | PROPOSAL  |
+| `.claude/rules/`  | GUIDELINE |
 | `.claude/skills/` | GUIDELINE |
 | `.claude/agents/` | GUIDELINE |
+
+**例外**：`docs/design/interface-specification.md` は DESIGN として扱わない。契約の網羅を書く納品用の仕様書であり（[design-doc-policy](../../../docs/policy/design-doc-policy.md) の例外規定）、設計書特有観点（設計の理由・背景／却下案の不在）は N/A とする。3-2 の全ドキュメント共通観点だけを適用する。
 
 **2. `docs/` 直下の個別ファイル（ディレクトリに属さないもの）**:
 
