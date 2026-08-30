@@ -155,7 +155,7 @@
 
 ### [new-development-policy.md](policy/new-development-policy.md)
 
-**概要**: 新規開発（システム/モジュールを 0 から立ち上げる）で判断が分かれる「進め方」の既定の立場を宣言。曳光弾/walking skeleton（薄い縦スライス先行・本番品質で残す）・スパイクは使い捨て（本番に昇格させない）・ドメイン/コアから着手（FW・DBから始めない）・ディレクトリ構成の方針を先を見越して最初に決める（具体の選び方は directory-structure-guide に委譲）、など。判断の上位は refined-engineer-judgment-principles（決定の遅延・YAGNI）、マクロ構造は application-architecture-policy を継承し、新規開発固有の差分だけを書く
+**概要**: 新規開発（システム/モジュールを 0 から立ち上げる）で判断が分かれる「進め方」の既定の立場を宣言。曳光弾/walking skeleton（薄い縦スライス先行・本番品質で残す）・スパイクは使い捨て（本番に昇格させない）・ドメイン/コアから着手（FW・DBから始めない）・器そのもの（境界の置き方＝配置のトポロジー・コードの内部構造・ディレクトリ構成）を先を見越して最初に決める（具体の選び方は architecture-selection-guide・directory-structure-guide に委譲）、など。判断の上位は refined-engineer-judgment-principles（決定の遅延・YAGNI）、マクロ構造は application-architecture-policy を継承し、新規開発固有の差分だけを書く
 **参照タイミング**: 新しいシステム・モジュール・境界づけられたコンテキストを 0 から設計・実装する前
 
 ---
