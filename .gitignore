@@ -10,7 +10,6 @@ build/
 
 # CDK
 cdk.out/
-cdk.context.json
 
 # Environment files
 .env
