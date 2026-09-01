@@ -11,10 +11,16 @@ new DevStackBuilder(app).build()
 new StgStackBuilder(app).build()
 new PrdStackBuilder(app).build()
 
-// CDK Nagのルールを適用
-Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }))
-for (const node of app.node.children) {
-  if (Stack.isStack(node)) {
-    NagSuppressions.addStackSuppressions(node, nagSuppressions)
+cdkNagSecurityCheck()
+
+/**
+ * cdk-nagによるセキュリティチェックを全Stackに適用し、既知の抑制ルールを設定する。
+ */
+function cdkNagSecurityCheck(): void {
+  Aspects.of(app).add(new AwsSolutionsChecks({ verbose: true }))
+  for (const node of app.node.children) {
+    if (Stack.isStack(node)) {
+      NagSuppressions.addStackSuppressions(node, nagSuppressions)
+    }
   }
 }
