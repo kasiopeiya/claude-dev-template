@@ -23,19 +23,7 @@ const FAILING_SEVERITY = 'high'
  * `nodePathPrefix` で混入経路を1つに縛るのが要点。同じパッケージの同じ脆弱性でも、
  * 別経路（自分たちが直接足した依存など）で入ってきたものは許容せず落とす。
  */
-const ALLOWED_VULNERABILITIES = [
-  {
-    directory: 'samples/infra',
-    packageName: 'brace-expansion',
-    advisoryUrl: 'https://github.com/advisories/GHSA-rgw5-rvv9-x895',
-    nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/',
-    reason:
-      'aws-cdk-lib の bundledDependencies として tarball に同梱されており、overrides も npm audit fix も届かない。' +
-      '最新の aws-cdk-lib も脆弱版を同梱しているため、手元に打てる手がない（Issue #242）',
-    removeWhen:
-      'aws-cdk-lib が修正版を同梱したら、この例外は未使用になりこのスクリプト自身がエラーで知らせる'
-  }
-]
+const ALLOWED_VULNERABILITIES = []
 
 /**
  * npm audit を JSON で実行する。脆弱性があると npm は非ゼロ終了するため、その場合も標準出力を読む。
