@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 責務: 各 ADR（docs/adr/NNN-*.md）の frontmatter から adr-index.md の一覧テーブルを生成する。
+// 責務: 各 ADR（NNN-*.md）の frontmatter から、同じディレクトリの adr-index.md の一覧テーブルを生成する。
 //   frontmatter を SSOT とし、手動転記によるドリフトを構造的になくす（Issue #50）。
 
 import { readFileSync, writeFileSync, readdirSync } from 'fs'
@@ -10,8 +10,8 @@ import prettier from 'prettier'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(scriptDir, '..')
-const adrDir = join(repoRoot, 'docs/adr')
-const indexPath = join(adrDir, 'adr-index.md')
+// 一覧表を持つ ADR ディレクトリ。samples/ の ADR も同じ生成に乗せ、表を手で保つ場所を残さない。
+const adrDirs = [join(repoRoot, 'docs/adr'), join(repoRoot, 'samples/docs/design/adr')]
 
 // テーブルを差し込む位置を示すマーカー。この2行の間だけを生成が上書きし、前後の説明文は手で保つ。
 const START_MARKER = '<!-- ADR_INDEX_TABLE:START -->'
@@ -87,10 +87,11 @@ function toAdrEntry(file, content) {
 }
 
 /**
- * docs/adr 配下の ADR ファイル（NNN-*.md）を番号昇順で読み、テーブル行の素材を作る。
+ * 指定ディレクトリ配下の ADR ファイル（NNN-*.md）を番号昇順で読み、テーブル行の素材を作る。
+ * @param {string} adrDir ADR ディレクトリの絶対パス
  * @returns {ReturnType<typeof toAdrEntry>[]}
  */
-function collectAdrs() {
+function collectAdrs(adrDir) {
   const files = readdirSync(adrDir).filter((name) => /^\d{3}-.*\.md$/.test(name))
   const adrs = files.map((file) => toAdrEntry(file, readFileSync(join(adrDir, file), 'utf8')))
   adrs.sort((a, b) => a.number.localeCompare(b.number))
@@ -115,9 +116,11 @@ function buildTable(adrs) {
 
 /**
  * 既存 adr-index.md のマーカー間だけを生成テーブルへ差し替えた全文を作る。
+ * @param {string} adrDir ADR ディレクトリの絶対パス
+ * @param {string} indexPath 一覧表ファイルの絶対パス
  * @returns {string} 差し替え後の全文
  */
-function renderIndex() {
+function renderIndex(adrDir, indexPath) {
   const current = readFileSync(indexPath, 'utf8')
   const start = current.indexOf(START_MARKER)
   const end = current.indexOf(END_MARKER)
@@ -126,29 +129,33 @@ function renderIndex() {
   }
   const before = current.slice(0, start + START_MARKER.length)
   const after = current.slice(end)
-  return `${before}\n${buildTable(collectAdrs())}\n${after}`
+  return `${before}\n${buildTable(collectAdrs(adrDir))}\n${after}`
 }
 
 /**
  * 文字列を prettier 整形する（CJK 列幅を含む整形を prettier に委ねる）。
  * リポジトリの prettier 設定を indexPath 基準で解決し、`prettier --check .` と結果を一致させる。
  * @param {string} content 整形前の全文
+ * @param {string} indexPath 整形基準にする一覧表ファイルの絶対パス
  * @returns {Promise<string>} 整形後の全文
  */
-async function formatWithPrettier(content) {
+async function formatWithPrettier(content, indexPath) {
   const config = await prettier.resolveConfig(indexPath)
   return prettier.format(content, { ...config, filepath: indexPath })
 }
 
 async function main() {
-  const expected = await formatWithPrettier(renderIndex())
-  const actual = readFileSync(indexPath, 'utf8')
+  for (const adrDir of adrDirs) {
+    const indexPath = join(adrDir, 'adr-index.md')
+    const expected = await formatWithPrettier(renderIndex(adrDir, indexPath), indexPath)
+    const actual = readFileSync(indexPath, 'utf8')
 
-  if (expected !== actual) {
-    writeFileSync(indexPath, expected)
-    console.log('adr-index.md を再生成しました。')
-  } else {
-    console.log('adr-index.md は最新です（変更なし）。')
+    if (expected !== actual) {
+      writeFileSync(indexPath, expected)
+      console.log(`${indexPath} を再生成しました。`)
+    } else {
+      console.log(`${indexPath} は最新です（変更なし）。`)
+    }
   }
 }
 
