@@ -3133,47 +3133,64 @@
 
       <section class="feat">
         <h3 id="ap-boyscout">ボーイスカウトルールの仕組み化：気づいた課題を失わない</h3>
-        <div class="core">課題を見つけたら自動で起票させる</div>
+        <div class="core">見つけたら自動で起票し、監査してから直す</div>
 
-        <svg class="diag" viewBox="0 34 800 232" role="img">
+        <svg class="diag" viewBox="0 0 800 288" role="img">
           <title>
-            AIが割れ窓を見つけたらその場で直さず起票し、ラベルで振り分けて、ai-fixable は /sweep
-            がまとめて片付けるループ
+            AIが割れ窓を見つけたらその場で直さず /quick-issue で起票し、/issue-check
+            が方針を監査してから、/sweep がまとめて片付ける流れ
           </title>
 
-          <rect class="aibox" x="8" y="100" width="200" height="62" rx="9" />
-          <text class="fnm" x="22" y="126">🤖 AIが割れ窓を見つける</text>
-          <text class="li" x="22" y="148">本筋とは別の品質課題</text>
-          <path class="e step" d="M210,131 L224,131" />
+          <!-- ステージ見出し -->
+          <text class="colhead" x="8" y="18">① 起票・分類 ─ AIが自律で</text>
+          <text class="colhead" x="286" y="18">② レビュー ─ 人間が起動</text>
+          <text class="colhead" x="526" y="18">③ 対応 ─ 人間が起動</text>
+          <path d="M8,28 L262,28" stroke="#d8dce6" stroke-width="1.5" />
+          <path d="M286,28 L502,28" stroke="#d8dce6" stroke-width="1.5" />
+          <path d="M526,28 L792,28" stroke="#d8dce6" stroke-width="1.5" />
 
-          <rect class="fbox" x="230" y="100" width="160" height="62" rx="9" />
-          <text class="fnm" x="244" y="126">🚫 その場で直さない</text>
-          <text class="li" x="244" y="148">脱線と衝突を避ける</text>
-          <path class="e step" d="M392,131 L406,131" />
+          <!-- ① 起票・分類 -->
+          <rect class="aibox" x="8" y="44" width="254" height="56" rx="9" />
+          <text class="fnm" x="24" y="70">🤖 AIが割れ窓を見つける</text>
+          <text class="li" x="24" y="90">本筋とは別の品質課題</text>
+          <path class="e step" d="M135,100 L135,116" />
 
-          <rect class="box ref" x="412" y="100" width="172" height="62" rx="9" />
-          <text class="fnm" x="426" y="126">🎫 /quick-issue</text>
-          <text class="li" x="426" y="148">確認なしで起票する</text>
+          <rect class="fbox" x="8" y="120" width="254" height="56" rx="9" />
+          <text class="fnm" x="24" y="146">🚫 その場で直さない</text>
+          <text class="li" x="24" y="166">脱線と衝突を避ける</text>
+          <path class="e step" d="M135,176 L135,192" />
 
-          <path class="e ai" d="M586,120 C598,98 592,62 604,62" />
-          <rect class="fbox" x="608" y="36" width="184" height="52" rx="9" />
-          <text class="fnm" x="620" y="62">🏷 ai-fixable</text>
-          <text class="ex" x="620" y="80">AIが直せる課題</text>
+          <rect class="box ref" x="8" y="196" width="254" height="76" rx="9" />
+          <text class="fnm" x="24" y="222">🎫 /quick-issue</text>
+          <text class="li" x="24" y="242">確認なしで起票する</text>
+          <text class="li" x="24" y="262">🏷 ラベルで振り分ける</text>
 
-          <path class="e ai" d="M700,90 L700,104" />
-          <rect class="box ref" x="608" y="108" width="184" height="52" rx="9" />
-          <text class="fnm" x="620" y="134">🧹 /sweep</text>
-          <text class="ex" x="620" y="152">まとめて直して close</text>
+          <!-- ② レビュー -->
+          <path class="e step" d="M264,234 C284,234 276,82 284,82" />
+          <rect class="box ref" x="286" y="44" width="216" height="76" rx="9" />
+          <text class="fnm" x="302" y="70">🔍 /issue-check</text>
+          <text class="li" x="302" y="90">起票内容を1件ずつ監査</text>
+          <text class="li" x="302" y="110">誤った方針を先に潰す</text>
+          <path class="e step" d="M394,120 L394,136" />
 
-          <path class="e hum" d="M586,142 C598,166 592,196 604,196" />
-          <rect class="humbox" x="608" y="170" width="184" height="52" rx="9" />
-          <text class="li" x="620" y="196">🏷 needs-human-decision</text>
-          <text class="ex" x="620" y="214">人間が方針を決める</text>
+          <rect class="fbox" x="286" y="140" width="216" height="132" rx="9" />
+          <text class="li" x="302" y="166">✅ GO ─ そのまま</text>
+          <text class="li" x="302" y="188">✏️ 対応方針を差し替え</text>
+          <text class="li" x="302" y="210">🏷 ラベルを訂正</text>
+          <text class="li" x="302" y="232">🗑️ 不要なら close</text>
+          <text class="li" x="302" y="254">🧑 人間判断へ回す</text>
 
-          <path class="e hum" d="M700,222 L700,252 L96,252 L96,166" />
-          <text class="lab" x="400" y="248" text-anchor="middle">
-            決まったことは Policy・rules・ガードレールへ戻す
-          </text>
+          <!-- ③ 対応 -->
+          <path class="e ai" d="M504,166 C522,166 508,82 524,82" />
+          <rect class="box ref" x="526" y="44" width="266" height="76" rx="9" />
+          <text class="fnm" x="542" y="70">🧹 /sweep</text>
+          <text class="li" x="542" y="90">GO のものをまとめて直す</text>
+          <text class="ex" x="542" y="110">1 Issue = 1コミット = 1 close</text>
+
+          <path class="e hum" d="M504,254 C522,254 508,208 524,208" />
+          <rect class="humbox" x="526" y="170" width="266" height="76" rx="9" />
+          <text class="fnm" x="542" y="196">🧑 人間が方針を決める</text>
+          <text class="ex" x="542" y="216">issue:needs-human-decision</text>
         </svg>
       </section>
 
