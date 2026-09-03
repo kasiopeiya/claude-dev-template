@@ -5,13 +5,25 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
 
 ## 基本方針
 
+### サーバレスなインフラアーキテクチャ
+
 **運用に人手をかけないこと**を最優先し、常時稼働のサーバを持たないサーバレス構成で組む。
 
-| 設計ポイント                       | 方針                                                                           | なぜ                                                                                                           |
-| ---------------------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| 運用にかける人手                   | 常時稼働のサーバと VPC を持たず、サーバレス中心で構成する                      | パッチ適用・キャパシティ管理・ネットワーク保守がまとめて不要になり、少人数で運用できる                         |
-| 外部 SaaS への依存をスタブ置き換え | dev では SaaS を自前のスタブに差し替える                                       | 外部システムの都合（利用料・レート制限・テストデータの用意）に開発速度を握らせない。自動結合テストを実施可能。 |
-| 環境差分の出し方                   | 差分は `parameter.ts` と `StackBuilder` に集約し、Stack 内に条件分岐を作らない | parameter.tsとStackBuilderを見れば環境差分が一目瞭然になるように実装する                                       |
+| 設計ポイント                         | 方針                                                      | なぜ                                                                                                 |
+| ------------------------------------ | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| サーバとネットワークをどこまで持つか | 常時稼働のサーバと VPC を持たず、サーバレス中心で構成する | パッチ適用・キャパシティ管理・ネットワーク保守がまとめて不要になり、少人数で運用できる               |
+| 外部 SaaS への依存をどう断つか       | dev では SaaS を自前のスタブに差し替える                  | 本物の SaaS はテストのたびに会社間の調整と検証環境の空き待ちが要る。人の手配待ちを開発の経路から外す |
+
+### 壊さずに変え続けられる IaC
+
+**壊さずに変え続けられること**を最優先し、すべてのリソースを CDK で構築・運用する。
+
+| 設計ポイント                     | 方針                                                                   | なぜ                                                                                                        |
+| -------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| 手動操作をどこまで許すか         | CDK 管理下のリソースは手で変えない。コンソールは閲覧のみにする         | 手で変えるとスタックの定義と実体が乖離（ドリフト）し、次のデプロイで手を入れた設定が巻き戻って障害になる    |
+| 消してはならないものをどう守るか | ステートフル・環境共通のリソースを別スタックに分け、依存を一方向にする | ライフサイクルの違うものを同居させると、作り直したいときに消せないものが巻き添えになる                      |
+| 環境差分をどこに置くか           | 差分は設定と Builder 層に集約し、Stack 内に環境の条件分岐を作らない    | 分岐があると Stack を読んでも「どの環境で何ができるか」が分からず、`cdk diff` の結果も予測できない          |
+| デプロイ対象をどう選ぶか         | スタック名の接頭辞に環境名まで含める                                   | 接頭辞のワイルドカードで環境単位にまとめてデプロイできる。1つずつ指定すると指定漏れがそのまま取り残しになる |
 
 ## アーキテクチャ概要
 
@@ -78,17 +90,59 @@ graph LR
 | フロントエンド配信 | React のビルド成果物を S3 に置き、CloudFront から配信する                                     | 静的ファイルの配信にサーバは要らない。API も同じ CloudFront から返すため、画面と API が同一オリジンになり CORS の設定が不要になる |
 | 公開する入口       | 外部に公開するのは CloudFront だけとし、S3 と Function URL には CloudFront からのみ到達させる | 入口が1つなら、アクセス制御・ログ・WAF をそこに集約できる。バケットの直参照や Function URL の直叩きという抜け道も塞げる           |
 
+## 運用監視
+
+何を監視項目にし、どこにしきい値を置くかの考え方は [monitoring-policy](../../../docs/policy/monitoring-policy.md) が持つ。本書は全体像だけを示す。
+
+```mermaid
+graph LR
+    subgraph Src["監視対象"]
+        CF[📡 CloudFront]
+        Lambda[⚙️ Lambda]
+    end
+    subgraph Collect["収集"]
+        AccessLog[(📦 S3<br/>アクセスログ)]
+        Logs[📝 CloudWatch Logs<br/>アプリケーションログ]
+        Metrics[📊 CloudWatch メトリクス]
+        Trace[🔍 X-Ray トレース]
+    end
+    Alarm[🚨 CloudWatch アラーム<br/>prd のみ]
+    Topic[📨 SNS Topic<br/>BaseStack]
+    Ops([👤 運用担当])
+
+    CF --> AccessLog
+    CF --> Metrics
+    Lambda --> Logs
+    Lambda --> Metrics
+    Lambda --> Trace
+    Metrics --> Alarm
+    Alarm -->|しきい値超過| Topic
+    Topic -->|通知| Ops
+
+    classDef target fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
+    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+    classDef alert fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+    classDef actor fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+
+    class CF,Lambda target
+    class AccessLog,Logs,Metrics,Trace store
+    class Alarm,Topic alert
+    class Ops actor
+```
+
+アラーム通知を prd だけで有効にするのは、行動につながらない通知を増やさないためである。dev / stg の異常はデプロイした本人が見ており、呼び出す相手がいない。
+
 ## 設計上の重要ポイント
 
-| ポイント                                                               | なぜ                                                                                                                                                                                                                  |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| dev では SaaS を呼ばず、同じインターフェースを返すスタブ Lambda を呼ぶ | 外部SaaSの検証用のAPIは利用不可のタイミングがあり、テストする際には会社間の調整が必要となる。他システムへの依存が開発のボトルネックにならないように、スタブ用のAPIを自前構築し、CI/CDでの自動結合テストなどに利用する |
+| ポイント                                                               | なぜ                                                                                                                                              |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| dev では SaaS を呼ばず、同じインターフェースを返すスタブ Lambda を呼ぶ | インターフェースを本物と揃えるのは、アプリ側に環境ごとの分岐を持ち込まないため。揃っているので、CI/CD の自動結合テストを dev だけで完結させられる |
 
 ## IaC 管理方針
 
 原則としてすべてのリソースを CDK で構築・運用する。手動で作成せざるを得なかったリソースだけが手動更新の対象で、それ以外の手動操作は禁止する。
 
-手動操作を禁止するのは、CDK 管理下のリソースを手で変えると**ドリフト**——CloudFormation スタックが持つ定義と、実際にプロビジョニングされた設定の乖離——が起きるためである。この状態でデプロイすると、手で入れた変更が定義どおりに巻き戻り、障害につながる。
+**ドリフト**とは、CloudFormation スタックが持つ定義と、実際にプロビジョニングされた設定の乖離である。
 
 ```mermaid
 graph TB
@@ -152,8 +206,6 @@ graph LR
 
 依存の向きは AppStack → BaseStack の一方向である。BaseStack が公開した L2 オブジェクトを StackBuilder が AppStack へ props で渡し、CloudFormation 上はクロススタック参照（Export / ImportValue）になる。この向きがデプロイと削除の順序も決める——作るときは BaseStack が先、消すときは AppStack が先。
 
-分けた理由は、消してはならないものと作り直してよいものを別のライフサイクルに置くためである。
-
 ### スタック命名規約
 
 デプロイ時にスタック名で対象を選ぶため、命名は接頭辞から決める。
@@ -162,7 +214,7 @@ graph LR
 {システム識別子}-{環境名(dev / stg / prd)}-{スタック固有名称}-stack
 ```
 
-環境名までを接頭辞に含めることで、`cdk deploy 'pdd-dev-*'` のようにワイルドカードで環境単位のデプロイができる。
+例：`cdk deploy 'pdd-dev-*'` で dev 環境のスタックをまとめてデプロイする。
 
 ### 環境差分の実装設計
 
@@ -196,7 +248,7 @@ graph TB
     class Stacks stack
 ```
 
-値の差分は `parameter.ts` に、振る舞いの差分は Builder が呼ぶ Stack の public メソッドに置く。Stack の内部に環境の条件分岐を作らないのは、分岐があると Stack を読んでも「どの環境で何ができるか」が分からなくなり、`cdk diff` の結果も予測できなくなるためである。判断軸そのものは [cdk-design-policy](../../../docs/policy/cdk-design-policy.md) が持つ。
+値の差分は `parameter.ts` に、振る舞いの差分は Builder が呼ぶ Stack の public メソッドに置く。判断軸そのものは [cdk-design-policy](../../../docs/policy/cdk-design-policy.md) が持つ。
 
 ## 組織の制約
 
@@ -215,48 +267,6 @@ graph TB
 ### その他の制約
 
 なし（暗号化・リージョンについて組織から課されているルールは無い）。
-
-## 運用監視
-
-何を監視項目にし、どこにしきい値を置くかの考え方は [monitoring-policy](../../../docs/policy/monitoring-policy.md) が持つ。本書は全体像だけを示す。
-
-```mermaid
-graph LR
-    subgraph Src["監視対象"]
-        CF[📡 CloudFront]
-        Lambda[⚙️ Lambda]
-    end
-    subgraph Collect["収集"]
-        AccessLog[(📦 S3<br/>アクセスログ)]
-        Logs[📝 CloudWatch Logs<br/>アプリケーションログ]
-        Metrics[📊 CloudWatch メトリクス]
-        Trace[🔍 X-Ray トレース]
-    end
-    Alarm[🚨 CloudWatch アラーム<br/>prd のみ]
-    Topic[📨 SNS Topic<br/>BaseStack]
-    Ops([👤 運用担当])
-
-    CF --> AccessLog
-    CF --> Metrics
-    Lambda --> Logs
-    Lambda --> Metrics
-    Lambda --> Trace
-    Metrics --> Alarm
-    Alarm -->|しきい値超過| Topic
-    Topic -->|通知| Ops
-
-    classDef target fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
-    classDef store fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
-    classDef alert fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
-    classDef actor fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
-
-    class CF,Lambda target
-    class AccessLog,Logs,Metrics,Trace store
-    class Alarm,Topic alert
-    class Ops actor
-```
-
-アラーム通知を prd だけで有効にするのは、行動につながらない通知を増やさないためである。dev / stg の異常はデプロイした本人が見ており、呼び出す相手がいない。
 
 ## 前提と制約
 
