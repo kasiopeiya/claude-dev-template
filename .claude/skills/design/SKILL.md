@@ -14,7 +14,7 @@ Issue番号: $ARGUMENTS
 ## 実行手順
 
 1. **Phase 0（Issue読み込み）**: `gh issue view $ARGUMENTS --json number,title,body,labels` でIssue情報を取得し、以降のPhaseで参照できるよう保持する
-2. **Phase 1**: `update-design` スキルを Skill ツールで Issue番号 `$ARGUMENTS` を渡して起動し、設計書更新をこの場（インライン）で実行する
+2. **Phase 1**: `update-design` スキルを Skill ツールで Issue番号 `$ARGUMENTS` を渡して起動し、設計書更新をこの場（インライン）で実行する。設計書を新規に書き起こす場合は、書き始める前に `samples/docs/design/` を Read する（構成・図の粒度・表の書きぶりの手本）。`samples/` 自体は変更しない
 3. **Phase 2**: Phase 1 完了後、`doc-review` スキルを Skill ツールで起動し、完了を待つ。引数には次を渡すこと
    - Phase 1 で更新された設計書のパス（レビュー対象）
    - Phase 0 で取得したIssue情報（番号・タイトル・スコープ）と、「このIssueの意図に基づいて設計書が更新されている」こと
