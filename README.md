@@ -69,6 +69,10 @@ AI の成果物はすべて関門を通る。**1つでも落ちたらマージ�
 | テスト                      | 振る舞いの退行（単体テスト・CDK snapshot ＋ synth・dev 環境での結合テスト）        | 各ワークスペースの `*.test.ts`・`samples/infra/test/`                                               |
 | CLAUDE.md 文字数検査        | 毎セッション消費する文脈の肥大（CLAUDE.md と `@` import 先の合計文字数が上限超過） | 上限は `docs/policy/policy-driven-development-policy.md`、判定は `scripts/check-claude-md-size.mjs` |
 
+### コーディング規約・技術ルール
+
+言語・フレームワーク別のルールは `.claude/rules/` 配下にあり、対象ファイルを読むと自動ロードされる。新規ファイルを書き起こすときは発火しないので、その場合だけ該当ルールを自分で読む。
+
 ## 使い方
 
 ```bash
