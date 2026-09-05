@@ -16,13 +16,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-git-branch-create.mjs\"",
-            "statusMessage": "gitブランチ作成操作を確認中..."
-          },
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-empty-gh-body-overwrite.mjs\"",
-            "statusMessage": "本文を消すgh操作を確認中..."
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-forbidden-commands.mjs\"",
+            "statusMessage": "禁止コマンドを確認中..."
           }
         ]
       }
