@@ -61,7 +61,7 @@ AIにより以下を実施する
 
 - PRの説明を記載
 - PRの変更ファイルを見て変更種別ラベルをつける
-- [pr-review-policy](../../../docs/policy/pr-review-policy.md)をもとにPRの人間レビューが必要かを判定する（`needs-human-review` ラベルをつける）
+- pr-review-policy をもとにPRの人間レビューが必要かを判定する（`needs-human-review` ラベルをつける）
 - PRのサイズをチェックする（大きすぎる変更は拒否される）
 
 ```mermaid

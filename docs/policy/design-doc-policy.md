@@ -1,6 +1,6 @@
 ---
 hook:
-  applies-to: ['docs/design/**/*.md']
+  applies-to: ['docs/design/**/*.md', 'samples/docs/design/**/*.md']
 ---
 
 # 設計書作成ポリシー
