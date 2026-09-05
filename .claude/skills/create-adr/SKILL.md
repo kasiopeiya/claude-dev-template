@@ -11,7 +11,7 @@ description: ADR（Architecture Decision Record）を作成、またはADR対象
 2. 対象外の場合：理由を説明し、それでも作成するか確認する
 3. 情報収集：必要情報をユーザーから収集する（不足分のみ質問する）
 4. 自動採番：`docs/adr/` の既存ファイルを確認し、最大番号+1を使用
-5. ファイル作成：`docs/adr/NNN-slug.md`（テンプレート: `docs/adr/adr-template.md` を参照）。既定は軽量版（下記「軽量版で書く」参照）
+5. ファイル作成：`docs/adr/NNN-slug.md`（テンプレート: `docs/adr/adr-template.md` を参照）。既定は軽量版（下記「軽量版で書く」参照）。書き始める前に `samples/docs/design/adr/`（ADR の手本。フル版と軽量版の書き分けが見られる）を Read する。`samples/` 自体は変更しない
 6. 可視化：下記「可視化（必須）」に従い、表・図で構造を一目化する
 7. 代替案の絞り込み：下記「代替案に何を載せるか（必須）」に従い、表に載せる案を決める
 8. 一覧表を再生成：`npm run gen:adr-index` を実行し `docs/adr/adr-index.md` を更新する（表は手で編集しない）
