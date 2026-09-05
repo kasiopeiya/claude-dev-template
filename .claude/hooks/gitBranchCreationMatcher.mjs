@@ -5,9 +5,13 @@
 //   判定できない。「作成でない」と分かっている既知フラグのホワイトリストで判定する
 //   （ブラックリスト方式だと未知の作成系フラグ・組み合わせを見逃すため）。
 // - `&&` `;` `|` `||` で連結されたコマンドも1つずつ判定できるよう、先にサブコマンドへ分割する。
-// - シェルの厳密なパース（クォート・サブシェル等）はしない。「AIが自律的にbranchを作らない」
+//   分割は shellSplit.mjs に委ね、引用符の内側は区切らない（本文に禁止コマンド名を含むだけの
+//   正当な操作を拒否しないため）。
+// - シェルの厳密なパース（サブシェル・変数展開等）はしない。「AIが自律的にbranchを作らない」
 //   ためのガードレールであり、完全な安全機構ではないため、判定できない入力はブロックせず
 //   素通りする（fail-open）。
+
+import { splitHeredoc, splitPipeStages, splitStatements } from './shellSplit.mjs'
 
 const CHECKOUT_CREATE_FLAGS = new Set(['-b', '-B'])
 const SWITCH_CREATE_FLAGS = new Set(['-c', '-C', '--create', '--force-create'])
@@ -45,10 +49,9 @@ const BRANCH_NON_CREATE_FIRST_FLAGS = new Set([
 ])
 
 function splitSubcommands(command) {
-  return command
-    .split(/(?:&&|\|\||;|\|)/)
-    .map((s) => s.trim())
-    .filter(Boolean)
+  // ヒアドキュメントの中身は実行されない入力データなので、判定対象から外す
+  const { commandText } = splitHeredoc(command)
+  return splitStatements(commandText).flatMap(splitPipeStages)
 }
 
 function tokenize(sub) {

@@ -8,11 +8,13 @@
 //   新規作成であり、空でも失われるものが無いため対象外。
 // - `--body-file -`（標準入力）は、同じコマンド文字列に書かれたヒアドキュメントの中身まで見て
 //   空かどうかを判定する。中身のあるヒアドキュメント・パイプ・リダイレクトは通常の更新なので通す。
-// - シェルの厳密なパース（クォート・サブシェル・変数展開）はしない。判定できない入力は通す
+// - シェルの厳密なパース（サブシェル・変数展開）はしない。判定できない入力は通す
 //   （fail-open）。ただし標準入力の供給元が1つも見当たらない `--body-file -` だけは、
 //   空本文の書き込みが確定するので止める。
+// - コマンドの分割は shellSplit.mjs に委ね、引用符の内側は区切らない（本文中の `;` や `|` で
+//   コマンドの区切りを誤らないため）。
 
-const HEREDOC_OPERATOR = /<<-?\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\1/
+import { splitHeredoc, splitPipeStages, splitStatements } from './shellSplit.mjs'
 
 // 既存の本文を置き換えるコマンドと、そこで本文を空にできるフラグ（gh 2.87 時点）。
 const OVERWRITE_TARGETS = [
@@ -50,33 +52,6 @@ const OVERWRITE_TARGETS = [
   }
 ]
 
-/**
- * ヒアドキュメントの中身を、コマンド本体から切り離す。
- * 本文にはパイプや `;` を含む Markdown 表が入りうるため、先に分けないとコマンドの区切りを誤る。
- */
-function splitHeredoc(command) {
-  const lines = command.split('\n')
-  const operatorIndex = lines.findIndex((line) => HEREDOC_OPERATOR.test(line))
-  if (operatorIndex === -1) return { commandText: command, heredocBody: null }
-
-  const delimiter = HEREDOC_OPERATOR.exec(lines[operatorIndex])[2]
-  const bodyStart = operatorIndex + 1
-  let terminatorIndex = lines.findIndex((line, i) => i >= bodyStart && line.trim() === delimiter)
-  if (terminatorIndex === -1) terminatorIndex = lines.length
-
-  return {
-    commandText: [...lines.slice(0, bodyStart), ...lines.slice(terminatorIndex + 1)].join('\n'),
-    heredocBody: lines.slice(bodyStart, terminatorIndex).join('\n')
-  }
-}
-
-function splitStatements(commandText) {
-  return commandText
-    .split(/&&|\|\||;|\n/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
 function tokenize(stage) {
   return stage.split(/\s+/).filter(Boolean)
 }
@@ -88,8 +63,10 @@ function stripQuotes(value) {
   return value
 }
 
-// `<` は入力リダイレクト、`<<` はヒアドキュメント。後者は標準入力の供給元として別途判定する。
+// `<` は入力リダイレクト、`<<<` はヒアストリング。どちらも標準入力に中身を与えるので通す。
+// `<<`（ヒアドキュメント）だけは中身が空かどうかまで見るため、ここでは扱わない。
 function hasInputRedirect(stage) {
+  if (stage.includes('<<<')) return true
   return /(^|[^<])<(?!<)/.test(stage)
 }
 
@@ -159,7 +136,7 @@ export function detectEmptyGhBodyOverwrite(command) {
   const { commandText, heredocBody } = splitHeredoc(command)
 
   for (const statement of splitStatements(commandText)) {
-    const stages = statement.split('|')
+    const stages = splitPipeStages(statement)
 
     for (const [index, stage] of stages.entries()) {
       const tokens = tokenize(stage)
