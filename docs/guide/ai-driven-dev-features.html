@@ -4,33 +4,64 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>このテンプレートの特徴的な機能</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Ubuntu+Sans:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      :root {
+        /* 参考：mathbullet/skills html スキルのデザインシステム（白黒ベース） */
+        --bg: #faf9f6;
+        --bg-soft: #f4f2ec;
+        --surface: #ffffff;
+        --ink: #111110;
+        --ink-2: #1a1a1a;
+        --muted: #595959;
+        --faint: #a5a5a5;
+        --rule: #dad6ca;
+        --border: #111110;
+        --link: #2990da;
+        /* 役割の濃淡：薄いほど人間、濃いほど機械 */
+        --t1: #f2f0e9; /* 人間 */
+        --t2: #e6e3d9; /* 人間＋AI・Policy */
+        --t3: #d9d5c8; /* AI */
+        --t4: #cbc7b6; /* CI・機械 */
+        --tint-border: #9c978a;
+      }
       * {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
       }
       body {
-        font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
-        color: #1f2430;
-        background: #f6f7fa;
-        line-height: 1.6;
+        font-family:
+          'Ubuntu Sans', 'Noto Sans JP', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic',
+          sans-serif;
+        font-feature-settings: 'palt';
+        color: var(--ink-2);
+        background: var(--bg);
+        line-height: 1.7;
         padding: 40px 16px 80px;
       }
       .page {
         max-width: 1060px;
         margin: 0 auto;
       }
+      code {
+        font-family: 'Ubuntu Mono', 'SF Mono', Menlo, monospace;
+      }
       a {
-        color: #1d4ed8;
+        color: var(--link);
         text-decoration: none;
       }
       a:hover {
-        color: #7c3aed;
+        text-decoration: underline;
       }
       nav a:hover {
-        color: #1d4ed8 !important;
-        border-bottom-color: #1d4ed8 !important;
+        color: var(--link) !important;
+        border-bottom-color: var(--link) !important;
       }
       .arrow::before {
         content: '→';
@@ -38,7 +69,7 @@
         left: -18px;
         top: 50%;
         transform: translateY(-50%);
-        color: #5b6272;
+        color: var(--muted);
         font-size: 16px;
       }
       .arrow-lg::before {
@@ -47,15 +78,24 @@
         left: -22px;
         top: 50%;
         transform: translateY(-50%);
-        color: #5b6272;
+        color: var(--muted);
         font-size: 18px;
       }
     </style>
   </head>
   <body>
     <div class="page">
-      <h1 style="font-size: 26px; letter-spacing: 0.02em">このテンプレートの特徴的な機能</h1>
-      <p style="color: rgb(91, 98, 114); margin-top: 8px; font-size: 14px">
+      <h1
+        style="
+          font-size: 28px;
+          letter-spacing: 0.01em;
+          border-left: 12px solid var(--ink);
+          padding-left: 18px;
+        "
+      >
+        このテンプレートの特徴的な機能
+      </h1>
+      <p style="color: var(--muted); margin-top: 8px; font-size: 14px">
         ポリシー駆動開発そのものの説明ではないが、それを日々回すために効いている仕組み。
       </p>
       <p style="margin-top: 10px; font-size: 12.5px">
@@ -65,8 +105,8 @@
       <nav
         style="
           margin-top: 18px;
-          background: rgb(255, 255, 255);
-          border: 1px solid rgb(216, 220, 230);
+          background: var(--surface);
+          border: 1.5px solid var(--border);
           border-radius: 12px;
           padding: 14px 18px 16px;
         "
@@ -76,8 +116,8 @@
             display: block;
             font-size: 11.5px;
             letter-spacing: 0.06em;
-            color: rgb(91, 98, 114);
-            border-bottom: 1px solid rgb(216, 220, 230);
+            color: var(--muted);
+            border-bottom: 1px solid var(--rule);
             padding-bottom: 6px;
           "
           >目次</b
@@ -86,35 +126,27 @@
           <li style="font-size: 12.5px; padding: 2.5px 0px">
             <a
               href="#ap-progressive"
-              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+              style="color: var(--ink); border-bottom: 1px dotted var(--rule)"
               >Progressive Disclosure：必要な分だけ読ませる文書構造</a
             >
           </li>
           <li style="font-size: 12.5px; padding: 2.5px 0px">
-            <a
-              href="#ap-triage"
-              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+            <a href="#ap-triage" style="color: var(--ink); border-bottom: 1px dotted var(--rule)"
               >PRのトリアージ：人間がレビューすべきPRを絞る</a
             >
           </li>
           <li style="font-size: 12.5px; padding: 2.5px 0px">
-            <a
-              href="#ap-boyscout"
-              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+            <a href="#ap-boyscout" style="color: var(--ink); border-bottom: 1px dotted var(--rule)"
               >ボーイスカウトルールの仕組み化：気づいた課題を失わない</a
             >
           </li>
           <li style="font-size: 12.5px; padding: 2.5px 0px">
-            <a
-              href="#ap-devil"
-              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+            <a href="#ap-devil" style="color: var(--ink); border-bottom: 1px dotted var(--rule)"
               >AIに自己ディベートさせる：指摘されるとすぐ意見を変える問題への対策</a
             >
           </li>
           <li style="font-size: 12.5px; padding: 2.5px 0px">
-            <a
-              href="#ap-misc"
-              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+            <a href="#ap-misc" style="color: var(--ink); border-bottom: 1px dotted var(--rule)"
               >その他の仕組み：SubAgent・ドリフト検出・ADR</a
             >
           </li>
@@ -125,8 +157,8 @@
         style="
           margin-top: 48px;
           margin-top: 20px;
-          background: rgb(255, 255, 255);
-          border: 1px solid rgb(216, 220, 230);
+          background: var(--surface);
+          border: 1.5px solid var(--border);
           border-radius: 12px;
           padding: 6px 18px 18px;
         "
@@ -137,13 +169,13 @@
         <div
           style="
             margin-top: 10px;
-            background: rgb(241, 233, 255);
-            border-left: 4px solid rgb(124, 58, 237);
+            background: var(--t2);
+            border-left: 4px solid var(--ink);
             border-radius: 0px 10px 10px 0px;
             padding: 9px 14px;
             font-size: 13.5px;
             font-weight: 700;
-            color: rgb(124, 58, 237);
+            color: var(--ink);
           "
         >
           必要な時に必要なものだけを読ませる
@@ -171,9 +203,9 @@
             height="268"
             rx="12"
             stroke-dasharray="6 5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="24" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="24" y="50" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             ❌ 先に全部読ませる
           </text>
 
@@ -183,83 +215,79 @@
             width="104"
             height="22"
             rx="5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="34" y="81" style="font-size: 11.5px; fill: rgb(91, 98, 114)">設計ポリシー</text>
+          <text x="34" y="81" style="font-size: 11.5px; fill: var(--muted)">設計ポリシー</text>
           <rect
             x="136"
             y="66"
             width="104"
             height="22"
             rx="5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="146" y="81" style="font-size: 11.5px; fill: rgb(91, 98, 114)">テスト方針</text>
+          <text x="146" y="81" style="font-size: 11.5px; fill: var(--muted)">テスト方針</text>
           <rect
             x="24"
             y="94"
             width="104"
             height="22"
             rx="5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="34" y="109" style="font-size: 11.5px; fill: rgb(91, 98, 114)">CDK設計</text>
+          <text x="34" y="109" style="font-size: 11.5px; fill: var(--muted)">CDK設計</text>
           <rect
             x="136"
             y="94"
             width="104"
             height="22"
             rx="5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="146" y="109" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
-            監視ポリシー
-          </text>
+          <text x="146" y="109" style="font-size: 11.5px; fill: var(--muted)">監視ポリシー</text>
           <rect
             x="24"
             y="122"
             width="104"
             height="22"
             rx="5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="34" y="137" style="font-size: 11.5px; fill: rgb(91, 98, 114)">git規約</text>
+          <text x="34" y="137" style="font-size: 11.5px; fill: var(--muted)">git規約</text>
           <rect
             x="136"
             y="122"
             width="104"
             height="22"
             rx="5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="146" y="137" style="font-size: 11.5px; fill: rgb(91, 98, 114)">PRレビュー</text>
+          <text x="146" y="137" style="font-size: 11.5px; fill: var(--muted)">PRレビュー</text>
           <rect
             x="24"
             y="150"
             width="104"
             height="22"
             rx="5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="34" y="165" style="font-size: 11.5px; fill: rgb(91, 98, 114)">ログ方針</text>
+          <text x="34" y="165" style="font-size: 11.5px; fill: var(--muted)">ログ方針</text>
           <rect
             x="136"
             y="150"
             width="104"
             height="22"
             rx="5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="146" y="165" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
-            …そのほか全部
-          </text>
+          <text x="146" y="165" style="font-size: 11.5px; fill: var(--muted)">…そのほか全部</text>
 
           <path
             d="M244,88 L272,132"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -270,7 +298,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -281,7 +309,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -292,16 +320,16 @@
             width="104"
             height="52"
             rx="9"
-            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+            style="fill: var(--t3); stroke: var(--tint-border); stroke-width: 1.5"
           ></rect>
-          <text x="292" y="150" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="292" y="150" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🤖 AI
           </text>
 
-          <text x="24" y="212" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="24" y="212" style="font-size: 11.5px; fill: var(--ink)">
             文脈が飽和し、中盤の指示が効かなくなる
           </text>
-          <text x="24" y="234" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+          <text x="24" y="234" style="font-size: 11.5px; fill: var(--muted)">
             （Lost in the middle）
           </text>
           <text
@@ -310,9 +338,9 @@
             style="
               font-size: 11.5px;
               font-weight: 700;
-              fill: rgb(124, 58, 237);
+              fill: var(--ink);
               paint-order: stroke;
-              stroke: rgb(255, 255, 255);
+              stroke: var(--surface);
               stroke-width: 4px;
               stroke-linejoin: round;
             "
@@ -327,9 +355,9 @@
             width="384"
             height="268"
             rx="12"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="424" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="424" y="50" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             ✅ ハブから必要な分だけ辿らせる
           </text>
 
@@ -340,19 +368,19 @@
             height="78"
             rx="10"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(196, 166, 245);
+              stroke: var(--tint-border);
             "
           ></rect>
-          <text x="438" y="94" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="438" y="94" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🗂 ハブ文書
           </text>
-          <text x="438" y="114" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+          <text x="438" y="114" style="font-size: 11.5px; fill: var(--muted)">
             design-hub / policy-hub
           </text>
-          <text x="438" y="136" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+          <text x="438" y="136" style="font-size: 11.5px; fill: var(--muted)">
             ＋ 各文書の参照タイミング
           </text>
 
@@ -361,7 +389,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(124, 58, 237);
+              stroke: var(--ink);
               stroke-dasharray: 5, 5;
               marker-end: url('#a-pol');
             "
@@ -371,7 +399,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(124, 58, 237);
+              stroke: var(--ink);
               stroke-dasharray: 5, 5;
               marker-end: url('#a-pol');
             "
@@ -382,20 +410,18 @@
             width="162"
             height="36"
             rx="8"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="632" y="85" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
-            いま効くポリシー
-          </text>
+          <text x="632" y="85" style="font-size: 11.5px; fill: var(--muted)">いま効くポリシー</text>
           <rect
             x="620"
             y="112"
             width="162"
             height="36"
             rx="8"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="632" y="135" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+          <text x="632" y="135" style="font-size: 11.5px; fill: var(--muted)">
             いま効くポリシー
           </text>
 
@@ -404,7 +430,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -415,13 +441,13 @@
             width="358"
             height="52"
             rx="10"
-            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+            style="fill: var(--t3); stroke: var(--tint-border); stroke-width: 1.5"
           ></rect>
-          <text x="440" y="204" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="440" y="204" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🤖 AI が読むのは数本だけ
           </text>
 
-          <text x="424" y="250" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="424" y="250" style="font-size: 11.5px; fill: var(--ink)">
             タスクに効くものしか文脈に載らない
           </text>
           <text
@@ -430,9 +456,9 @@
             style="
               font-size: 11.5px;
               font-weight: 700;
-              fill: rgb(124, 58, 237);
+              fill: var(--ink);
               paint-order: stroke;
-              stroke: rgb(255, 255, 255);
+              stroke: var(--surface);
               stroke-width: 4px;
               stroke-linejoin: round;
             "
@@ -446,8 +472,8 @@
         style="
           margin-top: 48px;
           margin-top: 20px;
-          background: rgb(255, 255, 255);
-          border: 1px solid rgb(216, 220, 230);
+          background: var(--surface);
+          border: 1.5px solid var(--border);
           border-radius: 12px;
           padding: 6px 18px 18px;
         "
@@ -458,13 +484,13 @@
         <div
           style="
             margin-top: 10px;
-            background: rgb(241, 233, 255);
-            border-left: 4px solid rgb(124, 58, 237);
+            background: var(--t2);
+            border-left: 4px solid var(--ink);
             border-radius: 0px 10px 10px 0px;
             padding: 9px 14px;
             font-size: 13.5px;
             font-weight: 700;
-            color: rgb(124, 58, 237);
+            color: var(--ink);
           "
         >
           ポリシーに基づき人間レビュー要否を判定する
@@ -493,9 +519,9 @@
             width="112"
             height="52"
             rx="9"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="24" y="72" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="24" y="72" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             ⬆ push
           </text>
           <path
@@ -503,7 +529,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -516,23 +542,23 @@
             height="64"
             rx="10"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(169, 223, 203);
-              background: rgb(255, 255, 255);
-              border: 1.5px solid rgb(5, 150, 105);
+              stroke: var(--tint-border);
+              background: var(--surface);
+              border: 1.5px solid var(--ink);
               border-radius: 8px;
               padding: 6px 10px;
               font-size: 11.5px;
               font-weight: 600;
-              color: rgb(5, 150, 105);
+              color: var(--ink);
             "
           ></rect>
-          <text x="160" y="60" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="160" y="60" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🔁 pipeline（CI）
           </text>
-          <text x="160" y="82" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="160" y="82" style="font-size: 11.5px; fill: var(--ink)">
             検査してマージ可否を判定
           </text>
 
@@ -541,7 +567,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -552,9 +578,9 @@
             style="
               font-size: 11.5px;
               font-weight: 700;
-              fill: rgb(124, 58, 237);
+              fill: var(--ink);
               paint-order: stroke;
-              stroke: rgb(255, 255, 255);
+              stroke: var(--surface);
               stroke-width: 4px;
               stroke-linejoin: round;
             "
@@ -569,22 +595,22 @@
             height="120"
             rx="10"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(196, 166, 245);
+              stroke: var(--tint-border);
             "
           ></rect>
-          <text x="396" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="396" y="50" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🤖 pr-ai-triage（AI）
           </text>
-          <text x="396" y="76" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="396" y="76" style="font-size: 11.5px; fill: var(--ink)">
             ① 差分を読んで PR 本文を書き直す
           </text>
-          <text x="396" y="98" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="396" y="98" style="font-size: 11.5px; fill: var(--ink)">
             ② レビューが要るかどうかのラベルを付ける
           </text>
-          <text x="396" y="120" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="396" y="120" style="font-size: 11.5px; fill: var(--ink)">
             ③ 要レビューのときだけ前提条件を見る
           </text>
 
@@ -593,9 +619,10 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(217, 119, 6);
+              stroke: var(--ink);
               stroke-width: 1.8;
               marker-end: url('#a-hum');
+              stroke-dasharray: 2, 3;
             "
           ></path>
           <text
@@ -604,9 +631,9 @@
             style="
               font-size: 11.5px;
               font-weight: 700;
-              fill: rgb(124, 58, 237);
+              fill: var(--ink);
               paint-order: stroke;
-              stroke: rgb(255, 255, 255);
+              stroke: var(--surface);
               stroke-width: 4px;
               stroke-linejoin: round;
             "
@@ -619,12 +646,12 @@
             width="170"
             height="60"
             rx="10"
-            style="fill: rgb(255, 244, 224); stroke: rgb(217, 119, 6); stroke-width: 2"
+            style="fill: var(--t1); stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2, 3"
           ></rect>
-          <text x="454" y="238" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="454" y="238" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🧑 人間がレビュー
           </text>
-          <text x="454" y="258" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+          <text x="454" y="258" style="font-size: 11.5px; fill: var(--muted)">
             絞られた分だけ見る
           </text>
 
@@ -633,7 +660,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -644,9 +671,9 @@
             style="
               font-size: 11.5px;
               font-weight: 700;
-              fill: rgb(124, 58, 237);
+              fill: var(--ink);
               paint-order: stroke;
-              stroke: rgb(255, 255, 255);
+              stroke: var(--surface);
               stroke-width: 4px;
               stroke-linejoin: round;
             "
@@ -659,14 +686,12 @@
             width="154"
             height="60"
             rx="10"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="644" y="238" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="644" y="238" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             ⚙ auto-merge
           </text>
-          <text x="644" y="258" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
-            AI非関与の別job
-          </text>
+          <text x="644" y="258" style="font-size: 11.5px; fill: var(--muted)">AI非関与の別job</text>
 
           <rect
             x="24"
@@ -675,16 +700,16 @@
             height="60"
             rx="10"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(196, 166, 245);
+              stroke: var(--tint-border);
             "
           ></rect>
-          <text x="40" y="210" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="40" y="210" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             📕 pr-review-policy
           </text>
-          <text x="40" y="230" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="40" y="230" style="font-size: 11.5px; fill: var(--ink)">
             どの変更に人間レビューが要るかを定める
           </text>
           <path
@@ -692,7 +717,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(124, 58, 237);
+              stroke: var(--ink);
               stroke-dasharray: 5, 5;
               marker-end: url('#a-pol');
             "
@@ -704,8 +729,8 @@
         style="
           margin-top: 48px;
           margin-top: 20px;
-          background: rgb(255, 255, 255);
-          border: 1px solid rgb(216, 220, 230);
+          background: var(--surface);
+          border: 1.5px solid var(--border);
           border-radius: 12px;
           padding: 6px 18px 18px;
         "
@@ -716,13 +741,13 @@
         <div
           style="
             margin-top: 10px;
-            background: rgb(241, 233, 255);
-            border-left: 4px solid rgb(124, 58, 237);
+            background: var(--t2);
+            border-left: 4px solid var(--ink);
             border-radius: 0px 10px 10px 0px;
             padding: 9px 14px;
             font-size: 13.5px;
             font-weight: 700;
-            color: rgb(124, 58, 237);
+            color: var(--ink);
           "
         >
           見つけたら自動で起票し、監査してから直す
@@ -746,18 +771,18 @@
           </title>
 
           <!-- ステージ見出し -->
-          <text x="8" y="18" style="font-size: 12px; font-weight: 700; fill: rgb(91, 98, 114)">
+          <text x="8" y="18" style="font-size: 12px; font-weight: 700; fill: var(--muted)">
             ① 起票・分類 ─ AIが自律で
           </text>
-          <text x="286" y="18" style="font-size: 12px; font-weight: 700; fill: rgb(91, 98, 114)">
+          <text x="286" y="18" style="font-size: 12px; font-weight: 700; fill: var(--muted)">
             ② レビュー ─ 人間が起動
           </text>
-          <text x="526" y="18" style="font-size: 12px; font-weight: 700; fill: rgb(91, 98, 114)">
+          <text x="526" y="18" style="font-size: 12px; font-weight: 700; fill: var(--muted)">
             ③ 対応 ─ 人間が起動
           </text>
-          <path d="M8,28 L262,28" stroke="#d8dce6" stroke-width="1.5"></path>
-          <path d="M286,28 L502,28" stroke="#d8dce6" stroke-width="1.5"></path>
-          <path d="M526,28 L792,28" stroke="#d8dce6" stroke-width="1.5"></path>
+          <path d="M8,28 L262,28" stroke="#dad6ca" stroke-width="1.5"></path>
+          <path d="M286,28 L502,28" stroke="#dad6ca" stroke-width="1.5"></path>
+          <path d="M526,28 L792,28" stroke="#dad6ca" stroke-width="1.5"></path>
 
           <!-- ① 起票・分類 -->
           <rect
@@ -766,12 +791,12 @@
             width="254"
             height="56"
             rx="9"
-            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+            style="fill: var(--t3); stroke: var(--tint-border); stroke-width: 1.5"
           ></rect>
-          <text x="24" y="70" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="24" y="70" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🤖 AIが割れ窓を見つける
           </text>
-          <text x="24" y="90" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="24" y="90" style="font-size: 11.5px; fill: var(--ink)">
             本筋とは別の品質課題
           </text>
           <path
@@ -779,7 +804,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -791,20 +816,18 @@
             width="254"
             height="56"
             rx="9"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="24" y="146" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="24" y="146" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🚫 その場で直さない
           </text>
-          <text x="24" y="166" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            脱線と衝突を避ける
-          </text>
+          <text x="24" y="166" style="font-size: 11.5px; fill: var(--ink)">脱線と衝突を避ける</text>
           <path
             d="M135,176 L135,192"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -817,19 +840,17 @@
             height="76"
             rx="9"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(196, 166, 245);
+              stroke: var(--tint-border);
             "
           ></rect>
-          <text x="24" y="222" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="24" y="222" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🎫 /quick-issue
           </text>
-          <text x="24" y="242" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            確認なしで起票する
-          </text>
-          <text x="24" y="262" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="24" y="242" style="font-size: 11.5px; fill: var(--ink)">確認なしで起票する</text>
+          <text x="24" y="262" style="font-size: 11.5px; fill: var(--ink)">
             🏷 ラベルで振り分ける
           </text>
 
@@ -839,7 +860,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -851,19 +872,19 @@
             height="76"
             rx="9"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(196, 166, 245);
+              stroke: var(--tint-border);
             "
           ></rect>
-          <text x="302" y="70" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="302" y="70" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🔍 /issue-check
           </text>
-          <text x="302" y="90" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="302" y="90" style="font-size: 11.5px; fill: var(--ink)">
             起票内容を1件ずつ監査
           </text>
-          <text x="302" y="110" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="302" y="110" style="font-size: 11.5px; fill: var(--ink)">
             誤った方針を先に潰す
           </text>
           <path
@@ -871,7 +892,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -883,28 +904,20 @@
             width="216"
             height="132"
             rx="9"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="302" y="166" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            ✅ GO ─ そのまま
-          </text>
-          <text x="302" y="188" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="302" y="166" style="font-size: 11.5px; fill: var(--ink)">✅ GO ─ そのまま</text>
+          <text x="302" y="188" style="font-size: 11.5px; fill: var(--ink)">
             ✏️ 対応方針を差し替え
           </text>
-          <text x="302" y="210" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            🏷 ラベルを訂正
-          </text>
-          <text x="302" y="232" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            🗑️ 不要なら close
-          </text>
-          <text x="302" y="254" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            🧑 人間判断へ回す
-          </text>
+          <text x="302" y="210" style="font-size: 11.5px; fill: var(--ink)">🏷 ラベルを訂正</text>
+          <text x="302" y="232" style="font-size: 11.5px; fill: var(--ink)">🗑️ 不要なら close</text>
+          <text x="302" y="254" style="font-size: 11.5px; fill: var(--ink)">🧑 人間判断へ回す</text>
 
           <!-- ③ 対応 -->
           <path
             d="M504,166 C522,166 508,82 524,82"
-            style="fill: none; stroke-width: 2; stroke: rgb(37, 99, 235); marker-end: url('#a-ai')"
+            style="fill: none; stroke-width: 2; stroke: var(--ink); marker-end: url('#a-ai')"
           ></path>
           <rect
             x="526"
@@ -913,19 +926,19 @@
             height="76"
             rx="9"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(196, 166, 245);
+              stroke: var(--tint-border);
             "
           ></rect>
-          <text x="542" y="70" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="542" y="70" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🧹 /sweep
           </text>
-          <text x="542" y="90" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="542" y="90" style="font-size: 11.5px; fill: var(--ink)">
             GO のものをまとめて直す
           </text>
-          <text x="542" y="110" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+          <text x="542" y="110" style="font-size: 11.5px; fill: var(--muted)">
             1 Issue = 1コミット = 1 close
           </text>
 
@@ -934,9 +947,10 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(217, 119, 6);
+              stroke: var(--ink);
               stroke-width: 1.8;
               marker-end: url('#a-hum');
+              stroke-dasharray: 2, 3;
             "
           ></path>
           <rect
@@ -945,12 +959,12 @@
             width="266"
             height="76"
             rx="9"
-            style="fill: rgb(255, 244, 224); stroke: rgb(217, 119, 6); stroke-width: 2"
+            style="fill: var(--t1); stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2, 3"
           ></rect>
-          <text x="542" y="196" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="542" y="196" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🧑 人間が方針を決める
           </text>
-          <text x="542" y="216" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+          <text x="542" y="216" style="font-size: 11.5px; fill: var(--muted)">
             issue:needs-human-decision
           </text>
         </svg>
@@ -960,8 +974,8 @@
         style="
           margin-top: 48px;
           margin-top: 20px;
-          background: rgb(255, 255, 255);
-          border: 1px solid rgb(216, 220, 230);
+          background: var(--surface);
+          border: 1.5px solid var(--border);
           border-radius: 12px;
           padding: 6px 18px 18px;
         "
@@ -972,13 +986,13 @@
         <div
           style="
             margin-top: 10px;
-            background: rgb(241, 233, 255);
-            border-left: 4px solid rgb(124, 58, 237);
+            background: var(--t2);
+            border-left: 4px solid var(--ink);
             border-radius: 0px 10px 10px 0px;
             padding: 9px 14px;
             font-size: 13.5px;
             font-weight: 700;
-            color: rgb(124, 58, 237);
+            color: var(--ink);
           "
         >
           反論エージェントによりアイデアを洗練させる
@@ -1008,9 +1022,9 @@
             height="252"
             rx="12"
             stroke-dasharray="6 5"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="24" y="52" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="24" y="52" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             ❌ そのまま意見を出す
           </text>
 
@@ -1020,15 +1034,15 @@
             width="160"
             height="42"
             rx="8"
-            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+            style="fill: var(--t3); stroke: var(--tint-border); stroke-width: 1.5"
           ></rect>
-          <text x="38" y="98" style="font-size: 11.5px; fill: rgb(31, 36, 48)">🤖 AIの意見</text>
+          <text x="38" y="98" style="font-size: 11.5px; fill: var(--ink)">🤖 AIの意見</text>
           <path
             d="M104,116 L104,134"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -1039,15 +1053,15 @@
             width="160"
             height="42"
             rx="8"
-            style="fill: rgb(255, 244, 224); stroke: rgb(217, 119, 6); stroke-width: 2"
+            style="fill: var(--t1); stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2, 3"
           ></rect>
-          <text x="38" y="164" style="font-size: 11.5px; fill: rgb(31, 36, 48)">🧑 人間が反論</text>
+          <text x="38" y="164" style="font-size: 11.5px; fill: var(--ink)">🧑 人間が反論</text>
           <path
             d="M104,182 L104,200"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -1058,25 +1072,23 @@
             width="160"
             height="42"
             rx="8"
-            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+            style="fill: var(--t3); stroke: var(--tint-border); stroke-width: 1.5"
           ></rect>
-          <text x="38" y="230" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="38" y="230" style="font-size: 11.5px; fill: var(--ink)">
             🤖 すぐ意見を変える
           </text>
 
-          <text x="196" y="164" style="font-size: 11.5px; fill: rgb(91, 98, 114)">根拠は1つも</text>
-          <text x="196" y="182" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
-            増えていない
-          </text>
+          <text x="196" y="164" style="font-size: 11.5px; fill: var(--muted)">根拠は1つも</text>
+          <text x="196" y="182" style="font-size: 11.5px; fill: var(--muted)">増えていない</text>
           <text
             x="24"
             y="268"
             style="
               font-size: 11.5px;
               font-weight: 700;
-              fill: rgb(124, 58, 237);
+              fill: var(--ink);
               paint-order: stroke;
-              stroke: rgb(255, 255, 255);
+              stroke: var(--surface);
               stroke-width: 4px;
               stroke-linejoin: round;
             "
@@ -1091,9 +1103,9 @@
             width="384"
             height="252"
             rx="12"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="424" y="52" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="424" y="52" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             ✅ /devil で先に潰す
           </text>
 
@@ -1103,15 +1115,15 @@
             width="168"
             height="42"
             rx="8"
-            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+            style="fill: var(--t3); stroke: var(--tint-border); stroke-width: 1.5"
           ></rect>
-          <text x="438" y="98" style="font-size: 11.5px; fill: rgb(31, 36, 48)">🤖 AIの意見</text>
+          <text x="438" y="98" style="font-size: 11.5px; fill: var(--ink)">🤖 AIの意見</text>
           <path
             d="M594,93 L612,93"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -1122,12 +1134,10 @@
             width="166"
             height="42"
             rx="8"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="630" y="98" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            主張だけ切り離す
-          </text>
-          <text x="616" y="130" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+          <text x="630" y="98" style="font-size: 11.5px; fill: var(--ink)">主張だけ切り離す</text>
+          <text x="616" y="130" style="font-size: 11.5px; fill: var(--muted)">
             誰の主張か・経緯は渡さない
           </text>
 
@@ -1136,7 +1146,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(124, 58, 237);
+              stroke: var(--ink);
               stroke-dasharray: 5, 5;
               marker-end: url('#a-pol');
             "
@@ -1148,13 +1158,13 @@
             height="46"
             rx="8"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(196, 166, 245);
+              stroke: var(--tint-border);
             "
           ></rect>
-          <text x="630" y="190" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="630" y="190" style="font-size: 11.5px; fill: var(--ink)">
             😈 反論エージェント
           </text>
 
@@ -1163,7 +1173,7 @@
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(124, 58, 237);
+              stroke: var(--ink);
               stroke-dasharray: 5, 5;
               marker-end: url('#a-pol');
             "
@@ -1174,21 +1184,17 @@
             width="168"
             height="46"
             rx="8"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="438" y="184" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            最も強い反論と
-          </text>
-          <text x="438" y="202" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            反証条件が返る
-          </text>
+          <text x="438" y="184" style="font-size: 11.5px; fill: var(--ink)">最も強い反論と</text>
+          <text x="438" y="202" style="font-size: 11.5px; fill: var(--ink)">反証条件が返る</text>
 
           <path
             d="M508,210 L508,228"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -1199,9 +1205,9 @@
             width="168"
             height="42"
             rx="8"
-            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+            style="fill: var(--t3); stroke: var(--tint-border); stroke-width: 1.5"
           ></rect>
-          <text x="438" y="258" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="438" y="258" style="font-size: 11.5px; fill: var(--ink)">
             🤖 確かめてから答える
           </text>
 
@@ -1211,9 +1217,9 @@
             style="
               font-size: 11.5px;
               font-weight: 700;
-              fill: rgb(124, 58, 237);
+              fill: var(--ink);
               paint-order: stroke;
-              stroke: rgb(255, 255, 255);
+              stroke: var(--surface);
               stroke-width: 4px;
               stroke-linejoin: round;
             "
@@ -1226,9 +1232,9 @@
             style="
               font-size: 11.5px;
               font-weight: 700;
-              fill: rgb(124, 58, 237);
+              fill: var(--ink);
               paint-order: stroke;
-              stroke: rgb(255, 255, 255);
+              stroke: var(--surface);
               stroke-width: 4px;
               stroke-linejoin: round;
             "
@@ -1237,7 +1243,7 @@
           </text>
         </svg>
 
-        <p style="margin-top: 10px; font-size: 12px; color: rgb(91, 98, 114)">
+        <p style="margin-top: 10px; font-size: 12px; color: var(--muted)">
           効くのは<b>後戻りコストの高い上流</b>——設計方針・技術選定・進め方
         </p>
       </section>
@@ -1246,8 +1252,8 @@
         style="
           margin-top: 48px;
           margin-top: 20px;
-          background: rgb(255, 255, 255);
-          border: 1px solid rgb(216, 220, 230);
+          background: var(--surface);
+          border: 1.5px solid var(--border);
           border-radius: 12px;
           padding: 6px 18px 18px;
         "
@@ -1279,9 +1285,9 @@
             width="250"
             height="176"
             rx="12"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="24" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="24" y="50" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🧩 SubAgent
           </text>
           <rect
@@ -1290,15 +1296,15 @@
             width="98"
             height="40"
             rx="8"
-            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+            style="fill: var(--t3); stroke: var(--tint-border); stroke-width: 1.5"
           ></rect>
-          <text x="38" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">書いたAI</text>
+          <text x="38" y="91" style="font-size: 11.5px; fill: var(--muted)">書いたAI</text>
           <path
             d="M124,86 L136,86"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -1309,18 +1315,14 @@
             width="102"
             height="40"
             rx="8"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="154" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">別のAI</text>
-          <text x="24" y="140" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="154" y="91" style="font-size: 11.5px; fill: var(--muted)">別のAI</text>
+          <text x="24" y="140" style="font-size: 11.5px; fill: var(--ink)">
             レビューは別の文脈で走る
           </text>
-          <text x="24" y="162" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            実装時の思い込みを
-          </text>
-          <text x="24" y="184" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            持ち込ませない
-          </text>
+          <text x="24" y="162" style="font-size: 11.5px; fill: var(--ink)">実装時の思い込みを</text>
+          <text x="24" y="184" style="font-size: 11.5px; fill: var(--ink)">持ち込ませない</text>
 
           <!-- validate-design -->
           <rect
@@ -1329,9 +1331,9 @@
             width="250"
             height="176"
             rx="12"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="290" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="290" y="50" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             🔍 /validate-design
           </text>
           <rect
@@ -1340,15 +1342,15 @@
             width="98"
             height="40"
             rx="8"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="304" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">設計書</text>
+          <text x="304" y="91" style="font-size: 11.5px; fill: var(--muted)">設計書</text>
           <path
             d="M390,86 L404,86"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(124, 58, 237);
+              stroke: var(--ink);
               stroke-dasharray: 5, 5;
               marker-end: url('#a-pol');
             "
@@ -1359,16 +1361,14 @@
             width="100"
             height="40"
             rx="8"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="422" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">実装コード</text>
-          <text x="290" y="140" style="font-size: 11.5px; fill: rgb(31, 36, 48)">突き合わせて</text>
-          <text x="290" y="162" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="422" y="91" style="font-size: 11.5px; fill: var(--muted)">実装コード</text>
+          <text x="290" y="140" style="font-size: 11.5px; fill: var(--ink)">突き合わせて</text>
+          <text x="290" y="162" style="font-size: 11.5px; fill: var(--ink)">
             ズレ（ドリフト）を
           </text>
-          <text x="290" y="184" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
-            機械的に見つける
-          </text>
+          <text x="290" y="184" style="font-size: 11.5px; fill: var(--ink)">機械的に見つける</text>
 
           <!-- ADR -->
           <rect
@@ -1377,9 +1377,9 @@
             width="252"
             height="176"
             rx="12"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="556" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+          <text x="556" y="50" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
             📘 ADR
           </text>
           <rect
@@ -1388,15 +1388,15 @@
             width="106"
             height="40"
             rx="8"
-            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+            style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
           ></rect>
-          <text x="570" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">設計書</text>
+          <text x="570" y="91" style="font-size: 11.5px; fill: var(--muted)">設計書</text>
           <path
             d="M664,86 L678,86"
             style="
               fill: none;
               stroke-width: 2;
-              stroke: rgb(152, 160, 176);
+              stroke: var(--faint);
               stroke-width: 1.8;
               marker-end: url('#a-step');
             "
@@ -1408,27 +1408,25 @@
             height="40"
             rx="8"
             style="
-              fill: rgb(251, 252, 254);
-              stroke: rgb(216, 220, 230);
+              fill: var(--bg);
+              stroke: var(--rule);
               stroke-width: 1.5;
-              stroke: rgb(196, 166, 245);
+              stroke: var(--tint-border);
             "
           ></rect>
-          <text x="696" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">ADR</text>
-          <text x="556" y="140" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="696" y="91" style="font-size: 11.5px; fill: var(--muted)">ADR</text>
+          <text x="556" y="140" style="font-size: 11.5px; fill: var(--ink)">
             設計書はいまの仕様だけ
           </text>
-          <text x="556" y="162" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="556" y="162" style="font-size: 11.5px; fill: var(--ink)">
             なぜ変えたかはADRへ
           </text>
-          <text x="556" y="184" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+          <text x="556" y="184" style="font-size: 11.5px; fill: var(--ink)">
             一覧は自動生成する
           </text>
         </svg>
       </section>
-      <footer
-        style="margin-top: 56px; font-size: 11px; color: rgb(91, 98, 114); text-align: center"
-      >
+      <footer style="margin-top: 56px; font-size: 11px; color: var(--muted); text-align: center">
         <a href="ai-driven-dev-flow.html">← ポリシー駆動開発とは何か</a>
       </footer>
     </div>
