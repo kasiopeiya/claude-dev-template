@@ -1,0 +1,1436 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>このテンプレートの特徴的な機能</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', sans-serif;
+        color: #1f2430;
+        background: #f6f7fa;
+        line-height: 1.6;
+        padding: 40px 16px 80px;
+      }
+      .page {
+        max-width: 1060px;
+        margin: 0 auto;
+      }
+      a {
+        color: #1d4ed8;
+        text-decoration: none;
+      }
+      a:hover {
+        color: #7c3aed;
+      }
+      nav a:hover {
+        color: #1d4ed8 !important;
+        border-bottom-color: #1d4ed8 !important;
+      }
+      .arrow::before {
+        content: '→';
+        position: absolute;
+        left: -18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #5b6272;
+        font-size: 16px;
+      }
+      .arrow-lg::before {
+        content: '→';
+        position: absolute;
+        left: -22px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #5b6272;
+        font-size: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <h1 style="font-size: 26px; letter-spacing: 0.02em">このテンプレートの特徴的な機能</h1>
+      <p style="color: rgb(91, 98, 114); margin-top: 8px; font-size: 14px">
+        ポリシー駆動開発そのものの説明ではないが、それを日々回すために効いている仕組み。
+      </p>
+      <p style="margin-top: 10px; font-size: 12.5px">
+        <a href="ai-driven-dev-flow.html">← ポリシー駆動開発とは何か</a>
+      </p>
+
+      <nav
+        style="
+          margin-top: 18px;
+          background: rgb(255, 255, 255);
+          border: 1px solid rgb(216, 220, 230);
+          border-radius: 12px;
+          padding: 14px 18px 16px;
+        "
+      >
+        <b
+          style="
+            display: block;
+            font-size: 11.5px;
+            letter-spacing: 0.06em;
+            color: rgb(91, 98, 114);
+            border-bottom: 1px solid rgb(216, 220, 230);
+            padding-bottom: 6px;
+          "
+          >目次</b
+        >
+        <ol style="margin: 8px 0px 0px; padding-left: 20px">
+          <li style="font-size: 12.5px; padding: 2.5px 0px">
+            <a
+              href="#ap-progressive"
+              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+              >Progressive Disclosure：必要な分だけ読ませる文書構造</a
+            >
+          </li>
+          <li style="font-size: 12.5px; padding: 2.5px 0px">
+            <a
+              href="#ap-triage"
+              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+              >PRのトリアージ：人間がレビューすべきPRを絞る</a
+            >
+          </li>
+          <li style="font-size: 12.5px; padding: 2.5px 0px">
+            <a
+              href="#ap-boyscout"
+              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+              >ボーイスカウトルールの仕組み化：気づいた課題を失わない</a
+            >
+          </li>
+          <li style="font-size: 12.5px; padding: 2.5px 0px">
+            <a
+              href="#ap-devil"
+              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+              >AIに自己ディベートさせる：指摘されるとすぐ意見を変える問題への対策</a
+            >
+          </li>
+          <li style="font-size: 12.5px; padding: 2.5px 0px">
+            <a
+              href="#ap-misc"
+              style="color: rgb(31, 36, 48); border-bottom: 1px dotted rgb(216, 220, 230)"
+              >その他の仕組み：SubAgent・ドリフト検出・ADR</a
+            >
+          </li>
+        </ol>
+      </nav>
+
+      <section
+        style="
+          margin-top: 48px;
+          margin-top: 20px;
+          background: rgb(255, 255, 255);
+          border: 1px solid rgb(216, 220, 230);
+          border-radius: 12px;
+          padding: 6px 18px 18px;
+        "
+      >
+        <h3 id="ap-progressive" style="font-size: 15px; margin-top: 14px">
+          Progressive Disclosure：必要な分だけ読ませる文書構造
+        </h3>
+        <div
+          style="
+            margin-top: 10px;
+            background: rgb(241, 233, 255);
+            border-left: 4px solid rgb(124, 58, 237);
+            border-radius: 0px 10px 10px 0px;
+            padding: 9px 14px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: rgb(124, 58, 237);
+          "
+        >
+          必要な時に必要なものだけを読ませる
+        </div>
+
+        <svg
+          viewBox="0 0 800 320"
+          role="img"
+          style="
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+            display: block;
+            margin: 0px auto;
+            font-family: inherit;
+          "
+        >
+          <title>全ポリシーを常に読ませる場合と、ハブ経由で必要な分だけ辿らせる場合の対比</title>
+
+          <!-- 左：全部読ませる -->
+          <rect
+            x="8"
+            y="24"
+            width="384"
+            height="268"
+            rx="12"
+            stroke-dasharray="6 5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="24" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            ❌ 先に全部読ませる
+          </text>
+
+          <rect
+            x="24"
+            y="66"
+            width="104"
+            height="22"
+            rx="5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="34" y="81" style="font-size: 11.5px; fill: rgb(91, 98, 114)">設計ポリシー</text>
+          <rect
+            x="136"
+            y="66"
+            width="104"
+            height="22"
+            rx="5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="146" y="81" style="font-size: 11.5px; fill: rgb(91, 98, 114)">テスト方針</text>
+          <rect
+            x="24"
+            y="94"
+            width="104"
+            height="22"
+            rx="5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="34" y="109" style="font-size: 11.5px; fill: rgb(91, 98, 114)">CDK設計</text>
+          <rect
+            x="136"
+            y="94"
+            width="104"
+            height="22"
+            rx="5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="146" y="109" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            監視ポリシー
+          </text>
+          <rect
+            x="24"
+            y="122"
+            width="104"
+            height="22"
+            rx="5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="34" y="137" style="font-size: 11.5px; fill: rgb(91, 98, 114)">git規約</text>
+          <rect
+            x="136"
+            y="122"
+            width="104"
+            height="22"
+            rx="5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="146" y="137" style="font-size: 11.5px; fill: rgb(91, 98, 114)">PRレビュー</text>
+          <rect
+            x="24"
+            y="150"
+            width="104"
+            height="22"
+            rx="5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="34" y="165" style="font-size: 11.5px; fill: rgb(91, 98, 114)">ログ方針</text>
+          <rect
+            x="136"
+            y="150"
+            width="104"
+            height="22"
+            rx="5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="146" y="165" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            …そのほか全部
+          </text>
+
+          <path
+            d="M244,88 L272,132"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <path
+            class="arrow"
+            d="M244,133 L272,142"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <path
+            class="arrow"
+            d="M244,161 L272,152"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="276"
+            y="118"
+            width="104"
+            height="52"
+            rx="9"
+            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+          ></rect>
+          <text x="292" y="150" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🤖 AI
+          </text>
+
+          <text x="24" y="212" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            文脈が飽和し、中盤の指示が効かなくなる
+          </text>
+          <text x="24" y="234" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            （Lost in the middle）
+          </text>
+          <text
+            x="24"
+            y="262"
+            style="
+              font-size: 11.5px;
+              font-weight: 700;
+              fill: rgb(124, 58, 237);
+              paint-order: stroke;
+              stroke: rgb(255, 255, 255);
+              stroke-width: 4px;
+              stroke-linejoin: round;
+            "
+          >
+            読ませたのに、効かない
+          </text>
+
+          <!-- 右：ハブから辿らせる -->
+          <rect
+            x="408"
+            y="24"
+            width="384"
+            height="268"
+            rx="12"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="424" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            ✅ ハブから必要な分だけ辿らせる
+          </text>
+
+          <rect
+            x="424"
+            y="68"
+            width="176"
+            height="78"
+            rx="10"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(196, 166, 245);
+            "
+          ></rect>
+          <text x="438" y="94" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🗂 ハブ文書
+          </text>
+          <text x="438" y="114" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            design-hub / policy-hub
+          </text>
+          <text x="438" y="136" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            ＋ 各文書の参照タイミング
+          </text>
+
+          <path
+            d="M602,102 L616,84"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(124, 58, 237);
+              stroke-dasharray: 5, 5;
+              marker-end: url('#a-pol');
+            "
+          ></path>
+          <path
+            d="M602,118 L616,128"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(124, 58, 237);
+              stroke-dasharray: 5, 5;
+              marker-end: url('#a-pol');
+            "
+          ></path>
+          <rect
+            x="620"
+            y="62"
+            width="162"
+            height="36"
+            rx="8"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="632" y="85" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            いま効くポリシー
+          </text>
+          <rect
+            x="620"
+            y="112"
+            width="162"
+            height="36"
+            rx="8"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="632" y="135" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            いま効くポリシー
+          </text>
+
+          <path
+            d="M701,148 C701,172 620,168 604,176"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="424"
+            y="172"
+            width="358"
+            height="52"
+            rx="10"
+            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+          ></rect>
+          <text x="440" y="204" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🤖 AI が読むのは数本だけ
+          </text>
+
+          <text x="424" y="250" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            タスクに効くものしか文脈に載らない
+          </text>
+          <text
+            x="424"
+            y="276"
+            style="
+              font-size: 11.5px;
+              font-weight: 700;
+              fill: rgb(124, 58, 237);
+              paint-order: stroke;
+              stroke: rgb(255, 255, 255);
+              stroke-width: 4px;
+              stroke-linejoin: round;
+            "
+          >
+            最後まで指示が効く
+          </text>
+        </svg>
+      </section>
+
+      <section
+        style="
+          margin-top: 48px;
+          margin-top: 20px;
+          background: rgb(255, 255, 255);
+          border: 1px solid rgb(216, 220, 230);
+          border-radius: 12px;
+          padding: 6px 18px 18px;
+        "
+      >
+        <h3 id="ap-triage" style="font-size: 15px; margin-top: 14px">
+          PRのトリアージ：人間がレビューすべきPRを絞る
+        </h3>
+        <div
+          style="
+            margin-top: 10px;
+            background: rgb(241, 233, 255);
+            border-left: 4px solid rgb(124, 58, 237);
+            border-radius: 0px 10px 10px 0px;
+            padding: 9px 14px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: rgb(124, 58, 237);
+          "
+        >
+          ポリシーに基づき人間レビュー要否を判定する
+        </div>
+
+        <svg
+          viewBox="0 0 800 292"
+          role="img"
+          style="
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+            display: block;
+            margin: 0px auto;
+            font-family: inherit;
+          "
+        >
+          <title>
+            CIが成功したPRだけをAIがトリアージし、pr-review-policy
+            に照らして人間レビューとauto-mergeに振り分ける流れ
+          </title>
+
+          <rect
+            x="8"
+            y="40"
+            width="112"
+            height="52"
+            rx="9"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="24" y="72" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            ⬆ push
+          </text>
+          <path
+            d="M122,66 L142,66"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+
+          <rect
+            x="146"
+            y="34"
+            width="196"
+            height="64"
+            rx="10"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(169, 223, 203);
+              background: rgb(255, 255, 255);
+              border: 1.5px solid rgb(5, 150, 105);
+              border-radius: 8px;
+              padding: 6px 10px;
+              font-size: 11.5px;
+              font-weight: 600;
+              color: rgb(5, 150, 105);
+            "
+          ></rect>
+          <text x="160" y="60" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🔁 pipeline（CI）
+          </text>
+          <text x="160" y="82" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            検査してマージ可否を判定
+          </text>
+
+          <path
+            d="M344,66 L376,60"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <text
+            x="348"
+            y="16"
+            style="
+              font-size: 11.5px;
+              font-weight: 700;
+              fill: rgb(124, 58, 237);
+              paint-order: stroke;
+              stroke: rgb(255, 255, 255);
+              stroke-width: 4px;
+              stroke-linejoin: round;
+            "
+          >
+            成功したときだけ
+          </text>
+
+          <rect
+            x="380"
+            y="24"
+            width="404"
+            height="120"
+            rx="10"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(196, 166, 245);
+            "
+          ></rect>
+          <text x="396" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🤖 pr-ai-triage（AI）
+          </text>
+          <text x="396" y="76" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            ① 差分を読んで PR 本文を書き直す
+          </text>
+          <text x="396" y="98" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            ② レビューが要るかどうかのラベルを付ける
+          </text>
+          <text x="396" y="120" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            ③ 要レビューのときだけ前提条件を見る
+          </text>
+
+          <path
+            d="M525,146 L525,208"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(217, 119, 6);
+              stroke-width: 1.8;
+              marker-end: url('#a-hum');
+            "
+          ></path>
+          <text
+            x="533"
+            y="188"
+            style="
+              font-size: 11.5px;
+              font-weight: 700;
+              fill: rgb(124, 58, 237);
+              paint-order: stroke;
+              stroke: rgb(255, 255, 255);
+              stroke-width: 4px;
+              stroke-linejoin: round;
+            "
+          >
+            要レビュー
+          </text>
+          <rect
+            x="440"
+            y="212"
+            width="170"
+            height="60"
+            rx="10"
+            style="fill: rgb(255, 244, 224); stroke: rgb(217, 119, 6); stroke-width: 2"
+          ></rect>
+          <text x="454" y="238" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🧑 人間がレビュー
+          </text>
+          <text x="454" y="258" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            絞られた分だけ見る
+          </text>
+
+          <path
+            d="M707,146 L707,208"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <text
+            x="715"
+            y="188"
+            style="
+              font-size: 11.5px;
+              font-weight: 700;
+              fill: rgb(124, 58, 237);
+              paint-order: stroke;
+              stroke: rgb(255, 255, 255);
+              stroke-width: 4px;
+              stroke-linejoin: round;
+            "
+          >
+            不要
+          </text>
+          <rect
+            x="630"
+            y="212"
+            width="154"
+            height="60"
+            rx="10"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="644" y="238" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            ⚙ auto-merge
+          </text>
+          <text x="644" y="258" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            AI非関与の別job
+          </text>
+
+          <rect
+            x="24"
+            y="184"
+            width="372"
+            height="60"
+            rx="10"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(196, 166, 245);
+            "
+          ></rect>
+          <text x="40" y="210" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            📕 pr-review-policy
+          </text>
+          <text x="40" y="230" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            どの変更に人間レビューが要るかを定める
+          </text>
+          <path
+            d="M340,182 L374,104"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(124, 58, 237);
+              stroke-dasharray: 5, 5;
+              marker-end: url('#a-pol');
+            "
+          ></path>
+        </svg>
+      </section>
+
+      <section
+        style="
+          margin-top: 48px;
+          margin-top: 20px;
+          background: rgb(255, 255, 255);
+          border: 1px solid rgb(216, 220, 230);
+          border-radius: 12px;
+          padding: 6px 18px 18px;
+        "
+      >
+        <h3 id="ap-boyscout" style="font-size: 15px; margin-top: 14px">
+          ボーイスカウトルールの仕組み化：気づいた課題を失わない
+        </h3>
+        <div
+          style="
+            margin-top: 10px;
+            background: rgb(241, 233, 255);
+            border-left: 4px solid rgb(124, 58, 237);
+            border-radius: 0px 10px 10px 0px;
+            padding: 9px 14px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: rgb(124, 58, 237);
+          "
+        >
+          見つけたら自動で起票し、監査してから直す
+        </div>
+
+        <svg
+          viewBox="0 0 800 288"
+          role="img"
+          style="
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+            display: block;
+            margin: 0px auto;
+            font-family: inherit;
+          "
+        >
+          <title>
+            AIが割れ窓を見つけたらその場で直さず /quick-issue で起票し、/issue-check
+            が方針を監査してから、/sweep がまとめて片付ける流れ
+          </title>
+
+          <!-- ステージ見出し -->
+          <text x="8" y="18" style="font-size: 12px; font-weight: 700; fill: rgb(91, 98, 114)">
+            ① 起票・分類 ─ AIが自律で
+          </text>
+          <text x="286" y="18" style="font-size: 12px; font-weight: 700; fill: rgb(91, 98, 114)">
+            ② レビュー ─ 人間が起動
+          </text>
+          <text x="526" y="18" style="font-size: 12px; font-weight: 700; fill: rgb(91, 98, 114)">
+            ③ 対応 ─ 人間が起動
+          </text>
+          <path d="M8,28 L262,28" stroke="#d8dce6" stroke-width="1.5"></path>
+          <path d="M286,28 L502,28" stroke="#d8dce6" stroke-width="1.5"></path>
+          <path d="M526,28 L792,28" stroke="#d8dce6" stroke-width="1.5"></path>
+
+          <!-- ① 起票・分類 -->
+          <rect
+            x="8"
+            y="44"
+            width="254"
+            height="56"
+            rx="9"
+            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+          ></rect>
+          <text x="24" y="70" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🤖 AIが割れ窓を見つける
+          </text>
+          <text x="24" y="90" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            本筋とは別の品質課題
+          </text>
+          <path
+            d="M135,100 L135,116"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+
+          <rect
+            x="8"
+            y="120"
+            width="254"
+            height="56"
+            rx="9"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="24" y="146" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🚫 その場で直さない
+          </text>
+          <text x="24" y="166" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            脱線と衝突を避ける
+          </text>
+          <path
+            d="M135,176 L135,192"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+
+          <rect
+            x="8"
+            y="196"
+            width="254"
+            height="76"
+            rx="9"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(196, 166, 245);
+            "
+          ></rect>
+          <text x="24" y="222" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🎫 /quick-issue
+          </text>
+          <text x="24" y="242" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            確認なしで起票する
+          </text>
+          <text x="24" y="262" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            🏷 ラベルで振り分ける
+          </text>
+
+          <!-- ② レビュー -->
+          <path
+            d="M264,234 C284,234 276,82 284,82"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="286"
+            y="44"
+            width="216"
+            height="76"
+            rx="9"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(196, 166, 245);
+            "
+          ></rect>
+          <text x="302" y="70" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🔍 /issue-check
+          </text>
+          <text x="302" y="90" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            起票内容を1件ずつ監査
+          </text>
+          <text x="302" y="110" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            誤った方針を先に潰す
+          </text>
+          <path
+            d="M394,120 L394,136"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+
+          <rect
+            x="286"
+            y="140"
+            width="216"
+            height="132"
+            rx="9"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="302" y="166" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            ✅ GO ─ そのまま
+          </text>
+          <text x="302" y="188" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            ✏️ 対応方針を差し替え
+          </text>
+          <text x="302" y="210" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            🏷 ラベルを訂正
+          </text>
+          <text x="302" y="232" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            🗑️ 不要なら close
+          </text>
+          <text x="302" y="254" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            🧑 人間判断へ回す
+          </text>
+
+          <!-- ③ 対応 -->
+          <path
+            d="M504,166 C522,166 508,82 524,82"
+            style="fill: none; stroke-width: 2; stroke: rgb(37, 99, 235); marker-end: url('#a-ai')"
+          ></path>
+          <rect
+            x="526"
+            y="44"
+            width="266"
+            height="76"
+            rx="9"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(196, 166, 245);
+            "
+          ></rect>
+          <text x="542" y="70" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🧹 /sweep
+          </text>
+          <text x="542" y="90" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            GO のものをまとめて直す
+          </text>
+          <text x="542" y="110" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            1 Issue = 1コミット = 1 close
+          </text>
+
+          <path
+            d="M504,254 C522,254 508,208 524,208"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(217, 119, 6);
+              stroke-width: 1.8;
+              marker-end: url('#a-hum');
+            "
+          ></path>
+          <rect
+            x="526"
+            y="170"
+            width="266"
+            height="76"
+            rx="9"
+            style="fill: rgb(255, 244, 224); stroke: rgb(217, 119, 6); stroke-width: 2"
+          ></rect>
+          <text x="542" y="196" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🧑 人間が方針を決める
+          </text>
+          <text x="542" y="216" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            issue:needs-human-decision
+          </text>
+        </svg>
+      </section>
+
+      <section
+        style="
+          margin-top: 48px;
+          margin-top: 20px;
+          background: rgb(255, 255, 255);
+          border: 1px solid rgb(216, 220, 230);
+          border-radius: 12px;
+          padding: 6px 18px 18px;
+        "
+      >
+        <h3 id="ap-devil" style="font-size: 15px; margin-top: 14px">
+          AIに自己ディベートさせる：指摘されるとすぐ意見を変える問題への対策
+        </h3>
+        <div
+          style="
+            margin-top: 10px;
+            background: rgb(241, 233, 255);
+            border-left: 4px solid rgb(124, 58, 237);
+            border-radius: 0px 10px 10px 0px;
+            padding: 9px 14px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: rgb(124, 58, 237);
+          "
+        >
+          反論エージェントによりアイデアを洗練させる
+        </div>
+
+        <svg
+          viewBox="0 0 800 300"
+          role="img"
+          style="
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+            display: block;
+            margin: 0px auto;
+            font-family: inherit;
+          "
+        >
+          <title>
+            反論されると迎合してしまう経路と、切り離した反論エージェントに先に潰させる経路の対比
+          </title>
+
+          <!-- 左：そのまま出す -->
+          <rect
+            x="8"
+            y="24"
+            width="384"
+            height="252"
+            rx="12"
+            stroke-dasharray="6 5"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="24" y="52" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            ❌ そのまま意見を出す
+          </text>
+
+          <rect
+            x="24"
+            y="72"
+            width="160"
+            height="42"
+            rx="8"
+            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+          ></rect>
+          <text x="38" y="98" style="font-size: 11.5px; fill: rgb(31, 36, 48)">🤖 AIの意見</text>
+          <path
+            d="M104,116 L104,134"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="24"
+            y="138"
+            width="160"
+            height="42"
+            rx="8"
+            style="fill: rgb(255, 244, 224); stroke: rgb(217, 119, 6); stroke-width: 2"
+          ></rect>
+          <text x="38" y="164" style="font-size: 11.5px; fill: rgb(31, 36, 48)">🧑 人間が反論</text>
+          <path
+            d="M104,182 L104,200"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="24"
+            y="204"
+            width="160"
+            height="42"
+            rx="8"
+            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+          ></rect>
+          <text x="38" y="230" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            🤖 すぐ意見を変える
+          </text>
+
+          <text x="196" y="164" style="font-size: 11.5px; fill: rgb(91, 98, 114)">根拠は1つも</text>
+          <text x="196" y="182" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            増えていない
+          </text>
+          <text
+            x="24"
+            y="268"
+            style="
+              font-size: 11.5px;
+              font-weight: 700;
+              fill: rgb(124, 58, 237);
+              paint-order: stroke;
+              stroke: rgb(255, 255, 255);
+              stroke-width: 4px;
+              stroke-linejoin: round;
+            "
+          >
+            反論が来たこと自体が根拠になってしまう
+          </text>
+
+          <!-- 右：/devil -->
+          <rect
+            x="408"
+            y="24"
+            width="384"
+            height="252"
+            rx="12"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="424" y="52" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            ✅ /devil で先に潰す
+          </text>
+
+          <rect
+            x="424"
+            y="72"
+            width="168"
+            height="42"
+            rx="8"
+            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+          ></rect>
+          <text x="438" y="98" style="font-size: 11.5px; fill: rgb(31, 36, 48)">🤖 AIの意見</text>
+          <path
+            d="M594,93 L612,93"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="616"
+            y="72"
+            width="166"
+            height="42"
+            rx="8"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="630" y="98" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            主張だけ切り離す
+          </text>
+          <text x="616" y="130" style="font-size: 11.5px; fill: rgb(91, 98, 114)">
+            誰の主張か・経緯は渡さない
+          </text>
+
+          <path
+            d="M699,140 L699,158"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(124, 58, 237);
+              stroke-dasharray: 5, 5;
+              marker-end: url('#a-pol');
+            "
+          ></path>
+          <rect
+            x="616"
+            y="162"
+            width="166"
+            height="46"
+            rx="8"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(196, 166, 245);
+            "
+          ></rect>
+          <text x="630" y="190" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            😈 反論エージェント
+          </text>
+
+          <path
+            d="M614,185 L596,185"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(124, 58, 237);
+              stroke-dasharray: 5, 5;
+              marker-end: url('#a-pol');
+            "
+          ></path>
+          <rect
+            x="424"
+            y="162"
+            width="168"
+            height="46"
+            rx="8"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="438" y="184" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            最も強い反論と
+          </text>
+          <text x="438" y="202" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            反証条件が返る
+          </text>
+
+          <path
+            d="M508,210 L508,228"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="424"
+            y="232"
+            width="168"
+            height="42"
+            rx="8"
+            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+          ></rect>
+          <text x="438" y="258" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            🤖 確かめてから答える
+          </text>
+
+          <text
+            x="616"
+            y="240"
+            style="
+              font-size: 11.5px;
+              font-weight: 700;
+              fill: rgb(124, 58, 237);
+              paint-order: stroke;
+              stroke: rgb(255, 255, 255);
+              stroke-width: 4px;
+              stroke-linejoin: round;
+            "
+          >
+            確認した事実だけが
+          </text>
+          <text
+            x="616"
+            y="262"
+            style="
+              font-size: 11.5px;
+              font-weight: 700;
+              fill: rgb(124, 58, 237);
+              paint-order: stroke;
+              stroke: rgb(255, 255, 255);
+              stroke-width: 4px;
+              stroke-linejoin: round;
+            "
+          >
+            意見を変える根拠になる
+          </text>
+        </svg>
+
+        <p style="margin-top: 10px; font-size: 12px; color: rgb(91, 98, 114)">
+          効くのは<b>後戻りコストの高い上流</b>——設計方針・技術選定・進め方
+        </p>
+      </section>
+
+      <section
+        style="
+          margin-top: 48px;
+          margin-top: 20px;
+          background: rgb(255, 255, 255);
+          border: 1px solid rgb(216, 220, 230);
+          border-radius: 12px;
+          padding: 6px 18px 18px;
+        "
+      >
+        <h3 id="ap-misc" style="font-size: 15px; margin-top: 14px">
+          その他の仕組み：SubAgent・ドリフト検出・ADR
+        </h3>
+
+        <svg
+          viewBox="0 0 800 214"
+          role="img"
+          style="
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+            display: block;
+            margin: 0px auto;
+            font-family: inherit;
+          "
+        >
+          <title>
+            SubAgentによるレビューの文脈分離・設計書と実装のドリフト検出・ADRへの経緯隔離
+          </title>
+
+          <!-- SubAgent -->
+          <rect
+            x="8"
+            y="24"
+            width="250"
+            height="176"
+            rx="12"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="24" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🧩 SubAgent
+          </text>
+          <rect
+            x="24"
+            y="66"
+            width="98"
+            height="40"
+            rx="8"
+            style="fill: rgb(231, 239, 255); stroke: rgb(185, 205, 245); stroke-width: 1.5"
+          ></rect>
+          <text x="38" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">書いたAI</text>
+          <path
+            d="M124,86 L136,86"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="140"
+            y="66"
+            width="102"
+            height="40"
+            rx="8"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="154" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">別のAI</text>
+          <text x="24" y="140" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            レビューは別の文脈で走る
+          </text>
+          <text x="24" y="162" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            実装時の思い込みを
+          </text>
+          <text x="24" y="184" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            持ち込ませない
+          </text>
+
+          <!-- validate-design -->
+          <rect
+            x="274"
+            y="24"
+            width="250"
+            height="176"
+            rx="12"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="290" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            🔍 /validate-design
+          </text>
+          <rect
+            x="290"
+            y="66"
+            width="98"
+            height="40"
+            rx="8"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="304" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">設計書</text>
+          <path
+            d="M390,86 L404,86"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(124, 58, 237);
+              stroke-dasharray: 5, 5;
+              marker-end: url('#a-pol');
+            "
+          ></path>
+          <rect
+            x="408"
+            y="66"
+            width="100"
+            height="40"
+            rx="8"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="422" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">実装コード</text>
+          <text x="290" y="140" style="font-size: 11.5px; fill: rgb(31, 36, 48)">突き合わせて</text>
+          <text x="290" y="162" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            ズレ（ドリフト）を
+          </text>
+          <text x="290" y="184" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            機械的に見つける
+          </text>
+
+          <!-- ADR -->
+          <rect
+            x="540"
+            y="24"
+            width="252"
+            height="176"
+            rx="12"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="556" y="50" style="font-size: 13.5px; font-weight: 700; fill: rgb(31, 36, 48)">
+            📘 ADR
+          </text>
+          <rect
+            x="556"
+            y="66"
+            width="106"
+            height="40"
+            rx="8"
+            style="fill: rgb(255, 255, 255); stroke: rgb(216, 220, 230); stroke-width: 1.5"
+          ></rect>
+          <text x="570" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">設計書</text>
+          <path
+            d="M664,86 L678,86"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: rgb(152, 160, 176);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+          <rect
+            x="682"
+            y="66"
+            width="94"
+            height="40"
+            rx="8"
+            style="
+              fill: rgb(251, 252, 254);
+              stroke: rgb(216, 220, 230);
+              stroke-width: 1.5;
+              stroke: rgb(196, 166, 245);
+            "
+          ></rect>
+          <text x="696" y="91" style="font-size: 11.5px; fill: rgb(91, 98, 114)">ADR</text>
+          <text x="556" y="140" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            設計書はいまの仕様だけ
+          </text>
+          <text x="556" y="162" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            なぜ変えたかはADRへ
+          </text>
+          <text x="556" y="184" style="font-size: 11.5px; fill: rgb(31, 36, 48)">
+            一覧は自動生成する
+          </text>
+        </svg>
+      </section>
+      <footer
+        style="margin-top: 56px; font-size: 11px; color: rgb(91, 98, 114); text-align: center"
+      >
+        <a href="ai-driven-dev-flow.html">← ポリシー駆動開発とは何か</a>
+      </footer>
+    </div>
+  </body>
+</html>
