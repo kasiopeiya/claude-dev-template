@@ -17,18 +17,20 @@
 
 import { detectEmptyGhBodyOverwrite } from './emptyGhBodyOverwriteMatcher.mjs'
 import { detectGitBranchCreation } from './gitBranchCreationMatcher.mjs'
-import { splitHeredoc, splitPipeStages, splitStatements } from './shellSplit.mjs'
+import {
+  GLOBAL_VALUE_FLAGS,
+  normalizeCommandStart,
+  splitHeredoc,
+  splitPipeStages,
+  splitStatements,
+  stripQuotes,
+  tokenize
+} from './shellSplit.mjs'
 
-// コマンド本体の前に置かれ、後続を実行するだけのトークン。剥がしてから語頭を判定する
-const COMMAND_WRAPPERS = new Set(['sudo', 'env', 'npx', 'command', 'time', 'nohup'])
-const ENV_ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/
-
-// サブコマンドの前に置ける git のグローバルオプション。うち値を伴うものは値ごと読み飛ばす。
-// 剥がさないと `git -C /tmp push --force` のようにサブコマンドの位置がずれ、判定をすり抜ける
-const GIT_GLOBAL_VALUE_FLAGS = new Set(['-C', '-c', '--git-dir', '--work-tree', '--namespace'])
-
-// `gh api` で値を伴うフラグ。フラグの値を対象パスと読み違えないために使う
+// `gh api` で値を伴うフラグ。フラグの値を対象パスと読み違えないために使う。
+// gh 共通のフラグ（`--repo` など）は shellSplit.mjs の表を単一の情報源にして取り込む
 const GH_API_VALUE_FLAGS = new Set([
+  ...GLOBAL_VALUE_FLAGS.gh,
   '-X',
   '--method',
   '-f',
@@ -41,7 +43,6 @@ const GH_API_VALUE_FLAGS = new Set([
   '--jq',
   '-t',
   '--template',
-  '--hostname',
   '--cache',
   '--input'
 ])
@@ -206,48 +207,6 @@ const FORBIDDEN_COMMANDS = RULE_GROUPS.flatMap(({ category, why, rules }) =>
   // グループの why は既定値。ルール側に why があればそちらを使う
   rules.map((rule) => ({ category, why, ...rule }))
 )
-
-function tokenize(stage) {
-  return stage.split(/\s+/).filter(Boolean)
-}
-
-function stripQuotes(value) {
-  if (typeof value !== 'string') return value
-  if (value.length >= 2 && value[0] === value.at(-1) && (value[0] === '"' || value[0] === "'")) {
-    return value.slice(1, -1)
-  }
-  return value
-}
-
-/** 環境変数の代入とラッパーコマンドを剥がし、実際に実行されるコマンドを先頭に持ってくる。 */
-function stripCommandPrefixes(tokens) {
-  let index = 0
-  while (index < tokens.length) {
-    if (ENV_ASSIGNMENT.test(tokens[index])) {
-      index++
-      continue
-    }
-    if (!COMMAND_WRAPPERS.has(tokens[index])) break
-
-    index++
-    // ラッパー自身のフラグ（`npx -y` など）も読み飛ばす
-    while (index < tokens.length && tokens[index].startsWith('-')) index++
-  }
-  return stripGitGlobalOptions(tokens.slice(index))
-}
-
-/** `git` とサブコマンドの間に挟まったグローバルオプションを取り除く。 */
-function stripGitGlobalOptions(tokens) {
-  if (tokens[0] !== 'git') return tokens
-
-  const rest = tokens.slice(1)
-  let index = 0
-  while (index < rest.length && rest[index].startsWith('-')) {
-    if (GIT_GLOBAL_VALUE_FLAGS.has(rest[index])) index++
-    index++
-  }
-  return ['git', ...rest.slice(index)]
-}
 
 function hasPrefix(tokens, prefix) {
   return prefix.every((expected, index) => tokens[index] === expected)
@@ -464,7 +423,7 @@ export function detectForbiddenCommand(command, { projectDir = process.cwd() } =
   const stages = splitStatements(commandText).flatMap(splitPipeStages)
 
   for (const stage of stages) {
-    const tokens = stripCommandPrefixes(tokenize(stage))
+    const tokens = normalizeCommandStart(tokenize(stage))
     const context = { stage, projectDir }
 
     for (const rule of FORBIDDEN_COMMANDS) {

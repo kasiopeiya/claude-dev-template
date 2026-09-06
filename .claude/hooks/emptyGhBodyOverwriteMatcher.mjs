@@ -6,15 +6,27 @@
 //   その場の記憶に懸かる。取り返しがつかない操作なので、実行前に止める。
 // - 対象は既存の本文を「置き換える」コマンドだけ。create 系や `--edit-last` の無い comment は
 //   新規作成であり、空でも失われるものが無いため対象外。
-// - `--body-file -`（標準入力）は、同じコマンド文字列に書かれたヒアドキュメントの中身まで見て
+// - `--body-file -`（標準入力）は、同じステートメントに書かれたヒアドキュメントの中身まで見て
 //   空かどうかを判定する。中身のあるヒアドキュメント・パイプ・リダイレクトは通常の更新なので通す。
+//   ヒアドキュメントが複数あるときは書かれた順で対応づける。別のステートメントのものは見ない。
 // - シェルの厳密なパース（サブシェル・変数展開）はしない。判定できない入力は通す
 //   （fail-open）。ただし標準入力の供給元が1つも見当たらない `--body-file -` だけは、
 //   空本文の書き込みが確定するので止める。
 // - コマンドの分割は shellSplit.mjs に委ね、引用符の内側は区切らない（本文中の `;` や `|` で
 //   コマンドの区切りを誤らないため）。
+// - 語頭は位置で読むので、読む前に正規化する（ラッパー・グローバルオプションを剥がす）。
+//   剥がさないと `env gh issue edit 1 --body ""`・`gh --repo o/r issue edit 1 --body ""` で
+//   判定をすり抜けられる。
 
-import { splitHeredoc, splitPipeStages, splitStatements } from './shellSplit.mjs'
+import {
+  countHeredocOperators,
+  normalizeCommandStart,
+  splitHeredoc,
+  splitPipeStages,
+  splitStatements,
+  stripQuotes,
+  tokenize
+} from './shellSplit.mjs'
 
 // 既存の本文を置き換えるコマンドと、そこで本文を空にできるフラグ（gh 2.87 時点）。
 const OVERWRITE_TARGETS = [
@@ -51,17 +63,6 @@ const OVERWRITE_TARGETS = [
     bodyFileFlags: ['-F', '--body-file']
   }
 ]
-
-function tokenize(stage) {
-  return stage.split(/\s+/).filter(Boolean)
-}
-
-function stripQuotes(value) {
-  if (value.length >= 2 && value[0] === value.at(-1) && (value[0] === '"' || value[0] === "'")) {
-    return value.slice(1, -1)
-  }
-  return value
-}
 
 // `<` は入力リダイレクト、`<<<` はヒアストリング。どちらも標準入力に中身を与えるので通す。
 // `<<`（ヒアドキュメント）だけは中身が空かどうかまで見るため、ここでは扱わない。
@@ -133,18 +134,24 @@ function inspectTarget(target, tokens, stdin) {
 export function detectEmptyGhBodyOverwrite(command) {
   if (typeof command !== 'string' || command.trim() === '') return null
 
-  const { commandText, heredocBody } = splitHeredoc(command)
+  const { commandText, heredocBodies } = splitHeredoc(command)
+  let heredocIndex = 0
 
   for (const statement of splitStatements(commandText)) {
     const stages = splitPipeStages(statement)
+    // ヒアドキュメントの中身は書かれた順に並ぶので、演算子を数えた順番で対応づける
+    const operatorCount = countHeredocOperators(statement)
+    const statementHeredocBody = operatorCount === 0 ? null : (heredocBodies[heredocIndex] ?? null)
+    heredocIndex += operatorCount
 
     for (const [index, stage] of stages.entries()) {
-      const tokens = tokenize(stage)
+      // `env` や `gh --repo o/r` を剥がし、サブコマンドを位置で読めるようにする
+      const tokens = normalizeCommandStart(tokenize(stage))
       const target = findTarget(tokens)
       if (!target) continue
 
       const violation = inspectTarget(target, tokens, {
-        heredocBody,
+        heredocBody: statementHeredocBody,
         hasPipedStdin: index > 0,
         hasRedirectedStdin: hasInputRedirect(stage)
       })
