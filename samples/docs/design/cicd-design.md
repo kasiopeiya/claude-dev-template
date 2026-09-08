@@ -16,7 +16,14 @@
 
 ## パイプラインの全体像
 
-### CIからマージ可否判定まで
+### 開発フロー
+
+- トランクベース開発のためmain + topicブランチのシンプルな構成
+- GitHub Actionsの詳細は以降のmermaid図で示す
+
+![img](./img/dev-cicd-flow.png)
+
+### CIからマージ可否判定まで：pipeline.yml
 
 - `detect-changes`で変更対象を分類し、必要な検査だけを実施する
 - 検査が１つでも失敗したらCI失敗判定
@@ -55,7 +62,7 @@ flowchart LR
     class Gate gate
 ```
 
-### AIによるレビューチェック処理と自動マージ
+### AIによるレビューチェック処理と自動マージ: pr-ai-triage.yml
 
 AIにより以下を実施する
 
@@ -110,7 +117,7 @@ flowchart LR
     class Triage2 substate
 ```
 
-### マージ後からデプロイ
+### マージ後からデプロイ: dev-deploy.yml
 
 - mainマージ後に自動でデプロイ -> 結合テスト実行
 - デプロイやテストが失敗したら自動でIssueを起票
