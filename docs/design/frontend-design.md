@@ -3,6 +3,13 @@
 フロントエンド（React）を変更・レビューする開発者／AI が、**なぜこの構造なのか**を知りたいときに参照する。
 コンポーネントの実装・具体値は `app/` 配下のコードが正であり、本書はそこから読み取れない構造・流れ・なぜを書く。
 
+## 目次
+
+- [基本方針](#基本方針)
+- [構成図](#構成図)
+- [前提と制約](#前提と制約)
+- [重要なポイント](#重要なポイント)
+
 > [!NOTE]
 > 本ファイルは [design-doc-policy](../policy/design-doc-policy.md) が定める3本柱（基本方針・構成図・重要なポイント）のスケルトン。
 > 設計判断の基準は [frontend-design-policy](../policy/frontend-design-policy.md) / [application-architecture-policy](../policy/application-architecture-policy.md) を参照する。
