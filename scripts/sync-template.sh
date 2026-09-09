@@ -18,6 +18,7 @@ readonly TEMPLATE_BRANCH='main'
 # 除外パス。末尾が / のものはディレクトリ配下すべて、それ以外は完全一致で判定する。
 readonly EXCLUDE_PATHS=(
   'README.md'
+  '.gitignore'
   'docs/requirements.md'
   'docs/design/'
   'docs/design-hub.md'
@@ -27,9 +28,7 @@ readonly EXCLUDE_PATHS=(
 )
 
 # 除外の例外。EXCLUDE_PATHS に当たっても、ここに挙げたパスは同期する。
-readonly EXCLUDE_EXCEPTIONS=(
-  '.github/workflows/pipeline.yml'
-)
+readonly EXCLUDE_EXCEPTIONS=()
 
 usage() {
   cat <<'HELP'
@@ -42,9 +41,8 @@ usage() {
   どちらか欠けていれば、何も変更せずエラー終了する。
 
 除外するパス（プロジェクト固有の内容に育つため、テンプレート側の変更を取り込まない）:
-  README.md / docs/requirements.md / docs/design/ / docs/design-hub.md /
+  README.md / .gitignore / docs/requirements.md / docs/design/ / docs/design-hub.md /
   docs/adr/adr-index.md / docs/reference/glossary.md / .github/
-  ただし .github/workflows/pipeline.yml だけは例外として同期する（CI ガードレールの改善を届けるため）。
 
 衝突したときの対処:
   衝突が出ても中断せず、除外処理まで進めて衝突ファイル一覧を表示して停止する。
@@ -61,7 +59,7 @@ abort() {
 # 引数 path が除外対象なら 0 を返す。
 is_excluded() {
   local path="$1" exception pattern
-  for exception in "${EXCLUDE_EXCEPTIONS[@]}"; do
+  for exception in ${EXCLUDE_EXCEPTIONS[@]+"${EXCLUDE_EXCEPTIONS[@]}"}; do
     [[ "$path" == "$exception" ]] && return 1
   done
   for pattern in "${EXCLUDE_PATHS[@]}"; do
@@ -120,7 +118,7 @@ main() {
   echo "同期ブランチを作成した: $branch"
 
   # 4. マージ（マージコミットは作らない。衝突しても中断しない）
-  git merge --no-commit --no-ff FETCH_HEAD || true
+  git merge --no-commit --no-ff --allow-unrelated-histories FETCH_HEAD || true
 
   # 5. 除外処理
   local conflicted=() imported=() restored=() changed=() path
