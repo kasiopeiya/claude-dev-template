@@ -20,6 +20,7 @@
 > 本ファイルは [design-doc-policy](../policy/design-doc-policy.md) が定める3本柱（基本方針・構成図・重要なポイント）のスケルトン。
 > 設計判断の基準は [frontend-design-policy](../policy/frontend-design-policy.md) / [application-architecture-policy](../policy/application-architecture-policy.md) を参照する。
 > 構成図の小見出しは想定される図の例。実際に描く図に合わせて増減してよい。
+> 重要なポイントは、1項目1行の俯瞰一覧の表を置き、全項目を同名の `###` 節に展開する（最大10個・1項目1決定。上限は節の数で数える）。
 
 ## 基本方針
 
