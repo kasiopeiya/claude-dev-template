@@ -55,7 +55,10 @@ flowchart TD
     SearchResult -->|Yes| Apply
     SearchResult -->|No| Manual[Request Human Review]
 
-    AddRef --> Complete([Done])
+    AddRef --> FileCheck[Step 6: Validate Every Diagram in the File]
+    FileCheck --> FileValid{All valid?}
+    FileValid -->|Yes| Complete([Done])
+    FileValid -->|No| Troubleshoot
     Manual --> Complete
 
     classDef start fill:#4ECDC4,stroke:#0B7285,color:#000
@@ -65,13 +68,15 @@ flowchart TD
     classDef error fill:#E63946,stroke:#9D0208,color:#fff
 
     class Start,Complete start
-    class Type,Reference,Generate,Save,Validate,Look,AddRef,Apply,Troubleshoot,Search process
-    class Success,Found,SearchResult decision
+    class Type,Reference,Generate,Save,Validate,Look,AddRef,FileCheck,Apply,Troubleshoot,Search process
+    class Success,Found,SearchResult,FileValid decision
 ```
 
 ### Key Principle
 
 **NEVER add a diagram to a markdown file until it has been validated.** The workflow ensures all diagrams pass validation before being embedded, preventing broken diagrams in documentation.
+
+**When you edit an existing markdown file, the unit of validation is the file, not the diagram you touched.** An edit can break another block in the same file, so Step 6 re-validates every diagram in it.
 
 ---
 
@@ -185,6 +190,16 @@ Optionally include a link to the source:
 
 [View Mermaid source](./diagrams/filename.mmd)
 ```
+
+### Step 6: Validate the Whole File
+
+After writing to an existing markdown file, validate **every** diagram in it — an edit can break a block you were not looking at.
+
+```bash
+python scripts/extract_mermaid.py <edited-file>.md --validate
+```
+
+It extracts every mermaid block in the file, renders each one, and exits non-zero if any fails. Fix the reported blocks and run it again until it passes.
 
 ---
 
@@ -580,9 +595,9 @@ Only after validation succeeds:
 
 ### Example 2: Handling Validation Error
 
-**Diagram Code (❌ intentionally broken — `end` is a reserved word):**
+**Diagram Code (❌ intentionally broken — `end` is a reserved word。描画されないよう `text` フェンスで置く):**
 
-```mermaid
+```text
 flowchart TD
     start --> end
 ```

@@ -35,6 +35,10 @@ from pathlib import Path
 from typing import List, Tuple, Optional, Dict
 import hashlib
 
+# npx が mermaid-cli を初回ダウンロードする場合があるため、長めに取る
+MMDC_LOOKUP_TIMEOUT_SECONDS = 180
+VALIDATION_TIMEOUT_SECONDS = 120
+
 
 class MermaidDiagram:
     """Represents a single Mermaid diagram extracted from Markdown."""
@@ -126,8 +130,9 @@ class MermaidExtractor:
         Returns:
             Dict mapping diagram index to error message (None if valid)
         """
-        if not self._check_mmdc_installed():
-            print("ERROR: mermaid-cli (mmdc) not found.", file=sys.stderr)
+        mmdc_command = self._resolve_mmdc_command()
+        if mmdc_command is None:
+            print("ERROR: mermaid-cli (mmdc) not found, and npx is unavailable.", file=sys.stderr)
             print("Install with: npm install -g @mermaid-js/mermaid-cli", file=sys.stderr)
             sys.exit(1)
 
@@ -136,7 +141,7 @@ class MermaidExtractor:
 
         for diagram in self.diagrams:
             print(f"  Validating diagram #{diagram.index}...", end=" ")
-            error = self._validate_single_diagram(diagram)
+            error = self._validate_single_diagram(diagram, mmdc_command)
             results[diagram.index] = error
 
             if error:
@@ -151,7 +156,7 @@ class MermaidExtractor:
 
         return results
 
-    def _validate_single_diagram(self, diagram: MermaidDiagram) -> Optional[str]:
+    def _validate_single_diagram(self, diagram: MermaidDiagram, mmdc_command: List[str]) -> Optional[str]:
         """Validate a single diagram. Returns error message if invalid, None if valid."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir_path = Path(tmpdir)
@@ -163,10 +168,10 @@ class MermaidExtractor:
 
             try:
                 result = subprocess.run(
-                    ['mmdc', '-i', str(input_file), '-o', str(output_file), '-b', 'white'],
+                    mmdc_command + ['-i', str(input_file), '-o', str(output_file), '-b', 'white'],
                     capture_output=True,
                     text=True,
-                    timeout=30
+                    timeout=VALIDATION_TIMEOUT_SECONDS
                 )
 
                 if result.returncode != 0:
@@ -178,7 +183,7 @@ class MermaidExtractor:
                 return None  # Valid
 
             except subprocess.TimeoutExpired:
-                return "Rendering timed out after 30 seconds"
+                return f"Rendering timed out after {VALIDATION_TIMEOUT_SECONDS} seconds"
             except Exception as e:
                 return str(e)
 
@@ -206,17 +211,28 @@ class MermaidExtractor:
         return self.MERMAID_PATTERN.sub(replace_block, self.content)
 
     @staticmethod
-    def _check_mmdc_installed() -> bool:
-        """Check if mermaid-cli (mmdc) is installed."""
-        try:
-            result = subprocess.run(
-                ['mmdc', '--version'],
-                capture_output=True,
-                timeout=5
-            )
-            return result.returncode == 0
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            return False
+    def _resolve_mmdc_command() -> Optional[List[str]]:
+        """Return the command that runs mermaid-cli, or None if it cannot be run.
+
+        Falls back to `npx` so validation still works when mmdc is not
+        installed globally (the common case on a fresh machine).
+        """
+        candidates = [
+            (['mmdc'], 10),
+            (['npx', '-y', '@mermaid-js/mermaid-cli'], MMDC_LOOKUP_TIMEOUT_SECONDS),
+        ]
+        for command, timeout_seconds in candidates:
+            try:
+                result = subprocess.run(
+                    command + ['--version'],
+                    capture_output=True,
+                    timeout=timeout_seconds
+                )
+                if result.returncode == 0:
+                    return command
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                continue
+        return None
 
 
 def main():
