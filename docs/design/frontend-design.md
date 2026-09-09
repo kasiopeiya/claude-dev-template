@@ -29,8 +29,23 @@
 
 ### レイヤー・ディレクトリ構成図
 
+<details>
+<summary>設計判断とその理由</summary>
+
+</details>
+
 ### コンポーネント構成図
 
+<details>
+<summary>設計判断とその理由</summary>
+
+</details>
+
 ### 状態管理とデータ取得の流れ
+
+<details>
+<summary>設計判断とその理由</summary>
+
+</details>
 
 ## 重要なポイント

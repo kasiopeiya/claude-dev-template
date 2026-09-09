@@ -20,6 +20,11 @@
 
 ## パイプラインの全体像
 
+<details>
+<summary>設計判断とその理由</summary>
+
+</details>
+
 ## 前提と制約
 
 ## GitHubリポジトリ設定

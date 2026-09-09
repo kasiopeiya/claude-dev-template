@@ -12,7 +12,6 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
   - [全体インフラ構成図](#全体インフラ構成図)
   - [アカウントと環境構成](#アカウントと環境構成)
   - [ネットワーク構成図](#ネットワーク構成図)
-  - [設計判断とその理由](#設計判断とその理由)
 - [重要なポイント](#重要なポイント)
 - [運用監視](#運用監視)
 - [IaC 管理方針](#iac-管理方針)
@@ -50,6 +49,15 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
 ### 全体インフラ構成図
 
 ![](./img/infra-architecture.png)
+
+<details>
+<summary>設計判断とその理由</summary>
+
+ゲートウェイに API Gateway ではなく Lambda Function URLs を使うのは、API Gateway 特有の変換処理・APIキー管理・使用量プランがいずれも不要で、機能過剰と判断したためである。
+
+フロントエンドの配信に S3 と CloudFront を選んだのは、静的ファイルなら配信にサーバが要らないためである。API も同じ CloudFront から返すので、画面と API が同一オリジンになり CORS の設定も要らない。
+
+</details>
 
 ### アカウントと環境構成
 
@@ -102,13 +110,12 @@ graph LR
     class SaaS external
 ```
 
-### 設計判断とその理由
+<details>
+<summary>設計判断とその理由</summary>
 
-| タイトル           | 設計判断                                                                                      | 理由                                                                                                                              |
-| ------------------ | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| バックエンド API   | ゲートウェイとして API Gateway ではなく Lambda Function URLs を使う                           | API Gateway 特有の変換処理・APIキー管理・使用量プランがいずれも不要で、機能過剰と判断した                                         |
-| フロントエンド配信 | React のビルド成果物を S3 に置き、CloudFront から配信する                                     | 静的ファイルの配信にサーバは要らない。API も同じ CloudFront から返すため、画面と API が同一オリジンになり CORS の設定が不要になる |
-| 公開する入口       | 外部に公開するのは CloudFront だけとし、S3 と Function URL には CloudFront からのみ到達させる | 入口が1つなら、アクセス制御・ログ・WAF をそこに集約できる。バケットの直参照や Function URL の直叩きという抜け道も塞げる           |
+外部に公開するのは CloudFront だけにして、S3 と Function URL には CloudFront からのみ到達させる。入口が1つなら、アクセス制御・ログ・WAF をそこに集約できる。
+
+</details>
 
 ## 重要なポイント
 
@@ -161,7 +168,12 @@ graph LR
     class Ops actor
 ```
 
+<details>
+<summary>設計判断とその理由</summary>
+
 アラーム通知を prd だけで有効にするのは、行動につながらない通知を増やさないためである。
+
+</details>
 
 ## IaC 管理方針
 
@@ -203,6 +215,13 @@ graph TB
     class Drift,Regress ng
 ```
 
+<details>
+<summary>設計判断とその理由</summary>
+
+マネジメントコンソールを ReadOnly に絞るのは、手で変えるとスタックの定義と実体が乖離し、次のデプロイで手を入れた設定が巻き戻って障害になるためである。
+
+</details>
+
 ### 手動作成リソース一覧
 
 | リソース        | 作成主体 | 手動作成の理由                                                                                                 |
@@ -230,6 +249,13 @@ graph LR
 ```
 
 依存の向きは AppStack → BaseStack の一方向である。BaseStack が公開した L2 オブジェクトを StackBuilder が AppStack へ props で渡し、CloudFormation 上はクロススタック参照（Export / ImportValue）になる。この向きがデプロイと削除の順序も決める——作るときは BaseStack が先、消すときは AppStack が先。
+
+<details>
+<summary>設計判断とその理由</summary>
+
+ライフサイクルの違うリソースを同居させると、作り直したいときに消せないものが巻き添えになる。だからステートフル・環境共通のものを BaseStack へ分け、依存を一方向に固定した。
+
+</details>
 
 ### スタック命名規約
 
@@ -273,7 +299,15 @@ graph TB
     class Stacks stack
 ```
 
-値の差分は `parameter.ts` に、振る舞いの差分は Builder が呼ぶ Stack の public メソッドに置く。判断軸そのものは [cdk-design-policy](../../../docs/policy/cdk-design-policy.md) が持つ。
+値の差分は `parameter.ts` に、振る舞いの差分は Builder が呼ぶ Stack の public メソッドに置く。
+
+<details>
+<summary>設計判断とその理由</summary>
+
+Stack 内に環境の条件分岐を作らないのは、分岐があると Stack を読んでも「どの環境で何ができるか」が分からず、`cdk diff` の結果も予測できなくなるためである。
+
+</details>
+判断軸そのものは [cdk-design-policy](../../../docs/policy/cdk-design-policy.md) が持つ。
 
 ## 組織の制約
 

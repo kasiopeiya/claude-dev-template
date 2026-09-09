@@ -38,6 +38,13 @@
 
 ![img](./img/dev-cicd-flow.png)
 
+<details>
+<summary>設計判断とその理由</summary>
+
+main と topic ブランチだけにしたのは、長命なブランチを作らず小さい変更を頻繁に main へ入れるためである。分かれている時間が短いほど、コンフリクトの解消に払うコストが小さくなる。
+
+</details>
+
 ### CIからマージ可否判定まで：pipeline.yml
 
 - `detect-changes`で変更対象を分類し、必要な検査だけを実施する
@@ -76,6 +83,15 @@ flowchart LR
     class Diff hollow
     class Gate gate
 ```
+
+<details>
+<summary>設計判断とその理由</summary>
+
+検査を `cicd-gate` の1つに集約したのは、job を個別に required 登録すると検査を増やしたときに登録漏れが起きるためである。
+
+`cdk-diff` をゲートに繋いでいないのは、実 AWS 環境に触れる検査をマージ可否に持ち込むと、AWS 側の一時障害でマージが止まるからである。
+
+</details>
 
 ### AIによるレビューチェック処理と自動マージ: pr-ai-triage.yml
 
@@ -132,6 +148,13 @@ flowchart LR
     class Triage2 substate
 ```
 
+<details>
+<summary>設計判断とその理由</summary>
+
+AI の判定を走らせる `pr-triage` に merge 権限を持たせないのは、AI の出力がそのままマージの引き金にならないようにするためである。判定はラベルとして残し、マージするかは別のジョブが決める。
+
+</details>
+
 ### マージ後からデプロイ: dev-deploy.yml
 
 - mainマージ後に自動でデプロイ -> 結合テスト実行
@@ -164,6 +187,15 @@ flowchart LR
     class PathCheck decision
     class Deploy,IT hollow
 ```
+
+<details>
+<summary>設計判断とその理由</summary>
+
+実 AWS 環境に触れる deploy を main へマージした後に置いたのは、マージまでの経路に速く答えが出るものだけを残すためである。PR の時点では `cdk diff` だけを確認する。
+
+失敗を Issue に自動起票するのは、この失敗が required check の外側で起きるため、放っておくと誰の担当にもならないからである。
+
+</details>
 
 ## 前提と制約
 
