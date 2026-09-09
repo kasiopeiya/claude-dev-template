@@ -24,6 +24,7 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
   - [タグ規則](#タグ規則)
   - [その他の制約](#その他の制約)
 - [運用監視](#運用監視)
+- [前提と制約](#前提と制約)
 
 > [!NOTE]
 > 本ファイルは [iac-infra-design-doc-policy](../policy/iac-infra-design-doc-policy.md) が定める必須セクションのスケルトン。
@@ -93,3 +94,5 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
 <summary>設計判断とその理由</summary>
 
 </details>
+
+## 前提と制約
