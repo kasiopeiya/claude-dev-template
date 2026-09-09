@@ -20,12 +20,12 @@
 
 ### [frontend-design.md](design/frontend-design.md)
 
-**概要**: フロントエンド（React）の構造・画面を支える仕組みと設計判断。判断の基準は [frontend-design-policy](policy/frontend-design-policy.md) が定める
+**概要**: フロントエンド（React）**アプリ**の構造・画面を支える仕組みと設計判断。インフラ（配信基盤・IaC）は対象外で infrastructure-design.md が持つ。判断の基準は [frontend-design-policy](policy/frontend-design-policy.md) が定める
 **参照タイミング**: フロントエンドのコンポーネント・状態管理を変更・レビューする前
 
 ### [backend-design.md](design/backend-design.md)
 
-**概要**: バックエンドのレイヤー構成・処理の流れ・データモデルと設計判断。判断の基準は [application-architecture-policy](policy/application-architecture-policy.md) が定める
+**概要**: バックエンド**アプリ**のレイヤー構成・処理の流れ・データモデルと設計判断。インフラ（AWS 構成・IaC）は対象外で infrastructure-design.md が持つ。判断の基準は [application-architecture-policy](policy/application-architecture-policy.md) が定める
 **参照タイミング**: バックエンドのロジック・データアクセスを変更・レビューする前
 
 ### [interface-specification.md](design/interface-specification.md)
