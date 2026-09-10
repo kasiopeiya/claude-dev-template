@@ -29,21 +29,21 @@
 ### レイヤー構成と依存方向
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 
 ### 主要な処理の流れ
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 
 ### データモデル図
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 

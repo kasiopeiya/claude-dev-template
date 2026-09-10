@@ -1,6 +1,6 @@
 # CI/CD パイプライン設計
 
-このリポジトリの CI/CD を変更・レビューする開発者／AI が、**なぜこの構成なのか**を知りたいときに参照する。  
+このリポジトリの CI/CD を変更・レビューする開発者／AI が、**現状の構成とその理由**を知りたいときに参照する。  
 何がどの条件で実行されるかは `.github/` 配下のワークフロー定義が正であり、本書はそこから読み取れない全体像と理由を書く。
 
 ## 目次
@@ -35,13 +35,13 @@
 
 ### 開発フロー
 
-- トランクベース開発のためmain + topicブランチのシンプルな構成
+- トランクベースによる高速開発のためmain + 短命なtopicブランチのシンプルな構成
 - GitHub Actionsの詳細は以降のmermaid図で示す
 
 ![img](./img/dev-cicd-flow.png)
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 main と topic ブランチだけにしたのは、長命なブランチを作らず小さい変更を頻繁に main へ入れるためである。分かれている時間が短いほど、コンフリクトの解消に払うコストが小さくなる。
 
@@ -49,8 +49,9 @@ main と topic ブランチだけにしたのは、長命なブランチを作�
 
 ### CIからマージ可否判定まで：pipeline.yml
 
-- `detect-changes`で変更対象を分類し、必要な検査だけを実施する
+- 高速化のため、`detect-changes`で変更対象を分類し、必要な検査だけを実施する
 - 検査が１つでも失敗したらCI失敗判定
+- `cdk-diff`を実行し、
 
 ```mermaid
 flowchart LR
@@ -85,15 +86,6 @@ flowchart LR
     class Diff hollow
     class Gate gate
 ```
-
-<details>
-<summary>設計判断とその理由</summary>
-
-検査を `cicd-gate` の1つに集約したのは、job を個別に required 登録すると検査を増やしたときに登録漏れが起きるためである。
-
-`cdk-diff` をゲートに繋いでいないのは、実 AWS 環境に触れる検査をマージ可否に持ち込むと、AWS 側の一時障害でマージが止まるからである。
-
-</details>
 
 ### AIによるレビューチェック処理と自動マージ: pr-ai-triage.yml
 
@@ -151,7 +143,7 @@ flowchart LR
 ```
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 AI の判定を走らせる `pr-triage` に merge 権限を持たせないのは、AI の出力がそのままマージの引き金にならないようにするためである。判定はラベルとして残し、マージするかは別のジョブが決める。
 
@@ -191,7 +183,7 @@ flowchart LR
 ```
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 実 AWS 環境に触れる deploy を main へマージした後に置いたのは、マージまでの経路に速く答えが出るものだけを残すためである。PR の時点では `cdk diff` だけを確認する。
 

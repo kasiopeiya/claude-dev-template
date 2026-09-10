@@ -22,7 +22,7 @@
 ## パイプラインの全体像
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 

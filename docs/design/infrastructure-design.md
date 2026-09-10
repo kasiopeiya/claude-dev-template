@@ -43,7 +43,7 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
 ### 全体インフラ構成図
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 
@@ -52,7 +52,7 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
 ### ネットワーク構成図
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 
@@ -67,7 +67,7 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
 ### スタック関係図
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 
@@ -76,7 +76,7 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
 ### 環境差分の実装設計
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 
@@ -91,7 +91,7 @@ AWS/IaC で構築したインフラを変更・レビューする開発者／AI 
 ## 運用監視
 
 <details>
-<summary>設計判断とその理由</summary>
+<summary>設計意図</summary>
 
 </details>
 
