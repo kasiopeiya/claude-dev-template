@@ -40,18 +40,11 @@
 
 ![img](./img/dev-cicd-flow.png)
 
-<details>
-<summary>設計意図</summary>
-
-main と topic ブランチだけにしたのは、長命なブランチを作らず小さい変更を頻繁に main へ入れるためである。分かれている時間が短いほど、コンフリクトの解消に払うコストが小さくなる。
-
-</details>
-
 ### CIからマージ可否判定まで：pipeline.yml
 
 - 高速化のため、`detect-changes`で変更対象を分類し、必要な検査だけを実施する
 - 検査が１つでも失敗したらCI失敗判定
-- `cdk-diff`を実行し、
+- `cdk-diff`を実行し、デプロイ前にリソース差分を確認する
 
 ```mermaid
 flowchart LR
@@ -145,7 +138,7 @@ flowchart LR
 <details>
 <summary>設計意図</summary>
 
-AI の判定を走らせる `pr-triage` に merge 権限を持たせないのは、AI の出力がそのままマージの引き金にならないようにするためである。判定はラベルとして残し、マージするかは別のジョブが決める。
+- PRのサイズを小さく保ち、人間レビューの対象を絞ることで、開発スピードを犠牲にしないようにしている
 
 </details>
 
@@ -185,9 +178,8 @@ flowchart LR
 <details>
 <summary>設計意図</summary>
 
-実 AWS 環境に触れる deploy を main へマージした後に置いたのは、マージまでの経路に速く答えが出るものだけを残すためである。PR の時点では `cdk diff` だけを確認する。
-
-失敗を Issue に自動起票するのは、この失敗が required check の外側で起きるため、放っておくと誰の担当にもならないからである。
+- 実 AWS 環境への deploy を main マージにしたのは、開発のスピードを優先したからである。デプロイエラーの場合は自動でIssue起票され迅速に対応できる。トランクベースだからできる方法。
+- 失敗を Issue に自動起票するのは、この失敗が required check の外側で起きるため、放っておくと誰の担当にもならないからである。
 
 </details>
 
@@ -232,10 +224,7 @@ PR がゲートを通るまでに何を検査しているかの一覧。個々�
 | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | マージ可否は `cicd-gate` 1つだけで決める                          | job を個別に required 登録すると、検査を増やしたときに登録漏れが起きる。ゲートが1つなら、増やした検査はそのゲートの中でまとめて確かめられる。Dependabot の PR も、同名の `cicd-gate` job を作れば同じ条件でマージできる |
 | 変更対象を「常時実行・全体・アプリ・CDK」に分類し、検査対象を絞る | 静的解析はルールを1箇所で定義しているため、走らせるには全階層の依存が要る。だからスキップできない。条件で絞れるのは、対象の階層に閉じた検査だけ                                                                         |
-| dev へのデプロイ経路を main の1本だけにする                       | デプロイ経路が2つ以上あると「dev にいま何があるか」が一意に決まらない                                                                                                                                                   |
 | dev を触るものは、削除も含めて同じ直列化グループに入れる          | dev は1環境しかない。main への連続 push と dev の削除が並行すると CloudFormation スタックが壊れる                                                                                                                       |
-| PR の時点では deploy せず、`cdk diff` だけを確認する              | 意図しない置換・削除を、レビューの時点で拾える                                                                                                                                                                          |
-| main への deploy が失敗したら GitHub Issue を自動起票する         | 失敗が required check の外側で起きるため、放っておくと誰の担当にもならない。壊れた main はブランチ最新化の要求を通じて全ブランチへ配られる                                                                              |
 
 ### マージ可否は `cicd-gate` 1つだけで決める
 
@@ -263,35 +252,35 @@ PR がゲートを通るまでに何を検査しているかの一覧。個々�
 | CDK      | `ci-cdk`       | `infra/` に変更あり                      | 検査対象が `infra/` に閉じている                                        |
 | 検査外   | `cdk-diff`     | `app/` または `infra/` に変更あり        | アプリを CDK が deploy するため、app の変更も差分に出る                 |
 
-### dev へのデプロイ経路を main の1本だけにする
-
-dev を書き換えるのは、main へのマージで動く `dev-deploy.yml` だけである。
-
-経路が1本なら、dev にあるものは main の最新と一致する。食い違いを見つけたときも、main の履歴だけを追えば原因にたどり着く。
-
 ### dev を触るものは、削除も含めて同じ直列化グループに入れる
 
-直列化はグループ名の一致だけで成立する。dev に触れるジョブを1つでも別名にすると、そのジョブだけが並行して走る。
+直列化はグループ名の一致だけで成立する。
 
-| ワークフロー      | ジョブ       | 直列化グループ   |
-| ----------------- | ------------ | ---------------- |
-| `deploy-dev.yml`  | `cdk-deploy` | `cdk-deploy-dev` |
-| `dev-destroy.yml` | `destroy`    | `cdk-deploy-dev` |
+```mermaid
+flowchart LR
+    Deploy["🚀 deploy-dev.yml<br/>cdk-deploy"]
+    Destroy["🗑️ dev-destroy.yml<br/>destroy"]
+    Stray["⚠️ dev に触るのに<br/>別名を付けたジョブ"]
 
-### PR の時点では deploy せず、`cdk diff` だけを確認する
+    Lock{{"🔒 concurrency group<br/>cdk-deploy-dev"}}
+    Dev[("☁️ dev 環境<br/>スタックは1つだけ")]
+    Broken(["💥 CloudFormation スタック破損"])
 
-`cdk diff` が出すのは、いまの dev と、この PR をマージしたあとの差である。レビューで見るのは差分の量ではなく、次のどれに当たるかである。
+    Deploy --> Lock
+    Destroy --> Lock
+    Lock -->|1つずつ順番に通す| Dev
+    Stray -. グループ名が違えば素通り .-> Dev
+    Dev -. 並行して触られる .-> Broken
 
-| 差分の種類      | レビューでの扱い                                   |
-| --------------- | -------------------------------------------------- |
-| 追加・更新      | 意図どおりかを確認する                             |
-| 置換（Replace） | リソースが作り直される。データを持つものなら止める |
-| 削除            | 消してよいものかを確認する                         |
+    classDef process fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
+    classDef gate fill:#87CEEB,stroke:#00008B,stroke-width:4px,color:darkblue
+    classDef resource fill:#E6E6FA,stroke:#333,stroke-width:2px,color:darkblue
+    classDef danger fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
+    classDef hollow fill:#FFE4B5,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5,color:black
 
-### main への deploy が失敗したら GitHub Issue を自動起票する
-
-| 場面                                  | 起票の動き                                  |
-| ------------------------------------- | ------------------------------------------- |
-| deploy または結合テストが失敗した     | `dev-deploy-failure` ラベルを付けて起票する |
-| 同じラベルの open な Issue が既にある | 起票せず、その Issue にコメントを足す       |
-| 直列化の押し出しでキャンセルされた    | 何もしない（後続の deploy が引き継ぐ）      |
+    class Deploy,Destroy process
+    class Lock gate
+    class Dev resource
+    class Broken danger
+    class Stray hollow
+```
