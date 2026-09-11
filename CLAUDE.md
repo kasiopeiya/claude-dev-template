@@ -2,6 +2,10 @@
 
 ## 必読ドキュメント
 
+### プロジェクト固有情報
+
+@docs/project-context/project-claude.md
+
 ### 設計書ハブ
 
 > [!IMPORTANT]

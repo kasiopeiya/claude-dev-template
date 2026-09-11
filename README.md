@@ -83,11 +83,12 @@ npm run format       # フォーマット
 
 このテンプレートを使う手順:
 
-1. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
-2. 実装は `app/`・`infra/` に書く。どちらも空なので、[`samples/`](samples/README.md) の参照実装を手本にして写す（`samples/` 自体は書き換えない）
-3. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
-4. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
-5. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
+1. `docs/project-context/project-claude.md` に自分のシステムの情報を書く（テンプレート同期の対象外なので、テンプレート側の更新で上書きされない）
+2. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
+3. 実装は `app/`・`infra/` に書く。どちらも空なので、[`samples/`](samples/README.md) の参照実装を手本にして写す（`samples/` 自体は書き換えない）
+4. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
+5. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
+6. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
 
 ## 変更してはならないパス
 
@@ -106,6 +107,7 @@ npm run format       # フォーマット
 | `docs/reference/glossary.md`, `docs/reference/non-functional-requirement-items.md` | to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照                                                                                                                  |
 | `docs/reference/test-terms.md`                                                     | `policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照                                                                   |
 | `docs/guide/`（ディレクトリ名）＋ `docs/guide/development-flow.md`                 | decide-tech-stack・code-review スキルがディレクトリを直接参照。`development-flow.md` は CLAUDE.md・to-plan スキルがファイル名まで参照。他の個別ガイドは自由に追加・改名可           |
+| `docs/project-context/project-claude.md`                                           | CLAUDE.md が `@` import で直接読み込む。ここに書いた内容が毎セッション読まれる                                                                                                      |
 | `docs/requirements.md`                                                             | `requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス                                                            |
 
 ### トップレベル

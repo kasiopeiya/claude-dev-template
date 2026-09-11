@@ -13,7 +13,7 @@ import { fileURLToPath } from 'url'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
 
-export const CHARACTER_LIMIT = 6000
+export const CHARACTER_LIMIT = 8000
 
 // Claude Code が自動ロードする import 記法（行頭または空白の直後の @パス）。
 // メールアドレス・装飾記号を拾わないよう、直前が行頭か空白のものだけを対象にする。
