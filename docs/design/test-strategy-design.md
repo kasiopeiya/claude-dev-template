@@ -16,14 +16,12 @@
   - [単体テスト](#単体テスト)
   - [結合テスト](#結合テスト)
   - [E2Eテスト](#e2eテスト)
-- [重要なポイント](#重要なポイント)
 
 > [!NOTE]
-> 本ファイルは [design-doc-policy](../policy/design-doc-policy.md) が定める3本柱（基本方針・構成図・重要なポイント）のスケルトン。  
+> 本ファイルは [design-doc-policy](../policy/design-doc-policy.md) が定める2本柱（基本方針・構成図）のスケルトン。  
 > **用語の定義（unit／integration／E2E・テストダブル）は [test-terms.md](../reference/test-terms.md) が SSOT** なので、ここには書き写さずリンクする。  
 > **層の選び方・配分の考え方は [test-strategy-policy](../policy/test-strategy-policy.md)、単体テストの書き方は [unit-test-policy**](../policy/unit-test-policy.md) の領分。**  
 > **本書が書くのは、このプロジェクトで各層が**実際にどこからどこまでを対象にし、何を保障するか**という境界そのもの。
-> 重要なポイントは、1項目1行の俯瞰一覧の表を置き、全項目を同名の `###` 節に展開する（最大10個・1項目1決定。上限は節の数で数える）。
 
 ## 基本方針
 
@@ -56,5 +54,3 @@
 ### 結合テスト
 
 ### E2Eテスト
-
-## 重要なポイント

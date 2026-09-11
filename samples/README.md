@@ -7,11 +7,11 @@
 
 ## 何があるか
 
-| 置き場                               | 中身                                                                                        | 手本になるもの                                                             |
-| ------------------------------------ | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| [app/backend](app/backend/README.md) | クリーンアーキテクチャのユーザー登録（domain / usecase / infrastructure / presentation）    | レイヤーの切り方、依存性逆転、値オブジェクト、ビジネス例外と技術例外の分離 |
-| `infra`                              | S3 イベント通知の CDK スタック（BaseStack / AppStack / Construct / Lambda）                 | スタック分割、環境差分の出し方、Construct の粒度、cdk-nag の抑制の書き方   |
-| `docs`                               | 設計書（`design/cicd-design.md`・`design/infrastructure-design.md`）と ADR（`design/adr/`） | 設計書の構成と図の粒度、ADR のフル版／軽量版の書き分け                     |
+| 置き場                               | 中身                                                                                                                | 手本になるもの                                                             |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| [app/backend](app/backend/README.md) | クリーンアーキテクチャのユーザー登録（domain / usecase / infrastructure / presentation）                            | レイヤーの切り方、依存性逆転、値オブジェクト、ビジネス例外と技術例外の分離 |
+| `infra`                              | S3 イベント通知の CDK スタック（BaseStack / AppStack / Construct / Lambda）                                         | スタック分割、環境差分の出し方、Construct の粒度、cdk-nag の抑制の書き方   |
+| `docs`                               | 設計書（`design/cicd-design.md`・`design/infrastructure-design.md`・`design/iac-design.md`）と ADR（`design/adr/`） | 設計書の構成と図の粒度、ADR のフル版／軽量版の書き分け                     |
 
 テストの手本も同じ場所にある。`app/backend/test/` はアーキテクチャテスト（レイヤー境界・循環依存・凝集度）、`infra/test/` は CDK のスナップショットテストと fine-grained assertions。
 

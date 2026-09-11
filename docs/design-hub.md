@@ -15,17 +15,22 @@
 
 ### [infrastructure-design.md](design/infrastructure-design.md)
 
-**概要**: AWS/IaC で構築したインフラの全体像（構成図）と設計判断。何をどう書くかは [iac-infra-design-doc-policy](policy/iac-infra-design-doc-policy.md) が定める
-**参照タイミング**: `infra/` 配下の CDK コードを変更・レビューする前、インフラがなぜこの構成なのかを知りたいとき
+**概要**: AWS で**何を組んでいるか**——インフラの全体像（構成図）・ネットワーク・運用監視と設計判断。IaC（どう作り・変えるか）は対象外で iac-design.md が持つ。何をどう書くかは [iac-infra-design-doc-policy](policy/iac-infra-design-doc-policy.md) が定める
+**参照タイミング**: AWS リソース構成を変更・レビューする前、インフラがなぜこの構成なのかを知りたいとき
+
+### [iac-design.md](design/iac-design.md)
+
+**概要**: そのインフラを CDK で**どう作り・変えるか**——IaC 管理方針・手動作成リソース・スタック設計・命名規約と設計判断。何をどう書くかは [iac-infra-design-doc-policy](policy/iac-infra-design-doc-policy.md) が定める
+**参照タイミング**: `infra/` 配下の CDK コードを変更・レビューする前、スタック分割・環境差分・命名がなぜこうなのかを知りたいとき
 
 ### [frontend-design.md](design/frontend-design.md)
 
-**概要**: フロントエンド（React）**アプリ**の構造・画面を支える仕組みと設計判断。インフラ（配信基盤・IaC）は対象外で infrastructure-design.md が持つ。判断の基準は [frontend-design-policy](policy/frontend-design-policy.md) が定める
+**概要**: フロントエンド（React）**アプリ**の構造・画面を支える仕組みと設計判断。配信基盤は対象外で infrastructure-design.md が、IaC は iac-design.md が持つ。判断の基準は [frontend-design-policy](policy/frontend-design-policy.md) が定める
 **参照タイミング**: フロントエンドのコンポーネント・状態管理を変更・レビューする前
 
 ### [backend-design.md](design/backend-design.md)
 
-**概要**: バックエンド**アプリ**のレイヤー構成・処理の流れ・データモデルと設計判断。インフラ（AWS 構成・IaC）は対象外で infrastructure-design.md が持つ。判断の基準は [application-architecture-policy](policy/application-architecture-policy.md) が定める
+**概要**: バックエンド**アプリ**のレイヤー構成・処理の流れ・データモデルと設計判断。AWS 構成は対象外で infrastructure-design.md が、IaC は iac-design.md が持つ。判断の基準は [application-architecture-policy](policy/application-architecture-policy.md) が定める
 **参照タイミング**: バックエンドのロジック・データアクセスを変更・レビューする前
 
 ### [interface-specification.md](design/interface-specification.md)

@@ -138,7 +138,7 @@ npm run format       # フォーマット
 
 | ファイル名に含める語                            | 発火するポリシー              | 対象                                       |
 | ----------------------------------------------- | ----------------------------- | ------------------------------------------ |
-| `infra`（`docs/design/` 配下の `.md`）          | `iac-infra-design-doc-policy` | インフラ設計書                             |
+| `infra` / `iac`（`docs/design/` 配下の `.md`）  | `iac-infra-design-doc-policy` | インフラ設計書・IaC 設計書                 |
 | `monitoring` / `Monitoring` / `alarm` / `Alarm` | `monitoring-policy`           | 監視・アラームを定義する `.ts`             |
 | `table` / `Table`                               | `database-design-policy`      | テーブル定義を扱う `.ts`                   |
 | `config` / `parameter`                          | `configuration-policy`        | 構成値を扱う `.ts`・`config/` 配下・`.env` |
