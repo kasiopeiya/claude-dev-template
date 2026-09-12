@@ -107,7 +107,7 @@ Issue 本文の「実装フロー（使用するSkill）」に Skill が書か�
 gh issue close <番号> --comment "<何をしたかを1文>"
 ```
 
-**sub-issue が open な親 Issue は閉じない。** 先に sub-issue を処理するか、その Issue を飛ばす。
+**sub-issue が open な親 Issue は閉じない。** 先に sub-issue を処理するか、その Issue を飛ばす。open な子が全部ブロッカー待ちで止まっているなら、[`/issue-regroup`](../issue-regroup/SKILL.md) の対象として報告に並べる。子の付け替えは人間が起動を決める操作なので、本スキルでは行わない。
 
 ```bash
 gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number:<番号>){subIssues(first:50){nodes{number state}}}}}'

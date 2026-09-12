@@ -19,7 +19,7 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 - **いつ割るかは人間が決める。** 親 Issue の本文を書き換えるため、AI は「割った方がよい」と提案するまでに留める。
 - **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・sub-issue 紐付け）だけ。
 - **分割規則と子 Issue の本文テンプレートは書き写さない。** 縦スライスの規則は [`/to-issues`](../to-issues/SKILL.md)、本文テンプレート `<issue-template>` とラベル判定は [`/quick-issue`](../quick-issue/SKILL.md) が正典。2箇所に持つと、片方が古いまま残る。
-- **親はクローズしない。** すべての sub-issue が close されるまで親は open のまま置く（`/sweep`・`/issue-check` の「sub-issue が open な親は閉じない」ガードと揃える）。
+- **親はクローズしない。** すべての sub-issue が close されるまで親は open のまま置く（`/sweep`・`/issue-check` の「sub-issue が open な親は閉じない」ガードと揃える）。例外は [`/issue-regroup`](../issue-regroup/SKILL.md) だけである。親の open な子が全部ブロッカー待ちになったときに限り、子を他の親へ移してこの親を close する。
 
 ## Phase 1: 対象を読む
 
