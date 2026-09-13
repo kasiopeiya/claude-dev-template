@@ -20,6 +20,20 @@
     "samples/app/backend": {
       "entry": ["main.ts", "test/**/*.test.ts"],
       "project": ["**/*.ts"]
+    },
+    "app/backend": {
+      "entry": ["test/**/*.test.ts"],
+      "project": ["**/*.ts"],
+      // esbuild: CDK が Lambda のバンドルをこのディレクトリの依存で実行する（コードからは import しない）
+      // （infra/lib/stack/appStack.ts の depsLockFilePath でこのディレクトリを指定）
+      "ignoreDependencies": ["esbuild"]
+    },
+    "infra": {
+      "entry": ["bin/app.ts", "test/**/*.test.ts"],
+      "project": ["**/*.ts"],
+      // tsx: cdk.json の "app": "npx tsx bin/app.ts" で CDK アプリ実行に使用（コードからは import しない）
+      // esbuild: NodejsFunction のバンドルで aws-cdk-lib が内部起動する（コードからは import しない）
+      "ignoreDependencies": ["tsx", "esbuild"]
     }
   }
 }
