@@ -21,11 +21,9 @@ Issue: #1 CDK初期構築
 
 ### テスト結果
 
-| チェック項目     | 結果                |
-| ---------------- | ------------------- |
-| npm test         | ✅ Passed (2 tests) |
-| cdk synth        | ✅ Passed           |
-| 循環参照チェック | ✅ OK               |
+- **npm test**：✅ Passed (2 tests)
+- **cdk synth**：✅ Passed
+- **循環参照チェック**：✅ OK
 
 ### Next Steps
 
@@ -47,11 +45,9 @@ Issue: #1 CDK初期構築
 ```markdown
 ### テスト結果
 
-| チェック項目     | 結果      |
-| ---------------- | --------- |
-| npm test         | 🔴 Failed |
-| cdk synth        | -         |
-| 循環参照チェック | -         |
+- **npm test**：🔴 Failed
+- **cdk synth**：-
+- **循環参照チェック**：-
 
 ### Next Steps
 

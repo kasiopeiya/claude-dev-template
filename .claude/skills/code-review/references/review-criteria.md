@@ -16,17 +16,15 @@
 
 次の観点は ESLint / knip が **error で機械的に検知**するため、LLM の採点から外す（CI ゲートを SSOT とし、二重にスコア化しない）。設定の実体は `eslint.config.mjs` / `knip.jsonc`、しきい値の根拠は `.claude/rules/typescript.md` を参照。
 
-| 機械化された観点                        | 担保するゲート                                                                                                      |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 型安全性（`any` 禁止）                  | ESLint `@typescript-eslint/no-explicit-any`                                                                         |
-| 関数の長さ（50行）                      | ESLint `max-lines-per-function`                                                                                     |
-| 引数の数（3個）                         | ESLint `max-params`                                                                                                 |
-| マジックナンバー                        | ESLint `no-magic-numbers`（src 限定）                                                                               |
-| 非同期処理（浮いた Promise・誤用）      | ESLint `@typescript-eslint/no-floating-promises` / `no-misused-promises`                                            |
-| 未使用宣言（変数・引数・optional 含む） | ESLint `@typescript-eslint/no-unused-vars`（`args:'all'`）＋ knip                                                   |
-| 不要な export（本番コードからも未参照） | knip（未使用 export 検知）。テストからのみ参照される export は検出しないため、下の採点表「テスト専用 export」で見る |
-| Import 順序・冒頭集約                   | ESLint `import-x/order` / `import-x/first`                                                                          |
-| ネスト深度・複雑度                      | ESLint `max-depth` / `complexity` / `sonarjs/cognitive-complexity`                                                  |
+- **型安全性（`any` 禁止）**：ESLint `@typescript-eslint/no-explicit-any`
+- **関数の長さ（50行）**：ESLint `max-lines-per-function`
+- **引数の数（3個）**：ESLint `max-params`
+- **マジックナンバー**：ESLint `no-magic-numbers`（src 限定）
+- **非同期処理（浮いた Promise・誤用）**：ESLint `@typescript-eslint/no-floating-promises` / `no-misused-promises`
+- **未使用宣言（変数・引数・optional 含む）**：ESLint `@typescript-eslint/no-unused-vars`（`args:'all'`）＋ knip
+- **不要な export（本番コードからも未参照）**：knip（未使用 export 検知）。テストからのみ参照される export は検出しないため、下の採点表「テスト専用 export」で見る
+- **Import 順序・冒頭集約**：ESLint `import-x/order` / `import-x/first`
+- **ネスト深度・複雑度**：ESLint `max-depth` / `complexity` / `sonarjs/cognitive-complexity`
 
 下の採点表の観点は**観点名で識別する**（他ドキュメントからも観点名で参照する）。番号を振ると、観点の増減で番号がずれ、参照側が無言で壊れるためである。
 
@@ -57,28 +55,22 @@
 
 スコアには含めないが、レビュー時に必ず確認し「確認点」セクションとして報告する。
 
-| 観点               | チェック内容                                                         |
-| ------------------ | -------------------------------------------------------------------- |
-| **設定値の妥当性** | タイムアウト・保存期間・リトライ回数などの設定値が要件に合っているか |
+- **設定値の妥当性**：タイムアウト・保存期間・リトライ回数などの設定値が要件に合っているか
 
 ## 総合レベル判定
 
 **得点率**＝合計得点 ÷（適用観点数 × 3）で判定する。対象外の観点は分母（適用観点数）から除く。
 
-| 得点率   | レベル                                  |
-| -------- | --------------------------------------- |
-| 90% 以上 | 優秀（Excellent）                       |
-| 70〜89%  | 良好（Good）                            |
-| 50〜69%  | 要改善（Needs Improvement）             |
-| 50% 未満 | 要リファクタリング（Needs Refactoring） |
+- **90% 以上**：優秀（Excellent）
+- **70〜89%**：良好（Good）
+- **50〜69%**：要改善（Needs Improvement）
+- **50% 未満**：要リファクタリング（Needs Refactoring）
 
 ## 種別ごとの重点観点
 
-| 種別             | 重点観点                                                               |
-| ---------------- | ---------------------------------------------------------------------- |
-| Handler          | セキュリティ・エラーハンドリング                                       |
-| Utility          | 単一責任・テスタビリティ                                               |
-| Page / Component | コンポーネント設計・命名規則・単一責任・フロントエンド設計ポリシー準拠 |
-| Context          | 状態管理・パフォーマンス                                               |
-| Test             | 単体テストポリシー準拠・命名規則                                       |
-| Module           | 全観点をバランスよく評価                                               |
+- **Handler**：セキュリティ・エラーハンドリング
+- **Utility**：単一責任・テスタビリティ
+- **Page / Component**：コンポーネント設計・命名規則・単一責任・フロントエンド設計ポリシー準拠
+- **Context**：状態管理・パフォーマンス
+- **Test**：単体テストポリシー準拠・命名規則
+- **Module**：全観点をバランスよく評価

@@ -47,10 +47,8 @@ As you interview, hold each answer and proposed direction against the refined en
 
 Applies **only if the arguments contain `--small`**. It changes nothing above except what counts as an acceptable scope sentence.
 
-| 引数           | 合意する一文に求めること                                             |
-| -------------- | -------------------------------------------------------------------- |
-| `--small` なし | ユーザーが「終わり」と呼ぶ状態であれば何でもよい                     |
-| `--small` あり | 曳光弾（薄い縦スライス）であること。最初の質問を下のものに置き換える |
+- **`--small` なし**：ユーザーが「終わり」と呼ぶ状態であれば何でもよい
+- **`--small` あり**：曳光弾（薄い縦スライス）であること。最初の質問を下のものに置き換える
 
 > 「これが動いた」と言える、入口から出口まで通る一番薄い一本道は何ですか？
 

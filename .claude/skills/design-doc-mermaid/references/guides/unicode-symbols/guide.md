@@ -461,20 +461,18 @@ graph LR
 
 ## Complete Symbol Reference Table
 
-| Category      | Symbols                                    |
-| ------------- | ------------------------------------------ |
-| Cloud/Network | ☁️ 🌐 🔌 📡 🛰️ 🗄️                          |
-| Compute       | ⚙️ ⚡ 🔄 ♻️ 🚀 🔥 💨                       |
-| Data/Storage  | 💾 📦 📊 📈 📉 🗃️ 💿 🧊                    |
-| Messaging     | 📨 📬 📤 📥 🐰 📢 📲                       |
-| Security      | 🔐 🔑 🛡️ 🚪 👤 👥 🎫 🔓                    |
-| Monitoring    | 📝 📊 🚨 ⚠️ ✅ ❌ 🔍 🎯 🏷️                 |
-| Status        | ✓ ✅ ❌ ⏸️ ▶️ ⏹️ 🔴 🟢 🟡 ⭕               |
-| Time          | ⏰ ⏱️ 📅 ⌛ ⏳ 🕐-🕛                       |
-| Development   | 💻 🔧 🐛 🧪 📦 🏗️ 🚢 🔀                    |
-| Frontend      | ⚛️ 🎨 📱 🖥️ 🌐 🖱️ 👁️                       |
-| Business      | 💰 🛒 📋 📦 🏢 🏦 📧 🎁                    |
-| Languages     | 🐍 (Python) ☕ (Java) 📗 (Node) ⚛️ (React) |
+- **Cloud/Network**: ☁️ 🌐 🔌 📡 🛰️ 🗄️
+- **Compute**: ⚙️ ⚡ 🔄 ♻️ 🚀 🔥 💨
+- **Data/Storage**: 💾 📦 📊 📈 📉 🗃️ 💿 🧊
+- **Messaging**: 📨 📬 📤 📥 🐰 📢 📲
+- **Security**: 🔐 🔑 🛡️ 🚪 👤 👥 🎫 🔓
+- **Monitoring**: 📝 📊 🚨 ⚠️ ✅ ❌ 🔍 🎯 🏷️
+- **Status**: ✓ ✅ ❌ ⏸️ ▶️ ⏹️ 🔴 🟢 🟡 ⭕
+- **Time**: ⏰ ⏱️ 📅 ⌛ ⏳ 🕐-🕛
+- **Development**: 💻 🔧 🐛 🧪 📦 🏗️ 🚢 🔀
+- **Frontend**: ⚛️ 🎨 📱 🖥️ 🌐 🖱️ 👁️
+- **Business**: 💰 🛒 📋 📦 🏢 🏦 📧 🎁
+- **Languages**: 🐍 (Python) ☕ (Java) 📗 (Node) ⚛️ (React)
 
 ## Advanced: Creating Symbol Legends
 

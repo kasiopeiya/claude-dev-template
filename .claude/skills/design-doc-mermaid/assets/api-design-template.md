@@ -547,10 +547,8 @@ print(response.json())
 
 ### A. Glossary
 
-| Term | Definition                   |
-| ---- | ---------------------------- |
-| JWT  | JSON Web Token               |
-| CRUD | Create, Read, Update, Delete |
+- **JWT**: JSON Web Token
+- **CRUD**: Create, Read, Update, Delete
 
 ### B. References
 

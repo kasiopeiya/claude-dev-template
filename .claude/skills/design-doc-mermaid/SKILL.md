@@ -39,11 +39,9 @@ A diagram must let the reader grasp the **structure** (relations, flow, hierarch
 
 **Before generating any diagram, ask: "If I convert this diagram back into a bullet list, is any information lost?"**
 
-| Symptom                                                           | Verdict                                     |
-| ----------------------------------------------------------------- | ------------------------------------------- |
-| Straight line (A→B→C) with no branch / merge / loop / parallelism | No value → use a bullet list, not a diagram |
-| Nodes convert back to bullets with zero information loss          | No value → use a table or bullet list       |
-| Just a 1-to-1 enumeration                                         | No value → use a table                      |
+- **Straight line (A→B→C) with no branch / merge / loop / parallelism**: No value → use a bullet list, not a diagram
+- **Nodes convert back to bullets with zero information loss**: No value → use a table or bullet list
+- **Just a 1-to-1 enumeration**: No value → use a table
 
 Only draw when the content needs 2D placement — branching, merging, loops, parallelism, many-to-many, hierarchy, or state transitions. Diagram count is never a goal in itself.
 
@@ -53,12 +51,10 @@ Once you have decided to draw, **read `references/diagram-type-selection.md` and
 
 `flowchart` / `graph` is the **last resort**, not the default. It can express almost anything, and that is exactly why it is chosen too often — being able to express something is not the same as being suited to it.
 
-| Rule                            |                                                                                                                             |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Pick from the shape             | Read `references/diagram-type-selection.md` and take the first matching row                                                 |
-| flowchart needs justification   | Choose it only when every other row fails. Then state in one line why no other type fits                                    |
-| Cannot justify it?              | Choose again — the inability to explain means the shape was never checked                                                   |
-| A matching row is not a licence | Some types have narrow limits (`architecture-beta` cannot label edges at all). Check the row's conditions before committing |
+- **Pick from the shape**: Read `references/diagram-type-selection.md` and take the first matching row
+- **flowchart needs justification**: Choose it only when every other row fails. Then state in one line why no other type fits
+- **Cannot justify it?**: Choose again — the inability to explain means the shape was never checked
+- **A matching row is not a licence**: Some types have narrow limits (`architecture-beta` cannot label edges at all). Check the row's conditions before committing
 
 GitHub renders all 26 Mermaid diagram types (verified by rendering probe), so availability is never a reason to fall back to `flowchart`. Expressiveness is a separate question: when the chosen type cannot carry the information, `graph` with a stated reason is the correct answer, not a failure.
 
@@ -494,24 +490,22 @@ design-doc-mermaid/
 
 Diagram requests route by **shape**, not by the words above them — always via `references/diagram-type-selection.md`. The rows below are for non-diagram actions and for loading deep-dive material once the type is already chosen.
 
-| Request                                                         | Load This                                                                            |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| **Any diagram at all**                                          | `references/diagram-type-selection.md` **first**, then the guide for the chosen type |
-| Chosen type is sequence                                         | `references/guides/diagrams/sequence-diagrams.md`                                    |
-| Chosen type is deployment / infrastructure                      | `references/guides/diagrams/deployment-diagrams.md`                                  |
-| Chosen type is architecture / components                        | `references/guides/diagrams/architecture-diagrams.md` + design template              |
-| Chosen type is flowchart (after justifying it)                  | `references/guides/diagrams/activity-diagrams.md`                                    |
-| Chosen type is any other of the 26                              | `references/mermaid-diagram-guide.md`                                                |
-| "Spring Boot code"                                              | `examples/spring-boot/` + relevant diagram guides                                    |
-| "FastAPI code", "Python API"                                    | `examples/fastapi/` + relevant diagram guides                                        |
-| "React app", "frontend"                                         | `examples/react/` + architecture guide                                               |
-| "ETL", "data pipeline", "Python batch"                          | `examples/python-etl/` + activity guide                                              |
-| "symbols", "unicode", "emoji"                                   | `references/guides/unicode-symbols/guide.md`                                         |
-| "syntax error", "diagram won't render", "troubleshoot"          | `references/guides/troubleshooting.md`                                               |
-| "extract diagrams"                                              | `scripts/extract_mermaid.py`                                                         |
-| "convert to image", "PNG", "SVG"                                | `scripts/mermaid_to_image.py`                                                        |
-| "create diagram", "generate diagram", "add diagram to markdown" | `scripts/resilient_diagram.py` + `references/guides/resilient-workflow.md`           |
-| "design document", "full docs"                                  | `assets/*-design-template.md` + diagram guides                                       |
+- **Any diagram at all**: `references/diagram-type-selection.md` **first**, then the guide for the chosen type
+- **Chosen type is sequence**: `references/guides/diagrams/sequence-diagrams.md`
+- **Chosen type is deployment / infrastructure**: `references/guides/diagrams/deployment-diagrams.md`
+- **Chosen type is architecture / components**: `references/guides/diagrams/architecture-diagrams.md` + design template
+- **Chosen type is flowchart (after justifying it)**: `references/guides/diagrams/activity-diagrams.md`
+- **Chosen type is any other of the 26**: `references/mermaid-diagram-guide.md`
+- **"Spring Boot code"**: `examples/spring-boot/` + relevant diagram guides
+- **"FastAPI code", "Python API"**: `examples/fastapi/` + relevant diagram guides
+- **"React app", "frontend"**: `examples/react/` + architecture guide
+- **"ETL", "data pipeline", "Python batch"**: `examples/python-etl/` + activity guide
+- **"symbols", "unicode", "emoji"**: `references/guides/unicode-symbols/guide.md`
+- **"syntax error", "diagram won't render", "troubleshoot"**: `references/guides/troubleshooting.md`
+- **"extract diagrams"**: `scripts/extract_mermaid.py`
+- **"convert to image", "PNG", "SVG"**: `scripts/mermaid_to_image.py`
+- **"create diagram", "generate diagram", "add diagram to markdown"**: `scripts/resilient_diagram.py` + `references/guides/resilient-workflow.md`
+- **"design document", "full docs"**: `assets/*-design-template.md` + diagram guides
 
 ## Best Practices
 

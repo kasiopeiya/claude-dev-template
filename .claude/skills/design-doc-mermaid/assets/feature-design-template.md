@@ -590,9 +590,7 @@ gantt
 
 ### A. Glossary
 
-| Term   | Definition   |
-| ------ | ------------ |
-| [Term] | [Definition] |
+- **[Term]**: [Definition]
 
 ### B. References
 

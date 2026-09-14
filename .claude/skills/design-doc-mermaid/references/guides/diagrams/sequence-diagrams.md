@@ -827,15 +827,13 @@ sequenceDiagram
 
 Maintain consistent symbol usage across all diagrams:
 
-| Category  | Symbols     |
-| --------- | ----------- |
-| Users     | 👤 👥 👨‍💻 👩‍💼 |
-| Frontend  | 🌐 📱 🖥️ ⚛️ |
-| Backend   | ⚙️ 🔧 🚀 ⚡ |
-| Data      | 💾 📊 🗄️ 📦 |
-| Security  | 🔐 🔑 🛡️ 🚪 |
-| Messaging | 📬 📨 📡 🐰 |
-| External  | ☁️ 💳 📧 🔍 |
+- **Users**: 👤 👥 👨‍💻 👩‍💼
+- **Frontend**: 🌐 📱 🖥️ ⚛️
+- **Backend**: ⚙️ 🔧 🚀 ⚡
+- **Data**: 💾 📊 🗄️ 📦
+- **Security**: 🔐 🔑 🛡️ 🚪
+- **Messaging**: 📬 📨 📡 🐰
+- **External**: ☁️ 💳 📧 🔍
 
 ---
 

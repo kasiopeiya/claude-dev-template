@@ -98,10 +98,8 @@ const isProd = new CfnCondition(this, 'IsProd', { expression: Fn.conditionEquals
 
 実行のたびに結果が変わる（外部 API の最新取得など）カスタムリソースは原則使わない。動的な値が必要な場合は、ビルドスクリプト等で事前に取得し、CDK へは静的な値として渡す。
 
-| 例      | 実装                                                            |
-| ------- | --------------------------------------------------------------- |
-| ❌ Bad  | Lambda 内で API をフェッチし、結果を後続へ渡す CustomResource   |
-| ✅ Good | 事前に取得した値を `parameter.ts` に置き、props で Stack へ渡す |
+- ❌ Bad：Lambda 内で API をフェッチし、結果を後続へ渡す CustomResource
+- ✅ Good：事前に取得した値を `parameter.ts` に置き、props で Stack へ渡す
 
 ### DON'T: 物理ID（Physical Name）の動的生成
 
@@ -148,11 +146,9 @@ rule.node.addDependency(eventBus)
 
 既存リソースの取得目的で SDK を使う場合、以下の制約を厳守する。
 
-| 制約         | 内容                                                                                                            |
-| ------------ | --------------------------------------------------------------------------------------------------------------- |
-| 読み取り専用 | 情報取得（Describe/Get/List 等）にだけ使う。書き込み操作は禁止                                                  |
-| 呼び出し位置 | Construct のコンストラクタは `async` にできないため、SDK 呼び出しは app エントリで解決し、結果を props で渡す   |
-| 渡し方       | ヘルパーメソッドが無いリソースは、検索キー（タグ等）を引数に取る関数で ID を取得し、L1 コンストラクトへ直接渡す |
+- **読み取り専用**：情報取得（Describe/Get/List 等）にだけ使う。書き込み操作は禁止
+- **呼び出し位置**：Construct のコンストラクタは `async` にできないため、SDK 呼び出しは app エントリで解決し、結果を props で渡す
+- **渡し方**：ヘルパーメソッドが無いリソースは、検索キー（タグ等）を引数に取る関数で ID を取得し、L1 コンストラクトへ直接渡す
 
 ```typescript
 async function getResourceId(tagKey: string, tagValue: string): Promise<string> {

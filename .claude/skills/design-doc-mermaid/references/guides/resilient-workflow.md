@@ -478,16 +478,14 @@ If the `resilient_diagram.py` script is unavailable or fails, follow these manua
 
 Look at the first non-comment line of Mermaid code:
 
-| First Line            | Type               |
-| --------------------- | ------------------ |
-| `flowchart` / `graph` | Flowchart/Activity |
-| `sequenceDiagram`     | Sequence           |
-| `classDiagram`        | Class              |
-| `stateDiagram-v2`     | State              |
-| `erDiagram`           | ER                 |
-| `gantt`               | Gantt              |
-| `pie`                 | Pie                |
-| `C4Context`           | C4/Architecture    |
+- `flowchart` / `graph`: Flowchart/Activity
+- `sequenceDiagram`: Sequence
+- `classDiagram`: Class
+- `stateDiagram-v2`: State
+- `erDiagram`: ER
+- `gantt`: Gantt
+- `pie`: Pie
+- `C4Context`: C4/Architecture
 
 ### Step 2: Load Reference Guide
 

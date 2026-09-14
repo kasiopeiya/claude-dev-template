@@ -400,9 +400,7 @@ gantt
 
 ### Glossary
 
-| Term   | Definition   |
-| ------ | ------------ |
-| [Term] | [Definition] |
+- **[Term]**: [Definition]
 
 ### References
 

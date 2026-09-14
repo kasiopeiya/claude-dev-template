@@ -819,11 +819,9 @@ gantt
 
 ### A. Glossary
 
-| Term | Definition               |
-| ---- | ------------------------ |
-| CDN  | Content Delivery Network |
-| WAF  | Web Application Firewall |
-| TTL  | Time To Live             |
+- **CDN**: Content Delivery Network
+- **WAF**: Web Application Firewall
+- **TTL**: Time To Live
 
 ### B. References
 
