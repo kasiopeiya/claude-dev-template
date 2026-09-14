@@ -13,7 +13,7 @@
 
 ### 用語集
 
-- 用語の定義：[docs/reference/glossary.md](docs/reference/glossary.md)
+- 用語の定義：[docs/project-context/glossary.md](docs/project-context/glossary.md)
 
 ### ポリシー（最優先）
 

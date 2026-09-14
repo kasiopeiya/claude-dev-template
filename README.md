@@ -96,19 +96,20 @@ npm run format       # フォーマット
 
 ### docs/ 配下
 
-| パス                                                                               | 固定である根拠                                                                                                                                                                      |
-| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/policy-hub.md`                                                               | CLAUDE.md・ほぼ全スキルが起点として直接参照                                                                                                                                         |
-| `docs/policy/`（ディレクトリ＋各ファイル名）                                       | `.claude/hooks/policy-loader.mjs` がこのパスを直接読み込み、front-matter `applies-to` で自動アタッチする。個々のファイル名も多数のスキルから SSOT として直接参照される              |
-| `docs/design-hub.md`                                                               | CLAUDE.md・design/to-plan/check-plan/cdk-imp 等が起点として直接参照                                                                                                                 |
-| `docs/design/`（ディレクトリ名）                                                   | `design-doc-policy.md` の `applies-to` が参照。中の個別設計書は自由に追加・更新可                                                                                                   |
-| `docs/runbook/`（ディレクトリ名）                                                  | `runbook-policy.md` の `applies-to` が参照。中の個別手順書は自由に追加・更新可                                                                                                      |
-| `docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`                   | create-adr/decide-tech-stack スキル・`.githooks/pre-commit` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない） |
-| `docs/reference/glossary.md`, `docs/reference/non-functional-requirement-items.md` | to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照                                                                                                                  |
-| `docs/reference/test-terms.md`                                                     | `policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照                                                                   |
-| `docs/guide/`（ディレクトリ名）＋ `docs/guide/development-flow.md`                 | decide-tech-stack・code-review スキルがディレクトリを直接参照。`development-flow.md` は CLAUDE.md・to-plan スキルがファイル名まで参照。他の個別ガイドは自由に追加・改名可           |
-| `docs/project-context/project-claude.md`                                           | CLAUDE.md が `@` import で直接読み込む。ここに書いた内容が毎セッション読まれる                                                                                                      |
-| `docs/requirements.md`                                                             | `requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス                                                            |
+| パス                                                               | 固定である根拠                                                                                                                                                                      |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/policy-hub.md`                                               | CLAUDE.md・ほぼ全スキルが起点として直接参照                                                                                                                                         |
+| `docs/policy/`（ディレクトリ＋各ファイル名）                       | `.claude/hooks/policy-loader.mjs` がこのパスを直接読み込み、front-matter `applies-to` で自動アタッチする。個々のファイル名も多数のスキルから SSOT として直接参照される              |
+| `docs/design-hub.md`                                               | CLAUDE.md・design/to-plan/check-plan/cdk-imp 等が起点として直接参照                                                                                                                 |
+| `docs/design/`（ディレクトリ名）                                   | `design-doc-policy.md` の `applies-to` が参照。中の個別設計書は自由に追加・更新可                                                                                                   |
+| `docs/runbook/`（ディレクトリ名）                                  | `runbook-policy.md` の `applies-to` が参照。中の個別手順書は自由に追加・更新可                                                                                                      |
+| `docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`   | create-adr/decide-tech-stack スキル・`.githooks/pre-commit` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない） |
+| `docs/reference/non-functional-requirement-items.md`               | to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照                                                                                                                  |
+| `docs/reference/test-terms.md`                                     | `policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照                                                                   |
+| `docs/guide/`（ディレクトリ名）＋ `docs/guide/development-flow.md` | decide-tech-stack・code-review スキルがディレクトリを直接参照。`development-flow.md` は CLAUDE.md・to-plan スキルがファイル名まで参照。他の個別ガイドは自由に追加・改名可           |
+| `docs/project-context/project-claude.md`                           | CLAUDE.md が `@` import で直接読み込む。ここに書いた内容が毎セッション読まれる                                                                                                      |
+| `docs/project-context/glossary.md`                                 | to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照                                                                                                                  |
+| `docs/requirements.md`                                             | `requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス                                                            |
 
 ### トップレベル
 

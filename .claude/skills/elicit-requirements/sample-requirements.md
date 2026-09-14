@@ -22,7 +22,7 @@
 
 ## 用語定義
 
-全社共通語は用語集（[../../../docs/reference/glossary.md](../../../docs/reference/glossary.md)）を参照。
+全社共通語は用語集（[../../../docs/project-context/glossary.md](../../../docs/project-context/glossary.md)）を参照。
 
 | 用語           | 定義                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------- |
