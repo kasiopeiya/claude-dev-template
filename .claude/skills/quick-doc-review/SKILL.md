@@ -13,7 +13,7 @@ argument-hint: '[file-path]'
 `quick-issue` と同様に「本格フローの軽量版」シリーズの1つ。
 
 > [!NOTE]
-> **（AI・必須）** 判定基準は本来 `documentation-policy.md` が正（SSOT）だが、本スキルは**速度を優先し、そこから具体的な判定基準を書き下して自己完結させている**（DRYより速度を優先した意図的な例外）。`documentation-policy.md` 自体が改訂されたときは、このチェック項目も追従して見直すこと。要件定義書（`docs/requirements.md` と手本の `samples/docs/requirements.md`。以下のチェック項目で `docs/requirements.md` と書くときは手本も含む）だけは `requirements-doc-policy.md` が一部の規約を上書きするため、該当するチェック項目の判定基準に例外として書き下してある。設計書（`docs/design/**/*.md` と手本の `samples/docs/design/**/*.md`）は `design-doc-policy.md` が固有の規約を足すため、対象を設計書のみと明記したチェック項目に書き下してある。いずれのポリシーの改訂時も同じく追従すること。
+> **（AI・必須）** 判定基準は本来 `documentation-policy.md` と `documentation-policy-for-humans.md` が正（SSOT）だが、本スキルは**速度を優先し、そこから具体的な判定基準を書き下して自己完結させている**（DRYより速度を優先した意図的な例外）。この2つのポリシーが改訂されたときは、このチェック項目も追従して見直すこと。要件定義書（`docs/requirements.md` と手本の `samples/docs/requirements.md`。以下のチェック項目で `docs/requirements.md` と書くときは手本も含む）だけは `requirements-doc-policy.md` が一部の規約を上書きするため、該当するチェック項目の判定基準に例外として書き下してある。設計書（`docs/design/**/*.md` と手本の `samples/docs/design/**/*.md`）は `design-doc-policy.md` が固有の規約を足すため、対象を設計書のみと明記したチェック項目に書き下してある。いずれのポリシーの改訂時も同じく追従すること。
 
 ## 対象
 
@@ -86,7 +86,7 @@ argument-hint: '[file-path]'
 
 ## チェック項目に載せない規約と理由
 
-`documentation-policy.md` の規約のうち、次は意図的にチェック項目から外している。**軽量チェックが成立する条件は「差分だけを見て、その場で直せる」こと**で、これを満たさない規約は `/doc-review` の責務に置く。
+`documentation-policy.md`・`documentation-policy-for-humans.md` の規約のうち、次は意図的にチェック項目から外している。**軽量チェックが成立する条件は「差分だけを見て、その場で直せる」こと**で、これを満たさない規約は `/doc-review` の責務に置く。
 
 - **600行の分割目安**：文書全体の構成判断であり、直し方が「その場で修正」ではなく分割提案になる
 - **1文書内の俯瞰の一覧**：同種の詳細が2件以上並ぶかは差分の外の前後の節まで読まないと分からず、直し方も一覧の新設という構成変更になる。`/doc-review` が全文を見るときに判定する

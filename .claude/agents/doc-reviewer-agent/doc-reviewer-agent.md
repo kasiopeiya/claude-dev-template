@@ -235,7 +235,7 @@ git log --oneline --follow -5 -- <file_path>
 #### ステップ 4-3: 各観点の評価
 
 > [!NOTE]
-> **（AI・必須）** 以下の判定基準は、速度のため `docs/policy/documentation-policy.md` から書き下した派生コピーである。同ポリシーが改訂されたら、ここも追従して見直すこと。
+> **（AI・必須）** 以下の判定基準は、速度のため `docs/policy/documentation-policy.md` と `docs/policy/documentation-policy-for-humans.md` から書き下した派生コピーである。どちらかが改訂されたら、ここも追従して見直すこと。
 
 ##### 完全性チェック
 
@@ -335,7 +335,7 @@ git log --oneline --follow -5 -- <file_path>
 
 **箇条書き・表にすべき散文と、2列以下の表の検出（[必須] 重大な問題として指摘）**：
 
-documentation-policy.md「項目の並びは箇条書きを既定にし、3列以上になるときだけ表にする」に基づき、次を能動的に探す。
+documentation-policy-for-humans.md「項目の並びは箇条書きを既定にし、3列以上になるときだけ表にする」に基づき、次を能動的に探す。
 
 - **文の中に、動詞を含む項目を3つ以上並べた列挙**：箇条書きに出す。「図・表・箇条書き」のような名詞の並びは対象外
 - **1項目が名前のほかに2つ以上の情報を持つ並びが、散文のまま**：3列以上の表にする

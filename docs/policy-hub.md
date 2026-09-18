@@ -43,8 +43,15 @@
 
 ### [documentation-policy.md](policy/documentation-policy.md)
 
-**概要**: ドキュメント作成の基本原則（対象読者と目的・なぜを書く・Progressive Disclosure＝文書の分割と1文書内の俯瞰先出し・DRY・可視化・文章の書き方）
+**概要**: 全Markdownに効くドキュメント作成の基本原則（対象読者と目的・なぜを書く・Progressive Disclosure＝文書の分割・DRY・可視化・文章の書き方）
 **参照タイミング**: 設計書・ドキュメントを作成・編集・レビューする前
+
+---
+
+### [documentation-policy-for-humans.md](policy/documentation-policy-for-humans.md)
+
+**概要**: 人間が画面で読む文書のみに上乗せする体裁の規定（1文書内の俯瞰先出し・400行超の目次・箇条書きを既定にし3列以上だけ表にする・セルに詳細を詰めない・強調・TL;DR・トグル）
+**参照タイミング**: 人間が読む設計書・ポリシー・手順書などを作成・編集・レビューする前
 
 ---
 

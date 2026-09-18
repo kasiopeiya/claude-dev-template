@@ -50,11 +50,11 @@ model: opus
 - **L2**：「エコシステムマップ」「業務要件」とその配下すべて、「業務要件の品質検証（BABOK チェックリスト）」の全項目
 - **L3**：「機能要件」とその配下すべて、「相互参照（トレーサビリティ）」
 - **L4**：「非機能要件」とその配下すべて、「優先順位」「依存関係」「スコープ外」「受入基準」「リスクと対応」「オープンクエスチョン」
-- **L5**：「表は幅で潰さない」。加えて `docs/policy/documentation-policy.md` の文章・構造の可読性（下記「L5 が見る可読性」）
+- **L5**：「表は幅で潰さない」。加えて `docs/policy/documentation-policy.md` と `docs/policy/documentation-policy-for-humans.md` の文章・構造の可読性（下記「L5 が見る可読性」）
 
 #### L5 が見る可読性
 
-L5 だけは判定基準が2つのポリシーにまたがる。`requirements-doc-policy.md` の「表は幅で潰さない」に加えて、`documentation-policy.md` の節を担当範囲で切って当てる。
+L5 だけは判定基準が複数のポリシーにまたがる。`requirements-doc-policy.md` の「表は幅で潰さない」に加えて、`documentation-policy.md` と `documentation-policy-for-humans.md` の節を担当範囲で切って当てる。
 
 - **構造設計**：当てる
 - **文章の書き方**：当てる
@@ -81,6 +81,7 @@ L5 だけは判定基準が2つのポリシーにまたがる。`requirements-do
 | `docs/reference/non-functional-requirement-items.md` | 非機能要件の分類が節としてすべて立っているかを照合する項目カタログ       | L4         |
 | 渡された入力資料（原本）                             | 網羅性チェック（要求の全数仕分けが漏れなく反映されているか）の照合に必要 | L1         |
 | `docs/policy/documentation-policy.md`                | 文章・構造の可読性を当てる規定の正典                                     | L5         |
+| `docs/policy/documentation-policy-for-humans.md`     | 同上のうち、人間が画面で読む文書に上乗せする体裁の規定の正典             | L5         |
 
 入力資料が読めない（参照先が外部にある・パスが解決できない等）ときは、網羅性チェックを **「実施不可・理由：〇〇」** と明記する。読まずに準拠と判定してはならない。
 
