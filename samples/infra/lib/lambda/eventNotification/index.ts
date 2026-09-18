@@ -17,10 +17,7 @@ export const handler = async (event: S3Event): Promise<void> => {
     await snsClient.send(
       new PublishCommand({
         TopicArn: topicArn,
-        Message: JSON.stringify({
-          bucket: record.s3.bucket.name,
-          key: record.s3.object.key
-        })
+        Message: JSON.stringify({ bucket: record.s3.bucket.name, key: record.s3.object.key })
       })
     )
   }

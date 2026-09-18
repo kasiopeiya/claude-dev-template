@@ -35,9 +35,7 @@ export class EventNotificationS3Bucket extends Construct {
       timeout: Duration.seconds(10),
       entry: path.join(__dirname, '../lambda/eventNotification/index.ts'),
       handler: 'handler',
-      environment: {
-        TOPIC_ARN: props.topic.topicArn
-      },
+      environment: { TOPIC_ARN: props.topic.topicArn },
       bundling: {
         // @aws-sdk/* は Lambda ランタイム(Node.js 24)が v3 を提供するためバンドルに含めない
         externalModules: ['@aws-sdk/*']

@@ -30,9 +30,7 @@ export class AppStack extends Stack {
     this.eventNotificationBucket = new EventNotificationS3Bucket(
       this,
       'EventNotificationS3Bucket',
-      {
-        topic: props.topic
-      }
+      { topic: props.topic }
     )
   }
 

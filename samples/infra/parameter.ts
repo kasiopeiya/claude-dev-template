@@ -9,10 +9,7 @@ import { aws_ec2 as ec2 } from 'aws-cdk-lib'
 
 // デプロイ先環境は複数であるがアカウントID設定は１つのみ
 // そのときにデプロイしたい環境のアカウントIDをセットすること
-const env: Environment = {
-  account: process.env.ACCOUNT_ID,
-  region: 'ap-northeast-1'
-}
+const env: Environment = { account: process.env.ACCOUNT_ID, region: 'ap-northeast-1' }
 
 export interface Parameter {
   env: Environment

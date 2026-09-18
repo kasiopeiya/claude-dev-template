@@ -14,7 +14,7 @@
 
 ## CI ゲートで機械的に担保される観点（採点対象外）
 
-次の観点は ESLint / knip が **error で機械的に検知**するため、LLM の採点から外す（CI ゲートを SSOT とし、二重にスコア化しない）。設定の実体は `eslint.config.mjs` / `knip.jsonc`、しきい値の根拠は `.claude/rules/typescript.md` を参照。
+次の観点は ESLint / knip / Prettier が **error で機械的に検知**するため、LLM の採点から外す（CI ゲートを SSOT とし、二重にスコア化しない）。設定の実体は `eslint.config.mjs` / `knip.jsonc` / `.prettierrc.js`、しきい値の根拠は `.claude/rules/typescript.md` を参照。
 
 - **型安全性（`any` 禁止）**：ESLint `@typescript-eslint/no-explicit-any`
 - **関数の長さ（50行）**：ESLint `max-lines-per-function`
@@ -25,6 +25,7 @@
 - **不要な export（本番コードからも未参照）**：knip（未使用 export 検知）。テストからのみ参照される export は検出しないため、下の採点表「テスト専用 export」で見る
 - **Import 順序・冒頭集約**：ESLint `import-x/order` / `import-x/first`
 - **ネスト深度・複雑度**：ESLint `max-depth` / `complexity` / `sonarjs/cognitive-complexity`
+- **改行スタイル（1行に収まる引数・オブジェクト・配列はインライン）**：Prettier `objectWrap: 'collapse'`（`format:check`）
 
 下の採点表の観点は**観点名で識別する**（他ドキュメントからも観点名で参照する）。番号を振ると、観点の増減で番号がずれ、参照側が無言で壊れるためである。
 

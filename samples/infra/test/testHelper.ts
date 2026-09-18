@@ -35,9 +35,7 @@ export function assertAllBucketsEncrypted(template: Template): void {
   template.allResourcesProperties('AWS::S3::Bucket', {
     BucketEncryption: {
       ServerSideEncryptionConfiguration: Match.arrayWith([
-        Match.objectLike({
-          ServerSideEncryptionByDefault: { SSEAlgorithm: 'AES256' }
-        })
+        Match.objectLike({ ServerSideEncryptionByDefault: { SSEAlgorithm: 'AES256' } })
       ])
     }
   })
