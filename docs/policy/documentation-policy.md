@@ -463,7 +463,8 @@ DRYは1文書内だけでなく**文書間でも守る**。AIは他文書の存�
 > [!IMPORTANT]
 > **（AI・必須）** フローチャートを選んでよいのは、他のどの形にも当てはまらなかったときだけ。選んだ場合は「なぜ他の図種でないか」を**ユーザーへの回答に**一言添える。説明できないなら選び直す。
 
-具体的なMermaid図種への対応と構文は [design-doc-mermaid スキルの選択表](../../.claude/skills/design-doc-mermaid/references/diagram-type-selection.md) を参照する。
+> [!IMPORTANT]
+> **（AI・必須）** Mermaid 図は、書き起こす前に `/design-doc-mermaid` スキルを呼んで作る。
 
 > [!TIP]
 > **（AI・推奨）** 「文章で書けているからOK」ではなく「図にした方がもっと伝わるのでは？」を基準に判断する。
