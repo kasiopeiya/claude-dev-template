@@ -1,6 +1,6 @@
 ---
 hook:
-  applies-to: ['docs/requirements.md']
+  applies-to: ['docs/requirements.md', 'samples/docs/requirements.md']
 ---
 
 # 要件定義書ポリシー <!-- omit from toc -->

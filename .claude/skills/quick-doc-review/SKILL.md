@@ -13,7 +13,7 @@ argument-hint: '[file-path]'
 `quick-issue` と同様に「本格フローの軽量版」シリーズの1つ。
 
 > [!NOTE]
-> **（AI・必須）** 判定基準は本来 `documentation-policy.md` が正（SSOT）だが、本スキルは**速度を優先し、そこから具体的な判定基準を書き下して自己完結させている**（DRYより速度を優先した意図的な例外）。`documentation-policy.md` 自体が改訂されたときは、このチェック項目も追従して見直すこと。要件定義書（`docs/requirements.md`）だけは `requirements-doc-policy.md` が一部の規約を上書きするため、該当するチェック項目の判定基準に例外として書き下してある。設計書（`docs/design/**/*.md` と手本の `samples/docs/design/**/*.md`）は `design-doc-policy.md` が固有の規約を足すため、対象を設計書のみと明記したチェック項目に書き下してある。いずれのポリシーの改訂時も同じく追従すること。
+> **（AI・必須）** 判定基準は本来 `documentation-policy.md` が正（SSOT）だが、本スキルは**速度を優先し、そこから具体的な判定基準を書き下して自己完結させている**（DRYより速度を優先した意図的な例外）。`documentation-policy.md` 自体が改訂されたときは、このチェック項目も追従して見直すこと。要件定義書（`docs/requirements.md` と手本の `samples/docs/requirements.md`。以下のチェック項目で `docs/requirements.md` と書くときは手本も含む）だけは `requirements-doc-policy.md` が一部の規約を上書きするため、該当するチェック項目の判定基準に例外として書き下してある。設計書（`docs/design/**/*.md` と手本の `samples/docs/design/**/*.md`）は `design-doc-policy.md` が固有の規約を足すため、対象を設計書のみと明記したチェック項目に書き下してある。いずれのポリシーの改訂時も同じく追従すること。
 
 ## 対象
 

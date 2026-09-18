@@ -1,7 +1,7 @@
 # 要件定義書：会員ポイント管理システム
 
 > [!NOTE]
-> 本書は `/elicit-requirements` が出力する `requirements.md` の**記述サンプル**である。題材は架空だが、[requirements-doc-policy.md](../../../docs/policy/requirements-doc-policy.md) に完全準拠した粒度・密度の見本として使う。各項目に「何を・どこまで書くか」の具体像を与えるのが目的。
+> 本書は `/elicit-requirements` が出力する `requirements.md` の**記述サンプル**である。題材は架空だが、[requirements-doc-policy.md](../../docs/policy/requirements-doc-policy.md) に完全準拠した粒度・密度の見本として使う。各項目に「何を・どこまで書くか」の具体像を与えるのが目的。
 > **必須項目・記述基準の正典は requirements-doc-policy.md であり、本書はそれを再掲しない。** 各節の前置きに置くのは、このサンプル固有の判断（なぜこの行がこう書かれているか・なぜこの項目を省いたか）だけである。
 
 ## 概要
@@ -22,7 +22,7 @@
 
 ## 用語定義
 
-全社共通語は用語集（[../../../docs/project-context/glossary.md](../../../docs/project-context/glossary.md)）を参照。
+全社共通語は用語集（[../../docs/project-context/glossary.md](../../docs/project-context/glossary.md)）を参照。
 
 | 用語           | 定義                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------- |
@@ -883,7 +883,7 @@ stateDiagram-v2
 
 ## 非機能要件
 
-**IPA「非機能要求グレード」をたたき台に**、[非機能要件の項目カタログ](../../../docs/reference/non-functional-requirement-items.md)の各分類を検討した。
+**IPA「非機能要求グレード」をたたき台に**、[非機能要件の項目カタログ](../../docs/reference/non-functional-requirement-items.md)の各分類を検討した。
 
 ### A. 可用性
 
