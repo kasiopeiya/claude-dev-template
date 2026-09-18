@@ -1,4 +1,5 @@
-// 責務: aws-cdk-lib のサービスモジュール import を barrel 形式へ統一させる自作 ESLint ルールのみを定義する（cdk.md）
+// 責務: aws-cdk-lib のサービスモジュール import を barrel 形式へ統一させる自作 ESLint ルールのみを定義する。
+// この形式でなければならない技術的な理由は無く、統一による可読性の向上が目的。
 
 /**
  * `aws-cdk-lib/aws-<service>` からのサブモジュール import を検出し、
@@ -17,22 +18,22 @@ const rule = {
     type: 'problem',
     docs: {
       description:
-        "aws-cdk-lib のサービスモジュールは import { aws_x as x } from 'aws-cdk-lib' の barrel 形式に統一する（cdk.md）"
+        "aws-cdk-lib のサービスモジュールは import { aws_x as x } from 'aws-cdk-lib' の barrel 形式に統一する"
     },
     fixable: 'code',
     schema: [],
     messages: {
       // 単一の波括弧はリテラル。ESLint が補間するのは {{name}} / {{local}} のみ
       useBarrelNamespace:
-        "aws-cdk-lib のサービスモジュールは import { {{name}} as {{local}} } from 'aws-cdk-lib' の形式に統一してください（cdk.md）。",
+        "aws-cdk-lib のサービスモジュールは import { {{name}} as {{local}} } from 'aws-cdk-lib' の形式に統一してください。",
       useBarrelNamed:
-        "aws-cdk-lib のサービスモジュールは 'aws-cdk-lib' からの barrel import（例: import { aws_s3 as s3 } from 'aws-cdk-lib'）に統一してください（cdk.md）。使用箇所の書き換えを伴うため自動修正は行いません。"
+        "aws-cdk-lib のサービスモジュールは 'aws-cdk-lib' からの barrel import（例: import { aws_s3 as s3 } from 'aws-cdk-lib'）に統一してください。使用箇所の書き換えを伴うため自動修正は行いません。"
     }
   },
 
   create(context) {
     // aws-cdk-lib/aws-s3, aws-cdk-lib/aws-lambda-nodejs など「サービスモジュール」だけを対象にする。
-    // aws-cdk-lib/assertions のような非サービスモジュールは cdk.md の対象外なので除外する。
+    // aws-cdk-lib/assertions のような非サービスモジュールは統一の対象外なので除外する。
     const cdkServiceSubmodule = /^aws-cdk-lib\/(aws-[A-Za-z0-9-]+)$/
 
     return {

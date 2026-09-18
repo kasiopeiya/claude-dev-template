@@ -8,53 +8,13 @@ paths:
 
 ## 対象読者
 
-TypeScript を書く／レビューする開発者・AIエージェントが、命名・import・改行・規模の上限といったこのプロジェクトの書き方に迷ったとき。
+TypeScript を書く／レビューする開発者・AIエージェントが、命名・規模の上限といったこのプロジェクトの書き方に迷ったとき。
 
 ## コーディングスタイル
 
-- ESLint / Prettier の設定に準拠
-- `any` を避け、型システムを活用
 - doc comment は JSDoc 形式で書き、契約（引数・戻り値・スローする例外）を明記する
 - `export` は外部から参照されるものだけに付ける。モジュール内でのみ使う関数・変数・型には `export` を付けない（`export` が付いていれば「外部で使われるもの」と即座に判断できる）
-
-## Import 順序
-
-以下の順に記載し、各グループ間は空行で区切る：
-
-1. 標準ライブラリ（`fs`, `path`, `crypto` など）
-2. サードパーティライブラリ
-3. プロジェクト内の自作モジュール
-
-```typescript
-// 1. 標準ライブラリ
-import * as crypto from 'crypto'
-
-// 2. サードパーティライブラリ
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-
-// 3. 自作モジュール
-import { generateState, verifyState } from './utils/state'
-```
-
-## Import はファイル冒頭に集約する
-
-すべての `import` 文はファイル先頭（最初の非 import 文より前）にまとめる。コードの途中に `import` を置いてはならない（ESLint `import-x/first` 相当）。
-
-依存関係はファイル冒頭を見れば一覧できる状態に保つ。途中の import は依存の見落とし・循環参照の発見を妨げ、「このファイルが何に依存するか」を掴むコストを上げる。
-
-```typescript
-// ✅ 良い例：すべて冒頭に集約
-import { readFile } from 'fs/promises'
-import { parseConfig } from './config'
-
-const config = parseConfig()
-
-// ❌ 避けるべき例：コードの途中で import
-const config = parseConfig()
-import { parseConfig } from './config' // 冒頭以外での import は禁止
-```
-
-遅延読み込みが必要な場合のみ動的 `import()` を関数内で使ってよいが、なぜ静的 import にしないかを WHY コメントで明記する。
+- 動的 `import()` は遅延読み込みが必要な場合だけ関数内で使い、なぜ静的 import にしないかを WHY コメントで明記する
 
 ## 規模・複雑度の上限
 
@@ -83,35 +43,6 @@ const user = await fetchUser().catch(() => null)
 // ✅ 責務を関数へ切り出し、ネストも複雑さも下げる
 const user = await loadUser()
 ```
-
-## 改行スタイル
-
-見やすさを損ねない範囲で行数を最小限にする。引数・オブジェクト・配列は1行に収まる場合はインラインで記述する。
-
-```typescript
-// ✅ 良い例：引数が収まるなら1行で
-saveSession(sessionId, { accessToken }, logger)
-createUser({ id, name, email }, options)
-const result = await fetchData(url, { method: 'POST', body })
-
-// ❌ 避けるべき例：不必要な展開
-saveSession(
-  sessionId,
-  {
-    accessToken
-  },
-  logger
-)
-
-// ✅ 良い例：短い配列・オブジェクトはインライン
-const config = { timeout: 3000, retries: 2 }
-
-// ✅ 良い例：条件式・三項演算子も1行で収まるなら
-const label = isAdmin ? 'Admin' : 'User'
-if (error) return { statusCode: 500, body: 'Internal Server Error' }
-```
-
-**例外：** 引数や要素が多く1行が長くなりすぎる場合（目安：100文字超）は適切に改行する。
 
 ## 命名規則
 

@@ -6,54 +6,17 @@ paths:
 
 # CDK 実装ルール
 
-[typescript.md](typescript.md) を継承し、ここでは **AWS CDK 固有の差分だけ**を定める。命名・改行スタイル・規模の上限などの共通ルールは typescript.md に、コメント規約は [code-comment-policy](../../docs/policy/code-comment-policy.md) に従う。
+[typescript.md](typescript.md) を継承し、ここでは **AWS CDK 固有の差分だけ**を定める。命名・規模の上限などの共通ルールは typescript.md に、コメント規約は [code-comment-policy](../../docs/policy/code-comment-policy.md) に従う。
 
 ## 対象読者
 
-CDK でインフラを書く／レビューする開発者・AIエージェントが、Construct の選び方・import 形式・`cdk diff` を壊さない書き方に迷ったとき。
+CDK でインフラを書く／レビューする開発者・AIエージェントが、Construct の選び方・`cdk diff` を壊さない書き方に迷ったとき。
 
 ## Construct レベル
 
 - 可能な限り L2 Construct（High-level API）を使う
 - IAM Role は L2 Construct の自動生成機能を活用し、明示的な Role 定義は避ける
 - コードが長くなりすぎる場合は、必要に応じて L3 Construct（カスタム Construct）を作る
-
-## import 形式
-
-aws-cdk-lib のサービスモジュールは以下の形式で統一する。この形式でなければならない技術的な理由は無く、統一によって可読性を上げることが目的である。
-
-```typescript
-// ✅ 正しい形式
-import { aws_s3 as s3 } from 'aws-cdk-lib'
-import { aws_lambda as lambda } from 'aws-cdk-lib'
-import { aws_cognito as cognito } from 'aws-cdk-lib'
-
-// ❌ 避けるべき形式
-import * as s3 from 'aws-cdk-lib/aws-s3'
-import { Bucket } from 'aws-cdk-lib/aws-s3'
-```
-
-## import 順序に CDK をどう当てはめるか
-
-順序そのものは typescript.md が定める。ここでは CDK を含む場合の当てはめだけを示す——**aws-cdk-lib と constructs はサードパーティ**、`parameter.ts` などは自作モジュールとして扱う。
-
-```typescript
-// 1. 標準ライブラリ
-import * as path from 'path'
-
-// 2. サードパーティライブラリ（CDK 含む）
-import { Stack, StackProps, RemovalPolicy } from 'aws-cdk-lib'
-import { aws_s3 as s3 } from 'aws-cdk-lib'
-import { aws_lambda as lambda } from 'aws-cdk-lib'
-import { aws_lambda_nodejs as nodejs } from 'aws-cdk-lib'
-import { aws_cognito as cognito } from 'aws-cdk-lib'
-import { aws_apigatewayv2 as apigw } from 'aws-cdk-lib'
-import { aws_cloudfront as cloudfront } from 'aws-cdk-lib'
-import { Construct } from 'constructs'
-
-// 3. 自作モジュール
-import { AppParameter } from '../parameter'
-```
 
 ## CDKの差分検知ルール
 

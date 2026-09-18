@@ -7,7 +7,7 @@
 //   「ターン末ゲートは1本に統合する」）。
 
 /**
- * 変更パスがローカル静的ゲート（lint/knip/typecheck）の対象かを判定する。
+ * 変更パスがローカル静的ゲート（lint/knip/typecheck・整形チェック）の対象かを判定する。
  *
  * @param {string} normalizedPath スラッシュ区切りに正規化した、プロジェクトルート相対パス
  * @returns {boolean} 静的ゲートの対象なら true
@@ -38,6 +38,7 @@ function isClaudeMdTarget(normalizedPath) {
 // ゲートの定義そのものは package.json が持つ。ここが持つのは「どの変更で走らせるか」だけ。
 const GATES = [
   { npmScript: 'check:static', isTarget: isStaticGateTarget },
+  { npmScript: 'format:check', isTarget: isStaticGateTarget },
   { npmScript: 'check:claude-md', isTarget: isClaudeMdTarget }
 ]
 

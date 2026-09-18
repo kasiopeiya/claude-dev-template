@@ -196,10 +196,8 @@ file_path: .claude/rules/cdk.md
 
 **確認事項**:
 
-- Import形式: `import { aws_s3 as s3 } from 'aws-cdk-lib'`
 - L2 Construct優先
 - IAM Role自動生成の活用
-- Import順序: 標準ライブラリ → サードパーティ → 自作モジュール
 
 #### ステップ 2-5: 実装方針の整理と確認
 
@@ -214,7 +212,6 @@ file_path: .claude/rules/cdk.md
 
 CDKルール:
 - L2 Construct優先
-- Import形式: aws_s3 as s3
 - IAM Role自動生成を活用
 
 循環参照回避戦略:
@@ -254,37 +251,11 @@ file_path: <CDKディレクトリ>/lib/{スタックファイル名}.ts
 **確認事項**:
 
 - 既存の実装パターン
-- 既存のImport形式
 - 既存のConstructの構成
 
 #### ステップ 3-3: CDKルールの遵守チェック
 
 実装前に以下を確認:
-
-**Import形式**:
-
-```typescript
-// ✅ 正しい形式
-import { aws_s3 as s3 } from 'aws-cdk-lib'
-import { aws_lambda as lambda } from 'aws-cdk-lib'
-
-// ❌ 避けるべき形式
-import * as s3 from 'aws-cdk-lib/aws-s3'
-```
-
-**Import順序**:
-
-```typescript
-// 1. 標準ライブラリ
-import * as path from 'path'
-
-// 2. サードパーティライブラリ（CDK含む）
-import { Stack, StackProps, RemovalPolicy } from 'aws-cdk-lib'
-import { aws_s3 as s3 } from 'aws-cdk-lib'
-
-// 3. 自作モジュール
-import { AppParameter } from '../parameter'
-```
 
 **L2 Construct優先**:
 

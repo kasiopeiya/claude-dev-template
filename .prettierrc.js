@@ -6,8 +6,8 @@ module.exports = {
   semi: false,
   overrides: [
     {
-      // typescript.md「改行スタイル」を機械で守らせる。既定の preserve は書き手の改行を残し、
-      // 1行に収まるオブジェクトも展開されたまま通ってしまう
+      // 1行に収まるオブジェクトはインラインに畳む（行数を減らして一覧性を上げる）。既定の preserve は
+      // 書き手の改行を残し、1行に収まるオブジェクトも展開されたまま通ってしまう
       files: ['*.ts', '*.tsx'],
       options: { objectWrap: 'collapse' }
     }

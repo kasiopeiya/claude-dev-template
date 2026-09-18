@@ -1,4 +1,4 @@
-// 責務: 静的解析(ESLint)ルールを typescript.md / cdk.md に沿って一元定義する
+// 責務: 静的解析(ESLint)ルールを一元定義する。数値上限の正は typescript.md、それ以外の書式ルールの正はこのファイル
 
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
@@ -48,7 +48,7 @@ export default tseslint.config(
         { args: 'all', argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
       ],
 
-      // ③ import 順序（typescript.md）: 標準ライブラリ → サードパーティ → 自作、各グループ間に空行
+      // ③ import 順序: 標準ライブラリ → サードパーティ → 自作、各グループ間に空行。import はすべてファイル冒頭に集約する
       'import-x/order': [
         'error',
         {
@@ -58,10 +58,10 @@ export default tseslint.config(
       ],
       'import-x/first': 'error',
 
-      // ④ aws-cdk-lib のサービスモジュールは barrel 形式へ統一（cdk.md）。名前空間 import は自動修正される
+      // ④ aws-cdk-lib のサービスモジュールは barrel 形式へ統一。名前空間 import は自動修正される
       'local/aws-cdk-lib-barrel-import': 'error',
 
-      // ⑤ 型安全: any を禁止し型システムを使わせる（typescript.md「any を避ける」）
+      // ⑤ 型安全: any を禁止し型システムを使わせる
       '@typescript-eslint/no-explicit-any': 'error',
 
       // ⑥ 複雑度: Cyclomatic Complexity と Cognitive Complexity を併用する。
