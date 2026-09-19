@@ -46,6 +46,7 @@
 - CDK：`/cdk-review`／`/cdk-dev`
 - ハーネスのプロンプト定義（`.claude/skills/`・`.claude/agents/`）：`/quick-doc-review`／`/doc-review`
 - 要件定義書：`/quick-doc-review`／`/requirements-review`
+- ポリシー（`docs/policy/`）：`/quick-doc-review`／`/doc-review`
 
 ## Issue 作業の共通ルール
 
