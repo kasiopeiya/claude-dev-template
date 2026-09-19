@@ -41,7 +41,7 @@ flowchart TD
         Q4 -->|No| Dash[📊 ダッシュボード / ログ]
     end
 
-    Start([📋 監視・アラーム候補の項目]) --> Q1
+    Start([📋 根拠が要る監視・アラーム候補の項目<br/>外形監視は対象外]) --> Q1
     Must --> Q3
     Adopt --> Q3
     Burn --> RB[📝 Runbook 必須]

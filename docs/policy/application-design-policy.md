@@ -314,7 +314,7 @@ function validateEmail(email: string): string {
 
 `throw` の弱点は、TS に検査例外がなく**何を投げるかが型シグネチャに現れない**こと。`Result` を捨てた分、次の3点で補う。
 
-- **`@throws` を明記**：呼び出し側が対処すべきエラーを型付きで doc comment に書く（記法は [code-comment-policy](code-comment-policy.md)）
+- **`@throws` を明記**：呼び出し側が対処すべきエラーを型付きで doc comment に書く（記法は code-comment-policy）
 - **エラー型を分類する**：カスタムエラーの基底クラスを継承し、`throw new Error('msg')` の直書きを避ける。catch（TS では `unknown`）は `instanceof` で絞る。分類の柱は §例外は2種に分ける
 - **境界で集約 catch**：ドメイン層は投げっぱなしにし、エントリポイント（ハンドラ等）1箇所で catch・ログ・レスポンス化する。握りつぶしを禁ずる
 
