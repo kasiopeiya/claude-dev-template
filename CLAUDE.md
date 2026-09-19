@@ -47,6 +47,8 @@
 - ハーネスのプロンプト定義（`.claude/skills/`・`.claude/agents/`）：`/quick-doc-review`／`/doc-review`
 - 要件定義書：`/quick-doc-review`／`/requirements-review`
 - ポリシー（`docs/policy/`）：`/quick-doc-review`／`/doc-review`
+- ADR（`docs/adr/`）：`/quick-doc-review`／`/create-adr`
+- 上記以外の文書（`docs/` 配下・`CLAUDE.md`）：`/quick-doc-review`／`/doc-review`
 
 ## Issue 作業の共通ルール
 
