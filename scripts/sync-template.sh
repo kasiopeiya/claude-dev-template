@@ -23,7 +23,6 @@ readonly EXCLUDE_PATHS=(
   'docs/design/'
   'docs/design-hub.md'
   'docs/adr/adr-index.md'
-  'docs/reference/glossary.md'
   'docs/project-context/'
   '.github/'
 )
@@ -43,7 +42,7 @@ usage() {
 
 除外するパス（プロジェクト固有の内容に育つため、テンプレート側の変更を取り込まない）:
   README.md / .gitignore / docs/requirements.md / docs/design/ / docs/design-hub.md /
-  docs/adr/adr-index.md / docs/reference/glossary.md / docs/project-context/ / .github/
+  docs/adr/adr-index.md / docs/project-context/ / .github/
 
 衝突したときの対処:
   衝突が出ても中断せず、除外処理まで進めて衝突ファイル一覧を表示して停止する。
