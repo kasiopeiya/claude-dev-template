@@ -72,7 +72,19 @@ Issue は依存順（ブロッカーが先）に登録する。そうすれば�
 
 ### 6. 親に紐づける
 
-登録した各 Issue を、GitHub の sub-issue として親にぶら下げる。親は元になった起点 Issue（引数や会話で渡された Issue）で、それが無いときだけ [Issueの階層ガイド](../../../docs/guide/issue-hierarchy.md) の表でフェーズを決める。
+登録した各 Issue を、GitHub の sub-issue として親にぶら下げる。親は次の順で決める。
+
+1. **起点 Issue（引数や会話で渡された Issue）があれば、それが親**
+2. **起点 Issue が無く、登録が2件以上なら、まとめ用の親 Issue を新しく作って親にする**。まとめ用の親自身は、[Issueの階層ガイド](../../../docs/guide/issue-hierarchy.md) の「親の決め方」で決まるフェーズ Issue にぶら下げる（親を付けない種別なら付けない）
+3. **起点 Issue が無く、登録が1件なら**、その Issue を Issueの階層ガイドの「親の決め方」でフェーズ Issue にぶら下げる
+
+まとめ用の親は、子をすべて登録した後に作る。ラベルは `ai-fixable` を付ける。子が open な間は `/sweep`・`/issue-check` が飛ばし、子が全部 close されたら完了条件を見て閉じるからである。本文は次の節だけにする。
+
+- **この変更が必要な理由**：Plan 全体について、子と同じ書き方で3行書く
+- **タスク一覧**：子へのリンク一覧（`- [ ] #123 タイトル`）
+- **完了条件**：「すべての sub-issue が close されていること」
+- **トレース（要件定義書との対応）**：子と同じ書き方で書く
+- **実装フロー（使用するSkill）**：「sub-issue を順に処理する」
 
 ```bash
 gh api graphql -f query='mutation($parent:ID!,$childUrl:String!){addSubIssue(input:{issueId:$parent,subIssueUrl:$childUrl}){subIssue{number}}}' \

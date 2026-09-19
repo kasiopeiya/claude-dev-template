@@ -42,7 +42,9 @@ gh issue create --title "<フェーズ名>" --label phase --body "<上に挙げ�
 
 分解元の Issue があるなら、それが親である。起点Issueの親は種別で決まり（[新規開発ガイドの種別表](new-development-guide.md#起票する起点issue)）、スライスIssue（`/to-issues` 産）は起点Issueの子にする。
 
-分解元が無い Issue——起点Issueが無いスライスIssueと、単発Issue（`/quick-issue` 産）——は、**主に触るもの**でフェーズを決める。
+起点Issueが無いまま `/to-issues` が2件以上を割ったときは、まとめ用の親Issueを作ってスライスIssueの親にする（作り方は `/to-issues` が正典）。
+
+分解元が無い Issue——まとめ用の親Issue、起点Issueが無い1件だけのスライスIssue、単発Issue（`/quick-issue` 産）——は、**主に触るもの**でフェーズを決める。
 
 - `docs/requirements.md`：要件定義
 - **開発環境・技術スタック・アプリアーキテクチャ・ディレクトリ構成・`.github/workflows/`**：開発準備
