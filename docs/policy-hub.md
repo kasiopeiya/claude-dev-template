@@ -39,7 +39,7 @@
 
 ### [documentation-policy.md](policy/documentation-policy.md)
 
-**参照タイミング**: 設計書・ドキュメントを作成・編集・レビューする前
+**参照タイミング**: 設計書・README などプロジェクトの文書を作成・編集・レビューする前（`.claude/` のプロンプト定義は編集後の `/quick-doc-review` が見る）
 
 ---
 
