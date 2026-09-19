@@ -6,9 +6,9 @@ date: 2026-08-18
 # ADR-001: 会員ポイント管理システムの初期技術スタックを決める
 
 > [!NOTE]
-> 本書は `/decide-tech-stack` が出力する初期技術スタックADRの**記述サンプル**である。題材は架空で、要件は同じ題材の [requirements.md](../../requirements.md) を出所としている。  
+> 本書は `/decide-tech-stack` が出力する初期技術スタックADRの**記述サンプル**である。題材は架空で、要件は同じ題材の [requirements.md](../requirements.md) を出所としている。  
 > 目的は「各欄に何を、どの粒度で書くか」の具体像を与えること。  
-> **記入ルールの正典は [tech-stack-adr-template.md](../../../../.claude/skills/decide-tech-stack/assets/tech-stack-adr-template.md) であり、本書はそれを再掲しない。**
+> **記入ルールの正典は [tech-stack-adr-template.md](../../../.claude/skills/decide-tech-stack/assets/tech-stack-adr-template.md) であり、本書はそれを再掲しない。**
 
 > [!IMPORTANT]
 > **TL;DR（この決定の要点）**

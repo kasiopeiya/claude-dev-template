@@ -61,7 +61,7 @@ ultrathink
 
 - **保存先・採番**：`docs/adr/NNN-slug.md`（`docs/adr/` の既存最大番号+1、slug は英語。例：`001-initial-tech-stack.md`）。ステータスは **提案**。
 - **テンプレート**：`assets/tech-stack-adr-template.md` を使う（`docs/adr/adr-template.md` は単一の決定を書く器なので、十数項目を扱う本 ADR には使わない）。節・表の列・記入ルールはテンプレート側が持つ。
-- **サンプル**：**書き始める前に [`samples/docs/design/adr/sample-tech-stack-adr.md`](../../../samples/docs/design/adr/sample-tech-stack-adr.md) を読む。** 各欄に何をどの粒度で書くかの具体像はここが持つ。とくに比較表の「案」の列には、その項目と同じ種類のものだけを並べる（IaC ツールなら AWS CDK / Terraform / CloudFormation のように IaC ツール同士）。土俵の違うものを並べた比較は、比較になっていない。
+- **サンプル**：**書き始める前に [`samples/docs/adr/sample-tech-stack-adr.md`](../../../samples/docs/adr/sample-tech-stack-adr.md) を読む。** 各欄に何をどの粒度で書くかの具体像はここが持つ。とくに比較表の「案」の列には、その項目と同じ種類のものだけを並べる（IaC ツールなら AWS CDK / Terraform / CloudFormation のように IaC ツール同士）。土俵の違うものを並べた比較は、比較になっていない。
 - **自己点検**：書き上げた直後に、下の項目だけを点検し、欠けていればその場で埋める。点検項目は**外形的に確かめられるものに限る**——作文で誤魔化せる観点（「十分に説明できているか」等）は増やさない。
 
   - **決定表の行が基盤チェックリストの全項目分あり、区分「選択」の行に詳細節があるか**：項目の抜け漏れ

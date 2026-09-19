@@ -11,7 +11,7 @@ import prettier from 'prettier'
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const repoRoot = join(scriptDir, '..')
 // 一覧表を持つ ADR ディレクトリ。samples/ の ADR も同じ生成に乗せ、表を手で保つ場所を残さない。
-const adrDirs = [join(repoRoot, 'docs/adr'), join(repoRoot, 'samples/docs/design/adr')]
+const adrDirs = [join(repoRoot, 'docs/adr'), join(repoRoot, 'samples/docs/adr')]
 
 // テーブルを差し込む位置を示すマーカー。この2行の間だけを生成が上書きし、前後の説明文は手で保つ。
 const START_MARKER = '<!-- ADR_INDEX_TABLE:START -->'
