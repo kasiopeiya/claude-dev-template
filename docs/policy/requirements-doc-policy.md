@@ -5,7 +5,7 @@ hook:
 
 # 要件定義書ポリシー <!-- omit from toc -->
 
-要件定義書（`docs/requirements.md`）を書く・レビューする開発者／AIが、**良い要件定義書とは何かを知りたいとき**に参照するドキュメント。`/elicit-requirements` での作成時、および要件定義書レビュー Skill（`/requirements-review`）での判定基準として使う。
+**AIエージェントが、要件定義書（`docs/requirements.md`）を書く・レビューし、良い要件定義書とは何かを知りたいとき**に参照するドキュメント。`/elicit-requirements` での作成時、および要件定義書レビュー Skill（`/requirements-review`）での判定基準として使う。
 
 ## 目次 <!-- omit from toc -->
 

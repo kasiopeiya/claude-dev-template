@@ -10,7 +10,7 @@ paths:
 
 ## 対象読者
 
-React コンポーネント・カスタムフック・そのテストを書く／レビューする開発者・AIエージェントが、JSX・Hooks・Tailwind・Testing Library の書き方に迷ったとき。
+AIエージェントが、React コンポーネント・カスタムフック・そのテストを書く／レビューし、JSX・Hooks・Tailwind・Testing Library の書き方に迷ったとき。
 
 ## コンポーネント
 

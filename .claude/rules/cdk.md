@@ -10,7 +10,7 @@ paths:
 
 ## 対象読者
 
-CDK でインフラを書く／レビューする開発者・AIエージェントが、Construct の選び方・`cdk diff` を壊さない書き方に迷ったとき。
+AIエージェントが、CDK でインフラを書く／レビューし、Construct の選び方・`cdk diff` を壊さない書き方に迷ったとき。
 
 ## Construct レベル
 

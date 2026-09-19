@@ -1,6 +1,6 @@
 # PRレビューポリシー
 
-PRを出す・レビューする開発者が、コメントの書き方・マージ判断・PRのサイズ感について迷ったときに参照する指針。レビューで**何に目を向けるか（観点）**は [code-review-guide](../guide/code-review-guide.md) を参照。
+AIエージェントが、PRを出す・レビューするときに、コメントの書き方・マージ判断・PRのサイズ感について迷ったときに参照する指針。レビューで**何に目を向けるか（観点）**は [code-review-guide](../guide/code-review-guide.md) を参照。
 
 > [!IMPORTANT]
 > **TL;DR**
