@@ -46,13 +46,25 @@ AWS CDK インフラコードをレビューし、型安全性・CDK ベスト�
 | `infra/lib/constructs/*.ts`, `*-construct.ts`     | Construct | 再利用性・L2 Construct 優先・Construct ID |
 | `infra/parameter.ts`, `infra/lib/parameters/*.ts` | Parameter | 設定値管理・型安全性                      |
 
+## CI ゲートで機械的に担保される観点（採点対象外）
+
+次の観点は ESLint / knip が **error で機械的に検知**するため、LLM の採点から外す。設定の実体は `eslint.config.mjs` / `knip.jsonc` を参照。
+
+- **型安全性（`any` 禁止）**：ESLint `@typescript-eslint/no-explicit-any`
+- **未使用の引数（optional 含む）**：ESLint `@typescript-eslint/no-unused-vars`（`args:'all'`）
+- **不要な export（本番コードからも未参照）**：knip（未使用 export 検知）。テストからのみ参照される export は検出しないため、採点表「テスト専用 export」で見る
+- **Import 順序・冒頭集約**：ESLint `import-x/order` / `import-x/first`
+- **Import 形式（aws-cdk-lib の barrel 形式）**：ESLint `local/aws-cdk-lib-barrel-import`
+
+未使用の `private` フィールドは ESLint では落ちず、CDK の CI（`ci-cdk` ジョブ）は型検査を走らせないため、採点表「未使用のインスタンス変数」で見る。
+
 ## レビュー観点・スコアリング基準
 
 ### TypeScript 共通観点
 
 | #   | 観点                         | スコアリング基準                                                                                                                                                                                                                                                        |
 | --- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **型安全性**                 | 3: `any` なし・適切な型定義 / 2: 一部 `any` / 1: 多数の `any` や型アサーション乱用                                                                                                                                                                                      |
+| 1   | **型アサーションの乱用**     | 3: 型アサーション（`as`・非 null アサーション `!`）なし、または理由がコメントで明示されている / 2: 理由のない型アサーションが一部ある / 1: 型アサーションで型検査を黙らせている箇所が複数ある                                                                           |
 | 2   | **命名規則**                 | 3: 一貫性あり・意図が明確 / 2: 一部不明瞭 / 1: 多数の不適切な命名                                                                                                                                                                                                       |
 | 3   | **単一責任**                 | 3: 単一責任を遵守 / 2: やや複数の責任 / 1: 明らかに複数の責任                                                                                                                                                                                                           |
 | 4   | **重複コード**               | 3: 重複なし / 2: 軽微な重複 / 1: 顕著な重複                                                                                                                                                                                                                             |
@@ -60,27 +72,26 @@ AWS CDK インフラコードをレビューし、型安全性・CDK ベスト�
 | 6   | **エラーハンドリング**       | 3: 適切なエラー処理・バリデーション / 2: 一部不足 / 1: エラー処理なし                                                                                                                                                                                                   |
 | 7   | **セキュリティ**             | 3: セキュリティリスクなし / 2: 軽微なリスク / 1: 重大なリスク                                                                                                                                                                                                           |
 | 8   | **未使用のインスタンス変数** | 3: 未使用フィールドなし / 2: 軽微な未使用フィールドあり / 1: 参照されない `private readonly` フィールドが複数                                                                                                                                                           |
-| 9   | **未使用の引数**             | 3: 全引数が使用されている / 2: 軽微な未使用引数あり / 1: コンストラクタや関数で複数の未使用引数あり                                                                                                                                                                     |
-| 10  | **不要なexport**             | 3: 不要な export なし / 2: 軽微な不要 export あり / 1: 不要な export が複数ある。モジュール外から参照されていないシンボルに `export` が付いていないか確認                                                                                                               |
-| 11  | **不要なpublic公開**         | 3: 不要な public なし / 2: 軽微な不要 public あり / 1: 不要な public が複数ある。クラス外から参照されていないメンバ変数・メソッドに `public` が付いていないか確認。CDK の Stack/Construct が他のStack/Constructから参照されるプロパティは external usage ありと判断する |
+| 9   | **テスト専用 export**        | 3: テスト専用 export なし / 2: 軽微にあり / 1: テスト専用 export が複数ある。本番コードからは参照されず、テストからだけ import されている `export` がないか確認                                                                                                         |
+| 10  | **不要なpublic公開**         | 3: 不要な public なし / 2: 軽微な不要 public あり / 1: 不要な public が複数ある。クラス外から参照されていないメンバ変数・メソッドに `public` が付いていないか確認。CDK の Stack/Construct が他のStack/Constructから参照されるプロパティは external usage ありと判断する |
 
 ### CDK 固有観点
 
 | #   | 観点                     | スコアリング基準                                                                                                   |
 | --- | ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 12  | **宣言的記述**           | 3: 宣言的 / 2: 一部 if/switch 使用 / 1: 制御構文の多用                                                             |
-| 13  | **L2 Construct 優先**    | 3: L2 優先・L1 使用時は理由をコメントで記載 / 2: 一部 L1 使用 / 1: L1 多用                                         |
-| 14  | **IAM 自動生成活用**     | 3: `grant*` メソッド活用・明示的 Role 定義なし / 2: 一部明示的 Role / 1: 明示的 Role 多用                          |
-| 15  | **リソース名自動生成**   | 3: 固定リソース名なし・CDK自動生成活用 / 2: 一部固定名あるが理由をコメントで記載 / 1: 理由なく多数の固定名指定     |
-| 16  | **RemovalPolicy 明示**   | 3: Stateful リソースに適切に設定 / 2: 一部未設定 / 1: 未設定                                                       |
-| 17  | **Construct ID 規則**    | 3: 自作 Construct 内のメインリソース ID が `Resource` or `Default` / 2: 一部違反 / 1: 規則違反                     |
-| 18  | **スタック分割の適切さ** | 3: デプロイ単位として適切に分割 / 2: やや改善余地あり / 1: 分割が不適切                                            |
-| 19  | **循環参照の検出**       | 3: 循環なし / 2: 潜在的リスク / 1: 循環参照あり                                                                    |
-| 20  | **スタック複製可能性**   | 3: 同一アカウントに複数スタックをデプロイ可能 / 2: 一部固定名があるがプレフィックス付き / 1: 固定名により複製不可  |
-| 21  | **環境分岐ロジック排除** | 3: スタック内に環境分岐なし / 2: 軽微な分岐あり / 1: `if (env === 'dev')` 等の環境分岐がスタック内に存在           |
-| 22  | **パラメータ外部化**     | 3: 環境差異・外部依存が parameter.ts 等に集約 / 2: 一部スタック内にハードコード / 1: 設定値が各所に散在            |
-| 23  | **変数名の明確さ**       | 3: 全変数が用途・目的を明示（例: `webSiteBucket`） / 2: 一部汎用的な名前（例: `bucket`） / 1: 多数の不明瞭な変数名 |
-| 24  | **不要コメントの排除**   | 3: WHYコメントのみ・自明なコードへの説明コメントなし / 2: 一部自明なコメントあり / 1: 自明なコメントが多数         |
+| 11  | **宣言的記述**           | 3: 宣言的 / 2: 一部 if/switch 使用 / 1: 制御構文の多用                                                             |
+| 12  | **L2 Construct 優先**    | 3: L2 優先・L1 使用時は理由をコメントで記載 / 2: 一部 L1 使用 / 1: L1 多用                                         |
+| 13  | **IAM 自動生成活用**     | 3: `grant*` メソッド活用・明示的 Role 定義なし / 2: 一部明示的 Role / 1: 明示的 Role 多用                          |
+| 14  | **リソース名自動生成**   | 3: 固定リソース名なし・CDK自動生成活用 / 2: 一部固定名あるが理由をコメントで記載 / 1: 理由なく多数の固定名指定     |
+| 15  | **RemovalPolicy 明示**   | 3: Stateful リソースに適切に設定 / 2: 一部未設定 / 1: 未設定                                                       |
+| 16  | **Construct ID 規則**    | 3: 自作 Construct 内のメインリソース ID が `Resource` or `Default` / 2: 一部違反 / 1: 規則違反                     |
+| 17  | **スタック分割の適切さ** | 3: デプロイ単位として適切に分割 / 2: やや改善余地あり / 1: 分割が不適切                                            |
+| 18  | **循環参照の検出**       | 3: 循環なし / 2: 潜在的リスク / 1: 循環参照あり                                                                    |
+| 19  | **スタック複製可能性**   | 3: 同一アカウントに複数スタックをデプロイ可能 / 2: 一部固定名があるがプレフィックス付き / 1: 固定名により複製不可  |
+| 20  | **環境分岐ロジック排除** | 3: スタック内に環境分岐なし / 2: 軽微な分岐あり / 1: `if (env === 'dev')` 等の環境分岐がスタック内に存在           |
+| 21  | **パラメータ外部化**     | 3: 環境差異・外部依存が parameter.ts 等に集約 / 2: 一部スタック内にハードコード / 1: 設定値が各所に散在            |
+| 22  | **変数名の明確さ**       | 3: 全変数が用途・目的を明示（例: `webSiteBucket`） / 2: 一部汎用的な名前（例: `bucket`） / 1: 多数の不明瞭な変数名 |
+| 23  | **不要コメントの排除**   | 3: WHYコメントのみ・自明なコードへの説明コメントなし / 2: 一部自明なコメントあり / 1: 自明なコメントが多数         |
 
 ## レビュー実行手順
 
@@ -95,26 +106,25 @@ Bash: git log -1 --pretty=format:"%h - %an, %ar : %s" -- <対象ファイルパ�
 
 ### Step 2: Grep チェック
 
-| チェック項目                                   | パターン                                                                                 | 出力モード |
-| ---------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------- |
-| `any` の使用（型安全性）                       | `\bany\b`                                                                                | content    |
-| L1 Construct 使用（L2 優先）                   | `Cfn[A-Z]`                                                                               | content    |
-| 明示的 IAM Role/Policy（IAM 自動生成）         | `new iam\.(Role\|Policy\|ManagedPolicy)`                                                 | content    |
-| 明示的リソース名指定                           | `bucketName:\|functionName:\|tableName:\|queueName:\|topicName:\|roleName:\|policyName:` | content    |
-| Stateful リソース定義（RemovalPolicy 確認）    | `new s3\.(Bucket\|)\|new dynamodb\.(Table\|)\|new cognito\.(UserPool\|)`                 | content    |
-| 環境変数の非 null アサーション                 | `process\.env\.[A-Z_]+!`                                                                 | content    |
-| 環境分岐ロジック（スタック内）                 | `if\s*\(.*env.*===\|switch\s*\(.*env`                                                    | content    |
-| 動的参照（差分検知ルール該当）                 | `fromStringParameterName\|\.stringValue\|SecretValue\.ssm`                               | content    |
-| CfnParameter（差分検知ルール該当）             | `new CfnParameter\|new cdk\.CfnParameter`                                                | content    |
-| CfnCondition/条件分岐（差分検知ルール該当）    | `new CfnCondition\|Fn\.conditionIf\|Fn\.condition`                                       | content    |
-| exportされたシンボルの洗い出し（不要なexport） | `^export (const\|function\|class\|type\|interface\|enum)\s+\w+`                          | content    |
+| チェック項目                                        | パターン                                                                                 | 出力モード |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------- | ---------- |
+| L1 Construct 使用（L2 優先）                        | `Cfn[A-Z]`                                                                               | content    |
+| 明示的 IAM Role/Policy（IAM 自動生成）              | `new iam\.(Role\|Policy\|ManagedPolicy)`                                                 | content    |
+| 明示的リソース名指定                                | `bucketName:\|functionName:\|tableName:\|queueName:\|topicName:\|roleName:\|policyName:` | content    |
+| Stateful リソース定義（RemovalPolicy 確認）         | `new s3\.(Bucket\|)\|new dynamodb\.(Table\|)\|new cognito\.(UserPool\|)`                 | content    |
+| 環境変数の非 null アサーション                      | `process\.env\.[A-Z_]+!`                                                                 | content    |
+| 環境分岐ロジック（スタック内）                      | `if\s*\(.*env.*===\|switch\s*\(.*env`                                                    | content    |
+| 動的参照（差分検知ルール該当）                      | `fromStringParameterName\|\.stringValue\|SecretValue\.ssm`                               | content    |
+| CfnParameter（差分検知ルール該当）                  | `new CfnParameter\|new cdk\.CfnParameter`                                                | content    |
+| CfnCondition/条件分岐（差分検知ルール該当）         | `new CfnCondition\|Fn\.conditionIf\|Fn\.condition`                                       | content    |
+| exportされたシンボルの洗い出し（テスト専用 export） | `^export (const\|function\|class\|type\|interface\|enum)\s+\w+`                          | content    |
 
-上記「exportされたシンボル」で検出したシンボル名ごとに、プロジェクト内の他ファイルからimportされているか Grep で確認する:
+上記「exportされたシンボル」で検出したシンボル名ごとに、テスト以外の他ファイルからimportされているか Grep で確認する:
 
 - パターン: `\b<シンボル名>\b`
 - glob: `**/*.ts`
 - output_mode: files_with_matches
-- 説明: レビュー対象ファイル以外での参照有無を確認する（レビュー対象ファイル自身はカウント外）
+- 説明: レビュー対象ファイル以外での参照有無を確認する（レビュー対象ファイル自身はカウント外）。参照がテストファイル（`test/**`・`*.test.ts`）だけならテスト専用 export
 
 **不要なpublic公開（publicメンバの洗い出し）:**
 
@@ -145,8 +155,7 @@ Bash: git log -1 --pretty=format:"%h - %an, %ar : %s" -- <対象ファイルパ�
 - **変数名の明確さ**: 変数名から用途・目的が想像できるか確認。汎用的すぎる名前（`bucket`, `table`, `fn`）ではなく具体的な名前（`webSiteBucket`, `sessionTable`, `callbackHandler`）を使用しているか
 - **不要コメントの排除**: コードを読めば自明な内容を説明するだけのコメントがないか確認。例: `// スタック削除時にテーブルも削除` + `removalPolicy: RemovalPolicy.DESTROY` は不要。WHY（なぜその設計判断をしたか）のコメントのみ残すべき
 - **未使用のインスタンス変数**: `private readonly` で宣言されたフィールドがコンストラクタ外（メソッドや他のコンストラクト定義内）で参照されているか確認。参照されていないフィールドは削除またはリファクタリングが必要
-- **未使用の引数**: コンストラクタ・メソッドの引数（`props` 含む）で一度も参照されていないものがないか確認。CDK の場合 `props` を受け取って `super(scope, id, props)` のみに渡している場合は問題ないが、独自 props の個別プロパティが未使用の場合は要確認
-- **不要なexport**: Grep で洗い出したexportシンボルのうち、プロジェクト内の他ファイルから参照されていないものがないか確認。CDKのStackクラスは `bin/` から参照されるため外部参照ありと判断する。Constructクラスも他のStack/Constructからimportされることが前提
+- **テスト専用 export**: Grep で洗い出したexportシンボルのうち、テストファイルからしか参照されていないものがないか確認。CDKのStackクラスは `bin/` から参照されるため外部参照ありと判断する。Constructクラスも他のStack/Constructからimportされることが前提
 - **不要なpublic公開**: Grep で洗い出したpublicメンバのうち、クラス外から参照されていないものがないか確認。CDK の Construct が他 Stack/Construct から `.プロパティ名` でアクセスされる場合は external usage ありと判断する
 
 ### Step 3.5: プロジェクトルール準拠（必須・省略不可）

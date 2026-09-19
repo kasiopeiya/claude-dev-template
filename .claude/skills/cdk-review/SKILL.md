@@ -30,7 +30,7 @@ AWS CDK インフラコードをレビューしてください。以下の手順
 - Read でファイル内容を取得
 - `.claude/rules/cdk.md` を必ず Read し、そこに書かれた全ルールを1項目ずつ照合。違反は1件残らずレポートに反映
 - Bash で `git log` から変更履歴を確認
-- Grep で型安全性（`any` 使用）・L2 Construct 使用状況・差分検知アンチパターンを確認
+- Grep で L2 Construct 使用状況・差分検知アンチパターンを確認
 - コメントは `docs/policy/code-comment-policy.md` に照らして評価（実装コメントは WHY、doc comment は契約、コードが語る WHAT/HOW は不要）
 - 各観点を3点満点でスコアリング
 
