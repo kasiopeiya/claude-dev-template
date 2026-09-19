@@ -46,7 +46,6 @@ ls ~/.claude/skills/design-doc-mermaid
 - Deployment diagrams (cloud infrastructure, K8s, serverless)
 - Architecture diagrams (system components, microservices)
 - Sequence diagrams (API flows, service interactions)
-- Complete design documents with embedded diagrams
 
 **Code-to-Diagram Conversion:**
 
@@ -92,19 +91,6 @@ The skill will:
 4. Map config to cloud resources
 5. Generate deployment diagram with resource specs
 
-### Create Design Document
-
-```
-User: "Create an API design document for the contacts API"
-```
-
-The skill will:
-
-1. Load `assets/api-design-template.md`
-2. Load relevant diagram guides (sequence, ER, architecture)
-3. Generate complete document with embedded diagrams
-4. Save to `docs/design/api-contacts-v1-2025-01-13.md`
-
 ## Structure
 
 ### Hierarchical Organization
@@ -133,20 +119,13 @@ mermaid-architect/
 │   ├── extract_mermaid.py           # ✅ Extract & validate diagrams
 │   └── mermaid_to_image.py          # ✅ Convert to PNG/SVG
 │
-├── examples/                         # Language-specific patterns
-│   ├── spring-boot/                 # ✅ Complete
-│   ├── fastapi/                     # ✅ Complete
-│   ├── react/                       # ✅ Complete
-│   ├── python-etl/                  # ✅ Complete
-│   ├── node-webapp/                 # ✅ Complete
-│   └── java-webapp/                 # ✅ Complete
-│
-└── assets/                           # Design document templates
-    ├── architecture-design-template.md
-    ├── api-design-template.md
-    ├── feature-design-template.md
-    ├── database-design-template.md
-    └── system-design-template.md
+└── examples/                         # Language-specific patterns
+    ├── spring-boot/                 # ✅ Complete
+    ├── fastapi/                     # ✅ Complete
+    ├── react/                       # ✅ Complete
+    ├── python-etl/                  # ✅ Complete
+    ├── node-webapp/                 # ✅ Complete
+    └── java-webapp/                 # ✅ Complete
 ```
 
 ## Key Features
@@ -255,15 +234,6 @@ mmdc --version
 4. **Generate Diagrams** - Use templates from guides
 5. **Validate** - Use validation scripts
 
-### Creating Design Documents?
-
-1. **Choose Template Type** - Architecture, API, Feature, Database, or System
-2. **Load Template** - Read from `assets/{type}-design-template.md`
-3. **Fill Sections** - Replace placeholders with actual content
-4. **Add Diagrams** - Load diagram guides as needed for each section
-5. **Use Symbols** - Enhance with Unicode symbols throughout
-6. **Save** - Place in `docs/design/` with timestamp
-
 ## How the Hierarchical System Works
 
 ### Traditional Approach (Inefficient)
@@ -309,7 +279,6 @@ mmdc --version
 - Extract Mermaid script with validation
 - Mermaid to image conversion script
 - Spring Boot code-to-diagram examples
-- Design document templates (5 types)
 - High-contrast styling system
 
 🚧 **In Progress:**

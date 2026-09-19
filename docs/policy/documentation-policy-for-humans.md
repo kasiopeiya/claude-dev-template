@@ -8,8 +8,7 @@ hook:
       'samples/README.md',
       'app/backend/README.md',
       'samples/app/backend/README.md',
-      '.claude/skills/decide-tech-stack/assets/tech-stack-adr-template.md',
-      '.claude/skills/design-doc-mermaid/assets/*-design-template.md'
+      '.claude/skills/decide-tech-stack/assets/tech-stack-adr-template.md'
     ]
 ---
 

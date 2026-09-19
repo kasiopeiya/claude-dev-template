@@ -72,7 +72,6 @@ flowchart TD
     Shape -->|"state / entity / hierarchy / quantity / set"| Catalog[Load Full Type Catalog<br/>references/mermaid-diagram-guide.md]
     Shape -->|"branching with no better fit"| Activity[Load Activity Diagram Guide<br/>references/guides/diagrams/activity-diagrams.md<br/>state why no other type fits]
     Analyze -->|"code to diagram"| CodeToDiag[Load Code-to-Diagram Guide<br/>references/guides/code-to-diagram/ + examples/]
-    Analyze -->|"design document, full docs"| DesignDoc[Load Design Document Template<br/>assets/*-design-template.md]
     Analyze -->|"unicode symbols, icons"| Unicode[Load Unicode Symbols Guide<br/>references/guides/unicode-symbols/guide.md]
     Analyze -->|"extract, validate, convert"| Scripts[Use Python Scripts<br/>scripts/extract_mermaid.py<br/>scripts/mermaid_to_image.py]
 
@@ -81,7 +80,6 @@ flowchart TD
     Arch --> Generate
     Sequence --> Generate
     CodeToDiag --> Generate
-    DesignDoc --> Generate
     Unicode --> Generate
     Scripts --> Execute[Execute Script]
 
@@ -96,7 +94,7 @@ flowchart TD
     classDef action fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
 
     class Analyze,Validate,Shape decision
-    class TypeGate,Catalog,Activity,Deploy,Arch,Sequence,CodeToDiag,DesignDoc,Unicode,Scripts guide
+    class TypeGate,Catalog,Activity,Deploy,Arch,Sequence,CodeToDiag,Unicode,Scripts guide
     class Generate,Execute,RunValidation,Output action
 ```
 
@@ -132,16 +130,6 @@ These four cover the most common shapes in depth. They are **not** the full set 
 | **Node/Express** | `examples/node-webapp/README.md`              | Middleware chain, route handlers, async patterns, deployment                                                       |
 | **Java Web App** | `examples/java-webapp/README.md`              | Traditional MVC, servlet containers, WAR deployment                                                                |
 
-### Design Document Templates
-
-| Template            | Full Path                                | Use For                  | Load When                                           |
-| ------------------- | ---------------------------------------- | ------------------------ | --------------------------------------------------- |
-| Architecture Design | `assets/architecture-design-template.md` | System-wide architecture | "Create architecture doc", "Document system design" |
-| API Design          | `assets/api-design-template.md`          | API specifications       | "API design doc", "Document REST API"               |
-| Feature Design      | `assets/feature-design-template.md`      | Feature planning         | "Feature design", "Plan new feature"                |
-| Database Design     | `assets/database-design-template.md`     | Database schema          | "Database design", "Document schema"                |
-| System Design       | `assets/system-design-template.md`       | Complete system          | "System design doc", "Full system documentation"    |
-
 ### Unicode Symbols Guide
 
 **Full Path:** `references/guides/unicode-symbols/guide.md`
@@ -169,13 +157,12 @@ These four cover the most common shapes in depth. They are **not** the full set 
 
 Common request patterns and guide selection. See [When to Use What](#when-to-use-what) for complete mapping.
 
-| Pattern          | Example Request                            | Guides to Load                                  |
-| ---------------- | ------------------------------------------ | ----------------------------------------------- |
-| Single Diagram   | "Create activity diagram for login flow"   | Diagram type guide + Unicode symbols            |
-| Code-to-Diagram  | "Generate deployment from application.yml" | Framework example + Deployment guide            |
-| Design Document  | "Create API design document"               | Template from assets/ + Relevant diagram guides |
-| Extract/Validate | "Extract diagrams from design.md"          | Use `scripts/extract_mermaid.py`                |
-| Batch Convert    | "Convert all .mmd to PNG"                  | Use `scripts/mermaid_to_image.py`               |
+| Pattern          | Example Request                            | Guides to Load                       |
+| ---------------- | ------------------------------------------ | ------------------------------------ |
+| Single Diagram   | "Create activity diagram for login flow"   | Diagram type guide + Unicode symbols |
+| Code-to-Diagram  | "Generate deployment from application.yml" | Framework example + Deployment guide |
+| Extract/Validate | "Extract diagrams from design.md"          | Use `scripts/extract_mermaid.py`     |
+| Batch Convert    | "Convert all .mmd to PNG"                  | Use `scripts/mermaid_to_image.py`    |
 
 ## Resilient Workflow
 
@@ -456,13 +443,6 @@ design-doc-mermaid/
 │       │   └── guide.md                  # Complete symbol reference
 │       └── troubleshooting.md        # Common syntax errors & fixes
 │
-├── assets/                           # Design document templates
-│   ├── architecture-design-template.md
-│   ├── api-design-template.md
-│   ├── feature-design-template.md
-│   ├── database-design-template.md
-│   └── system-design-template.md
-│
 ├── scripts/                          # Python utilities
 │   ├── extract_mermaid.py           # Extract & validate diagrams
 │   ├── mermaid_to_image.py          # Convert to PNG/SVG
@@ -479,7 +459,7 @@ design-doc-mermaid/
 
 ## Workflow Summary
 
-1. **Analyze user intent** → Determine diagram type, document type, or action needed
+1. **Analyze user intent** → Determine diagram type or action needed
 2. **Load appropriate guide(s)** → Read only what's needed (token efficient)
 3. **Apply templates and patterns** → Use examples from guides
 4. **Generate output** → Create diagram or document
@@ -493,7 +473,7 @@ Diagram requests route by **shape**, not by the words above them — always via 
 - **Any diagram at all**: `references/diagram-type-selection.md` **first**, then the guide for the chosen type
 - **Chosen type is sequence**: `references/guides/diagrams/sequence-diagrams.md`
 - **Chosen type is deployment / infrastructure**: `references/guides/diagrams/deployment-diagrams.md`
-- **Chosen type is architecture / components**: `references/guides/diagrams/architecture-diagrams.md` + design template
+- **Chosen type is architecture / components**: `references/guides/diagrams/architecture-diagrams.md`
 - **Chosen type is flowchart (after justifying it)**: `references/guides/diagrams/activity-diagrams.md`
 - **Chosen type is any other of the 26**: `references/mermaid-diagram-guide.md`
 - **"Spring Boot code"**: `examples/spring-boot/` + relevant diagram guides
@@ -505,7 +485,6 @@ Diagram requests route by **shape**, not by the words above them — always via 
 - **"extract diagrams"**: `scripts/extract_mermaid.py`
 - **"convert to image", "PNG", "SVG"**: `scripts/mermaid_to_image.py`
 - **"create diagram", "generate diagram", "add diagram to markdown"**: `scripts/resilient_diagram.py` + `references/guides/resilient-workflow.md`
-- **"design document", "full docs"**: `assets/*-design-template.md` + diagram guides
 
 ## Best Practices
 
@@ -532,14 +511,6 @@ Diagram requests route by **shape**, not by the words above them — always via 
 2. Match code pattern to diagram type
 3. Use templates from guide
 4. Validate with scripts
-
-**Creating design docs?** Follow this:
-
-1. Choose document type → Load template from `assets/`
-2. Fill in text sections
-3. Load diagram guides as needed for each section
-4. Use Unicode symbols throughout
-5. Save to `docs/design/` with timestamp
 
 ---
 
