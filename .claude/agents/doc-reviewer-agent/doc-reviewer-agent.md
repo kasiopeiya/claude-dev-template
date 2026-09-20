@@ -83,7 +83,6 @@ git diff --cached --name-only --diff-filter=ACMR
 - `docs/reference/`：REFERENCE
 - `docs/guide/`：GUIDE
 - `docs/design/`：DESIGN
-- `docs/idea/`：PROPOSAL
 - `docs/project-context/`：GENERAL
 - `docs/runbook/`：GUIDE
 - `.claude/rules/`：GUIDELINE
@@ -129,7 +128,6 @@ README・CLAUDE・`docs/` 外の Markdown 等、1・2で確定しないものに
 | PLAN         | 実装計画書                 | 依存関係、受け入れ基準                        |
 | ISSUE_SPEC   | Issue仕様書                | ACのチェックリスト形式                        |
 | GUIDELINE    | 開発ガイドライン           | ルールの具体例                                |
-| PROPOSAL     | 提案書                     | 目的、期待効果                                |
 | GUIDE        | ガイド文書                 | 手順の明確さ                                  |
 | REFERENCE    | 参照資料（用語集・項目集） | 用語・項目の一貫性・網羅性・SSOT性            |
 | HUB          | ハブ／索引文書             | 目的明記・リンク有効性/孤立なし・索引に徹する |
