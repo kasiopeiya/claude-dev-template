@@ -2,7 +2,8 @@
 name: sre-prr-reviewer-agent
 description: 本番投入レディネスレビュー（PRR）を実施する専門エージェント。組み上がったシステム全体がリリース後に安全・低コストで運用し続けられるかをSRE観点で審査し、go/条件付きgo/no-go を助言する。
 tools: AskUserQuestion, Glob, Grep, Read, Bash
-model: sonnet
+model: opus
+effort: xhigh
 ---
 
 # SRE PRR Reviewer Agent

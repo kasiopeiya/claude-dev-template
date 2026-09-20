@@ -3,6 +3,7 @@ name: issue-auditor-agent
 description: boy-scout Issue 1件を「やる価値があるか」「対応方針がポリシーに合っているか」で監査する専門エージェント。対象箇所の現物を読んで本文と突き合わせ、判定・根拠・差し替え案を返す。Issue 自体は書き換えない。
 tools: Read, Grep, Glob, Bash
 model: opus
+effort: xhigh
 ---
 
 # Issue Auditor Agent

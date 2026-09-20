@@ -3,6 +3,7 @@ name: doc-consistency-reviewer-agent
 description: docs/ 配下の複数ドキュメントを横断的に走査し、文書間の重複（DRY違反）と矛盾（同じ事柄の食い違い）を検出する専門エージェント。単一ドキュメントの品質レビュー（doc-reviewer-agent）とは責務が異なり、文書群全体の整合性を監査する。
 tools: Read, Grep, Glob, Bash
 model: opus
+effort: xhigh
 ---
 
 # Document Consistency Reviewer Agent

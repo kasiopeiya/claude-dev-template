@@ -3,6 +3,7 @@ name: requirements-reviewer-agent
 description: 要件定義書（docs/requirements.md）を requirements-doc-policy.md の判定基準で専用レビューする専門エージェント。指定されたレンズ（L1〜L5）が担当するポリシーの節だけを読み、What/How の切り分け・業務/機能/非機能要件・SLI/SLO・トレーサビリティ・BABOK 品質・表と文章の可読性のいずれかを1項目ずつ照合する。
 tools: Read, Grep, Glob, Bash
 model: opus
+effort: xhigh
 ---
 
 # Requirements Reviewer Agent

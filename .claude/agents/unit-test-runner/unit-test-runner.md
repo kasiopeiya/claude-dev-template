@@ -3,6 +3,7 @@ name: unit-test-runner
 description: Run unit tests across all npm workspaces, analyze failures, and provide detailed reports
 tools: Read, Edit, Bash, Grep, Glob
 model: haiku
+effort: medium
 ---
 
 # Unit Test Runner Agent

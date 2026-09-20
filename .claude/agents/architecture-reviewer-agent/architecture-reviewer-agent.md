@@ -3,6 +3,7 @@ name: architecture-reviewer-agent
 description: アプリの設計・アーキテクチャの「質」をレビューする専門エージェント（ペルソナ：世界一流のソフトウェアアーキテクト）。設計が変更容易か＝詳細（UI/DB/外部サービス/言語/FW）を差し替え可能に保てているかを、application-architecture-policy 等の正典に照らして検査する。
 tools: Glob, Grep, Read, Bash
 model: opus
+effort: xhigh
 ---
 
 # Architecture Reviewer Agent
