@@ -224,10 +224,13 @@ Phase 2: テスト作成
 
 ```typescript
 // ❌ NGパターン: テストにない機能の追加
-export function verifyState(state: string, expectedState: string): boolean {
-  // バリデーション（テストにない）
-  if (!state || !expectedState) {
-    throw new Error('Invalid input')
+export function verifyState(
+  state: string,
+  expectedState: string,
+  options?: { ignoreCase?: boolean } // 大文字小文字の無視（テストにない）
+): boolean {
+  if (options?.ignoreCase) {
+    return state.toLowerCase() === expectedState.toLowerCase()
   }
 
   return state === expectedState
