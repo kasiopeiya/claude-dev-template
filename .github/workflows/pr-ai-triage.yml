@@ -136,7 +136,7 @@ jobs:
             `gh pr view ${{ steps.pr.outputs.number }} --json labels` で確認し、**PR に
             needs-human-review ラベルが付いていれば** 実行する（タスク2で付けた場合に限らない。
             前段の決定論ステップが付けている場合もある）。付いていなければスキップする。
-            `.claude/skills/pr-check/SKILL.md` を読み、その手順に従って
+            `.claude/agents/pr-check-agent/pr-check-agent.md` を読み、その手順に従って
             PR #${{ steps.pr.outputs.number }} をチェックする（NG のときだけ PR に1件コメントする）。
 
             ## 最終出力: 実行サマリ（可観測性・#69）
