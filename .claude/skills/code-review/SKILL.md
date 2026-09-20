@@ -19,6 +19,7 @@ TypeScript アプリケーションコードをレビューしてください。
 - `docs/policy/application-design-policy.md` — 観点「アプリ設計ポリシー準拠」
 - `docs/policy/application-logging-policy.md` — 観点「ロギングポリシー準拠」（ログ出力を含む場合）
 - `docs/policy/frontend-design-policy.md` — 観点「フロントエンド設計ポリシー準拠」（**フロントエンドコードのレビュー時のみ**）
-- `docs/policy/unit-test-policy.md` — 観点「単体テストポリシー準拠」（**テストコードのレビュー時のみ**）
+- `docs/policy/unit-test-policy.md` — 観点「単体テストポリシー準拠」（**テストコードのレビュー時**）と観点「異常系テストの網羅」（**実装コードのレビュー時**）
+- `docs/policy/test-strategy-policy.md` — 観点「異常系テストの網羅」で、実装ファイルに対応するテストファイルの場所を引く（**実装コードのレビュー時のみ**）
 
 引数: $ARGUMENTS
