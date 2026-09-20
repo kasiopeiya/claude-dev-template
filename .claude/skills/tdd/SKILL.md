@@ -72,8 +72,6 @@ Issue が見つからない場合・body が空の場合の扱いは [references
 
 Issue内の「対象ファイル」セクションに実装ファイル・テストファイルのパスが明記されていればそのまま使う。記載がなければ AskUserQuestion で両方のパスを尋ねる。
 
-命名規則が不明な場合は、`app/` 配下を Glob（`**/*.ts`, `**/*.test.ts`, `**/*.tsx`, `**/*.test.tsx` 等）し、既存ファイルの配置パターン（同階層 or `__tests__/` サブディレクトリ等）を確認して踏襲する。
-
 #### ステップ 1-7: 実装仕様の整理と確認
 
 抽出した情報を [references/phase-reports.md](references/phase-reports.md) の「実装仕様の確認」フォーマットで表示し、AskUserQuestion で開始可否を確認する。

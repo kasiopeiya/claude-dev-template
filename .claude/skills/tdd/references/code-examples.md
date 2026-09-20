@@ -5,8 +5,8 @@
 ## テストコード（バックエンド: Lambda handler）
 
 ```typescript
-// src/handlers/__tests__/authorize.test.ts
-import { handler } from '../authorize'
+// test/handlers/authorize.test.ts
+import { handler } from '../../src/handlers/authorize'
 
 // Object Mother: APIGatewayイベントのファクトリ関数
 const createApiGatewayEvent = (overrides?: Partial<APIGatewayProxyEvent>) => ({
@@ -62,11 +62,11 @@ describe('認可エンドポイント', () => {
 ## テストコード（フロントエンド: コンポーネント）
 
 ```typescript
-// src/components/__tests__/LoginForm.test.tsx
+// test/components/LoginForm.test.tsx
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-import { LoginForm } from '../LoginForm'
+import { LoginForm } from '../../src/components/LoginForm'
 
 describe('ログインフォーム', () => {
   it('フォーム送信失敗時にエラーメッセージを表示する', async () => {
@@ -104,8 +104,8 @@ export function verifyState(state: string, expectedState: string): boolean {
 変数名を役割が分かる名前に変え、期待値を定数に切り出した例。
 
 ```typescript
-// src/utils/state.test.ts
-import { verifyState } from './state'
+// test/utils/state.test.ts
+import { verifyState } from '../../src/utils/state'
 
 describe('verifyState', () => {
   const VALID_STATE = 'abc123'

@@ -111,7 +111,7 @@ gh issue view {番号} --json number,title,body,labels
 - `describe` / `it` の構造のみ生成し、テスト本体は**空**にする
 - テストケース名は**日本語**で記述する（テスト方針ポリシーの命名規則に準拠）
 - 正常系と異常系は `describe` ブロックで分離する
-- **ファイル配置**：既存のテストファイル（`**/*.test.ts`, `**/*.test.tsx` 等）を Glob で探し、実装ファイルとの相対配置（同階層 or `__tests__/` サブディレクトリ等）を模倣する。既存テストが1件もない場合は、実装ファイルと同階層への配置をデフォルトとする
+- **ファイル配置**：`docs/policy/test-strategy-policy.md`「テストコードの配置」に従う
 - import は検出したテストフレームワーク（`vitest` / `jest` 等。`package.json` の依存関係から判定）の `describe`, `it` のみ（`expect` 等は実装時に追加）
 
 #### 生成例
