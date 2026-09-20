@@ -1,7 +1,7 @@
 ---
 name: unit-test-runner
 description: Run unit tests across all npm workspaces, analyze failures, and provide detailed reports
-tools: Read, Edit, Bash, Grep, Glob
+tools: Read, Bash, Grep, Glob
 model: haiku
 effort: medium
 ---
@@ -49,16 +49,6 @@ git ls-files '**/package.json' ':!:**/node_modules/**'
 - 失敗テストのエラーメッセージ・スタックトレース
 - 根本原因（テスト対象コードの問題 vs テストケース自体の問題）
 - 関連テストへの影響範囲
-
-### 4. 修正が必要な場合（ユーザーから指示がある場合）
-
-ユーザーが修正を指示した場合：
-
-1. 失敗したテストに対応するソースコードを読む
-2. 問題の原因を特定
-3. 必要なコード修正を実装
-4. テストを再実行して修正を確認
-5. 修正内容をレポート
 
 ## エラーハンドリング
 
