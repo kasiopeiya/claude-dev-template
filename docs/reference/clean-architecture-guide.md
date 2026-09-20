@@ -2,7 +2,7 @@
 
 クリーンアーキテクチャの思想で書かれた設計書・実装を **レビューするためのガイド**。判断基準（何が良いアーキテクチャか）は [application-architecture-policy](../policy/application-architecture-policy.md) に従い、本ガイドはそれを **レビューの現場でどう当てるか** の手順・観点に集中する。
 
-- **対象読者**：設計書・実装をレビューする人 / AIエージェント
+- **対象読者**：設計書・実装をレビューする AI
 - レビューの進め方・コメントのラベル（MUST/WANT/FYI/LGTM）は [pr-review-policy](../policy/pr-review-policy.md) に従う（本ガイドは「中身」に集中）
 
 ---

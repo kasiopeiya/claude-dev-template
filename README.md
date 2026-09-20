@@ -105,7 +105,11 @@ npm run format       # フォーマット
 - **`docs/reference/non-functional-requirement-items.md`**：to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照
 - **`docs/reference/test-terms.md`**：`policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照
 - **`docs/reference/docs-directory-definitions.md`**：`documentation-policy.md` と doc-reviewer-agent が、docs/ 配下の置き場所の SSOT として直接参照
-- **`docs/guide/`（ディレクトリ名）＋ `docs/guide/development-flow.md`**：decide-tech-stack・code-review スキルがディレクトリを直接参照。`development-flow.md` は CLAUDE.md・to-plan スキルがファイル名まで参照。他の個別ガイドは自由に追加・改名可
+- **`docs/reference/issue-hierarchy.md`**：quick-issue・to-issues・issue-deps・issue-regroup スキルが、Issue の親子と段番号の規約の SSOT として直接参照
+- **`docs/guide/`（ディレクトリ名）**：`documentation-policy-for-humans.md` の `applies-to`、doc-reviewer-agent の種別判定、quick-issue スキルの「親を付けない」判定が参照。配下の個別ガイドは、下の3本を除いて自由に追加・改名可
+- **`docs/guide/development-flow.md`**：CLAUDE.md・to-plan スキルが直接参照
+- **`docs/guide/new-development-guide.md`**：decide-tech-stack・issue-regroup スキルが直接参照
+- **`docs/guide/code-review-guide.md`**：code-review スキルが直接参照
 - **`docs/project-context/project-claude.md`**：CLAUDE.md が `@` import で直接読み込む。ここに書いた内容が毎セッション読まれる
 - **`docs/project-context/glossary.md`**：to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照
 - **`docs/requirements.md`**：`requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス

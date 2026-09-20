@@ -271,7 +271,7 @@ EOF
 
 ### 5. 親に紐づける
 
-親は[Issueの階層ガイド](../../../docs/guide/issue-hierarchy.md)の「主に触るもの」表で決める。**この Issue が主に触るものが `.claude/` 配下・`docs/policy/`・`docs/design/`・`docs/guide/` なら、親を付けない。** ハーネス・ポリシー・設計書の手直しは開発フローのどのフェーズの作業でもないからで、本スキルの起票はこれが最も多い。
+親は[Issueの階層ガイド](../../../docs/reference/issue-hierarchy.md)の「主に触るもの」表で決める。**この Issue が主に触るものが `.claude/` 配下・`docs/policy/`・`docs/design/`・`docs/guide/` なら、親を付けない。** ハーネス・ポリシー・設計書の手直しは開発フローのどのフェーズの作業でもないからで、本スキルの起票はこれが最も多い。
 
 それ以外は表のフェーズIssueの sub-issue にする。フェーズIssueは `phase` ラベルで引く。同じフェーズ名が複数あれば**いちばん番号が大きいもの**を使う。
 

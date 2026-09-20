@@ -23,8 +23,8 @@
 - [application-design-policy](../docs/policy/application-design-policy.md)：クラス・関数・エラーの設計
 - [cdk-design-policy](../docs/policy/cdk-design-policy.md)：スタック分割・環境差分・Construct 設計
 - [unit-test-policy](../docs/policy/unit-test-policy.md)：単体テストの粒度とテストダブル
-- [clean-architecture-guide](../docs/guide/clean-architecture-guide.md)：レイヤーの考え方
-- [ddd-tactical-design-guide](../docs/guide/ddd-tactical-design-guide.md)：値オブジェクト・エンティティの作り方
+- [clean-architecture-guide](../docs/reference/clean-architecture-guide.md)：レイヤーの考え方
+- [ddd-tactical-design-guide](../docs/reference/ddd-tactical-design-guide.md)：値オブジェクト・エンティティの作り方
 
 ## 使い方
 

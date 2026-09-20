@@ -1,6 +1,6 @@
 # Issueの階層ガイド
 
-GitHub Issue を起票する人 / AI が、その Issue をどの親にぶら下げるか・タイトル先頭の段番号をどう振るか決めたいときに読む。
+GitHub Issue を起票する AI が、その Issue をどの親にぶら下げるか・タイトル先頭の段番号をどう振るか決めたいときに読む。
 
 > [!IMPORTANT]
 > **TL;DR（このガイドの決定事項）**
@@ -40,7 +40,7 @@ gh issue create --title "<フェーズ名>" --label phase --body "<上に挙げ�
 
 ## 親の決め方
 
-分解元の Issue があるなら、それが親である。起点Issueの親は種別で決まり（[新規開発ガイドの種別表](new-development-guide.md#起票する起点issue)）、スライスIssue（`/to-issues` 産）は起点Issueの子にする。
+分解元の Issue があるなら、それが親である。起点Issueの親は種別で決まり（[新規開発ガイドの種別表](../guide/new-development-guide.md#起票する起点issue)）、スライスIssue（`/to-issues` 産）は起点Issueの子にする。
 
 起点Issueが無いまま `/to-issues` が2件以上を割ったときは、まとめ用の親Issueを作ってスライスIssueの親にする（作り方は `/to-issues` が正典）。
 
