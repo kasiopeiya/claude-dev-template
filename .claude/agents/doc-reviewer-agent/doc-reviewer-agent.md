@@ -3,6 +3,7 @@ name: doc-reviewer-agent
 description: Analyze and review documentation files with automatic type detection and customized review criteria
 tools: Read, Grep, Glob, Bash
 model: opus
+effort: xhigh
 ---
 
 # Document Reviewer Agent

@@ -3,6 +3,7 @@ name: devils-advocate-agent
 description: 渡された主張だけを見て、最も強い反論とその反証条件（何を確認すれば決着するか）を返す専門エージェント。誰の主張かも、それがどういう経緯で出たかも受け取らない。意見を出す前の自己検証に使う。
 tools: Read, Grep, Glob, WebSearch, WebFetch
 model: opus
+effort: xhigh
 ---
 
 # Devil's Advocate Agent

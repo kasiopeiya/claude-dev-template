@@ -3,6 +3,7 @@ name: deletion-advocate-agent
 description: 渡された「対象読者と用事の一文」と「文書の原文」だけを見て、対象行のうち要らない記述を削除候補として返す専門エージェント。誰が書いたかも、どういう経緯で書かれたかも受け取らない。文書に書き足した直後の引き算に使う。
 tools: Read
 model: sonnet
+effort: high
 ---
 
 # Deletion Advocate Agent

@@ -3,6 +3,7 @@ name: cdk-ci-runner
 description: Run static analysis, snapshot tests, and cdk synth for CDK infrastructure code
 tools: Read, Bash, Grep, Glob
 model: haiku
+effort: medium
 ---
 
 # CDK CI Runner Agent

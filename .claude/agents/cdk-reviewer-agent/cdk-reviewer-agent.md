@@ -2,7 +2,8 @@
 name: cdk-reviewer-agent
 description: AWS CDK インフラコードを詳細にレビューする専門エージェント
 tools: AskUserQuestion, Glob, Grep, Read, Bash
-model: sonnet
+model: opus
+effort: xhigh
 ---
 
 # CDK Reviewer Agent

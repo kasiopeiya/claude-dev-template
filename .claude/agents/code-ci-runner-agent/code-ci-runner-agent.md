@@ -3,6 +3,7 @@ name: code-ci-runner-agent
 description: Run static analysis and unit tests for backend and frontend, analyze failures, and provide detailed reports
 tools: Read, Bash, Grep, Glob
 model: haiku
+effort: medium
 ---
 
 # CI Runner Agent

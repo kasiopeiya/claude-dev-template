@@ -3,6 +3,7 @@ name: design-validator-agent
 description: 設計書と実装コードの整合性（ドリフト）を検証する専門エージェント。設計ハブから辿れる設計書と、`app/`・`infra/` の実装を突き合わせて検証対象を決める。
 tools: Read, Glob, Grep
 model: sonnet
+effort: high
 ---
 
 # Design Validator Agent

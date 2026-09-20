@@ -2,7 +2,8 @@
 name: code-reviewer-agent
 description: TypeScript アプリケーションコードを詳細にレビューする専門エージェント
 tools: Glob, Grep, Read, Bash
-model: sonnet
+model: opus
+effort: xhigh
 ---
 
 # Code Reviewer Agent
