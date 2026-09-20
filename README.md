@@ -96,30 +96,27 @@ npm run format       # フォーマット
 
 ### docs/ 配下
 
-| パス                                                               | 固定である根拠                                                                                                                                                                      |
-| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `docs/policy-hub.md`                                               | CLAUDE.md・ほぼ全スキルが起点として直接参照                                                                                                                                         |
-| `docs/policy/`（ディレクトリ＋各ファイル名）                       | `.claude/hooks/policy-loader.mjs` がこのパスを直接読み込み、front-matter `applies-to` で自動アタッチする。個々のファイル名も多数のスキルから SSOT として直接参照される              |
-| `docs/design-hub.md`                                               | CLAUDE.md・design/to-plan/check-plan/cdk-imp 等が起点として直接参照                                                                                                                 |
-| `docs/design/`（ディレクトリ名）                                   | `design-doc-policy.md` の `applies-to` が参照。中の個別設計書は自由に追加・更新可                                                                                                   |
-| `docs/runbook/`（ディレクトリ名）                                  | `runbook-policy.md` の `applies-to` が参照。中の個別手順書は自由に追加・更新可                                                                                                      |
-| `docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`   | create-adr/decide-tech-stack スキル・`.githooks/pre-commit` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない） |
-| `docs/reference/non-functional-requirement-items.md`               | to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照                                                                                                                  |
-| `docs/reference/test-terms.md`                                     | `policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照                                                                   |
-| `docs/guide/`（ディレクトリ名）＋ `docs/guide/development-flow.md` | decide-tech-stack・code-review スキルがディレクトリを直接参照。`development-flow.md` は CLAUDE.md・to-plan スキルがファイル名まで参照。他の個別ガイドは自由に追加・改名可           |
-| `docs/project-context/project-claude.md`                           | CLAUDE.md が `@` import で直接読み込む。ここに書いた内容が毎セッション読まれる                                                                                                      |
-| `docs/project-context/glossary.md`                                 | to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照                                                                                                                  |
-| `docs/requirements.md`                                             | `requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス                                                            |
+- **`docs/policy-hub.md`**：CLAUDE.md・ほぼ全スキルが起点として直接参照
+- **`docs/policy/`（ディレクトリ＋各ファイル名）**：`.claude/hooks/policy-loader.mjs` がこのパスを直接読み込み、front-matter `applies-to` で自動アタッチする。個々のファイル名も多数のスキルから SSOT として直接参照される
+- **`docs/design-hub.md`**：CLAUDE.md・design/to-plan/check-plan/cdk-imp 等が起点として直接参照
+- **`docs/design/`（ディレクトリ名）**：`design-doc-policy.md` の `applies-to` が参照。中の個別設計書は自由に追加・更新可
+- **`docs/runbook/`（ディレクトリ名）**：`runbook-policy.md` の `applies-to` が参照。中の個別手順書は自由に追加・更新可
+- **`docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`**：create-adr/decide-tech-stack スキル・`.githooks/pre-commit` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない）
+- **`docs/reference/non-functional-requirement-items.md`**：to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照
+- **`docs/reference/test-terms.md`**：`policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照
+- **`docs/reference/docs-directory-definitions.md`**：`documentation-policy.md` と doc-reviewer-agent が、docs/ 配下の置き場所の SSOT として直接参照
+- **`docs/guide/`（ディレクトリ名）＋ `docs/guide/development-flow.md`**：decide-tech-stack・code-review スキルがディレクトリを直接参照。`development-flow.md` は CLAUDE.md・to-plan スキルがファイル名まで参照。他の個別ガイドは自由に追加・改名可
+- **`docs/project-context/project-claude.md`**：CLAUDE.md が `@` import で直接読み込む。ここに書いた内容が毎セッション読まれる
+- **`docs/project-context/glossary.md`**：to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照
+- **`docs/requirements.md`**：`requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス
 
 ### トップレベル
 
-| パス                                     | 固定である根拠                                                                                                                                                                                                                   |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `infra/`                                 | CI（`pipeline.yml` の `ci-cdk`・`cdk-diff`、`deploy-dev.yml`、`dev-destroy.yml`）の変更検知・working-directory、`eslint.config.mjs` のファイル glob、`cdk-design-policy.md` の `applies-to`、cdk-review スキルが直接ハードコード |
-| `app/`, `app/backend/`, `app/frontend/`  | 同様に CI（`ci-app`）・eslint に加え `application-design-policy.md`/`application-logging-policy.md`（`app/**`）、`frontend-design-policy.md`（`app/frontend/**`）が `applies-to` でハードコード                                  |
-| `samples/`（＋配下の2ワークスペース）    | `knip.jsonc` の workspace キー、`eslint.config.mjs` の glob、`package.json` の `check:static`、`scripts/audit-dependencies.mjs` の監査対象、`pipeline.yml` の `ci-common`、各 policy の `applies-to` が直接ハードコード          |
-| `eslint-rules/`                          | `eslint.config.mjs` が直接 import、`knip.jsonc` の `project` glob が参照                                                                                                                                                         |
-| `scripts/`（ディレクトリ＋各ファイル名） | `package.json` の scripts がファイル名まで直接実行し、CI（`pipeline.yml`）と `.claude/hooks/` がそれを経由・相対 import する。中の個別スクリプトは自由に追加可                                                                   |
+- **`infra/`**：CI（`pipeline.yml` の `ci-cdk`・`cdk-diff`、`deploy-dev.yml`、`dev-destroy.yml`）の変更検知・working-directory、`eslint.config.mjs` のファイル glob、`cdk-design-policy.md` の `applies-to`、cdk-review スキルが直接ハードコード
+- **`app/`, `app/backend/`, `app/frontend/`**：同様に CI（`ci-app`）・eslint に加え `application-design-policy.md`/`application-logging-policy.md`（`app/**`）、`frontend-design-policy.md`（`app/frontend/**`）が `applies-to` でハードコード
+- **`samples/`（＋配下の2ワークスペース）**：`knip.jsonc` の workspace キー、`eslint.config.mjs` の glob、`package.json` の `check:static`、`scripts/audit-dependencies.mjs` の監査対象、`pipeline.yml` の `ci-common`、各 policy の `applies-to` が直接ハードコード
+- **`eslint-rules/`**：`eslint.config.mjs` が直接 import、`knip.jsonc` の `project` glob が参照
+- **`scripts/`（ディレクトリ＋各ファイル名）**：`package.json` の scripts がファイル名まで直接実行し、CI（`pipeline.yml`）と `.claude/hooks/` がそれを経由・相対 import する。中の個別スクリプトは自由に追加可
 
 `infra/`・`app/` は**場所（ディレクトリ名）だけ**固定で、中身は自由に書いてよい。
 
@@ -127,13 +124,11 @@ npm run format       # フォーマット
 
 ### ルート静的解析ゲート設定
 
-| パス                                | 固定である根拠                                           |
-| ----------------------------------- | -------------------------------------------------------- |
-| `eslint.config.mjs`                 | ESLint ルール定義・自作ルール import 元。CI もこれを実行 |
-| `tsconfig.json`（ルート）           | ルートの型検査設定                                       |
-| `.prettierrc.js`, `.prettierignore` | フォーマッタ設定                                         |
-| `knip.jsonc`                        | 未使用コード検出の workspace 定義                        |
-| `package.json`（ルート）            | `scripts`・devDependencies。CI がスクリプト名を直接実行  |
+- **`eslint.config.mjs`**：ESLint ルール定義・自作ルール import 元。CI もこれを実行
+- **`tsconfig.json`（ルート）**：ルートの型検査設定
+- **`.prettierrc.js`, `.prettierignore`**：フォーマッタ設定
+- **`knip.jsonc`**：未使用コード検出の workspace 定義
+- **`package.json`（ルート）**：`scripts`・devDependencies。CI がスクリプト名を直接実行
 
 ### ファイル名でポリシーが発火するもの
 

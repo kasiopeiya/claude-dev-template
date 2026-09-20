@@ -122,6 +122,10 @@ AIエージェントが、Markdown でドキュメントを書く／レビュー
 
 ## 構造設計
 
+### 新しい文書は、置き場所を引いてから置く
+
+`docs/` に新しい文書を作る前に、[docs-directory-definitions.md](../reference/docs-directory-definitions.md) で対象読者に合うディレクトリを引く。
+
 ### 文書を分割する（Progressive Disclosure）
 
 AIおよび人間が、必要な時に必要なドキュメントだけを読み込める構造にする。1つのドキュメントに情報を詰め込みすぎると、コンテキストを圧迫するため避ける。

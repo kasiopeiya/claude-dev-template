@@ -84,6 +84,8 @@ git diff --cached --name-only --diff-filter=ACMR
 - `docs/guide/`：GUIDE
 - `docs/design/`：DESIGN
 - `docs/idea/`：PROPOSAL
+- `docs/project-context/`：GENERAL
+- `docs/runbook/`：GUIDE
 - `.claude/rules/`：GUIDELINE
 - `.claude/skills/`：GUIDELINE
 - `.claude/agents/`：GUIDELINE
@@ -460,7 +462,7 @@ APIエンドポイントの記載がある場合：
 
 **配置と言語**:
 
-- docs/ 配下に適切に配置されているか（配置の規約は README「変更してはならないパス」）
+- docs/ 配下に適切に配置されているか（対象読者ごとの置き場所は [docs-directory-definitions.md](../../../docs/reference/docs-directory-definitions.md)、リネーム禁止パスは README「変更してはならないパス」）
 - 日本語で記述されているか（CLAUDE.md「回答は日本語」）
 
 **ドキュメント内のコード例（該当する場合）**:
