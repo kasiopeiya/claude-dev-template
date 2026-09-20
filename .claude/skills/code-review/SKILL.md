@@ -16,7 +16,7 @@ TypeScript アプリケーションコードをレビューしてください。
 
 - `docs/policy/code-comment-policy.md` — 観点「コメント」
 - `docs/policy/configuration-policy.md` — 観点「構成管理ポリシー準拠」
-- `docs/policy/application-design-policy.md` — 観点「アプリ設計ポリシー準拠」
+- `docs/policy/application-design-policy.md` — 観点「アプリ設計ポリシー準拠」と観点「エラーハンドリング」（境界から入る値の扱い）
 - `docs/policy/application-logging-policy.md` — 観点「ロギングポリシー準拠」（ログ出力を含む場合）
 - `docs/policy/frontend-design-policy.md` — 観点「フロントエンド設計ポリシー準拠」（**フロントエンドコードのレビュー時のみ**）
 - `docs/policy/unit-test-policy.md` — 観点「単体テストポリシー準拠」（**テストコードのレビュー時**）と観点「異常系テストの網羅」（**実装コードのレビュー時**）
