@@ -1,6 +1,6 @@
 # テスト用語定義
 
-テストを実装・レビュー・議論する開発者が、テストの種類（unit/integration/E2E）やテストダブルの呼称に迷ったとき・他者と認識を揃えたいときに引く、用語の単一の真実（Single Source of Truth）。各テストポリシー（[unit-test-policy.md](../policy/unit-test-policy.md) ほか）と[用語集](../project-context/glossary.md)は、テスト用語の定義を本書にリンクし、再定義しない。
+AI が、テストを実装・レビューする作業中にテストの種類（unit/integration/E2E）やテストダブルの呼称に迷ったときに引く、用語の単一の真実（Single Source of Truth）。各テストポリシー（[unit-test-policy.md](../policy/unit-test-policy.md) ほか）と[用語集](../project-context/glossary.md)は、テスト用語の定義を本書にリンクし、再定義しない。
 
 > [!NOTE]
 > 本書は「定義」だけを扱う reference 文書である。各種類を**どう設計・配分するか**の指針は [test-strategy-policy.md](../policy/test-strategy-policy.md)、単体テストの**書き方**は unit-test-policy.md が持つ。

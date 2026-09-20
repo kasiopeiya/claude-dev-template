@@ -5,8 +5,6 @@ hook:
       'docs/adr/**/*.md',
       'docs/design/**/*.md',
       'docs/guide/**/*.md',
-      'docs/project-context/**/*.md',
-      'docs/reference/**/*.md',
       'docs/runbook/**/*.md',
       'docs/design-hub.md',
       'docs/requirements.md',
