@@ -1,6 +1,6 @@
 ---
 name: issue-check
-description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、本文とラベルを直す。/sweep で着手する前に人間が打つ。「issue-check」「issueを検査して」と指示されたとき。
+description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、本文とラベルを直す。/sweep で着手する前に人間が打つ。Auto Programmer も着手前に1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: Task, Bash, Read, Edit, Write
@@ -12,7 +12,7 @@ boy-scout Issue を監査してください。あなたは判定本体を行わ�
 
 ## 前提
 
-- **始めるタイミングは人間が握ります。** 一度に多数の Issue を書き換えるため、いつ走らせるかは人間が決めます。
+- **起動はスラッシュコマンドの明示呼び出しに限ります。** 一度に多数の Issue を書き換えるため、モデルが自分の判断で走らせてはいけません。
 - **リポジトリのファイルは変更しません。** 触るのは GitHub Issue（本文・ラベル・コメント・close）だけです。
 - **判定の定義は `issue-auditor-agent` の定義が正典です。** ここに書き写しません——2箇所に持つと、判定を変えたときに片方が古いまま残ります。
 - **監査した Issue には `issue:checked` を貼ります。** 意味は「一度 `/issue-check` を通した」であって、「いま妥当」ではありません。
