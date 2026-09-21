@@ -85,6 +85,54 @@
   </head>
   <body>
     <div class="page">
+      <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+        <defs>
+          <marker
+            id="a-pol"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#111110"></path>
+          </marker>
+          <marker
+            id="a-hum"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#111110"></path>
+          </marker>
+          <marker
+            id="a-ai"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#111110"></path>
+          </marker>
+          <marker
+            id="a-step"
+            viewBox="0 0 10 10"
+            refX="9"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto-start-reverse"
+          >
+            <path d="M0,1 L9,5 L0,9 z" fill="#a5a5a5"></path>
+          </marker>
+        </defs>
+      </svg>
       <h1
         style="
           font-size: 28px;
@@ -138,6 +186,13 @@
           <li style="font-size: 12.5px; padding: 2.5px 0px">
             <a href="#ap-boyscout" style="color: var(--ink); border-bottom: 1px dotted var(--rule)"
               >ボーイスカウトルールの仕組み化：気づいた課題を失わない</a
+            >
+          </li>
+          <li style="font-size: 12.5px; padding: 2.5px 0px">
+            <a
+              href="#ap-auto-programmer"
+              style="color: var(--ink); border-bottom: 1px dotted var(--rule)"
+              >Auto Programmer：ボードに積んだ Issue を無人で PR にする</a
             >
           </li>
           <li style="font-size: 12.5px; padding: 2.5px 0px">
@@ -968,6 +1023,228 @@
             issue:needs-human-decision
           </text>
         </svg>
+      </section>
+
+      <section
+        style="
+          margin-top: 48px;
+          margin-top: 20px;
+          background: var(--surface);
+          border: 1.5px solid var(--border);
+          border-radius: 12px;
+          padding: 6px 18px 18px;
+        "
+      >
+        <h3 id="ap-auto-programmer" style="font-size: 15px; margin-top: 14px">
+          Auto Programmer：ボードに積んだ Issue を無人で PR にする
+        </h3>
+        <div
+          style="
+            margin-top: 10px;
+            background: var(--t2);
+            border-left: 4px solid var(--ink);
+            border-radius: 0px 10px 10px 0px;
+            padding: 9px 14px;
+            font-size: 13.5px;
+            font-weight: 700;
+            color: var(--ink);
+          "
+        >
+          Ready に動かした Issue を、AI が1件ずつ PR にする
+        </div>
+
+        <svg
+          viewBox="0 0 800 232"
+          role="img"
+          style="
+            width: 100%;
+            max-width: 900px;
+            height: auto;
+            display: block;
+            margin: 0px auto;
+            font-family: inherit;
+          "
+        >
+          <title>
+            人間がカードを Ready へ動かして auto-programmer を起動すると、AI 専用 clone で /auto-dev
+            が1件ずつ実装して PR を作り、CI がレビュー要否を仕分ける流れ
+          </title>
+
+          <!-- ステージ見出し -->
+          <text x="8" y="18" style="font-size: 12px; font-weight: 700; fill: var(--muted)">
+            ① 積む ─ 人間が
+          </text>
+          <text x="286" y="18" style="font-size: 12px; font-weight: 700; fill: var(--muted)">
+            ② 実装 ─ AIが無人で
+          </text>
+          <text x="526" y="18" style="font-size: 12px; font-weight: 700; fill: var(--muted)">
+            ③ 仕分け ─ CIが
+          </text>
+          <path d="M8,28 L262,28" stroke="#dad6ca" stroke-width="1.5"></path>
+          <path d="M286,28 L502,28" stroke="#dad6ca" stroke-width="1.5"></path>
+          <path d="M526,28 L792,28" stroke="#dad6ca" stroke-width="1.5"></path>
+
+          <!-- ① 積む -->
+          <rect
+            x="8"
+            y="44"
+            width="254"
+            height="76"
+            rx="9"
+            style="fill: var(--t1); stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2, 3"
+          ></rect>
+          <text x="24" y="70" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+            🧑 カードを Ready へ動かす
+          </text>
+          <text x="24" y="90" style="font-size: 11.5px; fill: var(--muted)">
+            ai-fixable の Issue が対象
+          </text>
+          <path
+            d="M264,82 L282,82"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: var(--faint);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+
+          <rect
+            x="8"
+            y="140"
+            width="254"
+            height="76"
+            rx="9"
+            style="fill: var(--t1); stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2, 3"
+          ></rect>
+          <text x="24" y="166" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+            🧑 npm run auto-programmer
+          </text>
+          <text x="24" y="186" style="font-size: 11.5px; fill: var(--muted)">
+            Ctrl+C まで回り続ける
+          </text>
+          <path
+            d="M264,178 C280,178 270,104 282,104"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: var(--faint);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+
+          <!-- ② 実装 -->
+          <rect
+            x="286"
+            y="44"
+            width="216"
+            height="76"
+            rx="9"
+            style="
+              fill: var(--bg);
+              stroke: var(--rule);
+              stroke-width: 1.5;
+              stroke: var(--tint-border);
+            "
+          ></rect>
+          <text x="302" y="70" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+            ⚙ auto-programmer
+          </text>
+          <text x="302" y="90" style="font-size: 11.5px; fill: var(--ink)">
+            ブロッカーの無い1件を選ぶ
+          </text>
+          <text x="302" y="110" style="font-size: 11.5px; fill: var(--ink)">
+            AI 専用 clone にブランチを切る
+          </text>
+          <path
+            d="M394,120 L394,136"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: var(--faint);
+              stroke-width: 1.8;
+              marker-end: url('#a-step');
+            "
+          ></path>
+
+          <rect
+            x="286"
+            y="140"
+            width="216"
+            height="76"
+            rx="9"
+            style="
+              fill: var(--bg);
+              stroke: var(--rule);
+              stroke-width: 1.5;
+              stroke: var(--tint-border);
+            "
+          ></rect>
+          <text x="302" y="166" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+            🤖 /auto-dev
+          </text>
+          <text x="302" y="186" style="font-size: 11.5px; fill: var(--ink)">
+            実装・検証・コミット
+          </text>
+          <text x="302" y="206" style="font-size: 11.5px; fill: var(--ink)">
+            push して PR を作る
+          </text>
+
+          <!-- ③ 仕分け -->
+          <path
+            d="M504,160 C520,160 510,82 524,82"
+            style="fill: none; stroke-width: 2; stroke: var(--ink); marker-end: url('#a-ai')"
+          ></path>
+          <rect
+            x="526"
+            y="56"
+            width="266"
+            height="52"
+            rx="9"
+            style="
+              fill: var(--bg);
+              stroke: var(--rule);
+              stroke-width: 1.5;
+              stroke: var(--tint-border);
+            "
+          ></rect>
+          <text x="542" y="88" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+            🔁 PRのトリアージ
+          </text>
+
+          <path
+            d="M504,190 L522,190"
+            style="
+              fill: none;
+              stroke-width: 2;
+              stroke: var(--ink);
+              stroke-width: 1.8;
+              marker-end: url('#a-hum');
+              stroke-dasharray: 2, 3;
+            "
+          ></path>
+          <rect
+            x="526"
+            y="140"
+            width="266"
+            height="76"
+            rx="9"
+            style="fill: var(--t1); stroke: var(--ink); stroke-width: 2; stroke-dasharray: 2, 3"
+          ></rect>
+          <text x="542" y="166" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+            🧑 進めない Issue は人間へ
+          </text>
+          <text x="542" y="186" style="font-size: 11.5px; fill: var(--muted)">
+            issue:needs-clean-session
+          </text>
+        </svg>
+
+        <p style="margin-top: 10px; font-size: 12px; color: var(--muted)">
+          /sweep との違いは<b>人間の作業ツリーに触れない</b>こと——AI 専用 clone で 1 Issue = 1 PR
+          にするので、作業中でも走らせておける
+        </p>
       </section>
 
       <section

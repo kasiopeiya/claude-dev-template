@@ -61,6 +61,19 @@ AI に任せて開発スピードを上げるほど、判断はぶれ、品質�
 
 このフローで Issue を起票したら、[Issueの階層ガイド](../reference/issue-hierarchy.md)に従って親の sub-issue にする。
 
+## ボードに積んだ Issue を無人で PR にする（Auto Programmer）
+
+Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積んだ Issue を AI に無人で PR まで進めさせることもできる。
+
+1. **カードを Ready へ動かす（人間）**：対象は `ai-fixable` が付いた open な Issue。本文の「ブロッカー」に並ぶ Issue が全部 closed になるまでは拾われない
+2. **起動する（人間）**：`npm run auto-programmer` を打つ。1件終えると次の1件へ進み、Ctrl+C で止めるまで回り続ける。AI のセッションからは起動できない
+3. **実装して PR を作る（AI）**：スクリプトが AI 専用 clone にブランチを切り、`/auto-dev <Issue番号>` を起動する。`/auto-dev` は Issue の「実装フロー（使用するSkill）」に並ぶ Skill で実装し、検証・コミット・push・PR 作成まで確認なしで進める
+4. **PR 以降は 10〜11 と同じ**：Issue は PR のマージで閉じる
+
+`/auto-dev` が進めないと判断した Issue は、カードが In progress のまま残り、コメントと `issue:needs-clean-session` ラベルが付く。コメントを読み、専用のセッションでその Issue に着手する。
+
+AI は AI 専用 clone の中だけで作業するので、人間が作業中でも走らせておける。設定と、止まったときの対処は [scripts/auto-programmer/README.md](../../scripts/auto-programmer/README.md) にある。
+
 ## フェーズごとにどのモデルで回すか
 
 仕様を決める段階は最も性能の良いモデルで回し、Issue を実行する段階は Sonnet / high に落とす。判断の重さと、後戻りしたときの損の大きさが段階で違うためである。
