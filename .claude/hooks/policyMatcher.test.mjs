@@ -21,7 +21,6 @@ const policyDir = resolve(scriptDir, '../../docs/policy')
 // applies-to が丸ごと欠けた hook を「宣言していない」と見なして素通りさせてしまう。
 describe('ポリシー宣言の沈黙検知', () => {
   test('hook を宣言する全ポリシーは1件以上のグロブにパースされる', () => {
-    // Arrange
     const declaringPolicies = readdirSync(policyDir)
       .filter((name) => name.endsWith('.md'))
       .map((name) => ({
@@ -31,7 +30,6 @@ describe('ポリシー宣言の沈黙検知', () => {
       .filter(({ frontmatter }) => frontmatter !== null && /^\s*hook:/m.test(frontmatter))
     const sut = parseAppliesTo
 
-    // Assert
     for (const { name, frontmatter } of declaringPolicies) {
       assert.ok(
         sut(frontmatter).length >= 1,
@@ -43,13 +41,11 @@ describe('ポリシー宣言の沈黙検知', () => {
 
 describe('applies-to のパース', () => {
   test('インライン配列・ブロックシーケンス・単一スカラーのどの書式でも同じグロブ配列に読める', () => {
-    // Arrange
     const inline = "hook:\n  applies-to: ['app/**/*.ts', 'app/**/*.tsx']"
     const block = "hook:\n  applies-to:\n    - 'app/**/*.ts'\n    - 'app/**/*.tsx'"
     const scalar = "hook:\n  applies-to: '**/*.md'"
     const sut = parseAppliesTo
 
-    // Assert
     assert.deepEqual(sut(inline), ['app/**/*.ts', 'app/**/*.tsx'])
     assert.deepEqual(sut(block), ['app/**/*.ts', 'app/**/*.tsx'])
     assert.deepEqual(sut(scalar), ['**/*.md'])
@@ -58,14 +54,12 @@ describe('applies-to のパース', () => {
   // prettier は printWidth を超えたインライン配列を複数行へ折り返す。
   // 書き手の意図と無関係に発生する形なので、読めないと hook が黙って止まる。
   test('prettier が折り返した複数行インライン配列も同じグロブ配列に読める', () => {
-    // Arrange
     const wrapped =
       "hook:\n  applies-to:\n    [\n      'app/**/infrastructure/**/*.ts',\n      '**/*table*.ts',\n      '**/*Table*.ts'\n    ]"
     const wrappedWithTrailingComma =
       "hook:\n  applies-to:\n    [\n      'app/**/*.ts',\n      'app/**/*.tsx',\n    ]"
     const sut = parseAppliesTo
 
-    // Assert
     assert.deepEqual(sut(wrapped), [
       'app/**/infrastructure/**/*.ts',
       '**/*table*.ts',
@@ -75,12 +69,10 @@ describe('applies-to のパース', () => {
   })
 
   test('折り返し配列の後ろに別のキーが続いても、配列の中身だけを読む', () => {
-    // Arrange
     const followedByOtherKey =
       "hook:\n  applies-to:\n    [\n      'app/**/*.ts'\n    ]\n  other: value"
     const sut = parseAppliesTo
 
-    // Assert
     assert.deepEqual(sut(followedByOtherKey), ['app/**/*.ts'])
   })
 
@@ -100,12 +92,10 @@ describe('applies-to のパース', () => {
 
 describe('glob から正規表現への変換', () => {
   test('** はディレクトリを跨いでマッチする', () => {
-    // Arrange
     const sut = globToRegExp
     const deep = sut('app/**/*.ts')
     const prefixed = sut('**/config.ts')
 
-    // Assert
     assert.ok(deep.test('app/x.ts'))
     assert.ok(deep.test('app/backend/usecase/x.ts'))
     assert.ok(!deep.test('other/x.ts'))
