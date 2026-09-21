@@ -44,14 +44,17 @@ describe('ブランチ名の prefix', () => {
     assert.equal(branchName, 'feat/issue-1')
   })
 
-  test('種類ラベルのどの組み合わせでも CI が走る prefix になる', () => {
+  test('種類ラベルが無いときは chore になる', () => {
     const sut = buildBranchNameFor
-    const labelCombinations = [
-      ['feature', 'bug'],
-      ['cicd', 'docs'],
-      ['bug'],
-      ['ai-fixable', 'chore']
-    ]
+
+    assert.equal(sut([]), 'chore/issue-1')
+    assert.equal(sut(['ai-fixable']), 'chore/issue-1')
+    assert.equal(sut(undefined), 'chore/issue-1')
+  })
+
+  test('どのラベルの組み合わせでも CI が走る prefix になる', () => {
+    const sut = buildBranchNameFor
+    const labelCombinations = [[], ['ai-fixable'], ['feature', 'bug'], ['cicd', 'docs'], ['bug']]
 
     const prefixes = labelCombinations.map((labelNames) => sut(labelNames).split('/')[0])
 
@@ -80,13 +83,5 @@ describe('ブランチ名の組み立て', () => {
     assert.throws(() => sut({ issueNumber: -1, labelNames: ['feature'] }), TypeError)
     assert.throws(() => sut({ issueNumber: 1.5, labelNames: ['feature'] }), TypeError)
     assert.throws(() => sut({ issueNumber: '480', labelNames: ['feature'] }), TypeError)
-  })
-
-  test('種類ラベルが無ければ例外になる', () => {
-    const sut = buildBranchName
-
-    assert.throws(() => sut({ issueNumber: 1, labelNames: [] }), /種類ラベル/)
-    assert.throws(() => sut({ issueNumber: 1, labelNames: ['ai-fixable'] }), /種類ラベル/)
-    assert.throws(() => sut({ issueNumber: 1, labelNames: undefined }), /種類ラベル/)
   })
 })
