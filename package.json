@@ -13,6 +13,8 @@
     "check:claude-md": "node scripts/check-claude-md-size.mjs",
     "check:audit": "node scripts/audit-dependencies.mjs",
     "test:hooks": "node --test .claude/hooks/policyMatcher.test.mjs .claude/hooks/policy-loader.test.mjs",
+    "test:scripts": "node --test \"scripts/**/*.test.mjs\"",
+    "auto-programmer": "node scripts/auto-programmer/index.mjs",
     "gen:adr-index": "node scripts/generate-adr-index.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix"
