@@ -14,7 +14,7 @@
 
 ### [policy-driven-development-policy.md](policy/policy-driven-development-policy.md)
 
-**参照タイミング**: 新しい判断基準を書き足す前・ポリシーや rules を作成／編集する前・CLAUDE.md に追記する前・既存の規定が守られていない状態を見つけたとき
+**参照タイミング**: 新しい判断基準を書き足す前・ポリシーや Rule を作成／編集する前・CLAUDE.md に追記する前・Skill・SubAgent・hooks の置き場を決める前・既存の規定が守られていない状態を見つけたとき
 
 ---
 

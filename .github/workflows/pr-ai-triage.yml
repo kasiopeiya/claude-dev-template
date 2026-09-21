@@ -61,7 +61,7 @@ jobs:
 
       # 判断基準（Policy・CLAUDE.md）に触れた PR は、AI の見落としに関係なく人間レビューへ寄せる。
       # パス判定は決定論的なので AI ステップより前で機械が落とす（policy-driven-development-policy
-      # 「自動検知できる rules は、その場でガードレールにする」）。対象パスの正は
+      # 「自動検知できる Rule は、その場でガードレールにする」）。対象パスの正は
       # docs/policy/pr-review-policy.md の policy 行で、ここはその写し。
       - name: Label policy changes for human review
         if: steps.pr.outputs.number != ''
