@@ -124,7 +124,9 @@ jobs:
             ## タスク1: PR本文のAI書き換え
             `gh pr diff ${{ steps.pr.outputs.number }}` で差分全体を読み、「何を・なぜ変えたか」を
             人間の言葉で説明する PR 本文を作成し、上記「--body-file ルール」で反映する。コミットメッセージの
-            機械的な要約ではなく、差分から読み取った意図を簡潔に記述する。
+            機械的な要約ではなく、差分から読み取った意図を簡潔に記述する。書き換え前の本文
+            （`gh pr view ${{ steps.pr.outputs.number }} --json body`）に `Closes #<番号>` の行があれば、
+            新しい本文の末尾にその行をそのまま残す（この行が消えるとマージしても Issue が閉じない）。
 
             ## タスク2: ラベル付与（pr-label）
             `.claude/skills/pr-label/SKILL.md` を読み、そこに書かれた手順・基準
