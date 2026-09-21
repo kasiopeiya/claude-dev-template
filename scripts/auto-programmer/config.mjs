@@ -36,7 +36,7 @@ export const config = {
   // このラベルが付いた Issue だけを対象にする
   targetIssueLabel: 'ai-fixable',
 
-  // 1件ぶんの claude セッションを打ち切るまでの時間。無人で固まったまま止まらない事態を防ぐ
+  // claude セッション1回（/issue-check・/auto-dev のそれぞれ）を打ち切るまでの時間。無人で固まったまま止まらない事態を防ぐ
   sessionTimeoutMinutes: 120,
 
   // AI が実装に使う clone。リポジトリ名から導くので、repository を変えれば別の clone になる

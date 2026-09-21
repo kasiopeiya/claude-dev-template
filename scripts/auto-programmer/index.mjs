@@ -3,7 +3,7 @@
 //
 // 設計意図（WHY）:
 // - 拾う・順序を決める・記録するはすべてここで決定論的に行う。AI に任せると、同じ盤面から毎回
-//   違う Issue を拾い、何が起きたかを追えなくなる。AI に渡すのは Issue 1件の実装だけ。
+//   違う Issue を拾い、何が起きたかを追えなくなる。AI に渡すのは Issue 1件の監査と実装だけ。
 // - 人間が止めるまで終了しない。候補が尽きたら待って見に行く。自分から終了すると、人間が
 //   Issue の数だけ打ち直すことになる（Issue #481）。例外は claude のセッションが続けて失敗したときで、
 //   このときは続けるほどカードを空振りで着手中へ送るので止める。
@@ -12,20 +12,27 @@
 // - 落ちうるローカルの準備（clone の巻き戻し・依存）をすべて済ませてから、カードを「着手中」へ動かす。
 //   動かした後は着手待ちへ戻さないので、次の巡回が同じ Issue をもう一度拾うことはない。
 // - 着手中へ動かした後は、何が起きても記録を1行残す。無人で走るので、記録が唯一の痕跡になる。
+// - 実装の前に `/issue-check` を別プロセスで通し、書き戻されたラベルと state だけで進むか止めるかを
+//   決める（Issue #482）。止めた Issue のカードは着手中のまま残し、人間が見るまで次の巡回で拾わない。
+//   監査の前に `issue:checked` を外し、貼り直されたことを「今回の判定が書き戻された」印にする。
 
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
 import { listStartableIssues, markAsStarted } from './board.mjs'
 import { buildBranchName } from './branchName.mjs'
-import { runAutoDevSession } from './claudeSession.mjs'
+import { runAutoDevSession, runIssueCheckSession } from './claudeSession.mjs'
 import { config } from './config.mjs'
+import { findReasonToSkipImplementation } from './issueCheckVerdict.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { recordRun } from './runLog.mjs'
-import { runJson } from './shell.mjs'
+import { runJson, runOrThrow } from './shell.mjs'
 import { prepareTopicBranch } from './workspace.mjs'
 
 // 候補が無かったときに、ボードを見直すまで待つ時間
 const POLL_INTERVAL_MS = 60 * 1000
+
+// /issue-check が判定の中身に関わらず貼るラベル。`.claude/skills/issue-check/SKILL.md` の表記が正
+const ISSUE_CHECKED_LABEL = 'issue:checked'
 
 // セッションがこの回数続けて失敗したら止める。claude 側が壊れている（ログイン切れ・利用上限など）と、
 // 待たずに次のカードを着手中へ送り、Ready のカードを PR 無しのまま使い切るため
@@ -67,6 +74,36 @@ function listPullRequests(branchName) {
     '--json',
     'number,url'
   ])
+}
+
+/**
+ * Issue の state とラベルを引き直す。
+ *
+ * @param {number} issueNumber Issue の番号
+ * @returns {{ state: string, labelNames: string[] }} state（'OPEN' / 'CLOSED'）とラベル名
+ * @throws {Error} gh が失敗したとき
+ */
+function readIssueStatus(issueNumber) {
+  const { state, labels } = runJson('gh', [
+    'issue',
+    'view',
+    String(issueNumber),
+    '--repo',
+    config.repository,
+    '--json',
+    'state,labels'
+  ])
+  return { state, labelNames: labels.map(({ name }) => name) }
+}
+
+/**
+ * claude プロセスが正常終了したか。
+ *
+ * @param {{ exitCode: number, signal: string | null }} status 終了状態
+ * @returns {boolean} 終了コード 0 で、シグナルで止められていなければ true
+ */
+function hasSessionSucceeded({ exitCode, signal }) {
+  return exitCode === 0 && signal === null
 }
 
 /**
@@ -157,17 +194,56 @@ async function startFirstStartableIssue() {
 }
 
 /**
- * 着手中へ動かした Issue 1件を実装させる。途中で落ちても結果を記録する。
+ * `/issue-check` を通し、止める理由が無ければ `/auto-dev` を走らせる。結果は record へ書き足す。
+ *
+ * record を引数で受けるのは、途中で例外が出ても、そこまでの結果を呼び出し側が記録できるようにするため。
+ *
+ * @param {number} issueNumber 対象 Issue の番号
+ * @param {Record<string, unknown>} record 書き足す先の記録
+ * @returns {boolean} 走らせた claude セッションがすべて正常終了したら true
+ * @throws {Error} claude を起動できなかったとき・Issue のラベルを外せなかった／引き直せなかったとき
+ */
+function auditThenImplement(issueNumber, record) {
+  runOrThrow('gh', [
+    'issue',
+    'edit',
+    String(issueNumber),
+    '--repo',
+    config.repository,
+    '--remove-label',
+    ISSUE_CHECKED_LABEL
+  ])
+  const issueCheckStatus = runIssueCheckSession(issueNumber)
+  record.issueCheckExitCode = issueCheckStatus.exitCode
+  record.issueCheckSignal = issueCheckStatus.signal
+  if (!hasSessionSucceeded(issueCheckStatus)) {
+    // 監査の結果が書き戻されたか分からないまま実装へ進むと、止めるべき Issue を実装しうる
+    record.skippedReason = '/issue-check のセッションが失敗しました'
+    return false
+  }
+
+  record.skippedReason = findReasonToSkipImplementation(readIssueStatus(issueNumber))
+  if (record.skippedReason) return true
+
+  const autoDevStatus = runAutoDevSession(issueNumber)
+  Object.assign(record, autoDevStatus)
+  return hasSessionSucceeded(autoDevStatus)
+}
+
+/**
+ * 着手中へ動かした Issue 1件を監査し、止める理由が無ければ実装させる。途中で落ちても結果を記録する。
  *
  * @param {{ issue: { number: number, title: string }, branchName: string, existingPullRequestNumbers: Set<number> }} startedIssue startFirstStartableIssue の結果
- * @returns {boolean} claude セッションが正常終了したら true（起動できなかった・打ち切られた・0 以外で終わったら false）
+ * @returns {boolean} 走らせた claude セッションがすべて正常終了したら true（起動できなかった・打ち切られた・0 以外で終わった・途中で例外が出たら false）
  * @throws {Error} 記録ファイルへ書けなかったとき
  */
 function runSessionAndRecord({ issue, branchName, existingPullRequestNumbers }) {
   const record = { issueNumber: issue.number, issueTitle: issue.title, branchName }
   record.sessionStartedAt = new Date().toISOString()
+  let isAllSessionsSucceeded = false
   try {
-    Object.assign(record, runAutoDevSession(issue.number))
+    isAllSessionsSucceeded = auditThenImplement(issue.number, record)
+    if (record.skippedReason) console.log(`実装へ進みません: ${record.skippedReason}`)
   } catch (error) {
     record.error = formatError(error)
     console.error(formatError(error, { withStack: true }))
@@ -177,7 +253,7 @@ function runSessionAndRecord({ issue, branchName, existingPullRequestNumbers }) 
     recordRun(record)
     printOutcome(record)
   }
-  return record.exitCode === 0 && record.signal === null
+  return isAllSessionsSucceeded
 }
 
 /**
@@ -211,11 +287,11 @@ async function main() {
       continue
     }
 
-    const isSessionSucceeded = runSessionAndRecord(startedIssue)
-    consecutiveSessionFailureCount = isSessionSucceeded ? 0 : consecutiveSessionFailureCount + 1
+    const isAllSessionsSucceeded = runSessionAndRecord(startedIssue)
+    consecutiveSessionFailureCount = isAllSessionsSucceeded ? 0 : consecutiveSessionFailureCount + 1
     if (consecutiveSessionFailureCount >= MAX_CONSECUTIVE_SESSION_FAILURES) {
       throw new Error(
-        `claude のセッションが ${consecutiveSessionFailureCount} 回続けて失敗しました。記録の exitCode・signal・error を読んで原因を直し、もう一度打ってください`
+        `claude のセッションが ${consecutiveSessionFailureCount} 回続けて失敗しました。記録の issueCheckExitCode・issueCheckSignal・exitCode・signal・error を読んで原因を直し、もう一度打ってください`
       )
     }
     await yieldToEventLoop()
