@@ -1,4 +1,4 @@
-// 責務: GitHub Projects のボードから「次に着手する Issue」を選び、その Status を書き換える。
+// 責務: GitHub Projects のボードの着手待ちから、いま着手できる Issue を着手順に選び出し、選んだカードの Status を書き換える。
 //
 // 設計意図（WHY）:
 // - フィールド ID・選択肢 ID を設定に持たせず、毎回表記から引き直す。ID は人間が見ても正しさを
@@ -8,9 +8,13 @@
 // - 候補の絞り込み（Status・ラベル・open な Issue）は Projects の検索に任せる。全カードを取ると
 //   Issue 本文ごと数MBを読むことになり、閉じた Issue が着手待ちに残っていても検索が弾いてくれる。
 // - 表記の誤りは「候補0件」と区別がつかないので、着手待ちの表記も選択肢に実在するかを先に確かめる。
+// - ブロッカーの state は毎回 gh で引き直す。候補の本文に書かれた (closed) の印は、人間が
+//   `/issue-deps` を回した時点のものでしかない。引けなかったブロッカーは open と同じに扱う。
+//   「完了」と取り違えると未完の依存先を待たずに着手し、全体を止めると無関係な候補まで止まる。
 
 import { config } from './config.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
+import { extractBlockerIssueNumbers, selectStartableIssues } from './startOrder.mjs'
 
 const { board, repository, targetIssueLabel } = config
 
@@ -49,10 +53,10 @@ function resolveStatusOption(optionName) {
 /**
  * 着手待ちで対象ラベル付きの、open な Issue のカードを取得する。
  *
- * @returns {{ id: string, labels?: string[], repository?: string, content: { number: number, title: string } }[]} カードの配列
+ * @returns {{ id: string, labels?: string[], repository?: string, content: { number: number, title: string, body?: string } }[]} カードの配列
  * @throws {Error} gh が失敗したとき・候補が一度に読める枚数を超えたとき
  */
-function listStartableItems() {
+function listReadyItems() {
   const query = `"${board.statusFieldName}":"${board.readyStatusName}" label:"${targetIssueLabel}" is:issue is:open`
   const { items = [], totalCount = 0 } = runJson('gh', [
     'project',
@@ -65,35 +69,77 @@ function listStartableItems() {
   ])
   if (totalCount > items.length) {
     throw new Error(
-      `着手待ちの候補 ${totalCount} 件のうち ${items.length} 件しか読めていません。番号の小さい Issue を読み落とすため止めます`
+      `着手待ちの候補 ${totalCount} 件のうち ${items.length} 件しか読めていません。読み落とした中に先に着手すべき Issue があり得るため止めます`
     )
   }
   return items
 }
 
 /**
- * 次に着手する Issue を1件選ぶ。候補が無ければ null を返す。
+ * Issue の state を引く。引けなければ理由を出して null を返す。
+ *
+ * @param {number} issueNumber Issue 番号
+ * @returns {string | null} state（'OPEN'・'CLOSED' など）。引けなければ null
+ */
+function readIssueState(issueNumber) {
+  try {
+    const { state } = runJson('gh', [
+      'issue',
+      'view',
+      String(issueNumber),
+      '--repo',
+      repository,
+      '--json',
+      'state'
+    ])
+    return state ?? null
+  } catch (error) {
+    console.error(`ブロッカー #${issueNumber} の state を引けませんでした: ${error.message}`)
+    return null
+  }
+}
+
+/**
+ * 候補のブロッカーのうち、closed だと確かめられなかった Issue の番号を集める。
+ *
+ * @param {{ body?: string }[]} candidates 着手待ちの候補
+ * @returns {Set<number>} closed だと確かめられなかったブロッカーの Issue 番号
+ */
+function findUnresolvedBlockerNumbers(candidates) {
+  const blockerNumbers = new Set(
+    candidates.flatMap((candidate) => extractBlockerIssueNumbers(candidate.body) ?? [])
+  )
+  const unresolvedBlockerNumbers = new Set()
+  for (const blockerNumber of blockerNumbers) {
+    if (readIssueState(blockerNumber) !== 'CLOSED') unresolvedBlockerNumbers.add(blockerNumber)
+  }
+  return unresolvedBlockerNumbers
+}
+
+/**
+ * いま着手できる Issue を、着手する順に並べて返す。
  *
  * 候補は「着手待ちの Status かつ対象ラベル付きの open な Issue」のうち対象リポジトリのもので、
- * Issue 番号の昇順に並べた先頭を返す。
+ * そこから closed だと確かめられないブロッカーが残るもの・ブロッカー節を読めないものを外し、
+ * 段番号昇順 → Issue 番号昇順に並べる。
  *
- * @returns {{ itemId: string, number: number, title: string, labelNames: string[] } | null} 選んだ Issue
+ * @returns {{ itemId: string, number: number, title: string, body?: string, labelNames: string[] }[]} 着手できる Issue（無ければ空配列）
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
-export function findNextStartableIssue() {
+export function listStartableIssues() {
   resolveStatusOption(board.readyStatusName)
 
-  const nextIssue = listStartableItems()
+  const candidates = listReadyItems()
     .filter((item) => item.repository?.endsWith(`/${repository}`))
-    .sort((a, b) => a.content.number - b.content.number)[0]
-  if (!nextIssue) return null
+    .map((item) => ({
+      itemId: item.id,
+      number: item.content.number,
+      title: item.content.title,
+      body: item.content.body,
+      labelNames: item.labels ?? []
+    }))
 
-  return {
-    itemId: nextIssue.id,
-    number: nextIssue.content.number,
-    title: nextIssue.content.title,
-    labelNames: nextIssue.labels ?? []
-  }
+  return selectStartableIssues(candidates, findUnresolvedBlockerNumbers(candidates))
 }
 
 /**

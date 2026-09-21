@@ -3,14 +3,18 @@
 //   値はコードに直書きしない」）。ID ではなく人間が読める表記を持たせ、ID は実行時に解決する。
 
 import { homedir } from 'node:os'
-import { basename, resolve } from 'node:path'
+import { basename, isAbsolute, resolve } from 'node:path'
 
 const repository = 'kasiopeiya/claude-dev-template'
 
 // AI 専用 clone と実行ログの置き場。人間の作業ツリーと別の場所であれば、どこでもよい。
 // 置き場だけを変えたい人が追跡対象のこのファイルを編集せずに済むよう、環境変数で上書きできる
+// 空文字・相対パスは作業ディレクトリ基準で解決され、clone が人間の作業ツリーの中にできるので受け付けない
 const autoProgrammerHomeDir =
-  process.env.AUTO_PROGRAMMER_HOME ?? resolve(homedir(), 'dev/auto-programmer')
+  process.env.AUTO_PROGRAMMER_HOME || resolve(homedir(), 'dev/auto-programmer')
+if (!isAbsolute(autoProgrammerHomeDir)) {
+  throw new Error(`AUTO_PROGRAMMER_HOME は絶対パスで指定してください: ${autoProgrammerHomeDir}`)
+}
 
 export const config = {
   // Issue と PR の相手（owner/repo）。`gh repo clone` の引数にもなる
@@ -38,6 +42,6 @@ export const config = {
   // AI が実装に使う clone。リポジトリ名から導くので、repository を変えれば別の clone になる
   workspaceDir: resolve(autoProgrammerHomeDir, basename(repository)),
 
-  // 1回の実行につき1行を追記する記録。clone の外に置く（clone は毎回 origin/main まで戻されるため）
+  // Issue 1件につき1行を追記する記録。clone の外に置く（clone は毎回 origin/main まで戻されるため）
   runLogPath: resolve(autoProgrammerHomeDir, 'runs.jsonl')
 }

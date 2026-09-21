@@ -6,7 +6,7 @@
 // - 前回の実行が途中で落ちていても、ここで毎回 origin/main まで戻すので、やり残しが次の PR へ
 //   混ざらない。`git clean` に -x を付けないのは、無視対象である node_modules を残すためである。
 // - 同名ブランチがリモートに残っていると、AI は実装を終えた後の push で拒否される。1セッション
-//   まるごと無駄にしないよう、着手前に止める。
+//   まるごと無駄にしないよう、着手前にその Issue を飛ばす。
 
 import { config } from './config.mjs'
 import { runOrThrow } from './shell.mjs'
@@ -37,7 +37,7 @@ export function prepareTopicBranch(branchName) {
   runGitInWorkspace(['fetch', 'origin', '--prune'])
   if (runGitInWorkspace(['ls-remote', '--heads', 'origin', branchName]).trim() !== '') {
     throw new Error(
-      `リモートに ${branchName} が残っています。前回の PR を片付けてから、もう一度打ってください`
+      `リモートに ${branchName} が残っています。前回の PR を閉じてこのブランチを消せば、次の巡回で拾われます`
     )
   }
 

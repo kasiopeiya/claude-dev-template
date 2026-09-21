@@ -1,8 +1,8 @@
-// 責務: 1回の実行の結果を1行の JSON として追記する。
+// 責務: Issue 1件ぶんの実行結果を1行の JSON として追記する。
 //
 // 設計意図（WHY）:
 // - 無人で走るツールなので、端末を閉じた後に「いつ・どの Issue を・どうなったか」を確かめる手段が
-//   要る。1行1実行の JSON Lines にしておけば、後から grep でも jq でも読める。
+//   要る。1行1件の JSON Lines にしておけば、後から grep でも jq でも読める。
 
 import { appendFileSync, mkdirSync } from 'node:fs'
 import { dirname } from 'node:path'
