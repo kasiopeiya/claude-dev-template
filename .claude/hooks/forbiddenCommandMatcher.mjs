@@ -195,6 +195,11 @@ const RULE_GROUPS = [
     rules: [
       { label: '権限確認を飛ばすエージェント CLI の起動', detect: isAgentBypassInvocation },
       {
+        label: 'auto-programmer の起動',
+        why: '権限確認を飛ばした claude を起動するツールで、起動してよいのは人間だけである（ADR-001）',
+        detect: isAutoProgrammerInvocation
+      },
+      {
         label: 'git config によるコミット作者の改変',
         prefix: ['git', 'config'],
         detect: isCommitIdentityChange
@@ -285,6 +290,20 @@ function isAgentBypassInvocation(tokens) {
   if (!AGENT_CLIS.has(tokens[0])) return false
   if (tokens.some((token) => AGENT_BYPASS_FLAGS.has(token))) return true
   return findFlagValue(tokens, '--permission-mode') === 'bypassPermissions'
+}
+
+// npm のスクリプト名と、それが実行する本体。どちらの経路で打っても同じ起動になる
+const AUTO_PROGRAMMER_SCRIPT = 'auto-programmer'
+const AUTO_PROGRAMMER_ENTRY = 'scripts/auto-programmer/index.mjs'
+
+function isAutoProgrammerInvocation(tokens) {
+  if (tokens[0] === 'node') {
+    return tokens.some((token) => stripQuotes(token).endsWith(AUTO_PROGRAMMER_ENTRY))
+  }
+  if (tokens[0] !== 'npm' || !['run', 'run-script'].includes(tokens[1])) return false
+  // `npm run --silent auto-programmer` のようにフラグが挟まっても、最初の非フラグがスクリプト名
+  const scriptName = tokens.slice(2).find((token) => !token.startsWith('-'))
+  return scriptName !== undefined && stripQuotes(scriptName) === AUTO_PROGRAMMER_SCRIPT
 }
 
 function findGhApiEndpoint(tokens) {

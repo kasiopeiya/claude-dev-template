@@ -34,6 +34,8 @@ gh auth login
 npm run auto-programmer
 ```
 
+起動してよいのは人間だけである。AI のセッションから打つと `.claude/hooks/` が止める。権限確認を飛ばした `claude` を、AI が自分で増やせないようにするためである。
+
 ## 設定値（`config.mjs`）
 
 接続先と表記はすべて `config.mjs` に集めてある。**他のファイルにこれらの値は書かれていない。**

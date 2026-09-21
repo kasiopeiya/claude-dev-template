@@ -23,7 +23,7 @@ export function runAutoDevSession(issueNumber) {
   // `--allowedTools` での列挙は漏れたところで空転するため（ADR-001「トレードオフ・影響」）。
   // この形は .claude/hooks/forbiddenCommandMatcher.mjs が「ゲートの迂回」として禁じているが、
   // それは Bash ツールへ渡すコマンドへの禁止であり、影響範囲は AI 専用 clone の中に閉じる。
-  // clone の中でも .claude/hooks/ のガードは効き続ける。
+  // clone の中でも .claude/hooks/ のガードは効き続け、このツール自体の起動も AI には禁じている。
   return runStreaming(
     'claude',
     ['-p', `/auto-dev ${issueNumber}`, '--dangerously-skip-permissions'],
