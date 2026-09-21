@@ -1,6 +1,14 @@
 ---
 hook:
-  applies-to: ['**/config.ts', '**/config/**', '**/*.env*', '**/parameter*.ts']
+  applies-to:
+    [
+      '**/config.ts',
+      '**/config.mjs',
+      '**/config/**',
+      '**/*.env*',
+      '**/parameter*.ts',
+      'scripts/**/*.mjs'
+    ]
 ---
 
 # 構成管理ポリシー
