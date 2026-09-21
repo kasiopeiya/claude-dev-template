@@ -480,7 +480,7 @@ const event = createApiGatewayEvent({ pathParameters: { id: 'user-123' } })
 
 - `.claude/hooks/policy-loader.mjs`：ポリシー駆動開発の土台。壊れるとポリシーがAIに届かず、全ポリシーが無言で効かなくなる
 - `.claude/hooks/policyMatcher.mjs`：同上（対象ファイルとポリシーの対応判定を担う）
-- `scripts/auto-programmer/branchName.mjs`：無人で走るツールがブランチ名を決める。壊れると CI が1つも走らない PR が、誰にも見られずにできる
+- `scripts/auto-programmer/` のうち、import 文を1つも持たないファイル：無人で走るツールの判断（どの Issue に着手し、どのブランチに積むか）を担う純粋関数である。壊れると誤った PR が、誰にも見られずにできる
 - **fake**：それ自体が独自のロジックを持ち、壊れると依存する全テストが嘘の結果を返す
 
 > [!IMPORTANT]
