@@ -54,14 +54,11 @@ describe('ユーザー登録コントローラ', () => {
   })
 
   it('システム側の障害の場合に追跡できるエラーログを出力する', async () => {
-    // Arrange
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sut = buildControllerWith(new UnavailableUserRepository())
 
-    // Act
     await sut.handle({ id: 'user-001', email: 'user@example.com' })
 
-    // Assert
     expect(errorLog).toHaveBeenCalledTimes(1)
     const loggedEntry = JSON.parse(String(errorLog.mock.calls[0]?.[0]))
     expect(loggedEntry).toMatchObject({ level: 'ERROR', userId: 'user-001' })
