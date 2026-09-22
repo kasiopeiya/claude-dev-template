@@ -146,7 +146,7 @@ export function formatViolations(oversized) {
     '',
     '直し方: 文章を圧縮して詰め込んではいけません。docs/policy/policy-driven-development-policy.md',
     'の「CLAUDE.md には、発火点を機械が判定できない指示だけを置く」に従い、発火点をパス・コマンド・',
-    'Skill 名で言える指示を Policy・rules・hook・Skill のどれかへ移してください。移し先が無ければ',
+    'Skill 名で言える指示を Policy・Rule・hook・Skill のどれかへ移してください。移し先が無ければ',
     '自分で決めず、AskUserQuestion で人間に問うてください。'
   )
 
