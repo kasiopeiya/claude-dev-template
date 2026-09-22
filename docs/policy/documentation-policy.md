@@ -33,7 +33,7 @@ AIエージェントが、Markdown でドキュメントを書く／レビュー
 > **（AI・必須）** Markdown 文書を新規作成・大きく加筆したら、報告前に `/quick-doc-review` を確認なしで自動実行すること。本ポリシーは読んで守るものなので、書き上げた後に照合しないと守れたか分からない。
 
 > [!IMPORTANT]
-> **（AI・必須）** 本ポリシーを改訂したら、`.claude/skills/quick-doc-review/SKILL.md` と `.claude/agents/doc-reviewer-agent/doc-reviewer-agent.md` のチェック項目の追従要否を判断すること。どちらも速度のため本ポリシーから判定基準を書き下した派生コピーであり、追従しないと**どのゲートも通らない規約が生まれる**。載せないと判断した場合は、その理由を quick-doc-review の「チェック項目に載せない規約と理由」に書く。
+> **（AI・必須）** 本ポリシーを改訂したら、`.claude/skills/quick-doc-review/SKILL.md` と `.claude/skills/doc-review/references/review-criteria.md` の観点一覧の追従要否を判断すること。どちらも速度のため本ポリシーから判定基準を書き下した派生コピーであり、追従しないと**どのゲートも通らない規約が生まれる**。載せないと判断した場合は、その理由を quick-doc-review の「チェック項目に載せない規約と理由」に書く。
 
 ## 基本原則
 
