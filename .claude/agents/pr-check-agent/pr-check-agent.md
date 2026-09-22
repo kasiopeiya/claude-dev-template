@@ -2,7 +2,7 @@
 name: pr-check-agent
 description: PR がレビューを受け付けてよい前提条件（説明の実質・差分サイズ）を満たすかを判定し、結果を PR に1件だけコメントする専門エージェント。判定基準は pr-review-policy が正典で、このエージェントは手順だけを持つ。
 tools: Read, Bash
-model: opus
+model: sonnet
 effort: high
 ---
 
