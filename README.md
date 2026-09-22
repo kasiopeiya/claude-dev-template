@@ -98,7 +98,7 @@ npm run format       # フォーマット
 
 - **`docs/policy-hub.md`**：CLAUDE.md・ほぼ全スキルが起点として直接参照
 - **`docs/policy/`（ディレクトリ＋各ファイル名）**：`.claude/hooks/policy-loader.mjs` がこのパスを直接読み込み、front-matter `applies-to` で自動アタッチする。個々のファイル名も多数のスキルから SSOT として直接参照される
-- **`docs/design-hub.md`**：CLAUDE.md・design/to-plan/check-plan/cdk-imp 等が起点として直接参照
+- **`docs/design-hub.md`**：CLAUDE.md・design/to-plan/cdk-imp スキル・plan-reviewer-agent 等が起点として直接参照
 - **`docs/design/`（ディレクトリ名）**：`design-doc-policy.md` の `applies-to` が参照。中の個別設計書は自由に追加・更新可
 - **`docs/runbook/`（ディレクトリ名）**：`runbook-policy.md` の `applies-to` が参照。中の個別手順書は自由に追加・更新可
 - **`docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`**：create-adr/decide-tech-stack スキル・`.githooks/pre-commit` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない）
