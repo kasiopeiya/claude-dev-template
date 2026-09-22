@@ -138,7 +138,7 @@ N/A とする条件：実装が無い（設計書のみ）／差分に公開識�
 
 #### 強度：Connascence 9種を3段階へ束ねる（Position を除く8種）
 
-Position（引数順序）は `/code-review` のインターフェース観点が既に採点しているため、二重採点を避けて除外する。
+Position（引数順序）は `/code-review` の観点「インターフェース」が判定しているため、二重に判定しないよう除外する。
 
 - **弱**：Name / Type
 - **中**：Meaning / Algorithm

@@ -12,7 +12,7 @@ TypeScript アプリケーションコードをレビューしてください。
 
 レビューの前に `.claude/rules/typescript.md` を必ず Read し、そのうち機械化されない規約への準拠を1項目ずつ照合してください。違反は1件残らずレポートに反映してください。
 
-レビューでは以下のポリシーにも従って評価してください。各ポリシーが判定基準の SSOT であり、具体チェックはポリシー側にあります（本ファイルへ転記しない）。各ポリシーは対応する採点観点に紐づきます（references/review-criteria.md）。
+レビューでは以下のポリシーにも従って評価してください。各ポリシーが判定基準の SSOT であり、具体チェックはポリシー側にあります（本ファイルへ転記しない）。各ポリシーは対応する観点に紐づきます（references/review-criteria.md）。
 
 - `docs/policy/code-comment-policy.md` — 観点「コメント」
 - `docs/policy/configuration-policy.md` — 観点「構成管理ポリシー準拠」
