@@ -1,6 +1,7 @@
 #!/bin/sh
 # ci-format（prettier --check .）が push 後に落ちるのを防ぐため、
 # コミット前にステージ済みファイルだけを prettier で整形して再ステージする。
+# 拡張子で絞らず、CI と同じく prettier が扱える全ファイルを対象にする（扱えないものは --ignore-unknown で読み飛ばす）。
 # 併せて、ADR を変更した場合は adr-index.md を frontmatter から再生成し再ステージする（Issue #50）。
 
 # ADR 本体が変更されていれば一覧表を再生成する（生成物 adr-index.md 自体の変更は除外）。
@@ -11,7 +12,7 @@ if [ -n "$staged_adr" ]; then
   git add docs/adr/adr-index.md
 fi
 
-staged_files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.json' '*.md' '*.html')
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
 
 if [ -z "$staged_files" ]; then
   exit 0
@@ -46,6 +47,6 @@ if [ -z "$format_files" ]; then
   exit 0
 fi
 
-printf '%s' "$format_files" | xargs npx prettier --write
+printf '%s' "$format_files" | xargs npx prettier --write --ignore-unknown
 
 printf '%s' "$format_files" | xargs git add

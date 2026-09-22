@@ -1,0 +1,13 @@
+#!/bin/sh
+# ci-format（npm run format:check）が push 後に落ちるのを防ぐため、push の直前に CI と同じコマンドで確かめる（Issue #530）。
+# pre-commit の整形は部分ステージのファイルを見送り、main へ直接入った整形崩れも拾えない。原因を問わずここで止める。
+# /auto-dev は1ターンの中で push まで終えるため、ターン末ゲート（.claude/hooks/turn-end-gate.mjs）はここに届かない。
+# 検査するのは作業ツリーなので、未コミットの整形崩れでも止まる。
+
+if npm run --silent format:check; then
+  exit 0
+fi
+
+echo "" >&2
+echo "整形崩れがあるため push を止めました。npm run format で整形し、変わったファイルをコミットしてから push し直してください。" >&2
+exit 1
