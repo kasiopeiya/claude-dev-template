@@ -153,3 +153,9 @@
 ### [application-logging-policy.md](policy/application-logging-policy.md)
 
 **参照タイミング**: ログ出力を実装・レビューする前
+
+---
+
+### [review-subagent-lens-policy.md](policy/review-subagent-lens-policy.md)
+
+**参照タイミング**: `*-review` の Skill・`*-reviewer-agent` を新設・編集する前
