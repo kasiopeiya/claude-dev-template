@@ -388,7 +388,7 @@
             「良い〇〇とは何か」を先に決め、イメージ通りの出力に寄せる
           </text>
           <text x="192" y="68" fill="#111110" style="font-size: 15px; font-weight: 800">
-            📜 Policy ＋ rules — 判断の基準を文書にする
+            📜 Policy ＋ Rule — 判断の基準を文書にする
           </text>
           <text
             x="748"
@@ -2118,23 +2118,25 @@
           <dl
             style="display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; margin-top: 10px"
           >
-            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap; color: var(--ink)">
-              Policy
+            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">
+              CLAUDE.md（行動規範）
             </dt>
             <dd style="margin: 0px; font-size: 12.5px; color: var(--muted)">
-              判断が分かれる事柄に「私たちはこう考える」と立場を決めた文書。AIが迷ったときに読む基準
+              どのタスクでも外せない立ち回りを、毎回確実に効かせる。常時効く立ち回りと、ハブへの入口を書く。毎回全文を読むので文字数に上限がある
             </dd>
-            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">rules</dt>
+            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">Policy（憲法）</dt>
             <dd style="margin: 0px; font-size: 12.5px; color: var(--muted)">
-              コーディング規約。命名・行数・import順など、判断の余地がない具体的な決まり
+              判断を AI
+              に委ね、出力のぶれを抑える。正解が複数ある中で「どれを選ぶか」の立場と理由を書く
             </dd>
-            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">CLAUDE.md</dt>
+            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">Rule（法律）</dt>
             <dd style="margin: 0px; font-size: 12.5px; color: var(--muted)">
-              AIが毎回必ず読む最上位の指示書。プロジェクトの案内図も兼ねる
+              書き方をそろえ、レビューで直す手間をなくす。選んだ後の How
+              を書く。対象ファイルを読むと読み込まれる
             </dd>
-            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">Skill</dt>
+            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">Skill（手順）</dt>
             <dd style="margin: 0px; font-size: 12.5px; color: var(--muted)">
-              よく使うプロンプトを手順としてまとめ、<code
+              繰り返す作業を、毎回同じ段取りで進める。名前で呼ぶ段取りで、<code
                 style="
                   font-size: 11px;
                   background: var(--bg-soft);
@@ -2146,19 +2148,23 @@
                 "
                 >/code-dev</code
               >
-              のようなコマンドで呼び出せるようにしたもの
+              のように呼ぶ
             </dd>
-            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">SubAgent</dt>
+            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">
+              SubAgent（監査）
+            </dt>
             <dd style="margin: 0px; font-size: 12.5px; color: var(--muted)">
-              別の会話（独立したコンテキスト）で走らせる専用のAI。レビューなど「別の目」が要る仕事を任せる
+              書き手と切り離した目で評価させる。独立したコンテキスト（別の会話）で、評価と検査の実行を担う
             </dd>
-            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">hooks</dt>
+            <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">hooks（検問）</dt>
             <dd style="margin: 0px; font-size: 12.5px; color: var(--muted)">
-              AIが特定の操作をした瞬間に自動で走るプログラム。必要な文書をその場で差し出す
+              CI
+              では届かない瞬間に確実に介入する。ツール実行の直前・ターン末に必ず走り、注入・阻止・ターン末ゲートの3役を担う
             </dd>
             <dt style="font-size: 12.5px; font-weight: 700; white-space: nowrap">ガードレール</dt>
             <dd style="margin: 0px; font-size: 12.5px; color: var(--muted)">
-              静的解析・テストなど、機械が合否を出す検査。同じ入力には必ず同じ判定を返す
+              機械で判定できることを AI
+              の注意力に頼らない。静的解析・メトリクス・テストなど、機械が合否を出す検査
             </dd>
           </dl>
         </div>
@@ -2271,13 +2277,13 @@
               text-anchor="middle"
               style="font-size: 13.5px; font-weight: 700; fill: var(--ink)"
             >
-              憲法であり、北極星
+              憲法
             </text>
             <text x="400" y="336" text-anchor="middle" style="font-size: 12px; fill: var(--muted)">
-              判断が割れる事柄に
+              「どれを選ぶか」の
             </text>
             <text x="400" y="354" text-anchor="middle" style="font-size: 12px; fill: var(--muted)">
-              私たちの立場を宣言する
+              立場と理由
             </text>
 
             <!-- 左：Policyが降りてくる側 -->
@@ -2290,13 +2296,11 @@
               style="fill: var(--bg); stroke: var(--rule); stroke-width: 1.5"
             ></rect>
             <text x="52" y="130" style="font-size: 15px; font-weight: 700; fill: var(--ink)">
-              📏 rules
+              📏 Rule（法律）
             </text>
-            <text x="52" y="152" style="font-size: 12.5px; fill: var(--muted)">
-              判断の余地がない具体的な決まり
-            </text>
+            <text x="52" y="152" style="font-size: 12.5px; fill: var(--muted)">選んだ後の How</text>
             <text x="52" y="172" style="font-size: 11.5px; fill: var(--muted)">
-              例）「関数は50行以内」
+              例）AAA の Act は必ず1行
             </text>
 
             <rect
@@ -2326,7 +2330,7 @@
               機械が合否を出す検査
             </text>
             <text x="52" y="308" style="font-size: 11.5px; fill: var(--muted)">
-              例）50行超の関数をESLintが弾く
+              例）関数は50行まで（ESLint）
             </text>
             <text x="52" y="328" fill="#111110" style="font-size: 11.5px; fill: var(--muted)">
               ✅ 全部通らないとマージできない
@@ -2341,16 +2345,16 @@
               style="fill: var(--bg); stroke: var(--rule); stroke-width: 1.5"
             ></rect>
             <text x="52" y="462" style="font-size: 15px; font-weight: 700; fill: var(--ink)">
-              🛎 hooks
+              🛎 hooks（検問）
             </text>
             <text x="52" y="484" style="font-size: 12.5px; fill: var(--muted)">
-              Policyを確実に効かせる装置
+              注入・阻止・ターン末ゲート
             </text>
             <text x="52" y="504" style="font-size: 11.5px; fill: var(--muted)">
-              例）package.json を触った瞬間に
+              例）編集対象の Policy を差し出す
             </text>
             <text x="52" y="524" style="font-size: 11.5px; fill: var(--muted)">
-              　　依存のPolicyを必ず突きつける
+              　　禁止コマンドを止める
             </text>
 
             <!-- 右：Policyを見に行く側 -->
@@ -2368,10 +2372,10 @@
               "
             ></rect>
             <text x="558" y="130" style="font-size: 15px; font-weight: 700; fill: var(--ink)">
-              📋 Skill
+              📋 Skill（手順）
             </text>
             <text x="558" y="152" style="font-size: 12.5px; fill: var(--muted)">
-              工程まるごとの手順
+              名前で呼ぶ段取り
             </text>
             <text x="558" y="172" style="font-size: 11.5px; fill: var(--muted)">
               例）/code-dev 15 と打つだけ
@@ -2391,10 +2395,10 @@
               "
             ></rect>
             <text x="558" y="266" style="font-size: 15px; font-weight: 700; fill: var(--ink)">
-              👥 SubAgent
+              👥 SubAgent（監査）
             </text>
             <text x="558" y="288" style="font-size: 12.5px; fill: var(--muted)">
-              別の目で成果物を審査する
+              独立したコンテキストで評価・実行
             </text>
             <text x="558" y="308" style="font-size: 11.5px; fill: var(--muted)">
               例）レビュー専任AIが差分を審査
@@ -2414,13 +2418,13 @@
               "
             ></rect>
             <text x="558" y="462" style="font-size: 15px; font-weight: 700; fill: var(--ink)">
-              🗺 CLAUDE.md
+              🗺 CLAUDE.md（行動規範）
             </text>
             <text x="558" y="484" style="font-size: 12.5px; fill: var(--muted)">
-              毎回必ず読む最上位の指示書
+              常時効く立ち回り。ハブへの入口
             </text>
             <text x="558" y="504" style="font-size: 11.5px; fill: var(--muted)">
-              例）「まず設計ハブを読む」
+              例）着手前に目的を一文で出す
             </text>
 
             <!-- 関係線：Policy → 外（具体化・配達） -->
@@ -2661,7 +2665,7 @@
           >
             <span style="width: 20px; flex-shrink: 0">🛎</span
             ><span style="font-weight: 700; white-space: nowrap">hooks</span
-            ><span>触ったファイルに関係するPolicy・規約だけを、その場でAIに差し出す</span>
+            ><span>触ったファイルに関係するPolicyだけを、その場でAIに差し出す</span>
           </div>
           <div
             style="
@@ -2748,7 +2752,7 @@
           >
         </h2>
         <p style="font-size: 13px; color: var(--muted); margin-top: 10px">
-          判断が割れる事柄に「私たちの立場」を先に決めておく。AIはそれを読んで自分で決めるので、人間に確認が飛んでこないし、出力もイメージから外れない。品質を、後追いのレビューではなく先出しの基準で担保する。
+          正解が複数ある中で「どれを選ぶか」の立場と理由を、先に決めておく。AIはそれを読んで自分で決めるので、人間に確認が飛んでこないし、出力もイメージから外れない。品質を、後追いのレビューではなく先出しの基準で担保する。
         </p>
 
         <div
@@ -3986,7 +3990,7 @@
           "
         >
           <svg
-            viewBox="0 44 800 290"
+            viewBox="0 0 800 530"
             role="img"
             style="
               width: 100%;
@@ -3997,106 +4001,48 @@
               font-family: inherit;
             "
           >
-            <title>新しい判断基準の置き場所を、抽象度と自動検知の可否で振り分ける分岐</title>
-
+            <title>新しい決まりの置き場所を、上から順に問いを通して振り分ける分岐</title>
+            <!-- 起点 -->
             <rect
-              x="10"
-              y="118"
-              width="196"
-              height="60"
+              x="20"
+              y="16"
+              width="300"
+              height="48"
               rx="9"
               style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
             ></rect>
-            <text x="24" y="144" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
-              🆕 判断基準を足す
-            </text>
-            <text x="24" y="164" style="font-size: 11.5px; fill: var(--ink)">
-              （例：import の並び順）
+            <text x="34" y="46" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+              🆕 新しい決まりを置きたい
             </text>
             <path
-              d="M208,148 L222,148"
+              d="M170,66 L170,90"
               style="
                 fill: none;
-                stroke-width: 2;
                 stroke: var(--faint);
                 stroke-width: 1.8;
                 marker-end: url('#a-step');
               "
             ></path>
-
+            <!-- ① 機械判定 → ガードレール -->
             <rect
-              x="226"
-              y="122"
-              width="180"
+              x="20"
+              y="96"
+              width="300"
               height="52"
               rx="9"
               stroke-dasharray="5 5"
               style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
             ></rect>
-            <text x="240" y="152" style="font-size: 11.5px; fill: var(--ink)">
-              「コードをどう書くか」か？
+            <text x="34" y="127" style="font-size: 11.5px; fill: var(--ink)">
+              ① 機械が合否を出せるか
             </text>
-
-            <!-- No → Policy -->
             <path
-              d="M408,138 C430,120 430,86 446,86"
-              style="
-                fill: none;
-                stroke-width: 2;
-                stroke: var(--faint);
-                stroke-width: 1.8;
-                marker-end: url('#a-step');
-              "
+              d="M322,122 L378,122"
+              style="fill: none; stroke: var(--ink); stroke-width: 2; marker-end: url('#a-gate')"
             ></path>
             <text
-              x="416"
-              y="106"
-              style="
-                font-size: 11.5px;
-                font-weight: 700;
-                fill: var(--ink);
-                paint-order: stroke;
-                stroke: var(--surface);
-                stroke-width: 4px;
-                stroke-linejoin: round;
-              "
-            >
-              No
-            </text>
-            <rect
-              x="452"
-              y="58"
-              width="164"
-              height="60"
-              rx="10"
-              style="
-                fill: var(--bg);
-                stroke: var(--rule);
-                stroke-width: 1.5;
-                stroke: var(--tint-border);
-              "
-            ></rect>
-            <text x="466" y="84" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
-              📜 Policy
-            </text>
-            <text x="466" y="104" style="font-size: 11.5px; fill: var(--ink)">
-              本質寄りの立場と理由
-            </text>
-
-            <!-- Yes → rules -->
-            <path
-              d="M408,160 C430,180 430,198 446,198"
-              style="
-                fill: none;
-                stroke-width: 2;
-                stroke: var(--faint);
-                stroke-width: 1.8;
-                marker-end: url('#a-step');
-              "
-            ></path>
-            <text
-              x="416"
-              y="196"
+              x="336"
+              y="114"
               style="
                 font-size: 11.5px;
                 font-weight: 700;
@@ -4110,59 +4056,178 @@
               Yes
             </text>
             <rect
-              x="452"
-              y="170"
-              width="164"
+              x="384"
+              y="92"
+              width="220"
               height="60"
               rx="10"
-              style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
+              style="fill: var(--bg); stroke: var(--ink); stroke-width: 1.5"
             ></rect>
-            <text x="466" y="196" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
-              📏 rules
+            <text x="398" y="117" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+              🚧 ガードレール
             </text>
-            <text x="466" y="216" style="font-size: 11.5px; fill: var(--ink)">実装の書き方</text>
-
-            <!-- rules → 自動検知できるか -->
+            <text x="398" y="137" style="font-size: 11.5px; fill: var(--ink)">
+              既定は CI。届かなければ hooks
+            </text>
             <path
-              d="M618,200 L634,200"
+              d="M170,150 L170,174"
               style="
                 fill: none;
-                stroke-width: 2;
                 stroke: var(--faint);
                 stroke-width: 1.8;
                 marker-end: url('#a-step');
               "
             ></path>
+            <text
+              x="178"
+              y="168"
+              style="
+                font-size: 11.5px;
+                font-weight: 700;
+                fill: var(--ink);
+                paint-order: stroke;
+                stroke: var(--surface);
+                stroke-width: 4px;
+                stroke-linejoin: round;
+              "
+            >
+              No
+            </text>
+            <!-- ② 立場 → Policy -->
             <rect
-              x="638"
-              y="174"
-              width="148"
+              x="20"
+              y="180"
+              width="300"
               height="52"
               rx="9"
               stroke-dasharray="5 5"
               style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
             ></rect>
-            <text x="650" y="198" style="font-size: 11.5px; fill: var(--ink)">機械が合否を</text>
-            <text x="650" y="216" style="font-size: 11.5px; fill: var(--ink)">出せる？</text>
-
+            <text x="34" y="211" style="font-size: 11.5px; fill: var(--ink)">
+              ② 「どれを選ぶか」の立場か
+            </text>
             <path
-              d="M712,228 L712,254"
+              d="M322,206 L378,206"
               style="
                 fill: none;
-                stroke-width: 2;
-                stroke: var(--ink);
-                marker-end: url('#a-gate');
-                background: var(--surface);
-                border: 1.5px solid var(--ink);
-                border-radius: 8px;
-                padding: 6px 10px;
-                font-size: 11.5px;
-                font-weight: 600;
-                color: var(--ink);
+                stroke: var(--faint);
+                stroke-width: 1.8;
+                marker-end: url('#a-step');
               "
             ></path>
             <text
-              x="720"
+              x="336"
+              y="198"
+              style="
+                font-size: 11.5px;
+                font-weight: 700;
+                fill: var(--ink);
+                paint-order: stroke;
+                stroke: var(--surface);
+                stroke-width: 4px;
+                stroke-linejoin: round;
+              "
+            >
+              Yes
+            </text>
+            <rect
+              x="384"
+              y="176"
+              width="220"
+              height="60"
+              rx="10"
+              style="fill: var(--bg); stroke: var(--rule); stroke-width: 1.5"
+            ></rect>
+            <text x="398" y="201" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+              📜 Policy
+            </text>
+            <text x="398" y="221" style="font-size: 11.5px; fill: var(--ink)">
+              立場と、その理由
+            </text>
+            <path
+              d="M170,234 L170,258"
+              style="
+                fill: none;
+                stroke: var(--faint);
+                stroke-width: 1.8;
+                marker-end: url('#a-step');
+              "
+            ></path>
+            <text
+              x="178"
+              y="252"
+              style="
+                font-size: 11.5px;
+                font-weight: 700;
+                fill: var(--ink);
+                paint-order: stroke;
+                stroke: var(--surface);
+                stroke-width: 4px;
+                stroke-linejoin: round;
+              "
+            >
+              No
+            </text>
+            <!-- ③ How → Rule／Skill -->
+            <rect
+              x="20"
+              y="264"
+              width="300"
+              height="52"
+              rx="9"
+              stroke-dasharray="5 5"
+              style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
+            ></rect>
+            <text x="34" y="295" style="font-size: 11.5px; fill: var(--ink)">
+              ③ 選んだ後の「どう書くか・どう作るか」か
+            </text>
+            <path
+              d="M322,290 L378,290"
+              style="
+                fill: none;
+                stroke: var(--faint);
+                stroke-width: 1.8;
+                marker-end: url('#a-step');
+              "
+            ></path>
+            <text
+              x="336"
+              y="282"
+              style="
+                font-size: 11.5px;
+                font-weight: 700;
+                fill: var(--ink);
+                paint-order: stroke;
+                stroke: var(--surface);
+                stroke-width: 4px;
+                stroke-linejoin: round;
+              "
+            >
+              Yes
+            </text>
+            <rect
+              x="384"
+              y="264"
+              width="200"
+              height="52"
+              rx="9"
+              stroke-dasharray="5 5"
+              style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
+            ></rect>
+            <text x="398" y="295" style="font-size: 11.5px; fill: var(--ink)">
+              発火点をファイルパスで言えるか
+            </text>
+            <path
+              d="M586,280 C604,280 604,254 618,254"
+              style="
+                fill: none;
+                stroke: var(--faint);
+                stroke-width: 1.8;
+                marker-end: url('#a-step');
+              "
+            ></path>
+            <text
+              x="592"
               y="248"
               style="
                 font-size: 11.5px;
@@ -4177,30 +4242,168 @@
               Yes
             </text>
             <rect
-              x="622"
-              y="258"
-              width="164"
-              height="64"
+              x="624"
+              y="224"
+              width="166"
+              height="60"
               rx="10"
-              style="
-                fill: var(--bg);
-                stroke: var(--rule);
-                stroke-width: 1.5;
-                stroke: var(--tint-border);
-                background: var(--surface);
-                border: 1.5px solid var(--ink);
-                border-radius: 8px;
-                padding: 6px 10px;
-                font-size: 11.5px;
-                font-weight: 600;
-                color: var(--ink);
-              "
+              style="fill: var(--bg); stroke: var(--rule); stroke-width: 1.5"
             ></rect>
-            <text x="636" y="284" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
-              🚧 ガードレール
+            <text x="638" y="249" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+              📏 Rule
             </text>
-            <text x="636" y="304" style="font-size: 11.5px; fill: var(--ink)">
-              静的解析・テストで落とす
+            <text x="638" y="269" style="font-size: 11.5px; fill: var(--ink)">paths で届ける</text>
+            <path
+              d="M586,300 C604,300 604,330 618,330"
+              style="
+                fill: none;
+                stroke: var(--faint);
+                stroke-width: 1.8;
+                marker-end: url('#a-step');
+              "
+            ></path>
+            <text
+              x="580"
+              y="350"
+              style="
+                font-size: 11.5px;
+                font-weight: 700;
+                fill: var(--ink);
+                paint-order: stroke;
+                stroke: var(--surface);
+                stroke-width: 4px;
+                stroke-linejoin: round;
+              "
+            >
+              行為
+            </text>
+            <rect
+              x="624"
+              y="300"
+              width="166"
+              height="60"
+              rx="10"
+              style="fill: var(--bg); stroke: var(--rule); stroke-width: 1.5"
+            ></rect>
+            <text x="638" y="325" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+              📋 Skill
+            </text>
+            <text x="638" y="345" style="font-size: 11.5px; fill: var(--ink)">
+              その行為を担う Skill
+            </text>
+            <path
+              d="M170,318 L170,366"
+              style="
+                fill: none;
+                stroke: var(--faint);
+                stroke-width: 1.8;
+                marker-end: url('#a-step');
+              "
+            ></path>
+            <text
+              x="178"
+              y="346"
+              style="
+                font-size: 11.5px;
+                font-weight: 700;
+                fill: var(--ink);
+                paint-order: stroke;
+                stroke: var(--surface);
+                stroke-width: 4px;
+                stroke-linejoin: round;
+              "
+            >
+              No
+            </text>
+            <!-- ④ 独立コンテキスト → SubAgent -->
+            <rect
+              x="20"
+              y="372"
+              width="300"
+              height="52"
+              rx="9"
+              stroke-dasharray="5 5"
+              style="fill: var(--surface); stroke: var(--rule); stroke-width: 1.5"
+            ></rect>
+            <text x="34" y="403" style="font-size: 11.5px; fill: var(--ink)">
+              ④ 独立したコンテキストで評価・実行させたいか
+            </text>
+            <path
+              d="M322,398 L378,398"
+              style="
+                fill: none;
+                stroke: var(--faint);
+                stroke-width: 1.8;
+                marker-end: url('#a-step');
+              "
+            ></path>
+            <text
+              x="336"
+              y="390"
+              style="
+                font-size: 11.5px;
+                font-weight: 700;
+                fill: var(--ink);
+                paint-order: stroke;
+                stroke: var(--surface);
+                stroke-width: 4px;
+                stroke-linejoin: round;
+              "
+            >
+              Yes
+            </text>
+            <rect
+              x="384"
+              y="368"
+              width="220"
+              height="60"
+              rx="10"
+              style="fill: var(--bg); stroke: var(--rule); stroke-width: 1.5"
+            ></rect>
+            <text x="398" y="393" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+              👥 SubAgent
+            </text>
+            <text x="398" y="413" style="font-size: 11.5px; fill: var(--ink)">
+              評価（判定型）と検査の実行
+            </text>
+            <path
+              d="M170,426 L170,450"
+              style="
+                fill: none;
+                stroke: var(--faint);
+                stroke-width: 1.8;
+                marker-end: url('#a-step');
+              "
+            ></path>
+            <text
+              x="178"
+              y="444"
+              style="
+                font-size: 11.5px;
+                font-weight: 700;
+                fill: var(--ink);
+                paint-order: stroke;
+                stroke: var(--surface);
+                stroke-width: 4px;
+                stroke-linejoin: round;
+              "
+            >
+              No
+            </text>
+            <!-- ⑤ 常時の立ち回り → CLAUDE.md -->
+            <rect
+              x="20"
+              y="456"
+              width="300"
+              height="60"
+              rx="10"
+              style="fill: var(--bg); stroke: var(--rule); stroke-width: 1.5"
+            ></rect>
+            <text x="34" y="481" style="font-size: 13.5px; font-weight: 700; fill: var(--ink)">
+              🗺 CLAUDE.md
+            </text>
+            <text x="34" y="501" style="font-size: 11.5px; fill: var(--ink)">
+              どれでもない常時の立ち回り（文字数上限あり）
             </text>
           </svg>
 
@@ -4223,7 +4426,7 @@
                   color: var(--muted);
                   letter-spacing: 0.04em;
                 "
-                >何を書くか</span
+                >役割</span
               ><span
                 style="
                   flex: 1 1 150px;
@@ -4232,7 +4435,7 @@
                   color: var(--muted);
                   letter-spacing: 0.04em;
                 "
-                >誰が守らせるか</span
+                >効き方</span
               >
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap">
@@ -4261,7 +4464,7 @@
                   background: var(--bg);
                 "
               >
-                判断が割れる事柄への立場と、その理由
+                「どれを選ぶか」の立場と理由
               </div>
               <div
                 style="
@@ -4273,7 +4476,7 @@
                   background: var(--bg);
                 "
               >
-                AIが読んで従う
+                編集時に注入。行為で発火するものは hooks・Skill・CLAUDE.md が読ませる
               </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap">
@@ -4290,7 +4493,7 @@
                   font-weight: 700;
                 "
               >
-                📏 rules
+                📏 Rule
               </div>
               <div
                 style="
@@ -4302,7 +4505,7 @@
                   background: var(--bg);
                 "
               >
-                実装の書き方（コーディング規約）
+                選んだ後の How。機械で判定できるものはガードレールへ移す（数値上限と直し方は残す）
               </div>
               <div
                 style="
@@ -4314,7 +4517,7 @@
                   background: var(--bg);
                 "
               >
-                AIが読んで従う
+                対象ファイルを読むと読み込まれる。名指しのパスには掛けない
               </div>
             </div>
             <div style="display: flex; gap: 8px; flex-wrap: wrap">
@@ -4343,7 +4546,7 @@
                   background: var(--bg);
                 "
               >
-                rules のうち、機械が合否を出せるもの
+                機械が合否を出す検査
               </div>
               <div
                 style="
@@ -4355,7 +4558,7 @@
                   background: var(--bg);
                 "
               >
-                機械が落とす
+                既定は CI。ターン末ゲートがローカルでも走らせる
               </div>
             </div>
           </div>
