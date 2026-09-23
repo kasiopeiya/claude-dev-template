@@ -1,4 +1,4 @@
-// 責務: GitHub Projects のボードの着手待ちから、いま着手できる Issue を着手順に選び出し、選んだカードの Status を書き換える。
+// 責務: GitHub Projects のボードの着手待ちから、いま着手できる Issue を着手順に選び出し、カードの Status を書き換える。
 //
 // 設計意図（WHY）:
 // - フィールド ID・選択肢 ID を設定に持たせず、毎回表記から引き直す。ID は人間が見ても正しさを
@@ -143,16 +143,17 @@ export function listStartableIssues() {
 }
 
 /**
- * カードの Status を「着手中」を表す選択肢へ動かす。
+ * カードの Status を、表記で指定した選択肢へ動かす。
  *
  * @param {string} itemId ボードのカード ID
+ * @param {string} statusName 動かす先の選択肢の表記（config.mjs が持つ値）
  * @returns {void}
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
-export function markAsStarted(itemId) {
+function moveCardToStatus(itemId, statusName) {
   const { id: projectId } = runJson('gh', ['project', 'view', ...ghProjectJsonArgs])
   if (!projectId) throw new Error('gh project view の出力に project の ID がありません')
-  const { fieldId, optionId } = resolveStatusOption(board.inProgressStatusName)
+  const { fieldId, optionId } = resolveStatusOption(statusName)
 
   runOrThrow('gh', [
     'project',
@@ -166,4 +167,26 @@ export function markAsStarted(itemId) {
     '--single-select-option-id',
     optionId
   ])
+}
+
+/**
+ * カードの Status を「着手中」を表す選択肢へ動かす。
+ *
+ * @param {string} itemId ボードのカード ID
+ * @returns {void}
+ * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
+ */
+export function markAsStarted(itemId) {
+  moveCardToStatus(itemId, board.inProgressStatusName)
+}
+
+/**
+ * カードの Status を「レビュー待ち」を表す選択肢へ動かす。
+ *
+ * @param {string} itemId ボードのカード ID
+ * @returns {void}
+ * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
+ */
+export function markAsInReview(itemId) {
+  moveCardToStatus(itemId, board.inReviewStatusName)
 }

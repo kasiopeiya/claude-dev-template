@@ -30,7 +30,9 @@ export const config = {
     // ボード上の表記。`gh project field-list <番号> --owner <owner>` の表示と一字一句合わせる
     statusFieldName: 'Status',
     readyStatusName: 'Ready',
-    inProgressStatusName: 'In progress'
+    inProgressStatusName: 'In progress',
+    // CI が通り、人間がレビューしてよくなった Issue のカードを動かす先
+    inReviewStatusName: 'In Review'
   },
 
   // このラベルが付いた Issue だけを対象にする
