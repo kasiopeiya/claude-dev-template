@@ -1,4 +1,4 @@
-// 責務: 静的解析(ESLint)ルールを一元定義する。数値上限の正は typescript.md、それ以外の書式ルールの正はこのファイル
+// 責務: 静的解析(ESLint)ルールを一元定義する。数値上限の正は typescript.md、テストの書き方の正は unit-test-policy、それ以外の書式ルールの正はこのファイル
 
 import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
@@ -8,6 +8,44 @@ import sonarjs from 'eslint-plugin-sonarjs'
 import globals from 'globals'
 
 import awsCdkLibBarrelImport from './eslint-rules/awsCdkLibBarrelImport.mjs'
+
+// テスト名検査が拾うべき呼び出し形（unit-test-policy「テストケース名は日本語で書く」の対象）。
+// it(...) 直呼び／it.skip(...) 等の修飾子付き／test.concurrent.only(...) 等の二段修飾子付き／
+// it.each(...)(...)／test.concurrent.each(...)(...) 等の二段修飾子＋each／it.each`...`(...) のタグ付きテンプレートまで拾う。
+// 形を1つでも落とすと、その形で書かれたテスト名だけ検査が素通りする
+const TEST_NAME_CALLEE_PATHS = [
+  'callee.name',
+  'callee.object.name',
+  'callee.object.object.name',
+  'callee.callee.object.name',
+  'callee.callee.object.object.name',
+  'callee.tag.object.name'
+]
+const buildTestFunctionCallSelector = (functionNamePattern) =>
+  `CallExpression:matches(${TEST_NAME_CALLEE_PATHS.map((path) => `[${path}=${functionNamePattern}]`).join(', ')})`
+
+const JAPANESE_CHARACTER_PATTERN = '/[ぁ-んァ-ヶ一-龥]/'
+const TEST_SUITE_OR_CASE_FUNCTION_NAMES = '/^(it|test|describe)$/'
+const TEST_CASE_FUNCTION_NAMES = '/^(it|test)$/'
+
+const nonJapaneseTestNameSelectors = [
+  {
+    // raw が引用符始まりのものだけに絞り、it.runIf(true) の真偽値引数などを誤検知しない
+    selector: `${buildTestFunctionCallSelector(TEST_SUITE_OR_CASE_FUNCTION_NAMES)} > Literal.arguments:first-child[raw=/^['"]/]:not([value=${JAPANESE_CHARACTER_PATTERN}])`,
+    message: 'テストケース名は日本語で書く（unit-test-policy）'
+  },
+  {
+    selector: `${buildTestFunctionCallSelector(TEST_SUITE_OR_CASE_FUNCTION_NAMES)} > TemplateLiteral.arguments:first-child:not(:has(TemplateElement[value.raw=${JAPANESE_CHARACTER_PATTERN}]))`,
+    message: 'テストケース名は日本語で書く（unit-test-policy）'
+  }
+]
+
+// unit-test-policy「テストケース内にif文がある場合」はテストケース（it/test）単位の規定なので、
+// describe のセットアップ処理やファイル内ヘルパー関数の if 文は対象にしない
+const ifStatementInTestCaseSelector = {
+  selector: `${buildTestFunctionCallSelector(TEST_CASE_FUNCTION_NAMES)} > :function.arguments IfStatement`,
+  message: 'テスト内で if 文は使わない（unit-test-policy）。ケースを分けて書く'
+}
 
 export default tseslint.config(
   // 静的解析の対象外。cdk.out は CDK 合成物、*.d.ts は生成物なので除外する
@@ -102,6 +140,19 @@ export default tseslint.config(
   {
     files: ['**/test/**/*.ts', '**/*.test.ts'],
     rules: { 'no-magic-numbers': 'off' }
+  },
+
+  // テストコード限定：if 文と、日本語を含まないテストケース名を機械検知する（unit-test-policy の How をガードレール化）。
+  // 対象は unit-test-policy の `applies-to` と同じ3パターン（test/ 配下のヘルパーは対象外。正当な if 文まで落とさないため）
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.test.mjs'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ifStatementInTestCaseSelector,
+        ...nonJapaneseTestNameSelectors
+      ]
+    }
   },
 
   // 型情報が必要なルール(型対応 lint)。app と infra のソースを対象にし、型サービスを有効化する。

@@ -26,6 +26,8 @@
 - **Import 順序・冒頭集約**：ESLint `import-x/order` / `import-x/first`
 - **ネスト深度・複雑度**：ESLint `max-depth` / `complexity` / `sonarjs/cognitive-complexity`
 - **改行スタイル（1行に収まる引数・オブジェクト・配列はインライン）**：Prettier `objectWrap: 'collapse'`（`format:check`）
+- **テスト内の if 文禁止（テストファイルのみ）**：ESLint `no-restricted-syntax`（`IfStatement`）
+- **テストケース名の日本語必須（テストファイルのみ）**：ESLint `no-restricted-syntax`（`it`/`test`/`describe` 名）
 
 下の観点一覧の観点は**観点名で識別する**（他ドキュメントからも観点名で参照する）。番号を振ると、観点の増減で番号がずれ、参照側が無言で壊れるためである。
 
