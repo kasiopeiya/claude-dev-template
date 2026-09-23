@@ -72,7 +72,7 @@ sequenceDiagram
 
 ### コーディング規約・技術ルール
 
-言語・フレームワーク別のルールは `.claude/rules/` 配下にあり、対象ファイルを読むと自動ロードされる。新規ファイルにはまだ Read が発生しないので、その場合は `.claude/hooks/policy-loader.mjs` が該当ルールを指し示す。
+言語・フレームワーク別のルールは `.claude/rules/` 配下にあり、対象ファイルを読むと自動ロードされる。新規ファイルにはまだ Read が発生しないので、その場合は `.claude/hooks/policy-loader.mjs` が該当ルールを指し示す。`docs/policy/**`・`docs/` 直下のハブなど名指しのパスに効かせたい Rule は、front-matter `hook.applies-to` で宣言すると、対象ファイルの有無にかかわらず編集時に policy-loader.mjs が指し示す。
 
 ## 使い方
 

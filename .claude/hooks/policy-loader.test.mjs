@@ -82,3 +82,68 @@ describe('policy-loader hook の Rule 肩代わり', () => {
     }
   })
 })
+
+// hook.applies-to は名指しのパスへの編集時注入用の経路であり、paths と異なり対象ファイルの
+// 有無にかかわらず常に案内する。実在する Rule には依存せず、都度合成した Rule ファイルで検証する。
+describe('policy-loader hook の Rule 肩代わり（hook.applies-to）', () => {
+  function writeSyntheticRule(ruleFileName, ruleFrontmatterBody) {
+    const ruleFilePath = resolve(projectRoot, '.claude/rules', ruleFileName)
+    writeFileSync(ruleFilePath, `---\n${ruleFrontmatterBody}\n---\n\n# 合成テスト用 Rule\n`)
+    return ruleFilePath
+  }
+
+  test('hook.applies-to が合う対象は、ファイルが存在しても案内する', () => {
+    const ruleFileName = '__synthetic_applies_to_existing__.md'
+    const targetFilePath = resolve(projectRoot, 'tmp/__synthetic_applies_to_existing_target__.md')
+    const ruleFilePath = writeSyntheticRule(
+      ruleFileName,
+      "hook:\n  applies-to: ['tmp/__synthetic_applies_to_existing_target__.md']"
+    )
+    mkdirSync(dirname(targetFilePath), { recursive: true })
+    writeFileSync(targetFilePath, '')
+
+    try {
+      const hookOutput = runHook({ file_path: targetFilePath })
+
+      assert.match(hookOutput, new RegExp(`\\.claude/rules/${ruleFileName}`))
+    } finally {
+      rmSync(ruleFilePath, { force: true })
+      rmSync(targetFilePath, { force: true })
+    }
+  })
+
+  test('hook.applies-to が合う対象は、ファイルが存在しなくても案内する', () => {
+    const ruleFileName = '__synthetic_applies_to_missing__.md'
+    const targetFilePath = resolve(projectRoot, 'tmp/__synthetic_applies_to_missing_target__.md')
+    const ruleFilePath = writeSyntheticRule(
+      ruleFileName,
+      "hook:\n  applies-to: ['tmp/__synthetic_applies_to_missing_target__.md']"
+    )
+
+    try {
+      const hookOutput = runHook({ file_path: targetFilePath })
+
+      assert.match(hookOutput, new RegExp(`\\.claude/rules/${ruleFileName}`))
+    } finally {
+      rmSync(ruleFilePath, { force: true })
+    }
+  })
+
+  test('paths と hook.applies-to の両方に合う Rule は、一覧に一度だけ出す', () => {
+    const ruleFileName = '__synthetic_both_match__.md'
+    const targetFilePath = resolve(projectRoot, 'tmp/__synthetic_both_match_target__.md')
+    const ruleFilePath = writeSyntheticRule(
+      ruleFileName,
+      "paths:\n  - 'tmp/__synthetic_both_match_target__.md'\nhook:\n  applies-to: ['tmp/__synthetic_both_match_target__.md']"
+    )
+
+    try {
+      const hookOutput = runHook({ file_path: targetFilePath })
+
+      const occurrences = hookOutput.split(`.claude/rules/${ruleFileName}`).length - 1
+      assert.equal(occurrences, 1)
+    } finally {
+      rmSync(ruleFilePath, { force: true })
+    }
+  })
+})

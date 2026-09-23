@@ -4,16 +4,21 @@
 // 設計意図（WHY）:
 // - このファイルは stdin/stdout の入出力だけを担う。どのポリシー・Rule が効くかの判定は
 //   policyMatcher.mjs / ruleMatcher.mjs に委ね、中身はここに一切持たない。
-// - Rule は対象ファイルが存在しないときだけ指す。既存ファイルは Edit・Write の前に Read して
-//   おり標準ロードが既に効いているため、二重に指さない（policy-driven-development-policy）。
-// - Rule の探索に失敗しても、ポリシーの指し示しは道連れで止めない（下記 collectRulePaths）。
+// - Rule の指し示しには2つの経路がある。
+//   1. `paths`：対象ファイルが存在しないときだけ指す。既存ファイルは Edit・Write の前に Read
+//      しており標準ロードが既に効いているため、二重に指さない。
+//   2. `hook.applies-to`：Policy と同じく、対象ファイルの有無にかかわらず常に指す。名指しの
+//      パス（docs/policy/**・docs/ 直下のハブ）を `paths` に書くとハブや他ポリシーにも掛かって
+//      しまうため、編集時にだけ注入するこの経路を使う（policy-driven-development-policy）。
+//   同じ Rule が両方にマッチしても一覧に一度だけ出す。
+// - Rule の探索に失敗しても、ポリシーの指し示しは道連れで止めない（下記 collectRuleNames）。
 
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve, relative } from 'node:path'
 
 import { collectMatchingPolicies } from './policyMatcher.mjs'
-import { collectMatchingRules } from './ruleMatcher.mjs'
+import { collectMatchingRules, collectRulesByAppliesTo } from './ruleMatcher.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 // .claude/hooks/ からプロジェクトルートへ
@@ -22,17 +27,18 @@ const policyDir = resolve(projectRoot, 'docs/policy')
 const rulesDir = resolve(projectRoot, '.claude/rules')
 
 /**
- * 対象ファイルが存在しないときだけ、paths の合う Rule のパス一覧を返す。
+ * 適用される Rule のファイル名一覧を、重複なしで返す。
  *
  * Rule の探索に失敗しても []。ここで投げると main() 全体が catch に抜け、
  * 既に見つかっているポリシーの指し示しまで道連れで失われるため。
  */
-function collectRulePaths(targetAbsolutePath, targetRelativePath) {
-  if (existsSync(targetAbsolutePath)) return []
+function collectRuleNames(targetAbsolutePath, targetRelativePath) {
   try {
-    return collectMatchingRules(targetRelativePath, rulesDir).map(
-      (name) => `${relative(projectRoot, rulesDir)}/${name}`
-    )
+    const matchedByAppliesTo = collectRulesByAppliesTo(targetRelativePath, rulesDir)
+    const matchedByPaths = existsSync(targetAbsolutePath)
+      ? []
+      : collectMatchingRules(targetRelativePath, rulesDir)
+    return [...new Set([...matchedByAppliesTo, ...matchedByPaths])]
   } catch {
     return []
   }
@@ -53,7 +59,9 @@ function main() {
   const matchedPolicyPaths = collectMatchingPolicies(targetRelativePath, policyDir).map(
     (name) => `docs/policy/${name}`
   )
-  const matchedRulePaths = collectRulePaths(targetAbsolutePath, targetRelativePath)
+  const matchedRulePaths = collectRuleNames(targetAbsolutePath, targetRelativePath).map(
+    (name) => `${relative(projectRoot, rulesDir)}/${name}`
+  )
 
   const appliedDocumentPaths = [...matchedPolicyPaths, ...matchedRulePaths]
   if (appliedDocumentPaths.length === 0) return
