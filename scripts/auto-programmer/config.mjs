@@ -39,7 +39,7 @@ export const config = {
   targetIssueLabel: 'ai-fixable',
 
   // claude セッション1回（Skill 1つぶん）を打ち切るまでの時間。無人で固まったまま止まらない事態を防ぐ
-  sessionTimeoutMinutes: 120,
+  sessionTimeoutMinutes: 60,
 
   // 着手できる Issue が無かったとき、ボードを見直すまで待つ時間（90秒）。短いほど gh project の呼び出し
   // 頻度が上がり、GitHub API のレートリミットに達しやすくなる
