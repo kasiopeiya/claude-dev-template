@@ -158,4 +158,4 @@
 
 ### [review-subagent-lens-policy.md](policy/review-subagent-lens-policy.md)
 
-**参照タイミング**: レビューをレンズに分けて並列起動する Skill・SubAgent を新設・編集する前
+**参照タイミング**: 1体のレビューをレンズに分けるか検討するとき。レビューをレンズに分けて並列起動する Skill・SubAgent を新設・編集する前
