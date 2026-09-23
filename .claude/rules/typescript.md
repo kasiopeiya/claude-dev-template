@@ -92,4 +92,4 @@ async findById(id: UserId): Promise<User | null> {
 
 ## コメント
 
-コメントの規約は言語に依らないため、基準も記法も [code-comment-policy](../../docs/policy/code-comment-policy.md) が定める。要点は、実装コメントは WHY・doc comment は契約（投げる例外は `@throws {型}`）・ファイル冒頭は責務と前提・TODO は Issue 番号を併記・重要箇所バナーは1ファイル1個。
+コメントの規約は言語に依らないため、基準は [code-comment-policy](../../docs/policy/code-comment-policy.md)、記法は [code-comment.md](code-comment.md) が定める。要点は、実装コメントは WHY・doc comment は契約（投げる例外は `@throws {型}`）・ファイル冒頭は責務と前提・TODO は Issue 番号を併記・重要箇所バナーは1ファイル1個。
