@@ -11,7 +11,7 @@
 // - ラベル名は `.claude/skills/issue-check/SKILL.md` が貼る表記が正。
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
 
-const CHECKED_LABEL = 'issue:checked'
+export const ISSUE_CHECKED_LABEL = 'issue:checked'
 const NEEDS_HUMAN_DECISION_LABEL = 'issue:needs-human-decision'
 
 /**
@@ -22,7 +22,7 @@ const NEEDS_HUMAN_DECISION_LABEL = 'issue:needs-human-decision'
  */
 export function findReasonToSkipImplementation({ state, labelNames }) {
   if (state !== 'OPEN') return '/issue-check が不要と判定して close しました'
-  if (!labelNames.includes(CHECKED_LABEL)) return '/issue-check が判定を書き戻しませんでした'
+  if (!labelNames.includes(ISSUE_CHECKED_LABEL)) return '/issue-check が判定を書き戻しませんでした'
   if (labelNames.includes(NEEDS_HUMAN_DECISION_LABEL)) {
     return `/issue-check が人間の判断を要すると判定しました（${NEEDS_HUMAN_DECISION_LABEL}）`
   }

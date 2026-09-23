@@ -1,4 +1,4 @@
-// 責務: AI 専用 clone の中で `claude` を起動し、Issue 1件ぶんの `/issue-check` と `/auto-dev` を走らせる。
+// 責務: AI 専用 clone の中で `claude` を起動し、Issue 1件ぶんの `/issue-check`・`/auto-dev`・`/auto-fix-ci` を走らせる。
 //
 // 設計意図（WHY）:
 // - Issue ごと・Skill ごとにプロセスを作り直す。1つのセッションで何件も処理すると文脈が積もり、品質が
@@ -53,4 +53,15 @@ export function runIssueCheckSession(issueNumber) {
  */
 export function runAutoDevSession(issueNumber) {
   return runUnattendedSession(`/auto-dev ${issueNumber}`)
+}
+
+/**
+ * `/auto-fix-ci <Issue番号> <run ID>` を無人セッションとして実行する。
+ *
+ * @param {{ issueNumber: number, runId: number }} params 直させる Issue の番号と、落ちた CI の run ID（どちらも数値なので、取り違えないよう名前で渡す）
+ * @returns {{ exitCode: number, signal: string | null }} claude プロセスの終了状態（打ち切られたときは signal が入る）
+ * @throws {Error} claude を起動できなかったとき
+ */
+export function runAutoFixCiSession({ issueNumber, runId }) {
+  return runUnattendedSession(`/auto-fix-ci ${issueNumber} ${runId}`)
 }
