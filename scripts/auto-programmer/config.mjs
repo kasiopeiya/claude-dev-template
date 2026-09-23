@@ -39,9 +39,9 @@ export const config = {
   // claude セッション1回（/issue-check・/auto-dev のそれぞれ）を打ち切るまでの時間。無人で固まったまま止まらない事態を防ぐ
   sessionTimeoutMinutes: 120,
 
-  // 着手できる Issue が無かったとき、ボードを見直すまで待つ時間。短いほど gh project の呼び出し頻度が
-  // 上がり、GitHub API のレートリミットに達しやすくなる
-  pollIntervalMinutes: 5,
+  // 着手できる Issue が無かったとき、ボードを見直すまで待つ時間（90秒）。短いほど gh project の呼び出し
+  // 頻度が上がり、GitHub API のレートリミットに達しやすくなる
+  pollIntervalMinutes: 1.5,
 
   // AI が実装に使う clone。リポジトリ名から導くので、repository を変えれば別の clone になる
   workspaceDir: resolve(autoProgrammerHomeDir, basename(repository)),
