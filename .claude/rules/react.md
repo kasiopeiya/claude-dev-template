@@ -87,7 +87,7 @@ const fullName = `${first} ${last}`
 
 ## テスト実装ルール（Testing Library）
 
-テストの**思想**（ユーザー視点で振る舞いを検証する・内部 state や props を直接検証しない・どの層に書くか）は [unit-test-policy.md](../../docs/policy/unit-test-policy.md) と [test-strategy-policy.md](../../docs/policy/test-strategy-policy.md)（フロントは統合テスト厚めのトロフィー型）に従う。ここでは Testing Library 固有の**実装戦術**だけを定める。
+テストの**思想**（ユーザー視点で振る舞いを検証する・内部 state や props を直接検証しない・どの層に書くか）は [unit-test-policy.md](../../docs/policy/unit-test-policy.md) と [test-strategy-policy.md](../../docs/policy/test-strategy-policy.md)（フロントは統合テスト厚めのトロフィー型）に従う。書き方の共通部分（AAA・命名・SUT等）は [unit-test.md](unit-test.md) が定める。ここでは Testing Library 固有の**実装戦術**だけを定める。
 
 - **クエリの優先順位**：`getByRole` → `getByLabelText` → `getByText` → （最終手段）`getByTestId`。アクセシブルな属性で取得できるなら `data-testid` を増やさない
 - ユーザー操作は **`userEvent` を `fireEvent` より優先**する（実際の操作に近く、フォーカス・入力の副作用まで再現する）

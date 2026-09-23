@@ -10,7 +10,7 @@ AIエージェントが、不具合（バグ）を報告・修正し、何をも
 > - **直す前に原因を最小まで絞り込む。** 当てずっぽうの修正を積み重ねない
 
 > [!NOTE]
-> 本ポリシーは「バグ修正のアプローチ」を定義するものであり、テストの書き方（命名・構造・どの層に書くか等）には触れない。それらは [unit-test-policy.md](unit-test-policy.md) / [test-strategy-policy.md](test-strategy-policy.md) に従う。
+> 本ポリシーは「バグ修正のアプローチ」を定義するものであり、テストの書き方（命名・構造・どの層に書くか等）には触れない。それらは [unit-test-policy.md](unit-test-policy.md) / [unit-test.md](../../.claude/rules/unit-test.md)（Rule） / [test-strategy-policy.md](test-strategy-policy.md) に従う。
 
 ## 良いバグレポート——直せる状態で起票する
 

@@ -1,6 +1,6 @@
 # テスト方針準拠チェック詳細
 
-Phase 2（テスト作成）と Phase 4（実装）の準拠チェックで照合する項目と、その NG/OK パターン集。判定の基準は Phase 2 の冒頭で読み込んだテスト方針そのもので、ここはその具体例を示す。
+Phase 2（テスト作成）と Phase 4（実装）の準拠チェックで照合する項目と、その NG/OK パターン集。判定の基準は Phase 2 の冒頭で読み込んだテスト方針ポリシーと [unit-test.md](../../../rules/unit-test.md)（Rule）そのもので、ここはその具体例を示す。
 
 ## Phase 2（テスト作成）のチェック
 
@@ -21,85 +21,7 @@ Phase 2（テスト作成）と Phase 4（実装）の準拠チェックで照�
 | テスト内 if 文     | if 文なし                                                                                                                      | if 文あり → テストケースの分割を提案                                                                                    |
 | フロントエンド固有 | ユーザーが認識できる属性で要素取得（クエリの優先順位は react.md が定める）                                                     | 内部 state / props の直接検証 → 警告                                                                                    |
 
-### SUT の明示
-
-```typescript
-// ❌ NGパターン: SUT が不明確
-it('正常なリクエストの場合にリダイレクトを返す', async () => {
-  const result = await handler(event, context) // handler が SUT だと明示されていない
-  expect(result.statusCode).toBe(302)
-})
-
-// ✅ OKパターン: SUT を明示
-describe('認可エンドポイント', () => {
-  const sut = handler
-
-  it('正常なリクエストの場合にリダイレクトを返す', async () => {
-    const event = createApiGatewayEvent()
-
-    const result = await sut(event, context)
-
-    expect(result.statusCode).toBe(302)
-  })
-})
-```
-
-### AAAパターンとフェーズコメント
-
-```typescript
-// ❌ NGパターン: シンプルなテストに不要なフェーズコメント
-it('有効なIDの場合にユーザー情報を返す', async () => {
-  // Arrange  ← 不要（準備が1行のため）
-  const event = createApiGatewayEvent({ pathParameters: { id: 'user-123' } })
-
-  // Act  ← 不要
-  const result = await sut(event, context)
-
-  // Assert  ← 不要（確認が1行のため）
-  expect(result.statusCode).toBe(200)
-})
-
-// ✅ OKパターン: シンプルなテスト → 空白行のみで区切る
-it('有効なIDの場合にユーザー情報を返す', async () => {
-  const event = createApiGatewayEvent({ pathParameters: { id: 'user-123' } })
-
-  const result = await sut(event, context)
-
-  expect(result.statusCode).toBe(200)
-})
-
-// ✅ OKパターン: 準備が複数行 → フェーズコメントを入れる
-it('ゴールド会員の場合に割引が適用された注文サマリーを返す', async () => {
-  // Arrange
-  const user = createUser({ membershipLevel: 'gold' })
-  const items = [createItem({ price: 1000 }), createItem({ price: 2000 })]
-  const event = createApiGatewayEvent({
-    body: JSON.stringify({ userId: user.id, items })
-  })
-
-  // Act
-  const result = await sut(event, context)
-
-  // Assert
-  const body = JSON.parse(result.body)
-  expect(result.statusCode).toBe(200)
-  expect(body.totalAmount).toBe(2700)
-})
-```
-
-### テストケース命名
-
-```typescript
-// ❌ NGパターン: メソッド名を含む
-'handleRequestは不正な入力に対して400を返す'
-
-// ❌ NGパターン: 検証内容が曖昧
-'不正な入力でエラーを返す'
-
-// ✅ OKパターン: 日本語、メソッド名なし、事実表現
-'必須パラメータが欠落している場合に400を返す'
-'有効期限切れのセッションは拒否される'
-```
+> SUT の明示・AAAパターン・フェーズコメント・テストケース命名・テストデータの配置・テストケースの分離・パラメータ化テストの NG/OK 例は [unit-test.md](../../../rules/unit-test.md)（Rule）を参照する（写しを持たない）。
 
 ### テストダブル方針
 
@@ -120,64 +42,6 @@ expect(result.statusCode).toBe(200)
 // ✅ OKパターン: 呼び出し回数自体が仕様（キャッシュ）＝ポリシーの限定例外
 // WHY: 2回目はキャッシュから返し、元データを呼ばないことが仕様のため
 const mockFetchUser = vi.fn(() => ({ id: 'user-123', name: 'Alice' }))
-```
-
-### テストデータの配置
-
-```typescript
-// ❌ NGパターン: beforeEach にテスト固有データ
-let event: APIGatewayProxyEvent
-beforeEach(() => {
-  event = createApiGatewayEvent({ pathParameters: { id: 'user-123' } })
-})
-
-// ✅ OKパターン: Object Mother パターン + テスト関数内でカスタマイズ
-const createApiGatewayEvent = (overrides?: Partial<APIGatewayProxyEvent>) => ({
-  httpMethod: 'GET',
-  path: '/',
-  headers: {},
-  pathParameters: null,
-  queryStringParameters: null,
-  body: null,
-  ...overrides
-})
-
-it('有効なIDの場合にユーザー情報を返す', async () => {
-  const event = createApiGatewayEvent({ pathParameters: { id: 'user-123' } })
-
-  const result = await sut(event, context)
-
-  expect(result.statusCode).toBe(200)
-})
-```
-
-### テストケースの分離とパラメータ化
-
-```typescript
-// ❌ NGパターン: 異なる仕様条件を1つのテストにまとめている
-it('不正なリクエストの場合にエラーを返す', async () => {
-  // 未認証と不正メールが混在
-})
-
-// ✅ OKパターン: 仕様条件ごとに分離、同一条件のバリエーションは it.each
-it.each(['', 'invalid', '@no-local'])(
-  'メールアドレス「%s」が不正な場合に400を返す',
-  async (email) => {
-    const event = createApiGatewayEvent({ body: JSON.stringify({ email }) })
-
-    const result = await sut(event, context)
-
-    expect(result.statusCode).toBe(400)
-  }
-)
-
-it('未認証の場合に403を返す', async () => {
-  const event = createApiGatewayEvent({ headers: {} })
-
-  const result = await sut(event, context)
-
-  expect(result.statusCode).toBe(403)
-})
 ```
 
 ### 検証対象

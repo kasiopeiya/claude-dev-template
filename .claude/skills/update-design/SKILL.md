@@ -102,14 +102,14 @@ gh issue view {番号} --json number,title,body,labels
 #### 処理手順
 
 1. 更新された設計書を Read で読み込み、テスト対象のハンドラー/コンポーネントを特定する
-2. ポリシーハブ `docs/policy-hub.md` を Read してテスト方針を定めるポリシー（例: `unit-test-policy.md`）を探し、Read で読み込んでテスト方針を確認する
+2. ポリシーハブ `docs/policy-hub.md` を Read してテスト方針を定めるポリシー（例: `unit-test-policy.md`）を探し、Read で読み込んでテスト方針を確認する。書き方（命名規則等）は [unit-test.md](../../rules/unit-test.md)（Rule）を Read で読み込む
 3. テスト対象ごとに、設計書の仕様（正常系パス、エラーケース、バリデーション等）からテストケースを洗い出す
 4. テストファイルを生成する（既存ファイルがある場合は Edit で追記）
 
 #### 生成ルール
 
 - `describe` / `it` の構造のみ生成し、テスト本体は**空**にする
-- テストケース名は**日本語**で記述する（テスト方針ポリシーの命名規則に準拠）
+- テストケース名は**日本語**で記述する（unit-test.md（Rule）の命名規則に準拠）
 - 正常系と異常系は `describe` ブロックで分離する
 - **ファイル配置**：`docs/policy/test-strategy-policy.md`「テストコードの配置」に従う
 - import は検出したテストフレームワーク（`vitest` / `jest` 等。`package.json` の依存関係から判定）の `describe`, `it` のみ（`expect` 等は実装時に追加）

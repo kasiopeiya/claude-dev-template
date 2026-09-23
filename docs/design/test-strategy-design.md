@@ -19,7 +19,7 @@
 
 > [!NOTE]
 > **用語の定義（unit／integration／E2E・テストダブル）は [test-terms.md](../reference/test-terms.md) が SSOT** なので、ここには書き写さずリンクする。  
-> **層の選び方・配分の考え方は [test-strategy-policy](../policy/test-strategy-policy.md)、単体テストの書き方は [unit-test-policy](../policy/unit-test-policy.md) の領分。**  
+> **層の選び方・配分の考え方は [test-strategy-policy](../policy/test-strategy-policy.md)、単体テストの思想は [unit-test-policy](../policy/unit-test-policy.md)、書き方は [unit-test.md](../../.claude/rules/unit-test.md)（Rule）の領分。**  
 > **本書が書くのは、このプロジェクトで各層が実際にどこからどこまでを対象にし、何を保障するかという境界そのもの。**
 
 ## 基本方針

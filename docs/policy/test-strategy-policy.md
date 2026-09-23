@@ -18,7 +18,8 @@ AIエージェントが、「このテストをどの層（単体・統合・E2E
 ## テスト系ポリシーのハブ
 
 - [test-terms.md](../reference/test-terms.md)：用語の定義（unit/integration/E2E、テストダブル5分類）
-- [unit-test-policy.md](unit-test-policy.md)：テスト対象の決定（一律ルール）・単体テストの思想・書き方
+- [unit-test-policy.md](unit-test-policy.md)：テスト対象の決定（一律ルール）・単体テストの思想
+- [unit-test.md](../../.claude/rules/unit-test.md)（Rule）：単体テストの書き方（AAA・命名・SUT・テストケースの分離・パラメータ化・フィクスチャ）
 - **本書**：層の配分（ピラミッド）・層ごとの責務分担・統合/E2Eの設計指針・テストコードの配置
 
 > 各種類の定義は本書で再掲しない。test-terms.md が持つ。
