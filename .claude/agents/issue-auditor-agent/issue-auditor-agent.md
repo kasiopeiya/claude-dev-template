@@ -3,7 +3,7 @@ name: issue-auditor-agent
 description: boy-scout Issue 1件を、指定されたレンズ（要否／規約照合）で監査する専門エージェント。対象箇所の現物を読んで本文と突き合わせ、レンズが担当する観点だけを判定して、判定・根拠・差し替え案を返す。Issue 自体は書き換えない。統合は呼び出し側（/issue-check）が行う。
 tools: Read, Grep, Glob, Bash
 model: opus
-effort: xhigh
+effort: high
 ---
 
 # Issue Auditor Agent
