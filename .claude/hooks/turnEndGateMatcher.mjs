@@ -35,11 +35,22 @@ function isClaudeMdTarget(normalizedPath) {
   return normalizedPath === 'CLAUDE.md' || normalizedPath.endsWith('/CLAUDE.md')
 }
 
+/**
+ * 変更パスが Rule（`.claude/rules/*.md`）かを判定する。
+ *
+ * @param {string} normalizedPath スラッシュ区切りに正規化した、プロジェクトルート相対パス
+ * @returns {boolean} 文字数ゲートの対象なら true
+ */
+function isRuleTarget(normalizedPath) {
+  return normalizedPath.startsWith('.claude/rules/') && normalizedPath.endsWith('.md')
+}
+
 // ゲートの定義そのものは package.json が持つ。ここが持つのは「どの変更で走らせるか」だけ。
 const GATES = [
   { npmScript: 'check:static', isTarget: isStaticGateTarget },
   { npmScript: 'format:check', isTarget: isStaticGateTarget },
-  { npmScript: 'check:claude-md', isTarget: isClaudeMdTarget }
+  { npmScript: 'check:claude-md', isTarget: isClaudeMdTarget },
+  { npmScript: 'check:rules', isTarget: isRuleTarget }
 ]
 
 /**
