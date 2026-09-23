@@ -15,7 +15,7 @@ CDK実装 → コードレビュー → レビュー指摘修正 → CI実行 �
 
 1. **Phase 1: CDK実装** - `cdk-imp` スキルを Skill ツールで Issue番号 `$ARGUMENTS` を渡して起動し、CDK実装をこの場（インライン）で実行する（詳細は下記「Phase 1: CDK実装の制約」）。AskUserQuestion が必要な箇所は全て最初の選択肢（デフォルト）で自動選択し、人間への確認なしに最後まで自律実行すること
 2. **Phase 2: コードレビュー** - Phase 1 完了後、`cdk-review` スキルを Skill ツールで起動し、完了を待つ
-3. **Phase 3: レビュー指摘修正** - Phase 2 のレビュー結果に指摘事項がある場合、直接コードを修正する。指摘なしの場合はスキップ
+3. **Phase 3: レビュー指摘修正とループ** - 詳細は下記「Phase 2〜3: レビューと修正のループ」
 4. **Phase 4: CI実行** - `cdk-ci` スキルを Skill ツールで起動し、完了を待つ
 5. **Phase 5: CI指摘修正** - Phase 4 の結果にエラーがある場合、静的解析・スナップショットテスト・cdk synthのエラーを修正する。エラーなしの場合はスキップ
 6. 各フェーズの出力を**そのまま全文表示**する（要約・加工・コメント追加は禁止）
@@ -30,10 +30,19 @@ CDK実装 → コードレビュー → レビュー指摘修正 → CI実行 �
 - 設計書を参照し、CDK実装・テスト・cdk synth まで完了させる
 - 完了した CDK タスクのみ `gh issue edit $ARGUMENTS` でGitHub Issueのチェックリストを更新する
 
+## Phase 2〜3: レビューと修正のループ
+
+合否・再レビューの回数・修正範囲は [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) に従う（自律型ワークフロー）。
+
+- 指摘があれば、severity にかかわらずすべて直す（例外は同ポリシー「直す範囲は毎回すべて」の2種類だけ）。修正後 Phase 2 へ戻り `cdk-review` を再起動する。**再レビューには前回の指摘を渡さない**
+- レビューは最大3回（初回を含む）。残してよい2種類以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直してから Phase 4 へ進む
+- 3回目のレビューでも Critical が残ったら、残った Critical を `.claude/skills/quick-issue/SKILL.md` の書式で1件ずつ `gh issue create` する。**不合格として Phase 4 以降は実行しない**
+
 ## エラーハンドリング
 
 - Phase 1 失敗 → Phase 2 以降は実行しない。`/cdk-imp $ARGUMENTS` で個別実行を案内する
 - Phase 2 失敗 → Phase 1 の実装は完了済み。`/cdk-review` で個別実行を案内する
 - Phase 3 修正不要（指摘なし）→ Phase 4 へスキップ
+- Phase 3 不合格（3回目のレビューでも Critical が残る）→ 残った Critical を Issue 化し、Phase 4 以降は実行しない。起票した Issue 番号を報告して終了する
 - Phase 4 失敗 → エラー内容を表示し中断。`/cdk-ci` で個別実行を案内する
 - Phase 5 修正後も CI 失敗 → エラー内容を表示し、手動での修正を案内する
