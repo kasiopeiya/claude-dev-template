@@ -15,7 +15,7 @@
 | 3   | clone を `origin/main` へ戻し、トピックブランチを作り、依存を揃える                           | このツール                    |
 | 4   | 選んだ Issue のカードを「In progress」へ動かす                                                | このツール                    |
 | 5   | Issue から `issue:checked` を外し、clone の中で `claude -p "/issue-check #<番号>"` を起動する | `.claude/skills/issue-check/` |
-| 6   | 対応方針をポリシーに照らし、判定をラベル・state・本文へ書き戻す                               | `/issue-check`                |
+| 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す   | `/issue-check`                |
 | 7   | Issue のラベルと state を読み、実装へ進むか止めるかを決める                                   | このツール                    |
 | 8   | clone の中で `claude -p "/auto-dev <番号>"` を起動する                                        | `.claude/skills/auto-dev/`    |
 | 9   | 実装・検証・コミット・push・PR 作成                                                           | `/auto-dev`                   |

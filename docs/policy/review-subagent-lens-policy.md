@@ -1,6 +1,12 @@
 ---
 hook:
-  applies-to: ['.claude/agents/*-reviewer-agent/*.md', '.claude/skills/*-review/**/*.md']
+  applies-to:
+    [
+      '.claude/agents/*-reviewer-agent/*.md',
+      '.claude/skills/*-review/**/*.md',
+      '.claude/agents/issue-auditor-agent/*.md',
+      '.claude/skills/issue-check/**/*.md'
+    ]
 ---
 
 # レビュー系 subagent のレンズ分けポリシー
@@ -61,9 +67,9 @@ AIエージェントが、`*-reviewer-agent` を新設・編集するとき、�
 
 ## 適用範囲
 
-このポリシーは、frontmatter 冒頭の `hook.applies-to` が指す `*-reviewer-agent` の agent 定義と `*-review` の Skill 定義を編集する前に自動で差し込まれる。`/sre-prr`・`/check-plan`・`/doc-consistency`・`/validate-design` はこの命名に当たらないため、自動では差し込まれない。
+このポリシーは、frontmatter 冒頭の `hook.applies-to` が指す agent 定義・Skill 定義を編集する前に自動で差し込まれる。
 
-既定は、この命名でなくても**レンズに分けて並列起動するレビューには本ポリシーに従う**。単一の subagent でレビューを完結させる仕組みは対象外とする。
+既定は、命名にかかわらず**レンズに分けて並列起動するレビューには本ポリシーに従う**。レンズ分けするレビューを新しく作ったら、そのパスを `applies-to` に足す。単一の subagent でレビューを完結させる仕組みは対象外とする。
 
 ## 上位原則との関係
 
