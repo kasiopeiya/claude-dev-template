@@ -18,7 +18,7 @@
   - [組織の制約](#組織の制約)
 
 > [!NOTE]
-> 本ファイルは [design-doc-policy](../policy/design-doc-policy.md) が定める2本柱（基本方針・構成図）のスケルトン。
+> 本ファイルは [design-doc.md](../../.claude/rules/design-doc.md) が定める2本柱（基本方針・構成図）のスケルトン。
 > 設計判断の基準は [frontend-design-policy](../policy/frontend-design-policy.md) / [application-architecture-policy](../policy/application-architecture-policy.md) を参照する。
 > 構成図の小見出しは想定される図の例。実際に描く図に合わせて増減してよい。
 
