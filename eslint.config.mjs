@@ -8,6 +8,7 @@ import sonarjs from 'eslint-plugin-sonarjs'
 import globals from 'globals'
 
 import awsCdkLibBarrelImport from './eslint-rules/awsCdkLibBarrelImport.mjs'
+import codeCommentNotation from './eslint-rules/codeCommentNotation.mjs'
 
 // テスト名検査が拾うべき呼び出し形（unit-test-policy「テストケース名は日本語で書く」の対象）。
 // it(...) 直呼び／it.skip(...) 等の修飾子付き／test.concurrent.only(...) 等の二段修飾子付き／
@@ -67,7 +68,12 @@ export default tseslint.config(
       '@stylistic': stylistic,
       'import-x': importPlugin,
       sonarjs,
-      local: { rules: { 'aws-cdk-lib-barrel-import': awsCdkLibBarrelImport } }
+      local: {
+        rules: {
+          'aws-cdk-lib-barrel-import': awsCdkLibBarrelImport,
+          'code-comment-notation': codeCommentNotation
+        }
+      }
     },
     rules: {
       // ① クラス・関数の前後に空行を入れる（可読性方針）
@@ -99,6 +105,9 @@ export default tseslint.config(
       // ④ aws-cdk-lib のサービスモジュールは barrel 形式へ統一。名前空間 import は自動修正される
       'local/aws-cdk-lib-barrel-import': 'error',
 
+      // コードコメントの記法(code-comment.md)をガードレール化
+      'local/code-comment-notation': 'error',
+
       // ⑤ 型安全: any を禁止し型システムを使わせる
       '@typescript-eslint/no-explicit-any': 'error',
 
@@ -117,6 +126,15 @@ export default tseslint.config(
       // ⑨ ネスト深さ: 3 重以上で error（typescript.md「ネストは2重まで」の SSOT 値）
       'max-depth': ['error', 2]
     }
+  },
+
+  // コードコメントの記法(code-comment.md)を .tsx・.mjs にもガードレール化。
+  // .ts は上の '**/*.ts' ブロックで同じ local プラグインに登録済み（プラグイン名の重複登録はエラーになるため分離）。
+  // 対象は hook.applies-to と同じ3パターン（.github/workflows/*.yml はESLintの対象外のためRule本文に残す）
+  {
+    files: ['**/*.tsx', '**/*.mjs'],
+    plugins: { local: { rules: { 'code-comment-notation': codeCommentNotation } } },
+    rules: { 'local/code-comment-notation': 'error' }
   },
 
   // アプリロジック(src)限定: マジックナンバーを定数へ切り出させる（typescript.md「定数は目的が伝わる名前に」）。
