@@ -35,12 +35,11 @@ Phase 3 では、Phase 2 のレビュー結果をもとに、再度 `update-desi
 - 上記スキップ対象を除き、指摘は severity にかかわらずすべて直す
 - 修正後 Phase 2 へ戻り `doc-review` を再起動する。**再レビューには前回の指摘を渡さない**（スキップ一覧も渡さない。同じ指摘が再度出たら、新しく Issue を作らず、スキップ一覧の既存の Issue 番号のまま数える）
 - レビューは最大2回（初回を含む）。残してよい例外（`issue:needs-human-decision` に回した食い違い、上でスキップして Issue 化した Critical）以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直して完了する
-- 2回目のレビューでも Critical が残ったら、残った Critical を `.claude/skills/quick-issue/SKILL.md` の書式で1件ずつ `gh issue create` する。**不合格として終了する**
-- 完了時（合格・不合格を問わず）、最終報告に「スキップ一覧」（Issue 番号・指摘の概要）を含める
+- 2回目のレビューで指摘が出たら、直したうえで再レビューせずに完了する
+- 完了時、最終報告に「スキップ一覧」（Issue 番号・指摘の概要）を含める
 
 ## エラーハンドリング
 
 - Phase 1 失敗 → Phase 2, 3 を実行しない。`/update-design $ARGUMENTS` で個別実行を案内する
 - Phase 2 失敗 → Phase 1 の変更は適用済み。`/doc-review` で個別実行を案内する
-- Phase 3 不合格（2回目のレビューでも Critical が残る）→ 残った Critical を Issue 化し、不合格として終了する。起票した Issue 番号を報告する
 - Phase 3 失敗（実行エラー） → Phase 2 のレビュー結果は出力済み。手動での修正を案内する

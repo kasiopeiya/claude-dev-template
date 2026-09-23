@@ -36,13 +36,12 @@ CDK実装 → コードレビュー → レビュー指摘修正 → CI実行 �
 
 - 指摘があれば、severity にかかわらずすべて直す（例外は同ポリシー「直す範囲は毎回すべて」の残してよい例外だけ）。修正後 Phase 2 へ戻り `cdk-review` を再起動する。**再レビューには前回の指摘を渡さない**
 - レビューは最大2回（初回を含む）。残してよい例外以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直してから Phase 4 へ進む
-- 2回目のレビューでも Critical が残ったら、残った Critical を `.claude/skills/quick-issue/SKILL.md` の書式で1件ずつ `gh issue create` する。**不合格として Phase 4 以降は実行しない**
+- 2回目のレビューで指摘が出たら、直したうえで再レビューせずに Phase 4 へ進む
 
 ## エラーハンドリング
 
 - Phase 1 失敗 → Phase 2 以降は実行しない。`/cdk-imp $ARGUMENTS` で個別実行を案内する
 - Phase 2 失敗 → Phase 1 の実装は完了済み。`/cdk-review` で個別実行を案内する
 - Phase 3 修正不要（指摘なし）→ Phase 4 へスキップ
-- Phase 3 不合格（3回目のレビューでも Critical が残る）→ 残った Critical を Issue 化し、Phase 4 以降は実行しない。起票した Issue 番号を報告して終了する
 - Phase 4 失敗 → エラー内容を表示し中断。`/cdk-ci` で個別実行を案内する
 - Phase 5 修正後も CI 失敗 → エラー内容を表示し、手動での修正を案内する
