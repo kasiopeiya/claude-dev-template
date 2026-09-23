@@ -56,8 +56,9 @@ export function formatViolations(oversized) {
   lines.push(
     '',
     '直し方: 文章を圧縮して詰め込んではいけません。docs/policy/policy-driven-development-policy.md',
-    'の「Rule は既定で paths による標準ロードで届ける」に従い、paths を狭めて分けてください。',
-    '同じ paths のまま分けても読み込まれる文字数は変わらないため、上限を逃れられません。'
+    'の「文字数に上限を置き、超えたら圧縮ではなく分ける」に従い、paths を狭めて分けてください。',
+    '同じ paths のまま分けても読み込まれる文字数は変わらないため、上限を逃れられません。',
+    '対象が1ファイルなどで paths を狭められないときだけ、Rule をスタブにし本体を .claude/rule-bodies/ に置きます。'
   )
 
   return lines.join('\n')
