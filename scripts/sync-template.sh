@@ -25,6 +25,7 @@ readonly EXCLUDE_PATHS=(
   'docs/adr/adr-index.md'
   'docs/project-context/'
   '.github/'
+  'scripts/auto-programmer/config.mjs'
 )
 
 # 除外の例外。EXCLUDE_PATHS に当たっても、ここに挙げたパスは同期する。
@@ -42,7 +43,7 @@ usage() {
 
 除外するパス（プロジェクト固有の内容に育つため、テンプレート側の変更を取り込まない）:
   README.md / .gitignore / docs/requirements.md / docs/design/ / docs/design-hub.md /
-  docs/adr/adr-index.md / docs/project-context/ / .github/
+  docs/adr/adr-index.md / docs/project-context/ / .github/ / scripts/auto-programmer/config.mjs
 
 衝突したときの対処:
   衝突が出ても中断せず、除外処理まで進めて衝突ファイル一覧を表示して停止する。
