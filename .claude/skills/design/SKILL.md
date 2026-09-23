@@ -33,8 +33,8 @@ Phase 3 では、Phase 2 のレビュー結果をもとに、再度 `update-desi
 - **「Issueの意図に反する修正は行わないこと。レビュー指摘がIssueの計画と矛盾する場合は、Issueの意図を優先し、該当指摘はスキップすること」** という指示を明記する。**ただしスキップする指摘が Critical のときは、スキップする前にその1件を `.claude/skills/quick-issue/SKILL.md` の書式で `gh issue create` により起票する**（ai-review-gate-policy が定める2種類の例外の1つ。起票せずに直さず残すことは禁止）。起票した Issue 番号は、指摘の引用とあわせて「スキップ一覧」として保持する
 - 上記スキップ対象を除き、指摘は severity にかかわらずすべて直す
 - 修正後 Phase 2 へ戻り `doc-review` を再起動する。**再レビューには前回の指摘を渡さない**（スキップ一覧も渡さない。同じ指摘が再度出たら、新しく Issue を作らず、スキップ一覧の既存の Issue 番号のまま数える）
-- レビューは最大3回（初回を含む）。残してよい2種類（`issue:needs-human-decision` に回した食い違い、上でスキップして Issue 化した Critical）以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直して完了する
-- 3回目のレビューでも Critical が残ったら、残った Critical を `.claude/skills/quick-issue/SKILL.md` の書式で1件ずつ `gh issue create` する。**不合格として終了する**
+- レビューは最大2回（初回を含む）。残してよい2種類（`issue:needs-human-decision` に回した食い違い、上でスキップして Issue 化した Critical）以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直して完了する
+- 2回目のレビューでも Critical が残ったら、残った Critical を `.claude/skills/quick-issue/SKILL.md` の書式で1件ずつ `gh issue create` する。**不合格として終了する**
 - 完了時（合格・不合格を問わず）、最終報告に「スキップ一覧」（Issue 番号・指摘の概要）を含める
 
 ## エラーハンドリング

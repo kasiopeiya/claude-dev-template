@@ -68,8 +68,8 @@ Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積�
 1. **カードを Ready へ動かす（人間）**：対象は `ai-fixable` が付いた open な Issue。本文の「ブロッカー」に並ぶ Issue が全部 closed になるまでは拾われない
 2. **起動する（人間）**：`npm run auto-programmer` を打つ。1件終えると次の1件へ進み、Ctrl+C で止めるまで回り続ける。AI のセッションからは起動できない
 3. **実装して PR を作る（AI）**：スクリプトが AI 専用 clone にブランチを切り、`/auto-dev <Issue番号>` を起動する。`/auto-dev` は Issue の「実装フロー（使用するSkill）」に並ぶ Skill で実装し、検証・コミット・push・PR 作成まで確認なしで進める
-4. **CI が通るまで直す（AI）**：スクリプトが push 後の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。CI の結果が出てから次の1件へ進む
-5. **PR 以降は 10〜11 と同じ**：Issue は PR のマージで閉じる
+4. **CI が通るまで直す（AI）**：スクリプトが push 後の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。CI が通ればカードを In Review へ動かす。CI の結果が出てから次の1件へ進む
+5. **PR 以降は 10〜11 と同じ**：In Review のカードの PR をレビューする。Issue は PR のマージで閉じる
 
 `/auto-dev`・`/auto-fix-ci` が進めないと判断した Issue と、上限まで直させても CI が通らなかった Issue は、カードが In progress のまま残り、コメントと `issue:needs-clean-session` ラベルが付く。コメントを読み、専用のセッションでその Issue に着手する。
 

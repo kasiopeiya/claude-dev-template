@@ -22,7 +22,8 @@
 | 10  | push した commit の CI（`ci.workflowFile`）が終わるまで待つ                                                 | このツール                    |
 | 11  | CI が落ちていれば、clone の中で `claude -p "/auto-fix-ci <番号> <run ID>"` を起動し、10 へ戻る              | `.claude/skills/auto-fix-ci/` |
 | 12  | 落ちた原因を直し、コミット・push する                                                                       | `/auto-fix-ci`                |
-| 13  | PR の URL・終了コード・CI の結果を記録ファイルへ1行追記する                                                 | このツール                    |
+| 13  | CI が通っていれば、カードを「In Review」へ動かす                                                            | このツール                    |
+| 14  | PR の URL・終了コード・CI の結果を記録ファイルへ1行追記する                                                 | このツール                    |
 
 2 で「着手できる」とは、本文の `## ブロッカー` 節に並ぶ Issue が全部 closed であることを指す。着手できる Issue のうち、タイトル先頭の段番号（`/issue-deps` が書き込む）の小さい順、同じ段なら Issue 番号の小さい順に選ぶ。
 
@@ -60,6 +61,7 @@ npm run auto-programmer
 | `board.statusFieldName`       | 進捗を持つフィールドの表記                                  | `gh project field-list <番号> --owner <owner>`                                                |
 | `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                          | 同上                                                                                          |
 | `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                | 同上                                                                                          |
+| `board.inReviewStatusName`    | 「CI が通り、レビューしてよい」を表す選択肢の表記           | 同上                                                                                          |
 | `targetIssueLabel`            | 対象にする Issue のラベル                                   | `gh label list`                                                                               |
 | `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数   | 長いほうの実装に掛かる時間の上限として決める                                                  |
 | `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数 | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
@@ -108,3 +110,4 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 | Issue が「In progress」のまま残った                                                                | `/auto-dev`・`/auto-fix-ci` が離脱したか、`ci.maxFixAttempts` 回直させても CI が通らなかった（Issue にコメントとラベルが残っている） | コメントを読み、専用のセッションでその Issue に着手する                                                                                             |
 | 同上で、Issue にコメントが無い                                                                     | セッションが打ち切られたか、起動後に落ちた                                                                                           | 記録の `autoDevSignal`・`ciFixSignal`・`error` を読んで原因を直す                                                                                   |
 | 「CI: CI の run が … 分以内に終わりませんでした」「CI: CI の run が … で終わったので直させません」 | CI が詰まっているか、run がキャンセルされた。差分を直しても通らないので直させずに次へ進んだ。カードは In progress に残る             | 記録の `ciRuns` の URL で run を見て、再実行するか、専用のセッションでその Issue に着手する                                                         |
+| 「CI: CI が通りました。カードを In Review へ動かせませんでした: …」                                | PR はでき CI も通ったが、ボードの表記が `config.mjs` と食い違っているか `gh` が失敗した。カードは In progress に残る                 | 理由を読んで直し、カードを手で In Review へ動かす                                                                                                   |
