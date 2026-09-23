@@ -28,8 +28,10 @@ import { recordRun } from './runLog.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
 import { prepareTopicBranch } from './workspace.mjs'
 
+const MILLISECONDS_PER_MINUTE = 60 * 1000
+
 // 候補が無かったときに、ボードを見直すまで待つ時間
-const POLL_INTERVAL_MS = 60 * 1000
+const POLL_INTERVAL_MS = config.pollIntervalMinutes * MILLISECONDS_PER_MINUTE
 
 // /issue-check が判定の中身に関わらず貼るラベル。`.claude/skills/issue-check/SKILL.md` の表記が正
 const ISSUE_CHECKED_LABEL = 'issue:checked'

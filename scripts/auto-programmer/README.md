@@ -6,7 +6,7 @@
 
 ## 何をするか
 
-`npm run auto-programmer` を1回打つと、次の順に進む。1件終えると 2 へ戻り、着手できる Issue が無ければ1分待って見直す。**人間が Ctrl+C で止めるまで終了しない。** 実装中に止めても、その1件の記録を残してから終わる。ただし claude のセッションが続けて失敗したら、カードを空振りで In progress へ送り続けないよう自分で止まる。
+`npm run auto-programmer` を1回打つと、次の順に進む。1件終えると 2 へ戻り、着手できる Issue が無ければ `pollIntervalMinutes` の時間だけ待って見直す。**人間が Ctrl+C で止めるまで終了しない。** 実装中に止めても、その1件の記録を残してから終わる。ただし claude のセッションが続けて失敗したら、カードを空振りで In progress へ送り続けないよう自分で止まる。
 
 | 順  | すること                                                                                      | 担当                          |
 | --- | --------------------------------------------------------------------------------------------- | ----------------------------- |
@@ -47,16 +47,17 @@ npm run auto-programmer
 
 接続先と表記はすべて `config.mjs` に集めてある。**他のファイルにこれらの値は書かれていない。**
 
-| キー                          | 意味                                                                               | 調べ方                                         |
-| ----------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `repository`                  | Issue と PR の相手（`owner/repo`）                                                 | `gh repo view --json nameWithOwner`            |
-| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る                                      | `gh repo view --json defaultBranchRef`         |
-| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                                                     | `gh project list --owner <owner>`              |
-| `board.statusFieldName`       | 進捗を持つフィールドの表記                                                         | `gh project field-list <番号> --owner <owner>` |
-| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                                                 | 同上                                           |
-| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                                       | 同上                                           |
-| `targetIssueLabel`            | 対象にする Issue のラベル                                                          | `gh label list`                                |
-| `sessionTimeoutMinutes`       | claude セッション1回（`/issue-check`・`/auto-dev` のそれぞれ）を打ち切るまでの分数 | 長いほうの実装に掛かる時間の上限として決める   |
+| キー                          | 意味                                                                               | 調べ方                                                                                      |
+| ----------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `repository`                  | Issue と PR の相手（`owner/repo`）                                                 | `gh repo view --json nameWithOwner`                                                         |
+| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る                                      | `gh repo view --json defaultBranchRef`                                                      |
+| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                                                     | `gh project list --owner <owner>`                                                           |
+| `board.statusFieldName`       | 進捗を持つフィールドの表記                                                         | `gh project field-list <番号> --owner <owner>`                                              |
+| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                                                 | 同上                                                                                        |
+| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                                       | 同上                                                                                        |
+| `targetIssueLabel`            | 対象にする Issue のラベル                                                          | `gh label list`                                                                             |
+| `sessionTimeoutMinutes`       | claude セッション1回（`/issue-check`・`/auto-dev` のそれぞれ）を打ち切るまでの分数 | 長いほうの実装に掛かる時間の上限として決める                                                |
+| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数                        | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる |
 
 フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。
 
