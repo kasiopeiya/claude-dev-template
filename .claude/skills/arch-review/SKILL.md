@@ -58,7 +58,7 @@ git diff --cached --name-only --diff-filter=ACMR
    - 例外：どちらを採っても要件・プロダクトの方針が変わるとき、またはどちらかが取り消せない操作・外部に出る操作になるときだけは裁定しない。その食い違い1件を、`.claude/skills/quick-issue/SKILL.md` の書式でラベル `issue:needs-human-decision` を付けて `gh issue create` で起票し、ほかの指摘の処理は続ける
 5. **「次のステップ」の優先度は severity から機械的に決める**（Critical→高・High→中・Medium→低）
 6. **観点一覧の行名で穴を照合する**：`references/review-criteria.md` の観点一覧の全行を、どれかのレンズの「判定した観点」と突き合わせる。判定済みとみなすのは、各レンズの「判定した観点」に名前が挙がっている観点だけ。無ければ「未判定」として観点名をそのまま報告する（**これはレビュー対象の欠陥ではなく、レンズの割り方の穴**。黙って埋めない）
-7. **合否を判定する**：[ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい2種類以外の Critical が0件）で決める。全観点を通じた Critical の合計から、手順4で `issue:needs-human-decision` として起票した食い違いに含まれる Critical の指摘数を引き（起票した食い違いの件数ではない）、残りが0件なら ✅ 合格、1件以上なら 🚫 要修正とする。起票した Issue 番号は「Issue にして残す Critical」に書く
+7. **合否を判定する**：[ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい例外以外の Critical が0件）で決める。全観点を通じた Critical の合計から、手順4で `issue:needs-human-decision` として起票した食い違いに含まれる Critical の指摘数を引き（起票した食い違いの件数ではない）、残りが0件なら ✅ 合格、1件以上なら 🚫 要修正とする。起票した Issue 番号は「Issue にして残す Critical」に書く
 
 出力は `references/report-format.md` の書式に従う。
 

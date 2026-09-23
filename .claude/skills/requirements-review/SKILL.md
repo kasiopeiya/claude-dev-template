@@ -46,7 +46,7 @@ allowed-tools: Task, Bash, Read
 
 ## Phase 3: ゲート判定と起票
 
-**ゲート判定**：合否は [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい2種類以外の Critical が0件）で決めます。Critical が1件でもあれば 🚫 要修正、無ければ ✅ 凍結可、と判定し、根拠を1〜2文で書きます。未判定の観点が残っている場合も、その事実を判定の根拠に併記します。
+**ゲート判定**：合否は [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい例外以外の Critical が0件）で決めます。Critical が1件でもあれば 🚫 要修正、無ければ ✅ 凍結可、と判定し、根拠を1〜2文で書きます。未判定の観点が残っている場合も、その事実を判定の根拠に併記します。
 
 レビュー結果を出力したら、続けて `gh issue create` で GitHub Issue を起票してください。**ユーザーへの確認は行いません**（CLAUDE.md の boy-scout ルール）。
 

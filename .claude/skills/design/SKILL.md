@@ -19,6 +19,7 @@ Issue番号: $ARGUMENTS
    - Phase 1 で更新された設計書のパス（レビュー対象）
    - Phase 0 で取得したIssue情報（番号・タイトル・スコープ）と、「このIssueの意図に基づいて設計書が更新されている」こと
    - 更新後の設計書が **`docs/requirements.md` の要件（機能・非機能・SLO を含む）を満たしているか**を照合し、未充足・矛盾があれば指摘するという指示（設計が要件を満たすことの検証。とくに SLO はアーキテクチャの構造が目標を満たせるかに直結する）
+   - `--full` は渡さない。Phase 1 の更新は未コミットなので、`/doc-review` は今回の更新が生んだ違反だけを判定する（要件定義書との照合も同じ範囲）
 4. **Phase 3: レビュー指摘修正とループ** - 詳細は下記「Phase 2〜3: レビューと修正のループ」
 5. 各フェーズの出力を**そのまま全文表示**する（要約・加工・コメント追加は禁止）
 
@@ -30,10 +31,10 @@ Phase 3 では、Phase 2 のレビュー結果をもとに、再度 `update-desi
 
 - Phase 2 の出力（レビュー結果）をそのまま含める
 - Phase 0 で取得したIssue情報を含める
-- **「Issueの意図に反する修正は行わないこと。レビュー指摘がIssueの計画と矛盾する場合は、Issueの意図を優先し、該当指摘はスキップすること」** という指示を明記する。**ただしスキップする指摘が Critical のときは、スキップする前にその1件を `.claude/skills/quick-issue/SKILL.md` の書式で `gh issue create` により起票する**（ai-review-gate-policy が定める2種類の例外の1つ。起票せずに直さず残すことは禁止）。起票した Issue 番号は、指摘の引用とあわせて「スキップ一覧」として保持する
+- **「Issueの意図に反する修正は行わないこと。レビュー指摘がIssueの計画と矛盾する場合は、Issueの意図を優先し、該当指摘はスキップすること」** という指示を明記する。**ただしスキップする指摘が Critical のときは、スキップする前にその1件を `.claude/skills/quick-issue/SKILL.md` の書式で `gh issue create` により起票する**（ai-review-gate-policy が定める残してよい例外の1つ。起票せずに直さず残すことは禁止）。起票した Issue 番号は、指摘の引用とあわせて「スキップ一覧」として保持する
 - 上記スキップ対象を除き、指摘は severity にかかわらずすべて直す
 - 修正後 Phase 2 へ戻り `doc-review` を再起動する。**再レビューには前回の指摘を渡さない**（スキップ一覧も渡さない。同じ指摘が再度出たら、新しく Issue を作らず、スキップ一覧の既存の Issue 番号のまま数える）
-- レビューは最大2回（初回を含む）。残してよい2種類（`issue:needs-human-decision` に回した食い違い、上でスキップして Issue 化した Critical）以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直して完了する
+- レビューは最大2回（初回を含む）。残してよい例外（`issue:needs-human-decision` に回した食い違い、上でスキップして Issue 化した Critical）以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直して完了する
 - 2回目のレビューでも Critical が残ったら、残った Critical を `.claude/skills/quick-issue/SKILL.md` の書式で1件ずつ `gh issue create` する。**不合格として終了する**
 - 完了時（合格・不合格を問わず）、最終報告に「スキップ一覧」（Issue 番号・指摘の概要）を含める
 
@@ -41,5 +42,5 @@ Phase 3 では、Phase 2 のレビュー結果をもとに、再度 `update-desi
 
 - Phase 1 失敗 → Phase 2, 3 を実行しない。`/update-design $ARGUMENTS` で個別実行を案内する
 - Phase 2 失敗 → Phase 1 の変更は適用済み。`/doc-review` で個別実行を案内する
-- Phase 3 不合格（3回目のレビューでも Critical が残る）→ 残った Critical を Issue 化し、不合格として終了する。起票した Issue 番号を報告する
+- Phase 3 不合格（2回目のレビューでも Critical が残る）→ 残った Critical を Issue 化し、不合格として終了する。起票した Issue 番号を報告する
 - Phase 3 失敗（実行エラー） → Phase 2 のレビュー結果は出力済み。手動での修正を案内する

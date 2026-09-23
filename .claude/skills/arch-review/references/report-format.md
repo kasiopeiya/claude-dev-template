@@ -29,7 +29,7 @@
 ### 🚦 合否
 
 <!--
-合否の判定基準は ai-review-gate-policy（../../../../docs/policy/ai-review-gate-policy.md）「合格条件は『残してよい2種類以外のCriticalが0件』」。
+合否の判定基準は ai-review-gate-policy（../../../../docs/policy/ai-review-gate-policy.md）「合格条件は『残してよい例外以外のCriticalが0件』」。
 ここで数える Critical は、全観点を通じた合計から、このレビュー内で「食い違いの裁定」により issue:needs-human-decision として起票した食い違いに含まれる Critical の指摘数を引いたもの（起票した食い違いの件数ではない）。
 -->
 

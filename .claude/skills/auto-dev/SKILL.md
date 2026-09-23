@@ -40,8 +40,8 @@ state が `OPEN` でなければ、何もせず理由を表示して終了する
 
 実行する Skill がレビュー（`/doc-review`・`/code-review`・`/cdk-review`・`/arch-review`・`/requirements-review`）のときは、合否・再レビューの回数・修正範囲を [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) に従って決める（自律型ワークフロー）。
 
-- 指摘があれば、severity にかかわらずすべて直す（例外は同ポリシー「直す範囲は毎回すべて」の2種類だけ）。直したら同じレビュー Skill を再実行する。**再レビューには前回の指摘を渡さない**
-- レビューは同じ Skill ごとに最大2回（初回を含む）。「タスク一覧」の作業として動作確認のために回したものも回数に数える。残してよい2種類以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直してから次へ進む
+- 指摘があれば、severity にかかわらずすべて直す（例外は同ポリシー「直す範囲は毎回すべて」の残してよい例外だけ）。直したら同じレビュー Skill を再実行する。**再レビューには前回の指摘を渡さない**
+- レビューは同じ Skill ごとに最大2回（初回を含む）。「タスク一覧」の作業として動作確認のために回したものも回数に数える。残してよい例外以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直してから次へ進む
 - 2回目のレビューでも Critical が残ったら、その回の指摘は直さず、残った Critical を `.claude/skills/quick-issue/SKILL.md` の書式で1件ずつ `gh issue create` し、「離脱手順」へ進む
 
 ### Phase 3: 検証

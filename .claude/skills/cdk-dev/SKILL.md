@@ -34,8 +34,8 @@ CDK実装 → コードレビュー → レビュー指摘修正 → CI実行 �
 
 合否・再レビューの回数・修正範囲は [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) に従う（自律型ワークフロー）。
 
-- 指摘があれば、severity にかかわらずすべて直す（例外は同ポリシー「直す範囲は毎回すべて」の2種類だけ）。修正後 Phase 2 へ戻り `cdk-review` を再起動する。**再レビューには前回の指摘を渡さない**
-- レビューは最大2回（初回を含む）。残してよい2種類以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直してから Phase 4 へ進む
+- 指摘があれば、severity にかかわらずすべて直す（例外は同ポリシー「直す範囲は毎回すべて」の残してよい例外だけ）。修正後 Phase 2 へ戻り `cdk-review` を再起動する。**再レビューには前回の指摘を渡さない**
+- レビューは最大2回（初回を含む）。残してよい例外以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直してから Phase 4 へ進む
 - 2回目のレビューでも Critical が残ったら、残った Critical を `.claude/skills/quick-issue/SKILL.md` の書式で1件ずつ `gh issue create` する。**不合格として Phase 4 以降は実行しない**
 
 ## エラーハンドリング
