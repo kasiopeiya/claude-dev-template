@@ -1067,7 +1067,8 @@
         >
           <title>
             人間がカードを Ready へ動かして auto-programmer を起動すると、AI 専用 clone で /auto-dev
-            が1件ずつ実装して PR を作り、CI がレビュー要否を仕分ける流れ
+            が1件ずつ実装して PR を作り、CI が落ちれば /auto-fix-ci が直し、CI
+            がレビュー要否を仕分ける流れ
           </title>
 
           <!-- ステージ見出し -->
@@ -1189,7 +1190,7 @@
             実装・検証・コミット
           </text>
           <text x="302" y="206" style="font-size: 11.5px; fill: var(--ink)">
-            push して PR を作る
+            PR を作り、CI が通るまで直す
           </text>
 
           <!-- ③ 仕分け -->
