@@ -18,12 +18,6 @@
 
 ---
 
-### [git-policy.md](policy/git-policy.md)
-
-**参照タイミング**: commit作成・branch作成・PR作成・merge操作の前
-
----
-
 ### [pr-review-policy.md](policy/pr-review-policy.md)
 
 **参照タイミング**: PRレビューを行う前・レビューコメントを書く前・PRをマージする前
