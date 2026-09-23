@@ -9,109 +9,32 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-/** glob を行頭〜行末アンカーの正規表現へ変換する。`**` はディレクトリ跨ぎ、`*` は単一階層内。 */
-export function globToRegExp(glob) {
-  let re = ''
-  for (let i = 0; i < glob.length; i++) {
-    const c = glob[i]
-    if (c === '*') {
-      if (glob[i + 1] === '*') {
-        i++
-        if (glob[i + 1] === '/') {
-          i++
-          re += '(?:.*/)?'
-        } else {
-          re += '.*'
-        }
-      } else {
-        re += '[^/]*'
-      }
-    } else if ('.+?^${}()|[]\\'.includes(c)) {
-      re += '\\' + c
-    } else {
-      re += c
-    }
-  }
-  return new RegExp('^' + re + '$')
-}
+import {
+  convertGlobToRegExp,
+  extractFrontmatter,
+  parseFrontmatterList
+} from './frontmatterList.mjs'
 
-/** frontmatter（`---` に挟まれた内側）を取り出す。無ければ null。 */
-export function extractFrontmatter(text) {
-  const match = text.match(/^---\n([\s\S]*?)\n---/)
-  return match ? match[1] : null
-}
-
-/**
- * frontmatter テキストから `applies-to` のグロブ配列を抜き出す（YAML依存なしの最小実装）。
- * インライン配列（1行・複数行）・ブロックシーケンス・単一スカラーの4形式に対応する。
- * `hook:` が書かれているのに1件も返せない「沈黙」を防ぐため、書式差を吸収する。
- * 複数行インライン配列は prettier が printWidth 超過時に自動生成する形なので、必ず読めること。
- */
+/** frontmatter テキストから `applies-to` のグロブ配列を返す。キーが無ければ []。対応書式は parseFrontmatterList に従う。 */
 export function parseAppliesTo(frontmatter) {
-  const lines = frontmatter.split('\n')
-  const idx = lines.findIndex((l) => /^\s*applies-to:/.test(l))
-  if (idx === -1) return []
-
-  const value = lines[idx].replace(/^\s*applies-to:\s*/, '').trim()
-
-  // インライン配列: applies-to: ['a', 'b']（値が同じ行にある場合）
-  if (value.startsWith('[')) {
-    return splitInline(joinBracketed(lines, idx))
-  }
-  // インライン単一スカラー: applies-to: '**/*.md'
-  if (value) return [stripQuotes(value)]
-
-  // 複数行インライン配列: applies-to: の次行が `[` で始まり、`]` の行まで続く
-  if (lines[idx + 1]?.trim().startsWith('[')) {
-    return splitInline(joinBracketed(lines, idx + 1))
-  }
-
-  // ブロックシーケンス: 後続の `- item` 行を、リスト項目でない行に当たるまで集める
-  const items = []
-  for (let i = idx + 1; i < lines.length; i++) {
-    const item = lines[i].match(/^\s*-\s*(.+?)\s*$/)
-    if (!item) break
-    items.push(stripQuotes(item[1]))
-  }
-  return items
-}
-
-/** startIdx 行から `]` の行までを連結し、角括弧の内側テキストを返す。閉じ括弧が無ければ末尾まで。 */
-function joinBracketed(lines, startIdx) {
-  let joined = ''
-  for (let i = startIdx; i < lines.length; i++) {
-    joined += lines[i].trim()
-    if (lines[i].includes(']')) break
-  }
-  return joined.replace(/^[^[]*\[/, '').replace(/\].*$/, '')
-}
-
-function splitInline(inner) {
-  return inner
-    .split(',')
-    .map((s) => stripQuotes(s.trim()))
-    .filter(Boolean)
-}
-
-function stripQuotes(s) {
-  return s.replace(/^["']|["']$/g, '')
+  return parseFrontmatterList(frontmatter, 'applies-to')
 }
 
 /** ポリシーファイルの frontmatter から applies-to のグロブ配列を返す。frontmatter が無ければ []。 */
-export function readAppliesTo(filePath) {
-  const frontmatter = extractFrontmatter(readFileSync(filePath, 'utf8'))
+function readAppliesTo(policyFilePath) {
+  const frontmatter = extractFrontmatter(readFileSync(policyFilePath, 'utf8'))
   return frontmatter ? parseAppliesTo(frontmatter) : []
 }
 
-/** policyDir 内の *.md を走査し、relPath にマッチするポリシーのファイル名配列を返す。 */
-export function collectMatchingPolicies(relPath, policyDir) {
-  const matched = []
+/** policyDir 内の *.md を走査し、targetRelativePath にマッチするポリシーのファイル名配列を返す。 */
+export function collectMatchingPolicies(targetRelativePath, policyDir) {
+  const matchedPolicyNames = []
   for (const name of readdirSync(policyDir)) {
     if (!name.endsWith('.md')) continue
     const globs = readAppliesTo(resolve(policyDir, name))
-    if (globs.some((g) => globToRegExp(g).test(relPath))) {
-      matched.push(name)
+    if (globs.some((glob) => convertGlobToRegExp(glob).test(targetRelativePath))) {
+      matchedPolicyNames.push(name)
     }
   }
-  return matched
+  return matchedPolicyNames
 }

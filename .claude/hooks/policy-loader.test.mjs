@@ -1,49 +1,84 @@
-// 責務: hook の配線（stdin から PreToolUse JSON を読み、hookSpecificOutput を stdout に返す）のみを検証する。
+// 責務: hook の配線（stdin から PreToolUse JSON を読み、hookSpecificOutput を stdout に返す）と、
+// 対象ファイルの実在で Rule を指すかが切り替わることを、プロセスとして起動して検証する。
 //
-// マッチ判定そのものは policyMatcher.test.mjs が担う。ここは「プロセスとして起動して本当に
-// 発火するか」の end-to-end 配線だけを見る。合成パスを1つ流し、出力の形だけを確かめる
-// （実ファイルにも、返るポリシー名の期待表にも依存しない）。
+// マッチ判定そのものは policyMatcher.test.mjs が担う（ruleMatcher.mjs は unit-test-policy の
+// 例外一覧に無いため、ここでの end-to-end 検証だけでカバーする）。返るポリシー名・Rule 名の
+// 期待表には依存しない。
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
-const loader = resolve(scriptDir, 'policy-loader.mjs')
+const loaderScriptPath = resolve(scriptDir, 'policy-loader.mjs')
 const projectRoot = resolve(scriptDir, '../..')
+const HOOK_TIMEOUT_MS = 5000
 
 // SUT: policy-loader hook をサブプロセスとして起動し、stdout（注入内容）を返す。
 // hook は作業をブロックしないため常に正常終了する契約であり、それを前提の不変条件として守る。
 function runHook(toolInput) {
-  const res = spawnSync('node', [loader], {
+  const hookProcess = spawnSync('node', [loaderScriptPath], {
     input: JSON.stringify({ tool_input: toolInput }),
-    encoding: 'utf8'
+    encoding: 'utf8',
+    timeout: HOOK_TIMEOUT_MS
   })
-  assert.equal(res.status, 0, `hook exited non-zero: ${res.stderr}`)
-  return res.stdout
+  assert.equal(hookProcess.status, 0, `hook exited non-zero: ${hookProcess.stderr}`)
+  return hookProcess.stdout
 }
 
 describe('policy-loader hook の配線', () => {
   test('マッチするパスにはポリシー参照を hookSpecificOutput として返す', () => {
-    // app 配下の .ts は application-* / code-comment ポリシーにマッチする（合成パス・実在不要）
-    const out = runHook({ file_path: resolve(projectRoot, 'app/backend/__synthetic__.ts') })
+    // app 配下の .ts には何らかのポリシーが掛かる（合成パス・実在不要）
+    const hookOutput = runHook({ file_path: resolve(projectRoot, 'app/backend/__synthetic__.ts') })
 
-    const parsed = JSON.parse(out)
-    assert.equal(parsed.hookSpecificOutput.hookEventName, 'PreToolUse')
-    assert.match(parsed.hookSpecificOutput.additionalContext, /docs\/policy\//)
+    const parsedOutput = JSON.parse(hookOutput)
+    assert.equal(parsedOutput.hookSpecificOutput.hookEventName, 'PreToolUse')
+    assert.match(parsedOutput.hookSpecificOutput.additionalContext, /docs\/policy\//)
   })
 
   test('マッチしないパスには何も出力しない', () => {
-    const out = runHook({ file_path: resolve(projectRoot, 'no/such/area/file.xyz') })
+    const hookOutput = runHook({ file_path: resolve(projectRoot, 'no/such/area/file.xyz') })
 
-    assert.equal(out.trim(), '')
+    assert.equal(hookOutput.trim(), '')
+  })
+
+  test('プロジェクト外のパスには何も出力しない', () => {
+    const hookOutput = runHook({
+      file_path: resolve(projectRoot, '../__outside_project__/app/backend/x.ts')
+    })
+
+    assert.equal(hookOutput.trim(), '')
   })
 
   test('file_path が無ければ何も出力しない', () => {
-    const out = runHook({})
+    const hookOutput = runHook({})
 
-    assert.equal(out.trim(), '')
+    assert.equal(hookOutput.trim(), '')
+  })
+})
+
+// 対象ファイルが存在しないときだけ Rule を指す（既存ファイルは Read 時に標準ロード済み）。
+describe('policy-loader hook の Rule 肩代わり', () => {
+  test('存在しない .ts ファイルには Rule も指し示す', () => {
+    const hookOutput = runHook({ file_path: resolve(projectRoot, 'app/backend/__synthetic__.ts') })
+
+    assert.match(hookOutput, /\.claude\/rules\//)
+  })
+
+  test('存在する .ts ファイルには Rule を指し示さない', () => {
+    const existingTargetFilePath = resolve(projectRoot, 'tmp/__policy_loader_test__.ts')
+    mkdirSync(dirname(existingTargetFilePath), { recursive: true })
+    writeFileSync(existingTargetFilePath, '')
+
+    try {
+      const hookOutput = runHook({ file_path: existingTargetFilePath })
+
+      assert.doesNotMatch(hookOutput, /\.claude\/rules\//)
+    } finally {
+      rmSync(existingTargetFilePath, { force: true })
+    }
   })
 })

@@ -10,7 +10,8 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
-import { globToRegExp, extractFrontmatter, parseAppliesTo } from './policyMatcher.mjs'
+import { convertGlobToRegExp, extractFrontmatter } from './frontmatterList.mjs'
+import { parseAppliesTo } from './policyMatcher.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const policyDir = resolve(scriptDir, '../../docs/policy')
@@ -92,7 +93,7 @@ describe('applies-to のパース', () => {
 
 describe('glob から正規表現への変換', () => {
   test('** はディレクトリを跨いでマッチする', () => {
-    const sut = globToRegExp
+    const sut = convertGlobToRegExp
     const deep = sut('app/**/*.ts')
     const prefixed = sut('**/config.ts')
 
@@ -106,7 +107,7 @@ describe('glob から正規表現への変換', () => {
   })
 
   test('* は単一階層に留まりディレクトリを跨がない', () => {
-    const sut = globToRegExp
+    const sut = convertGlobToRegExp
     const flat = sut('infra/*.ts')
 
     assert.ok(flat.test('infra/app.ts'))

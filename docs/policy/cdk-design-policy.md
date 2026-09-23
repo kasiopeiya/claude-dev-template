@@ -24,8 +24,6 @@ hook:
 | インフラ設計**書**（文書） | 全体像の図・設計判断・組織/運用の制約をどう書くか                      | [iac-infra-design-doc-policy](iac-infra-design-doc-policy.md) |
 | IaC 設計**書**（文書）     | IaC 管理範囲・スタック分割・命名規約をどう書くか                       | [iac-infra-design-doc-policy](iac-infra-design-doc-policy.md) |
 
-`.claude/rules/cdk.md` は `infra/**/*`・`samples/infra/**/*` に一致する**既存ファイルを Read したとき**に自動ロードされる（新規 Stack/Construct を書き起こす場面では発火しない）。判断の根拠（なぜ）を本ポリシーに置き、機械ルールを cdk.md に残す配置は、この条件下でも成立する——新規ファイル作成時の抜けは `cdk-imp`/`cdk-dev` Skill が cdk.md を明示的に Read することで塞いでいるためである（Skill を経由しない直接編集は対象外）。
-
 ## 貫く原則：決定論的な構築を最優先する
 
 CDK コード設計のすべての判断は、**`cdk diff` による正確な差分検知と、決定論的（予測可能）なインフラ構築を最優先する**ことに帰する。デプロイ時評価（動的参照・テンプレート内条件分岐）や実行のたびに変わる値に依存すると、差分が正しく出ず、意図しない再作成・データ消失を招く。
