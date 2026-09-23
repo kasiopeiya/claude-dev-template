@@ -156,6 +156,12 @@
 
 ---
 
+### [ai-review-gate-policy.md](policy/ai-review-gate-policy.md)
+
+**参照タイミング**: AIレビューの指摘に重大度を付ける前・レビュー結果で合否を決める前・レビューと修正を繰り返すワークフローを作る／編集する前
+
+---
+
 ### [review-subagent-lens-policy.md](policy/review-subagent-lens-policy.md)
 
 **参照タイミング**: 1体のレビューをレンズに分けるか検討するとき。レビューをレンズに分けて並列起動する Skill・SubAgent を新設・編集する前
