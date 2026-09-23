@@ -53,7 +53,7 @@ git diff --name-only origin/main...HEAD
 
 直したファイルだけを `git add <パス>` でステージし、`/git-commit stage` を実行する。ワーキングツリー全体を対象にしてはならない。
 
-件名末尾の `(#<Issue番号>)`（git-policy が必須としている）には、引数の Issue 番号を使う。
+件名末尾の `(#<Issue番号>)`（git-commit Skill が必須としている）には、引数の Issue 番号を使う。
 
 ### Phase 5: push する
 

@@ -55,7 +55,7 @@ Phase 2 で同じ Skill を実行済みなら、その後にファイルを直�
 
 その Issue で編集したファイルだけを `git add <パス>` でステージし、`/git-commit stage` を実行する。ワーキングツリー全体を対象にしてはならない。
 
-件名末尾の `(#$ARGUMENTS)` は git-policy が必須としている。**`Closes` はコミットメッセージに書かない**（同じく git-policy）。
+件名末尾の `(#$ARGUMENTS)` は git-commit Skill が必須としている。**`Closes` はコミットメッセージに書かない**（同じく git-commit Skill）。
 
 ### Phase 5: push する
 

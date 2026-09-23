@@ -170,7 +170,7 @@ const RULE_GROUPS = [
       { label: 'git filter-repo', prefix: ['git', 'filter-repo'] },
       { label: 'git reflog expire', prefix: ['git', 'reflog', 'expire'] },
       { label: 'git gc --prune=now', prefix: ['git', 'gc'], detect: hasImmediatePrune },
-      { label: 'git rebase（git-policy で禁止）', prefix: ['git', 'rebase'] },
+      { label: 'git rebase（git-commit Skill で禁止）', prefix: ['git', 'rebase'] },
       {
         label: 'AI によるブランチの新規作成',
         why: 'ブランチ運用は人間が把握・判断する',
