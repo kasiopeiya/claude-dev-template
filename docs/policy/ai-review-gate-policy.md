@@ -7,7 +7,9 @@ hook:
       '.claude/skills/check-plan/**/*.md',
       '.claude/skills/code-dev/SKILL.md',
       '.claude/skills/cdk-dev/SKILL.md',
-      '.claude/skills/design/SKILL.md'
+      '.claude/skills/design/SKILL.md',
+      '.claude/skills/auto-dev/SKILL.md',
+      '.claude/skills/sweep/SKILL.md'
     ]
 ---
 
