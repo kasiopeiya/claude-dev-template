@@ -65,13 +65,11 @@ describe('ブロッカーの抽出', () => {
     assert.deepEqual(sut(undefined), [])
   })
 
-  test('ブロッカー節になしと書かれた本文からは空配列を返す', () => {
+  test('ブロッカー節になしと書かれた本文からは空配列を返す（平文・箇条書きのどちらでも）', () => {
     const sut = extractBlockerIssueNumbers
-    const body = createBodyWithBlockers(['なし（すぐ着手できる）'])
 
-    const blockerNumbers = sut(body)
-
-    assert.deepEqual(blockerNumbers, [])
+    assert.deepEqual(sut(createBodyWithBlockers(['なし（すぐ着手できる）'])), [])
+    assert.deepEqual(sut(createBodyWithBlockers(['- なし（すぐ着手できる）'])), [])
   })
 
   test('ブロッカー節に番号を読めない箇条書きの行があれば null を返す', () => {

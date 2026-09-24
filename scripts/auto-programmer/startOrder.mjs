@@ -11,6 +11,10 @@ const BLOCKER_SECTION_HEADING = '## ブロッカー'
 // ブロッカー節の1行。行頭の番号だけを採り、説明文の中の #番号 は拾わない
 const BLOCKER_LINE_PATTERN = /^\s*[-*+]\s+#(\d+)/
 
+// ブロッカー無しの定型文（`.claude/skills/issue-deps/SKILL.md` が書く形）。箇条書き・平文の
+// どちらで書かれても「無い」と読む。書式を規定していないため両方が実際に出現する
+const NO_BLOCKER_LINE_PATTERN = /^\s*(?:[-*+]\s+)?なし（すぐ着手できる）\s*$/
+
 // 箇条書きの行。ブロッカー節でこれに当たるのに番号を読めない行は、書式の崩れとみなす
 const LIST_ITEM_PATTERN = /^\s*(?:[-*+]|\d+\.)\s/
 
@@ -52,6 +56,7 @@ export function extractBlockerIssueNumbers(body) {
 
   const blockerNumbers = []
   for (const line of sectionLines) {
+    if (NO_BLOCKER_LINE_PATTERN.test(line)) continue
     const matched = BLOCKER_LINE_PATTERN.exec(line)
     if (matched) blockerNumbers.push(Number(matched[1]))
     else if (LIST_ITEM_PATTERN.test(line)) return null
