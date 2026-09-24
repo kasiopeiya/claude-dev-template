@@ -15,7 +15,7 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { dirname, resolve, relative } from 'node:path'
+import { dirname, isAbsolute, resolve, relative, sep } from 'node:path'
 
 import { collectMatchingPolicies } from './policyMatcher.mjs'
 import { collectMatchingRules, collectRulesByAppliesTo } from './ruleMatcher.mjs'
@@ -25,6 +25,16 @@ const scriptDir = dirname(fileURLToPath(import.meta.url))
 const projectRoot = resolve(scriptDir, '../..')
 const policyDir = resolve(projectRoot, 'docs/policy')
 const rulesDir = resolve(projectRoot, '.claude/rules')
+
+/**
+ * OS の区切り文字で書かれたパスを `/` 区切りにする。
+ *
+ * @param {string} nativePath node:path が返したパス
+ * @returns {string} `/` 区切りのパス
+ */
+function toSlashSeparatedPath(nativePath) {
+  return nativePath.split(sep).join('/')
+}
 
 /**
  * 適用される Rule のファイル名一覧を、重複なしで返す。
@@ -52,15 +62,18 @@ function main() {
   if (!targetFilePath) return
 
   const targetAbsolutePath = resolve(targetFilePath)
-  const targetRelativePath = relative(projectRoot, targetAbsolutePath)
-  const isOutsideProject = targetRelativePath.startsWith('..')
+  const nativeRelativePath = relative(projectRoot, targetAbsolutePath)
+  // 別ドライブ（Windows）だと relative は相対パスにならず、絶対パスをそのまま返す
+  const isOutsideProject = nativeRelativePath.startsWith('..') || isAbsolute(nativeRelativePath)
   if (isOutsideProject) return
+  // applies-to・paths の glob は `/` 区切りで書かれている。Windows の `\` 区切りのままだと1件も当たらない
+  const targetRelativePath = toSlashSeparatedPath(nativeRelativePath)
 
   const matchedPolicyPaths = collectMatchingPolicies(targetRelativePath, policyDir).map(
     (name) => `docs/policy/${name}`
   )
   const matchedRulePaths = collectRuleNames(targetAbsolutePath, targetRelativePath).map(
-    (name) => `${relative(projectRoot, rulesDir)}/${name}`
+    (name) => `${toSlashSeparatedPath(relative(projectRoot, rulesDir))}/${name}`
   )
 
   const appliedDocumentPaths = [...matchedPolicyPaths, ...matchedRulePaths]

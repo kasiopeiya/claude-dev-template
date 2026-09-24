@@ -348,18 +348,41 @@ function isDangerousGhApiCall(tokens, { stage }) {
 }
 
 /**
+ * パスを比べられる形にそろえる。Windows の3つの書き方（`C:\x`・`C:/x`・Git Bash の `/c/x`）を
+ * すべて `c:/x` にする。そろえないと、`C:\` 始まりを相対パス（安全）と取り違え、Git Bash 形式の
+ * プロジェクト内パスを `C:\` 形式の projectDir の外（危険）と取り違える。
+ * Windows 以外では何もしない。`\` や `/a` は POSIX では別の意味（ただの文字・トップレベルのディレクトリ）を持つ。
+ *
+ * @param {string} path 削除先、またはプロジェクトルート
+ * @returns {string} `/` 区切りで、ドライブを小文字の `x:` で表したパス
+ */
+function toComparablePath(path) {
+  if (process.platform !== 'win32') return path
+  return path
+    .replaceAll('\\', '/')
+    .replace(/^\/([a-zA-Z])(?=\/|$)/, '$1:')
+    .replace(/^([a-zA-Z]):/, (_, drive) => `${drive.toLowerCase()}:`)
+}
+
+/**
  * 削除先が「消えても取り返しがつく場所」でないかを判定する。
  * プロジェクト内の相対パスだけを安全側とみなし、それ以外（ルート・ホーム・プロジェクト外・.git）は
  * 危険とみなす。ルートとホームそのものは再帰フラグの有無を問わず止める。
  */
 function isDangerousRemoveTarget(target, { recursive, projectDir }) {
-  const path = target.length > 1 ? target.replace(/\/+$/, '') : target
+  const comparableTarget = toComparablePath(target)
+  const path = comparableTarget.length > 1 ? comparableTarget.replace(/\/+$/, '') : comparableTarget
+  const comparableProjectDir = toComparablePath(projectDir).replace(/\/+$/, '')
   const HOME_ALIASES = ['~', '$HOME', '${HOME}']
   // カレントディレクトリまるごとを指す相対パス。作業ディレクトリはたいていプロジェクトルートなので、
   // `rm -rf .` の被害は `rm -rf <プロジェクトルート>` と変わらない
   const WHOLE_DIRECTORY_TARGETS = ['.', './', '*', './*', '..']
+  // Windows のドライブ始まり。`C:x`（ドライブ内の相対パス）も作業ディレクトリ基準ではないので絶対パス側に数える
+  const DRIVE_PREFIX = /^[a-z]:/
+  const isWindows = process.platform === 'win32'
+  const isDriveRoot = isWindows && /^[a-z]:(\/\*?)?$/.test(path)
 
-  if (path === '/' || path === '/*') return true
+  if (path === '/' || path === '/*' || isDriveRoot) return true
   if (HOME_ALIASES.includes(path)) return true
   if (!recursive) return false
 
@@ -367,8 +390,8 @@ function isDangerousRemoveTarget(target, { recursive, projectDir }) {
   if (path.split('/').includes('.git')) return true
   if (HOME_ALIASES.some((alias) => path.startsWith(`${alias}/`))) return true
   if (path.split('/').includes('..')) return true
-  if (!path.startsWith('/')) return false
-  return path === projectDir || !path.startsWith(`${projectDir}/`)
+  if (!path.startsWith('/') && !(isWindows && DRIVE_PREFIX.test(path))) return false
+  return path === comparableProjectDir || !path.startsWith(`${comparableProjectDir}/`)
 }
 
 function hasDangerousRemoveTarget(tokens, { projectDir }) {

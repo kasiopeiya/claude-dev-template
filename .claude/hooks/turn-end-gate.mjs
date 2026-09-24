@@ -60,7 +60,10 @@ function collectGateFailure(npmScript) {
   const result = spawnSync('npm', ['run', '--silent', npmScript], {
     cwd: projectRoot,
     encoding: 'utf8',
-    timeout: GATE_TIMEOUT_MS
+    timeout: GATE_TIMEOUT_MS,
+    // Windows の npm は npm.cmd で、シェルを介さないと起動できず（ENOENT／EINVAL）、fail-open で
+    // ゲートが黙って素通りになる。引数は空白・記号を含まない固定の script 名だけなので、シェルに渡してよい
+    shell: process.platform === 'win32'
   })
   if (result.error || result.status === 0) return null
 
