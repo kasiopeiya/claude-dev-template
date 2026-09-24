@@ -98,7 +98,7 @@ export const handler = async (event: APIGatewayProxyEvent) => {
 | 強           | ○    | △    | ✕    |
 
 > [!IMPORTANT]
-> **（AI・必須）** この軸が見るのは**ファイルをまたぐ結合**である。同一ファイル内の結合（＝局所性が「近い」で全て ○）は `/code-review` と application-design-policy の領分なので、ここでは減点しない。Connascence 9種を強度3段階へ束ねる分類・結合インスタンスの列挙手順・スコアへの集約は `/arch-review` の実装（architecture-reviewer-agent の「凝集と結合」観点）に委ねる。本ポリシーは軸・マトリクス・判定のポイントを宣言する。
+> **（AI・必須）** この軸が見るのは**ファイルをまたぐ結合**である。同一ファイル内の結合（＝局所性が「近い」で全て ○）は `/code-review` と application-design-policy の領分なので、ここでは問わない。適用手順は `/arch-review` に委ねる。Connascence 9種を強度3段階へ束ねる分類と結合インスタンスの列挙手順は [architecture-reviewer-agent](../../.claude/agents/architecture-reviewer-agent/architecture-reviewer-agent.md) の「結合を測るレンズ」、✕・△ を重大度へ引き当てる判定は [観点一覧](../../.claude/skills/arch-review/references/review-criteria.md) が定める。
 
 ## 意図を表出する構造（理解容易性）
 
