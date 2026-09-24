@@ -1,8 +1,9 @@
 // 責務: 外部コマンド（gh・git・npm・claude）の起動を1か所にまとめる。
 //
 // 設計意図（WHY）:
-// - シェルを介さない spawnSync 固定にしている。引数はすべて配列で渡すので、Issue タイトルや
-//   ブランチ名に記号が混じってもシェルに解釈されない。
+// - 既定はシェルを介さない spawnSync。引数はすべて配列で渡すので、Issue タイトルや
+//   ブランチ名に記号が混じってもシェルに解釈されない。例外は Windows の npm-shim（.cmd）
+//   フォールバックのみで、そこに渡る引数は固定文字列と数値だけに限っている（後述）。
 // - 呼び分けは「出力を受け取る」と「端末へ流す」の2通りだけで、残りの2関数は前者に
 //   「失敗を例外にする」「JSON として読む」を重ねたものである。
 // - 標準出力の上限を既定（1MB）から広げている。gh の JSON 出力は MB 単位になりうる。
@@ -14,21 +15,21 @@ const MAX_OUTPUT_BYTES = 64 * 1024 * 1024
 
 /**
  * Windows で npm-shim（.cmd バッチファイル）配布のコマンドが ENOENT だったとき、.cmd を付けて
- * 1回だけ実行し直す。
+ * shell 経由で1回だけ実行し直す。
  *
- * .cmd/.bat は shell 経由でしか起動できず（Node.js 公式仕様）、shell: false の spawnSync に
- * 拡張子なしで渡すと ENOENT になる。npm は常に .cmd 配布だが、claude はインストール方法により
- * .exe（ネイティブインストーラー）にも .cmd（npm 経由）にもなるため、コマンド名の決め打ちでは
- * 対応できず、実行結果で判定する。
+ * .cmd/.bat は CVE-2024-27980 の修正（Node.js 18.20.0+/20.12.0+/21.7.0+）以降、shell: true を
+ * 明示しない限り EINVAL になる（Node.js が自動で shell 経由に切り替えてはくれない）。npm は
+ * 常に .cmd 配布だが、claude はインストール方法により .exe（ネイティブインストーラー）にも
+ * .cmd（npm 経由）にもなるため、コマンド名の決め打ちでは対応できず、実行結果で判定する。
  *
- * @param {(command: string) => import('node:child_process').SpawnSyncReturns<string | Buffer>} spawnWithCommand コマンド名だけを受け取って spawnSync を呼ぶ関数
+ * @param {(command: string, extraOptions: { shell?: boolean }) => import('node:child_process').SpawnSyncReturns<string | Buffer>} spawnWithCommand コマンド名と追加オプションを受け取って spawnSync を呼ぶ関数
  * @param {string} command 実行するコマンド
  * @returns {import('node:child_process').SpawnSyncReturns<string | Buffer>} spawnSync の結果
  */
 export function spawnWithWindowsShimFallback(spawnWithCommand, command) {
-  const result = spawnWithCommand(command)
+  const result = spawnWithCommand(command, {})
   if (process.platform === 'win32' && result.error?.code === 'ENOENT') {
-    return spawnWithCommand(`${command}.cmd`)
+    return spawnWithCommand(`${command}.cmd`, { shell: true })
   }
   return result
 }
@@ -54,11 +55,12 @@ function readExitStatus(result) {
  */
 export function runCapture(command, args, options = {}) {
   const result = spawnWithWindowsShimFallback(
-    (resolvedCommand) =>
+    (resolvedCommand, extraOptions) =>
       spawnSync(resolvedCommand, args, {
         cwd: options.cwd,
         encoding: 'utf8',
-        maxBuffer: MAX_OUTPUT_BYTES
+        maxBuffer: MAX_OUTPUT_BYTES,
+        ...extraOptions
       }),
     command
   )
@@ -77,11 +79,12 @@ export function runCapture(command, args, options = {}) {
  */
 export function runStreaming(command, args, options = {}) {
   const result = spawnWithWindowsShimFallback(
-    (resolvedCommand) =>
+    (resolvedCommand, extraOptions) =>
       spawnSync(resolvedCommand, args, {
         cwd: options.cwd,
         stdio: 'inherit',
-        timeout: options.timeoutMs
+        timeout: options.timeoutMs,
+        ...extraOptions
       }),
     command
   )

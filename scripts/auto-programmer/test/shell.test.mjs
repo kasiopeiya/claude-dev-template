@@ -1,7 +1,7 @@
-// 責務: Windows で claude・npm が npm-shim（.cmd）解決漏れにより ENOENT になる回帰を防ぐ。
+// 責務: Windows で claude・npm が npm-shim（.cmd）解決漏れにより ENOENT/EINVAL になる回帰を防ぐ。
 //
 // claude はインストール方法により .exe にも .cmd にもなるため、コマンド名の決め打ちでは
-// 検証できない。ENOENT を受けて .cmd へフォールバックする「振る舞い」だけを検証する。
+// 検証できない。ENOENT を受けて .cmd + shell:true へフォールバックする「振る舞い」だけを検証する。
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
@@ -25,18 +25,21 @@ function createEnoentResult() {
 }
 
 describe('Windows での npm-shim フォールバック', () => {
-  test('Windows で ENOENT のとき、.cmd を付けて実行し直す', () => {
+  test('Windows で ENOENT のとき、.cmd を shell 経由で実行し直す', () => {
     const sut = spawnWithWindowsShimFallback
-    const calledCommands = []
-    const spawnWithCommand = (command) => {
-      calledCommands.push(command)
+    const calls = []
+    const spawnWithCommand = (command, extraOptions) => {
+      calls.push({ command, extraOptions })
       return command.endsWith('.cmd') ? { error: null, status: 0 } : createEnoentResult()
     }
 
     withPlatform('win32', () => {
       const result = sut(spawnWithCommand, 'claude')
 
-      assert.deepEqual(calledCommands, ['claude', 'claude.cmd'])
+      assert.deepEqual(calls, [
+        { command: 'claude', extraOptions: {} },
+        { command: 'claude.cmd', extraOptions: { shell: true } }
+      ])
       assert.equal(result.error, null)
     })
   })
