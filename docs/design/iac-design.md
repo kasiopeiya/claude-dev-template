@@ -20,9 +20,8 @@ AWS リソースを CDK で構築・変更する開発者／AI が、IaC の管�
   - [スタック命名](#スタック命名)
 
 > [!NOTE]
-> 本ファイルは [iac-infra-design-doc-policy](../policy/iac-infra-design-doc-policy.md) が定める必須セクションのスケルトン。
-> 各セクションに何を書くか・書かないか（具体パラメータ値は書かない）は同ポリシーを参照する。
-> 該当がないセクションは削除せず、本文に「**なし**」＋一言理由を書いて閉じる。
+> 本ファイルは [iac-infra-design-doc.md](../../.claude/rules/iac-infra-design-doc.md)（Rule）が定める必須セクションのスケルトン。
+> 各セクションに何を書くか・該当が無いときどう閉じるかは同 Rule を、何を書かないか（具体パラメータ値は書かない）は [iac-infra-design-doc-policy](../policy/iac-infra-design-doc-policy.md) を参照する。
 
 ## 基本方針
 

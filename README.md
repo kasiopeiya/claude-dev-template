@@ -139,11 +139,11 @@ npm run format       # フォーマット
 
 以下のポリシーは `applies-to` にファイル名のキーワードを含む。**キーワードを外れた名前を付けると、ポリシーが無言で適用されない。** 新規ファイルを作るときは、この表の名前に合わせる。
 
-| ファイル名に含める語                            | 発火するポリシー              | 対象                                       |
-| ----------------------------------------------- | ----------------------------- | ------------------------------------------ |
-| `infra` / `iac`（`docs/design/` 配下の `.md`）  | `iac-infra-design-doc-policy` | インフラ設計書・IaC 設計書                 |
-| `monitoring` / `Monitoring` / `alarm` / `Alarm` | `monitoring-policy`           | 監視・アラームを定義する `.ts`             |
-| `table` / `Table`                               | `database-design-policy`      | テーブル定義を扱う `.ts`                   |
-| `config` / `parameter`                          | `configuration-policy`        | 構成値を扱う `.ts`・`config/` 配下・`.env` |
+| ファイル名に含める語                            | 発火するポリシー                                           | 対象                                       |
+| ----------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------ |
+| `infra` / `iac`（`docs/design/` 配下の `.md`）  | `iac-infra-design-doc-policy`・Rule `iac-infra-design-doc` | インフラ設計書・IaC 設計書                 |
+| `monitoring` / `Monitoring` / `alarm` / `Alarm` | `monitoring-policy`                                        | 監視・アラームを定義する `.ts`             |
+| `table` / `Table`                               | `database-design-policy`                                   | テーブル定義を扱う `.ts`                   |
+| `config` / `parameter`                          | `configuration-policy`                                     | 構成値を扱う `.ts`・`config/` 配下・`.env` |
 
 なお `.claude/`・`.github/` はこのセクションの対象外（ハーネス本体として別枠で扱う）。
