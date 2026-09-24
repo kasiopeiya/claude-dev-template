@@ -1,7 +1,7 @@
 // 責務: Windows で claude・npm が npm-shim（.cmd）解決漏れにより ENOENT/EINVAL になる回帰を防ぐ。
 //
 // claude はインストール方法により .exe にも .cmd にもなるため、コマンド名の決め打ちでは
-// 検証できない。ENOENT を受けて .cmd + shell:true へフォールバックする「振る舞い」だけを検証する。
+// 検証できない。ENOENT を受けて .cmd + shell:true へフォールバックし、引数を割れないよう囲む「振る舞い」だけを検証する。
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
@@ -28,19 +28,36 @@ describe('Windows での npm-shim フォールバック', () => {
   test('Windows で ENOENT のとき、.cmd を shell 経由で実行し直す', () => {
     const sut = spawnWithWindowsShimFallback
     const calls = []
-    const spawnWithCommand = (command, extraOptions) => {
-      calls.push({ command, extraOptions })
+    const spawnWithCommand = (command, args, extraOptions) => {
+      calls.push({ command, args, extraOptions })
       return command.endsWith('.cmd') ? { error: null, status: 0 } : createEnoentResult()
     }
 
     withPlatform('win32', () => {
-      const result = sut(spawnWithCommand, 'claude')
+      const result = sut(spawnWithCommand, 'claude', ['-p', '/auto-dev 123'])
 
       assert.deepEqual(calls, [
-        { command: 'claude', extraOptions: {} },
-        { command: 'claude.cmd', extraOptions: { shell: true } }
+        { command: 'claude', args: ['-p', '/auto-dev 123'], extraOptions: {} },
+        // shell 経由では引数が空白でつながれるので、空白を含む引数が割れないよう囲む
+        { command: 'claude.cmd', args: ['"-p"', '"/auto-dev 123"'], extraOptions: { shell: true } }
       ])
       assert.equal(result.error, null)
+    })
+  })
+
+  test('Windows で .cmd に渡すとき、cmd.exe のクォートで守れない文字を含む引数は拒む', () => {
+    const sut = spawnWithWindowsShimFallback
+    const calledCommands = []
+    const spawnWithCommand = (command) => {
+      calledCommands.push(command)
+      return createEnoentResult()
+    }
+
+    withPlatform('win32', () => {
+      for (const unsafeArg of ['a"b', '%PATH%', 'line1\nline2']) {
+        assert.throws(() => sut(spawnWithCommand, 'npm', [unsafeArg]))
+      }
+      assert.ok(calledCommands.every((command) => command === 'npm'))
     })
   })
 
@@ -53,7 +70,7 @@ describe('Windows での npm-shim フォールバック', () => {
     }
 
     withPlatform('win32', () => {
-      sut(spawnWithCommand, 'claude')
+      sut(spawnWithCommand, 'claude', [])
 
       assert.deepEqual(calledCommands, ['claude'])
     })
@@ -71,7 +88,7 @@ describe('Windows での npm-shim フォールバック', () => {
     }
 
     withPlatform('win32', () => {
-      const result = sut(spawnWithCommand, 'claude')
+      const result = sut(spawnWithCommand, 'claude', [])
 
       assert.deepEqual(calledCommands, ['claude'])
       assert.equal(result, permissionDeniedResult)
@@ -88,7 +105,7 @@ describe('Windows での npm-shim フォールバック', () => {
     }
 
     withPlatform('darwin', () => {
-      const result = sut(spawnWithCommand, 'claude')
+      const result = sut(spawnWithCommand, 'claude', [])
 
       assert.deepEqual(calledCommands, ['claude'])
       assert.equal(result, enoentResult)
