@@ -12,22 +12,25 @@ import { spawnSync } from 'node:child_process'
 // 標準出力として受け取れる上限。gh の JSON 出力がこれを超えると ENOBUFS で落ちる
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024
 
-// Windows では npm-shim（.cmd バッチファイル）で配布されているコマンド。.cmd/.bat は shell 経由でしか
-// 起動できない（Node.js 公式仕様）ため、shell: false の spawnSync に拡張子なしで渡すと ENOENT になる。
-// gh・git はネイティブ .exe 配布なので対象に含めない
-const WINDOWS_CMD_SHIM_COMMANDS = new Set(['npm', 'claude'])
-
 /**
- * コマンド名を、実行できる形に解決する。
+ * Windows で npm-shim（.cmd バッチファイル）配布のコマンドが ENOENT だったとき、.cmd を付けて
+ * 1回だけ実行し直す。
  *
+ * .cmd/.bat は shell 経由でしか起動できず（Node.js 公式仕様）、shell: false の spawnSync に
+ * 拡張子なしで渡すと ENOENT になる。npm は常に .cmd 配布だが、claude はインストール方法により
+ * .exe（ネイティブインストーラー）にも .cmd（npm 経由）にもなるため、コマンド名の決め打ちでは
+ * 対応できず、実行結果で判定する。
+ *
+ * @param {(command: string) => import('node:child_process').SpawnSyncReturns<string | Buffer>} spawnWithCommand コマンド名だけを受け取って spawnSync を呼ぶ関数
  * @param {string} command 実行するコマンド
- * @returns {string} spawnSync にそのまま渡せるコマンド名
+ * @returns {import('node:child_process').SpawnSyncReturns<string | Buffer>} spawnSync の結果
  */
-export function resolveCommand(command) {
-  if (process.platform === 'win32' && WINDOWS_CMD_SHIM_COMMANDS.has(command)) {
-    return `${command}.cmd`
+export function spawnWithWindowsShimFallback(spawnWithCommand, command) {
+  const result = spawnWithCommand(command)
+  if (process.platform === 'win32' && result.error?.code === 'ENOENT') {
+    return spawnWithCommand(`${command}.cmd`)
   }
-  return command
+  return result
 }
 
 /**
@@ -50,11 +53,15 @@ function readExitStatus(result) {
  * @throws {Error} コマンドを起動できなかったとき（PATH に無い・出力が上限を超えた など）
  */
 export function runCapture(command, args, options = {}) {
-  const result = spawnSync(resolveCommand(command), args, {
-    cwd: options.cwd,
-    encoding: 'utf8',
-    maxBuffer: MAX_OUTPUT_BYTES
-  })
+  const result = spawnWithWindowsShimFallback(
+    (resolvedCommand) =>
+      spawnSync(resolvedCommand, args, {
+        cwd: options.cwd,
+        encoding: 'utf8',
+        maxBuffer: MAX_OUTPUT_BYTES
+      }),
+    command
+  )
   if (result.error) throw result.error
   return { ...readExitStatus(result), stdout: result.stdout ?? '', stderr: result.stderr ?? '' }
 }
@@ -69,11 +76,15 @@ export function runCapture(command, args, options = {}) {
  * @throws {Error} コマンドを起動できなかったとき（PATH に無い など）
  */
 export function runStreaming(command, args, options = {}) {
-  const result = spawnSync(resolveCommand(command), args, {
-    cwd: options.cwd,
-    stdio: 'inherit',
-    timeout: options.timeoutMs
-  })
+  const result = spawnWithWindowsShimFallback(
+    (resolvedCommand) =>
+      spawnSync(resolvedCommand, args, {
+        cwd: options.cwd,
+        stdio: 'inherit',
+        timeout: options.timeoutMs
+      }),
+    command
+  )
   // 打ち切りは ETIMEDOUT として error に入るが、止まったこと自体は終了状態で返す
   if (result.error && result.error.code !== 'ETIMEDOUT') throw result.error
   return readExitStatus(result)
