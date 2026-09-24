@@ -14,7 +14,7 @@
 | 2   | Ready かつ `ai-fixable` な open Issue から、着手できる1件を選ぶ                                             | このツール                    |
 | 3   | clone を `origin/main` へ戻し、トピックブランチを作り、依存を揃える                                         | このツール                    |
 | 4   | 選んだ Issue のカードを「In progress」へ動かす                                                              | このツール                    |
-| 5   | Issue から `issue:checked` を外し、clone の中で `claude -p "/issue-check #<番号>"` を起動する               | `.claude/skills/issue-check/` |
+| 5   | Issue に `issue:checked` が無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する             | `.claude/skills/issue-check/` |
 | 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す                 | `/issue-check`                |
 | 7   | Issue のラベルと state を読み、実装へ進むか止めるかを決める                                                 | このツール                    |
 | 8   | Issue から前回の `issue:needs-clean-session` を外し、clone の中で `claude -p "/auto-dev <番号>"` を起動する | `.claude/skills/auto-dev/`    |
@@ -27,7 +27,9 @@
 
 2 で「着手できる」とは、本文の `## ブロッカー` 節に並ぶ Issue が全部 closed であることを指す。着手できる Issue のうち、タイトル先頭の段番号（`/issue-deps` が書き込む）の小さい順、同じ段なら Issue 番号の小さい順に選ぶ。
 
-7 で止めるのは、`issue:checked` が貼り直されていない（判定が書き戻されていない）とき・`issue:needs-human-decision` が付いたとき・close されたときだけである。`/issue-check` が「方針差し替え」に倒した Issue は、差し替わった本文のまま 8 へ進む。
+5 で `issue:checked` が付いていれば、6 を飛ばして 7 へ進む。監査の後に前提が崩れていれば、9 で `/auto-dev` が離脱する。
+
+7 で止めるのは、`issue:checked` が貼られていない（判定が書き戻されていない）とき・`issue:needs-human-decision` が付いたとき・close されたときだけである。`/issue-check` が「方針差し替え」に倒した Issue は、差し替わった本文のまま 8 へ進む。
 
 11 で直させるのは `ci.maxFixAttempts` 回までで、使い切っても落ちていれば Issue にコメントと `issue:needs-clean-session` を残して次へ進む。キャンセルされた run・`ci.runWaitLimitMinutes` 分待っても終わらない run は、差分を直しても通らないので直させない。9 で `/auto-dev` が離脱したときは 10 へ進まない。
 
@@ -105,7 +107,7 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 | 「…という選択肢がありません」                                                                      | ボードの表記と `config.mjs` の表記が食い違っている                                                                                   | `gh project field-list` の表示に合わせる                                                                                                            |
 | 「claude コマンドが見つかりません」                                                                | Claude Code が入っていない                                                                                                           | Claude Code を入れる                                                                                                                                |
 | 「実装へ進みません: /issue-check が人間の判断を要すると判定しました」「… close しました」          | `/issue-check` が人間の判断を要すると判定したか、不要として close した。カードは In progress に残る                                  | Issue のコメントを読む。人間判断なら `/issue-decide` で決めてからカードを Ready へ戻す                                                              |
-| 「実装へ進みません: /issue-check が判定を書き戻しませんでした」                                    | 監査は終わったが `issue:checked` が貼り直されていない（判定を読めなかった・`gh` が失敗したなど）                                     | Issue のコメントを読み、必要なら人間が `/issue-check #<番号>` を打ってからカードを Ready へ戻す                                                     |
+| 「実装へ進みません: /issue-check が判定を書き戻しませんでした」                                    | 監査は終わったが `issue:checked` が貼られていない（判定を読めなかった・`gh` が失敗したなど）                                         | Issue のコメントを読み、必要なら人間が `/issue-check #<番号>` を打ってからカードを Ready へ戻す                                                     |
 | 「実装へ進みません: /issue-check のセッションが失敗しました」                                      | 監査の結果が書き戻されたか分からないので、実装へ進まなかった                                                                         | 記録の `issueCheckExitCode`・`issueCheckSignal` を読んで原因を直し、カードを Ready へ戻す                                                           |
 | Issue が「In progress」のまま残った                                                                | `/auto-dev`・`/auto-fix-ci` が離脱したか、`ci.maxFixAttempts` 回直させても CI が通らなかった（Issue にコメントとラベルが残っている） | コメントを読み、専用のセッションでその Issue に着手する                                                                                             |
 | 同上で、Issue にコメントが無い                                                                     | セッションが打ち切られたか、起動後に落ちた                                                                                           | 記録の `autoDevSignal`・`ciFixSignal`・`error` を読んで原因を直す                                                                                   |

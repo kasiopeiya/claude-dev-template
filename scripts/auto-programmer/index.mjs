@@ -14,7 +14,9 @@
 // - 着手中へ動かした後は、何が起きても記録を1行残す。無人で走るので、記録が唯一の痕跡になる。
 // - 実装の前に `/issue-check` を別プロセスで通し、書き戻されたラベルと state だけで進むか止めるかを
 //   決める（Issue #482）。止めた Issue のカードは着手中のまま残し、人間が見るまで次の巡回で拾わない。
-//   監査の前に `issue:checked` を外し、貼り直されたことを「今回の判定が書き戻された」印にする。
+//   監査は `issue:checked` が無い Issue にだけ走らせ、貼られたことを「今回の判定が書き戻された」印にする。
+// - `issue:checked` が付いた Issue は監査し直さない。人間がローカルでまとめて監査してから Ready へ積む
+//   運用が多く、毎回の再監査は同じ判定を繰り返すだけになる。監査後に前提が崩れていれば `/auto-dev` が離脱する。
 // - PR を作った後は、CI の結果が出るまで次の Issue へ進まない。落ちていれば `/auto-fix-ci` を
 //   別プロセスで起こして直させ、上限まで直させても落ちていれば人間へ回す。待たずに次へ進むと、落ちた PR が
 //   誰にも直されずに残る。CI が落ちたこと自体はセッションの失敗に数えない（claude が壊れている兆候ではない）。
@@ -207,7 +209,7 @@ async function startFirstStartableIssue() {
 }
 
 /**
- * `/issue-check` を通し、止める理由が無ければ `/auto-dev` を走らせる。結果は record へ書き足す。
+ * `issue:checked` が無ければ `/issue-check` を通し、止める理由が無ければ `/auto-dev` を走らせる。結果は record へ書き足す。
  *
  * record を引数で受けるのは、途中で例外が出ても、そこまでの結果を呼び出し側が記録できるようにするため。
  *
@@ -217,22 +219,18 @@ async function startFirstStartableIssue() {
  * @throws {Error} claude を起動できなかったとき・Issue のラベルを外せなかった／引き直せなかったとき
  */
 function auditThenImplement(issueNumber, record) {
-  runOrThrow('gh', [
-    'issue',
-    'edit',
-    String(issueNumber),
-    '--repo',
-    config.repository,
-    '--remove-label',
-    ISSUE_CHECKED_LABEL
-  ])
-  const issueCheckStatus = runIssueCheckSession(issueNumber)
-  record.issueCheckExitCode = issueCheckStatus.exitCode
-  record.issueCheckSignal = issueCheckStatus.signal
-  if (!hasSessionSucceeded(issueCheckStatus)) {
-    // 監査の結果が書き戻されたか分からないまま実装へ進むと、止めるべき Issue を実装しうる
-    record.skippedReason = '/issue-check のセッションが失敗しました'
-    return false
+  record.issueCheckSkipped = readIssueStatus(issueNumber).labelNames.includes(ISSUE_CHECKED_LABEL)
+  if (record.issueCheckSkipped) {
+    console.log(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
+  } else {
+    const issueCheckStatus = runIssueCheckSession(issueNumber)
+    record.issueCheckExitCode = issueCheckStatus.exitCode
+    record.issueCheckSignal = issueCheckStatus.signal
+    if (!hasSessionSucceeded(issueCheckStatus)) {
+      // 監査の結果が書き戻されたか分からないまま実装へ進むと、止めるべき Issue を実装しうる
+      record.skippedReason = '/issue-check のセッションが失敗しました'
+      return false
+    }
   }
 
   record.skippedReason = findReasonToSkipImplementation(readIssueStatus(issueNumber))

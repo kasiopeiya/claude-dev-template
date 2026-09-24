@@ -1,6 +1,6 @@
 ---
 name: issue-check
-description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、本文とラベルを直す。/sweep で着手する前に人間が打つ。Auto Programmer も着手前に1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
+description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、本文とラベルを直す。/sweep で着手する前に人間が打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: Task, Bash, Read, Edit, Write
