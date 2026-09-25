@@ -74,7 +74,7 @@ flowchart TD
 
 ### Key Principle
 
-**NEVER add a diagram to a markdown file until it has been validated.** The workflow ensures all diagrams pass validation before being embedded, preventing broken diagrams in documentation.
+Add a diagram to a markdown file only after it has been validated, so broken diagrams never reach the documentation.
 
 **When you edit an existing markdown file, the unit of validation is the file, not the diagram you touched.** An edit can break another block in the same file, so Step 6 re-validates every diagram in it.
 
@@ -114,7 +114,7 @@ Write the Mermaid diagram code following the patterns in the loaded reference gu
 
 ### Step 3: Save Files
 
-**IMPORTANT:** Save both the .mmd source file AND generate the image file BEFORE adding to markdown.
+Save the .mmd source file and generate the image file before adding the diagram to markdown.
 
 **Output Directory:** `./diagrams/` (relative to markdown file location)
 

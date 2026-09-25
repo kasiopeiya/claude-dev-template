@@ -29,7 +29,7 @@ Mermaid diagram and documentation system with specialized guides and code-to-dia
 
 1. **User makes a request** → Skill analyzes intent
 2. **Skill determines diagram/document type** → Loads appropriate guide(s)
-3. **Value Gate (MANDATORY)** → Before generating, pass the reverse-conversion test
+3. **Value Gate** → Before generating, pass the reverse-conversion test
 4. **AI reads specialized guide** → Generates diagram/document using templates
 5. **Result delivered** → With validation and export options
 
@@ -166,7 +166,7 @@ Common request patterns and guide selection. See [When to Use What](#when-to-use
 
 ## Resilient Workflow
 
-**CRITICAL:** This is the recommended approach for ALL diagram generation. It ensures validation, error recovery, and consistent file organization.
+Use this workflow for every diagram: it ensures validation, error recovery, and consistent file organization.
 
 **Full Guide:** `references/guides/resilient-workflow.md`
 
@@ -191,7 +191,7 @@ flowchart LR
 
 ### Key Principle
 
-**NEVER add a diagram to markdown until it passes validation.** This prevents broken diagrams in documentation.
+Add a diagram to markdown only after it passes validation, so broken diagrams never reach the documentation.
 
 **When you edit an existing Markdown file, validation covers every diagram in that file — not just the one you touched.** An edit can break a block you were not looking at, so the unit of validation must match the unit of change (the file). Examples that are broken on purpose belong in a `text` fence, never a `mermaid` one — otherwise they fail this check and render as errors on GitHub.
 
@@ -406,7 +406,7 @@ echo "graph TD; A-->B" | python scripts/mermaid_to_image.py - output.png
 
 ## High-Contrast Styling
 
-**ALL diagrams MUST use high-contrast colors.** 既定の `classDef` は次のとおり。**記法の例なので描画しない**（ノードが1つも無く、図にしても何も見えない）。
+既定の `classDef` は次のとおり。**記法の例なので描画しない**（ノードが1つも無く、図にしても何も見えない）。
 
 ```text
 classDef primary fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen

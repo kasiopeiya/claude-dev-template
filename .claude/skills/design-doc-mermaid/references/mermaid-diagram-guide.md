@@ -838,8 +838,6 @@ graph TB
 
 ### Color Coding with High Contrast
 
-**CRITICAL**: All Mermaid diagram styles MUST use high-contrast colors for accessibility.
-
 **Rule**: Light backgrounds require dark text, dark backgrounds require light text.
 
 ✅ **Correct - High Contrast**:
@@ -917,7 +915,7 @@ graph LR
 
 ## Best Practices for Design Docs
 
-### 1. Choose the Right Diagram
+### Choose the Right Diagram
 
 **Don't use:**
 
@@ -931,7 +929,7 @@ graph LR
 - Multiple diagram types for different aspects
 - Simpler diagrams over complex ones
 
-### 2. Keep Diagrams Focused
+### Keep Diagrams Focused
 
 **Bad:** One giant diagram showing everything
 **Good:** Multiple focused diagrams showing specific aspects
@@ -942,7 +940,7 @@ graph LR
 - Max 3-4 levels of nesting
 - Break complex diagrams into multiple views
 
-### 3. Use Consistent Naming
+### Use Consistent Naming
 
 ノード ID は略さず、同じ実体は同じ名前で書く。良し悪しの1対1の対比なので、図にせず表で示す。
 
@@ -951,7 +949,7 @@ graph LR
 | ❌   | `usr`, `sys` / `system`, `db1` | 略語が読めず、`sys` と `system` が同じ実体か不明 |
 | ✅   | `User`, `System`, `Database`   | 略さず、同じ実体を同じ名前で書いている           |
 
-### 4. Add Context
+### Add Context
 
 ```mermaid
 sequenceDiagram
@@ -962,7 +960,7 @@ sequenceDiagram
     AuthServer-->>Client: Access Token (JWT)
 ```
 
-### 5. Document Technical Decisions
+### Document Technical Decisions
 
 選択肢と決定は注記ノードで残す。**記法の例なので描画しない**。
 
@@ -978,11 +976,7 @@ C --> note1
 B --> note2
 ```
 
-### 6. CRITICAL - Ensure High-Contrast Accessibility
-
-**MANDATORY for ALL diagrams**:
-
-Every diagram with custom styling MUST use high-contrast colors:
+### Ensure High-Contrast Accessibility
 
 ```mermaid
 graph LR
