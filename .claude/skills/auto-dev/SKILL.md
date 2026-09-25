@@ -96,10 +96,10 @@ PR ができるのを最大5分待つ（`pipeline.yml` の PR 作成 job の tim
 for i in $(seq 20); do gh pr view --json number,url && break; sleep 15; done
 ```
 
-PR が現れたら、本文を差し替える。
+PR が現れたら、タイトルと本文を差し替える。コミットが複数あると、`pipeline.yml` はブランチ名をタイトルにする。
 
 ```bash
-gh pr edit <番号> --body-file <本文ファイル>
+gh pr edit <番号> --title "<直前のコミットの件名>" --body-file <本文ファイル>
 ```
 
 ### Phase 7: 報告する
