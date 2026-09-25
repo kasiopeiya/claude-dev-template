@@ -1,5 +1,5 @@
 # 責務: pipeline 完了後に、その PR へ判断基準（Policy・CLAUDE.md）変更の決定論ラベル付与と、
-#       advisory な AI 処理（本文書き換え・pr-label・pr-check）、auto-merge を行う。
+#       advisory な AI 処理（pr-label・pr-check）、auto-merge を行う。PR 本文には触れない。
 #       マージ可否の判定（cicd-gate）には一切関与しない。
 # なぜこの構成なのかは docs/design/cicd-design.md を参照する。
 
@@ -24,8 +24,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 対象 PR に対し ⓪policy パスの決定論ラベル付与 ①本文の AI 書き換え ②pr-label
-  # ③（needs-human-review が付いていれば）pr-check ④同じくレビュー用 Issue の起票を行う。
+  # 対象 PR に対し ⓪policy パスの決定論ラベル付与 ①pr-label
+  # ②（needs-human-review が付いていれば）pr-check ③同じくレビュー用 Issue の起票を行う。
   # 権限は prompt injection 前提で設計する——contents: read 固定・Bash は gh 限定
   pr-triage:
     # pipeline が成功したときだけ走る。失敗・キャンセル時は advisory 不要。
@@ -35,7 +35,7 @@ jobs:
     permissions:
       # AI ステップには merge 権限を渡さない（#66）。skill は gh pr diff/view で読むだけ。
       contents: read
-      # PR 本文の書き換え（gh pr edit --body）・コメント（gh pr comment）・PR へのラベル付与
+      # コメント（gh pr comment）・PR へのラベル付与（gh pr edit --add-label）
       pull-requests: write
       # 不足ラベルの自己作成（gh label create）に必要。ラベル作成は issues スコープに属する
       issues: write
@@ -83,7 +83,7 @@ jobs:
           gh pr edit "$PR" --add-label policy,needs-human-review
 
       # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet
-      - name: Run AI advisory (rewrite body / pr-label / pr-check)
+      - name: Run AI advisory (pr-label / pr-check)
         id: advisory
         if: steps.pr.outputs.number != ''
         uses: anthropics/claude-code-action@3553f84341b92da26052e28acf1aa898f9511f32 # v1.0.177
@@ -96,7 +96,7 @@ jobs:
           prompt: |
             あなたはこのリポジトリの CI 上で動く advisory エージェントです。
             対象は PR #${{ steps.pr.outputs.number }}（base: main）。
-            マージ・承認・クローズ・ブランチ削除は絶対に行わないこと。以下の3タスクを上から順に実行する。
+            マージ・承認・クローズ・ブランチ削除・PR 本文の変更は絶対に行わないこと。以下のタスクを上から順に実行する。
 
             ## 使えるツール（厳守・無駄な試行でトークンと時間を浪費しないため）
             allowedTools は Read/Grep/Glob/Write と、次の**6つの gh サブコマンドだけ**。これ以外は
@@ -106,48 +106,39 @@ jobs:
             - **`cat`・`printf`・`echo`・heredoc（`<<EOF`）・コマンド置換（`$(...)`）・ANSI-C
               クオート（`$'…'`）はすべて拒否される**。本文の組み立てにシェルを使わないこと。
 
-            ## 本文・コメントの反映方法（--body-file ルール・全タスク共通）
-            PR 本文も PR コメントも、必ず次の2ステップで反映する。これが唯一の許可された方法:
-            1. **Write ツール**で本文をファイルに書く（例: `pr-body.md`、`pr-comment.md`）。
+            ## コメントの反映方法（--body-file ルール・全タスク共通）
+            PR コメントは、必ず次の2ステップで反映する。これが唯一の許可された方法:
+            1. **Write ツール**でコメントをファイルに書く（例: `pr-comment.md`）。
                markdown 見出し（`#`）・改行・記号は自由に使ってよい。
-            2. そのファイルを `gh pr edit <番号> --body-file pr-body.md` /
-               `gh pr comment <番号> --body-file pr-comment.md` で渡す。
-            `--body` に本文を直接埋め込む形は使わない——長文・特殊クオートを含むコマンド行は
+            2. そのファイルを `gh pr comment <番号> --body-file pr-comment.md` で渡す。
+            `--body` にコメントを直接埋め込む形は使わない——長文・特殊クオートを含むコマンド行は
             権限マッチャが安全と判定できず、gh コマンドが allowlist にあっても拒否される。
-            **SKILL.md が `--body "$(cat <<'EOF' … )"` の形で例示していても、CI ではそれに従わず、
-            上記の Write + `--body-file` に置き換える。**
+            **SKILL.md・agent 定義が `--body "$(cat <<'EOF' … )"` の形で例示していても、CI ではそれに
+            従わず、上記の Write + `--body-file` に置き換える。**
 
             **通る書き方を探す実験をしてはならない。** 上の形式で1回だけ実行し、拒否されたらその
             タスクは諦めて次のタスクへ進む。書き方を順に変えて再試行したり、確認用の
             テストコメントを PR に投稿したりしないこと（実行時間を浪費し、実 PR にゴミが残るため）。
 
-            ## タスク1: PR本文のAI書き換え
-            `gh pr diff ${{ steps.pr.outputs.number }}` で差分全体を読み、「何を・なぜ変えたか」を
-            人間の言葉で説明する PR 本文を作成し、上記「--body-file ルール」で反映する。コミットメッセージの
-            機械的な要約ではなく、差分から読み取った意図を簡潔に記述する。書き換え前の本文
-            （`gh pr view ${{ steps.pr.outputs.number }} --json body`）に `Closes #<番号>` の行があれば、
-            新しい本文の末尾にその行をそのまま残す（この行が消えるとマージしても Issue が閉じない）。
-
-            ## タスク2: ラベル付与（pr-label）
+            ## タスク1: ラベル付与（pr-label）
             `.claude/skills/pr-label/SKILL.md` を読み、そこに書かれた手順・基準
             （参照先の docs/policy/pr-review-policy.md を含む）に厳密に従って、
             PR #${{ steps.pr.outputs.number }} に「変更の種類」ラベルと
             needs-human-review / needs-manual-triage を付与する。
 
-            ## タスク3: 前提条件チェック（pr-check・条件付き）
+            ## タスク2: 前提条件チェック（pr-check・条件付き）
             `gh pr view ${{ steps.pr.outputs.number }} --json labels` で確認し、**PR に
-            needs-human-review ラベルが付いていれば** 実行する（タスク2で付けた場合に限らない。
+            needs-human-review ラベルが付いていれば** 実行する（タスク1で付けた場合に限らない。
             前段の決定論ステップが付けている場合もある）。付いていなければスキップする。
             `.claude/agents/pr-check-agent/pr-check-agent.md` を読み、その手順に従って
-            PR #${{ steps.pr.outputs.number }} をチェックする（NG のときだけ PR に1件コメントする）。
+            PR #${{ steps.pr.outputs.number }} をチェックする（結果を PR に1件コメントする）。
 
             ## 最終出力: 実行サマリ（可観測性・#69）
-            すべて終えたら、最後のメッセージで次の3行を必ず出力する。後続の決定論ステップが
+            すべて終えたら、最後のメッセージで次の行を必ず出力する。後続の決定論ステップが
             この本文をラン サマリへ転記し、「何をしたか」を毎ラン残す（沈黙とスキップ／失敗を区別可能にする）。
-            - task1（本文書き換え）: 実施 / 未実施（一言で理由）
-            - task2（ラベル）: 付与したラベルを列挙（needs-human-review の有無を明記）。
+            - task1（ラベル）: 付与したラベルを列挙（needs-human-review の有無を明記）。
               needs-human-review を付けた場合は、投稿した根拠コメントの URL も併記する
-            - task3（pr-check）: 実行した(OK / NG) / スキップ（needs-human-review 無しのため）
+            - task2（pr-check）: 実行した(OK / NG) / スキップ（needs-human-review 無しのため）
 
       # 実行サマリと拒否コマンドだけを決定論でラン サマリへ転記する（#69。全メッセージを
       # 公開しない理由は cicd-design 参照）。AI が失敗しても痕跡を残すため always()。
@@ -165,7 +156,7 @@ jobs:
           # 実行ログは全メッセージの JSON 配列。末尾の result メッセージだけを取り出す。
           result=$(jq -r 'map(select(.type=="result")) | last // {} | .result // empty' "$EXECUTION_FILE")
           {
-            echo "### 実行サマリ（task1/2/3）"
+            echo "### 実行サマリ"
             printf '```\n%s\n```\n' "${result:-（サマリ出力なし）}"
           } >> "$GITHUB_STEP_SUMMARY"
           # 拒否された具体コマンド（#65 allowlist の過不足判断の材料）。
