@@ -16,7 +16,6 @@
 //   引数で受け取る。
 
 import { detectEmptyGhBodyOverwrite } from './emptyGhBodyOverwriteMatcher.mjs'
-import { detectGitBranchCreation } from './gitBranchCreationMatcher.mjs'
 import {
   GLOBAL_VALUE_FLAGS,
   normalizeCommandStart,
@@ -170,12 +169,18 @@ const RULE_GROUPS = [
       { label: 'git filter-repo', prefix: ['git', 'filter-repo'] },
       { label: 'git reflog expire', prefix: ['git', 'reflog', 'expire'] },
       { label: 'git gc --prune=now', prefix: ['git', 'gc'], detect: hasImmediatePrune },
-      { label: 'git rebase（git-commit Skill で禁止）', prefix: ['git', 'rebase'] },
+      { label: 'git rebase（git-commit Skill で禁止）', prefix: ['git', 'rebase'] }
+    ]
+  },
+  {
+    category: '開発フローの迂回',
+    why: 'PR は push を受けて pipeline.yml が作る。AI が作ると、本文をコミットメッセージから作る仕組みを迂回する',
+    rules: [
       {
-        label: 'AI によるブランチの新規作成',
-        why: 'ブランチ運用は人間が把握・判断する',
-        detectWholeCommand: detectGitBranchCreation,
-        advice: 'ブランチが必要な場合は人間に作成を依頼する'
+        label: 'gh pr create',
+        prefix: ['gh', 'pr', 'create'],
+        advice:
+          'push すれば pipeline.yml が PR を作る。本文を直すなら、できた PR を gh pr edit --body-file で書き換える'
       }
     ]
   },
