@@ -12,7 +12,7 @@
 // `<<<`（ヒアストリング）は中身が1行の文字列でヒアドキュメントではないため、前後の `<` で除外する
 const HEREDOC_OPERATOR = /(?<!<)<<(?!<)-?\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)\1/
 
-// 単独の `&`（バックグラウンド実行）も区切る。これが無いと `echo x & git checkout -b y` の形で
+// 単独の `&`（バックグラウンド実行）も区切る。これが無いと `echo x & gh pr create` の形で
 // 後続コマンドを語頭から外し、判定をすり抜けさせられる
 const STATEMENT_SEPARATORS = ['&&', '||', ';', '\n', '&']
 // `||` を `|` より先に並べる。逆順だと `||` を空の段を挟む2つのパイプとして読んでしまう
@@ -193,7 +193,7 @@ export function countHeredocOperators(text) {
 /**
  * コマンド名とサブコマンドの間に挟まったグローバルオプションを取り除く。
  *
- * 取り除かないと `git -C /tmp checkout -b x`・`gh --repo o/r issue edit 1` のように
+ * 取り除かないと `git -C /tmp reset --hard`・`gh --repo o/r issue edit 1` のように
  * サブコマンドの位置がずれ、位置で読む判定がすべて外れる。
  * グローバルオプションを持たないコマンドはそのまま返す。
  *
@@ -220,7 +220,7 @@ export function stripGlobalOptions(tokens) {
  *
  * 環境変数の代入（`FOO=1`）・ラッパーコマンド（`env` `sudo` `npx` など）・
  * グローバルオプション（`git -C <path>`・`gh --repo <o/r>`）を剥がす。
- * 剥がさないと `env git checkout -b x` のように、語頭を1語ずらすだけで判定を外せる。
+ * 剥がさないと `env git reset --hard` のように、語頭を1語ずらすだけで判定を外せる。
  *
  * @param {string[]} tokens 語頭から並んだトークン
  * @returns {string[]} 実行されるコマンド名が先頭に来るトークン
