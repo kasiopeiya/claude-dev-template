@@ -1,6 +1,6 @@
 ---
 name: issue-check
-description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、本文とラベルを直す。/sweep で着手する前に人間が打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
+description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。/sweep で着手する前に人間が打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: Task, Bash, Read, Edit, Write
@@ -13,7 +13,7 @@ boy-scout Issue を監査してください。あなたは判定本体を行わ�
 ## 前提
 
 - **起動はスラッシュコマンドの明示呼び出しに限ります。** 一度に多数の Issue を書き換えるため、モデルが自分の判断で走らせてはいけません。
-- **リポジトリのファイルは変更しません。** 触るのは GitHub Issue（本文・ラベル・コメント・close）だけです。
+- **リポジトリのファイルは変更しません。** 触るのは GitHub Issue（タイトル・本文・ラベル・コメント・close）だけです。
 - **判定の基準と優先順位は [`references/audit-criteria.md`](references/audit-criteria.md)（観点一覧）が、レンズの一覧と担当観点は `issue-auditor-agent` の定義が正典です。** ここに書き写しません——2箇所に持つと、判定を変えたときに片方が古いまま残ります。
 - **`issue:checked` の意味は「一度 `/issue-check` を通した」**であって、「いま妥当」ではありません。
 
@@ -95,6 +95,12 @@ gh issue view <番号> --json body --jq .body > <スクラッチパッド>/issue
 gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
 ```
 
+「差し替える本文」の先頭にある「タイトル：」の行は本文に貼りません。「変更なし」以外なら、タイトルに反映します。
+
+```bash
+gh issue edit <番号> --title "<新しいタイトル>"
+```
+
 ラベルを `ai-fixable` へ訂正したときは「対応方針」が、`issue:needs-human-decision` へ訂正したときは「人間に決めてほしいこと」が本文に要ります。`/quick-issue` はこの2セクションを排他と定めているので、**片方を足したらもう片方を消します。**
 
 #### close する
@@ -130,7 +136,7 @@ gh issue list --state open --search 'label:boy-scout -label:"issue:checked"' \
 
 ## エラーハンドリング
 
-- **どれか1つのレンズでも定型フォーマットで返さない**：その Issue は判定を出さず、本文・ラベル・state を一切変更しません（`issue:checked` も貼りません）。壊れた出力と組み合わせて close しないためで、監査を通せていない以上「通した」印も残しません。報告では「監査不能」として並べます
+- **どれか1つのレンズでも定型フォーマットで返さない**：その Issue は判定を出さず、タイトル・本文・ラベル・state を一切変更しません（`issue:checked` も貼りません）。壊れた出力と組み合わせて close しないためで、監査を通せていない以上「通した」印も残しません。報告では「監査不能」として並べます
 - **レンズが引用の無い「該当」を返した**：その観点を落とす。そのレンズに他の該当が残らなければ、そのレンズの判定を GO に戻してから優先順位を当てる（裏が取れていない指摘で本文を書き換えない）
 - **`gh issue edit` が失敗する**：その Issue の処理を中断し、エラーを表示して次の Issue へ進む
 - **同じ Issue に別セッションの更新が入っている**：上書きせず中断し、その事実を報告する
