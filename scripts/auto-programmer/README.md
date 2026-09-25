@@ -18,7 +18,7 @@
 | 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す                 | `/issue-check`                |
 | 7   | Issue のラベルと state を読み、実装へ進むか止めるかを決める                                                 | このツール                    |
 | 8   | Issue から前回の `issue:needs-clean-session` を外し、clone の中で `claude -p "/auto-dev <番号>"` を起動する | `.claude/skills/auto-dev/`    |
-| 9   | 実装・検証・コミット・push・PR 作成                                                                         | `/auto-dev`                   |
+| 9   | 実装・検証・コミット・push・PR 本文の差し替え                                                               | `/auto-dev`                   |
 | 10  | push した commit の CI（`ci.workflowFile`）が終わるまで待つ                                                 | このツール                    |
 | 11  | CI が落ちていれば、clone の中で `claude -p "/auto-fix-ci <番号> <run ID>"` を起動し、10 へ戻る              | `.claude/skills/auto-fix-ci/` |
 | 12  | 落ちた原因を直し、コミット・push する                                                                       | `/auto-fix-ci`                |
