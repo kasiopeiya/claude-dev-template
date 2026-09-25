@@ -88,7 +88,7 @@ git log -1 --pretty=format:"%h - %an, %ar : %s" -- [ファイルパス]
 5. **「次のステップ」の優先度は severity から機械的に決める**（Critical→高・High→中・Medium→低）
 6. **観点一覧の行名で穴を照合する**：`references/review-criteria.md` の観点一覧の全行を、どれかのレンズの「判定した観点」と突き合わせる。判定済みとみなすのは、各レンズの「判定した観点」に名前が挙がっている観点だけ。無ければ「未判定」として観点名をそのまま報告する（**これはレビュー対象の欠陥ではなく、レンズの割り方の穴**。黙って埋めない）
    - ただし、起動条件に当てはまらず起動しなかったレンズの担当観点は、未判定に入れず、全文書で「対象外」と書く（未判定に入れると、割り方の穴と取り違える）
-7. **合否を判定する**：[ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい例外以外の Critical が0件）で決める。対象の全文書を通じた Critical の合計から、手順4で `issue:needs-human-decision` として起票した件数を引き、残りが0件なら ✅ 合格、1件以上なら 🚫 要修正とする。起票した Issue 番号は「Issue にして残す Critical」に書く
+7. **合否を判定する**：[ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい例外以外の Critical が0件）で決める。対象の全文書を通じた Critical の合計から、手順4で `issue:needs-human-decision` として起票した食い違いに含まれる Critical 指摘の件数を引き、残りが0件なら ✅ 合格、1件以上なら 🚫 要修正とする。起票した Issue 番号は「Issue にして残す Critical」に書く
 
 指摘は文書ごとにまとめる。複数の文書を渡した場合も、レンズをまたいで同じ文書の指摘を1箇所に集める。
 

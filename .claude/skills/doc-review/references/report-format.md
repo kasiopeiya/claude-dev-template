@@ -29,13 +29,12 @@
 ### 🚦 合否
 
 <!--
-合否の判定基準は ai-review-gate-policy（../../../../docs/policy/ai-review-gate-policy.md）「合格条件は『残してよい例外以外のCriticalが0件』」。
-ここで数える Critical は、対象の全文書を通じた合計から、このレビュー内で「食い違いの裁定」により issue:needs-human-decision として起票した件数を引いたもの。
+判定基準・数え方は SKILL.md「Phase 3: 統合してレポートを出す」手順7のとおり。
 呼び出し側（/design 等）が別に持つ除外（例：Issue の意図に反してスキップした指摘）は、この判定に含めない。呼び出し側がその除外を反映して合否を決め直す。
 -->
 
 - **判定**: <🚫 要修正 / ✅ 合格>
-- **Critical残数**: <上の計算による件数>
+- **Critical残数**: <手順7の計算による件数>
 - **Issue にして残す Critical**: <issue:needs-human-decision として起票した Issue 番号と概要。無ければ「なし」>
 
 ---
