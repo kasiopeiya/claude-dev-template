@@ -16,7 +16,7 @@ Issue 1件を実装し、**push と PR 本文の差し替えまで**を人間へ
 - **作業ツリーは AI 専用の clone で、人間の作業ツリーとは別物。** 起動側がこの clone を `origin/main` の状態へ戻し、トピックブランチを作り、ボードの Status を「着手中」へ動かしたうえで起動する。**このスキルはブランチを作らない・切り替えない・Status を動かさない**（どれも起動側が済ませている）。
 - **人間はこの実行を見ていない。** 確認を待たずに最後まで進める。進めないと分かったら「離脱手順」で痕跡を残して終了する。
 - **1 Issue = 1 ブランチ = 1 PR。Issue は閉じない。** PR 本文の `Closes` がマージ時に閉じる。CLAUDE.md の「完了したら `gh issue close` する」は、PR を経由しない作業への規定なので、このスキルには適用しない。ただしリポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は PR を経由しない作業に当たるので、このスキルが閉じる（「差分が無いとき」）。
-- **PR 本文の中身はこのスキルが書く。** 書いた後の整形・ラベル付与・マージ可否の判定・auto-merge は `pipeline.yml` → `pr-ai-triage.yml` が行う。
+- **PR 本文は `/pr-body` が書く。** ラベル付与・マージ可否の判定・auto-merge は `pipeline.yml` → `pr-ai-triage.yml` が行う。
 
 ## 処理フロー
 
@@ -79,28 +79,9 @@ gh issue close $ARGUMENTS --comment "<何をしたか>"
 git push -u origin HEAD
 ```
 
-### Phase 6: PR 本文を差し替える
+### Phase 6: PR のタイトルと本文を差し替える
 
-PR は push を受けて `pipeline.yml` が作り、本文はコミットメッセージから生成される。このスキルはその本文を差し替える。**`gh pr create` は使わない**（`.claude/hooks/` が拒否する）。
-
-PR 本文は Write ツールで**リポジトリの外**（一時ディレクトリ）にファイルとして書き、そのパスを渡す。長文・記号を `--body` に直接埋めると、権限判定でコマンドごと拒否されることがある。リポジトリ内に置くと未追跡ファイルが作業ツリーに残る。
-
-本文には次を書く。
-
-- 何を・なぜ変えたか（差分の機械的な要約ではなく、Issue の「この変更が必要な理由」を自分の言葉で）
-- `Closes #$ARGUMENTS`
-
-PR ができるのを最大5分待つ（`pipeline.yml` の PR 作成 job の timeout と同じ）。
-
-```bash
-for i in $(seq 20); do gh pr view --json number,url && break; sleep 15; done
-```
-
-PR が現れたら、タイトルと本文を差し替える。コミットが複数あると、`pipeline.yml` はブランチ名をタイトルにする。
-
-```bash
-gh pr edit <番号> --title "<直前のコミットの件名>" --body-file <本文ファイル>
-```
+`/pr-body $ARGUMENTS` を Skill ツールで実行する。`pipeline.yml` が作る PR を待ち、タイトルと本文（末尾に `Closes #$ARGUMENTS`）を差し替えるところまでを `/pr-body` が行う。
 
 ### Phase 7: 報告する
 
@@ -135,4 +116,4 @@ gh issue edit $ARGUMENTS --add-label "issue:needs-clean-session"
 | Skill が進まない（並列起動型：frontmatter に `agent:` を持たず、中で subagent をレンズごとに並列 Task 起動する Skill。`ListAgents` で止まっているレンズ1回分だけが `running` のまま、同じ経過時間の表示が3回続けて変わらない） | 止まっているレンズ1回分だけ `TaskStop` で止め、そのレンズに渡していたのと同じ引数（レンズ名・対象パスなど）で、そのレンズの subagent だけを `run_in_background: false` で起動し直す。ほかのレンズの結果は捨てない |
 | push が拒否される（同名ブランチが先にある）                                                                                                                                                                                    | 起動側がブランチを作り直すので、離脱手順へ                                                                                                                                                                        |
 | push が pre-push hook の整形検査（`npm run format:check`）で拒否される                                                                                                                                                         | `npm run format` で整形し、変わったファイルを `git add <パス>` して `/git-commit stage` でコミットし、push し直す。`--no-verify` で飛ばさない。整形だけの変更は、離脱条件の「対象箇所の外へ波及」に数えない       |
-| 5分待っても PR が現れない、または本文の差し替えに失敗する                                                                                                                                                                      | 離脱手順に加えて、差し替えられなかった PR 本文をコメントに貼って終了する                                                                                                                                          |
+| `/pr-body` が失敗を表示して終了する                                                                                                                                                                                            | 離脱手順に加えて、`/pr-body` が表示した本文ファイルの中身をコメントに貼って終了する                                                                                                                               |
