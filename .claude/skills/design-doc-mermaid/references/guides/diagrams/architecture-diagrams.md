@@ -835,13 +835,13 @@ sequenceDiagram
 
 ## Best Practices
 
-### 1. **Choose the Right Abstraction Level**
+### Choose the Right Abstraction Level
 
 | Too High Level | ❌  | Just Right                           | ✅  | Too Detailed                                        | ❌  |
 | -------------- | --- | ------------------------------------ | --- | --------------------------------------------------- | --- |
 | "The system"   |     | "API Gateway → Services → Databases" |     | "UserController.getUser() → UserService.findById()" |     |
 
-### 2. **Use Consistent Symbols**
+### Use Consistent Symbols
 
 Create a legend or use the same Unicode symbols throughout. The node shape carries meaning too, so keep the symbol and the shape paired:
 
@@ -855,7 +855,7 @@ Create a legend or use the same Unicode symbols throughout. The node shape carri
 | 🔌     | API / Interface     | `API[🔌 API]`         |
 | ☁️     | External System     | `Ext[☁️ External]`    |
 
-### 3. **Label Communication Protocols**
+### Label Communication Protocols
 
 Always specify:
 
@@ -864,7 +864,7 @@ Always specify:
 - Format: JSON, Protobuf, XML
 - Pattern: Sync/Async, Request/Response, Pub/Sub
 
-### 4. **Show Boundaries Clearly**
+### Show Boundaries Clearly
 
 Use subgraphs to indicate:
 
@@ -873,7 +873,7 @@ Use subgraphs to indicate:
 - Deployment boundaries (different servers/clusters)
 - Team boundaries (who owns what)
 
-### 5. **Indicate Technology Choices**
+### Indicate Technology Choices
 
 技術スタックはノードラベルに `<br/>` で積む。**記法の例なので描画しない**（1〜2ノードに構造は無く、図にすると Value Gate を素通りする手本になる）。
 
@@ -882,7 +882,7 @@ Service[⚙️ Order Service<br/>Java 17<br/>Spring Boot 3.2<br/>Port 8080]
 Database[(💾 PostgreSQL 15<br/>Primary + 2 Replicas<br/>Connection Pool: 20)]
 ```
 
-### 6. **Document Key Decisions**
+### Document Key Decisions
 
 決定はエッジラベルと注記ノードで残す。**記法の例なので描画しない**。
 
@@ -893,9 +893,9 @@ Note1[📝 Decision: Use async messaging<br/>to decouple services and improve<br
 style Note1 fill:#FFF9C4,stroke:#F9A825,color:#000
 ```
 
-### 7. **High-Contrast Styling**
+### High-Contrast Styling
 
-All diagrams MUST use high-contrast colors for accessibility:
+Use high-contrast colors in every diagram, for accessibility:
 
 ```css
 classDef frontend fill:#FFE66D,stroke:#F08C00,color:#000  /* Yellow */

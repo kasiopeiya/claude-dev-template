@@ -33,7 +33,7 @@ Interview me relentlessly about every aspect of this plan until we reach a share
 
 Ask the questions one at a time.
 
-When a question's answer can be narrowed to 3 or more concrete options, you MUST use the AskUserQuestion tool to present them.
+When a question's answer can be narrowed to 3 or more concrete options, present them with the AskUserQuestion tool — picking from options is faster for the user than answering in prose.
 
 If a question can be answered by exploring the codebase, explore the codebase instead.
 
