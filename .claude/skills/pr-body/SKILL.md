@@ -46,10 +46,10 @@ for i in $(seq 20); do gh pr view --json number,url && break; sleep 15; done
 
 ### 3. タイトルと本文を差し替える
 
-コミットが複数あると、`pipeline.yml` はブランチ名をタイトルにする。
+コミットが複数あると、`pipeline.yml` はブランチ名をタイトルにする。タイトルは、コミットが1件ならその件名にする。複数なら、変更全体を表す件名をコミットの件名と同じ形（`type: 説明 (#$ARGUMENTS)`）で書く。どれか1件の件名を流用すると、そのコミットの分だけを表すタイトルになる。
 
 ```bash
-gh pr edit --title "<直前のコミットの件名>" --body-file <本文ファイル>
+gh pr edit --title "<タイトル>" --body-file <本文ファイル>
 ```
 
 ### 4. 報告する
