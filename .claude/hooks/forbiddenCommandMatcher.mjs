@@ -180,7 +180,7 @@ const RULE_GROUPS = [
         label: 'gh pr create',
         prefix: ['gh', 'pr', 'create'],
         advice:
-          'push すれば pipeline.yml が PR を作る。本文を直すなら、できた PR を gh pr edit --body-file で書き換える'
+          'push すれば pipeline.yml が PR を作る。本文を付けるなら、push 後に /pr-body <Issue番号> を使う'
       }
     ]
   },
