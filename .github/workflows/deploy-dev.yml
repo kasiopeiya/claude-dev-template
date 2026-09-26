@@ -1,6 +1,6 @@
 # 責務: main に入った変更を dev 環境へ deploy し、結合テストを実行する。
 #       失敗したら GitHub Issue を起票して、壊れた main に持ち主を作る。
-# なぜこの構成なのかは docs/design/cicd-design.md を参照する。
+# なぜこの構成なのかは samples/docs/design/cicd-design.md を参照する。
 
 name: deploy-dev
 run-name: deploy-dev (${{ github.sha }})
