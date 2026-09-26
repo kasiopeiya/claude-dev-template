@@ -19,5 +19,8 @@
 | 007 | [`/doc-consistency` は通常開発の実装フローに含めない(文書の分割・統合作業は例外)](007-doc-consistency-excluded-from-normal-dev-flow.md)                    | 提案       | 2026-09-26 |
 | 008 | [週次 docs 整合性チェックの起点を、前回処理を終えた週次 Issue 以降に変わった `docs/**/*.md` にする](008-weekly-issue-scope-since-last-processed.md)        | 提案       | 2026-09-26 |
 | 009 | [`/doc-consistency` の重複確認はまとめ Issue の指摘単位で行い、完了済みと同じ指摘は再発として起票する](009-doc-consistency-duplicate-check-granularity.md) | 提案       | 2026-09-26 |
+| 010 | [週次コード Policy 準拠チェックは、docs 用の週次チェックとは別の Issue・別ラベルにする](010-code-policy-weekly-issue-separate-from-docs.md)                | 提案       | 2026-09-26 |
+| 011 | [週次コード Policy 準拠チェックは、起点を計算せず毎週 `app/`・`samples/app` 全体を対象にする](011-code-policy-weekly-no-scope-diff.md)                     | 提案       | 2026-09-26 |
+| 012 | [週次コード Policy 準拠チェックは「決まりどおりか」「設計の形」の2レンズだけを実行する](012-code-policy-weekly-two-lenses.md)                              | 提案       | 2026-09-26 |
 
 <!-- ADR_INDEX_TABLE:END -->

@@ -1,0 +1,47 @@
+# 責務: 週1回、app/・samples/app のコードに対する Policy 準拠チェック（/code-review の
+#   「決まりどおりか」「設計の形」の2レンズ）を実行させる週次 Issue を起票する。
+#   判定・ラベル作成・起票は scripts/code-policy-weekly-issue.mjs が行い、ここでは呼ぶだけにする。
+#   実行そのものはこのワークフローでは行わない（人間か Auto Programmer が処理する）。
+#   なぜこの形なのかは docs/adr/010-code-policy-weekly-issue-separate-from-docs.md・
+#   docs/adr/011-code-policy-weekly-no-scope-diff.md・
+#   docs/adr/012-code-policy-weekly-two-lenses.md を参照する。
+
+name: code-policy-weekly
+run-name: code-policy-weekly
+
+on:
+  schedule:
+    - cron: '0 0 * * 1'
+  workflow_dispatch: {}
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+# schedule と workflow_dispatch が重なって二重に起票するのを防ぐ（ref を問わず1本化する）。
+concurrency:
+  group: code-policy-weekly
+  cancel-in-progress: false
+
+jobs:
+  file-weekly-issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # checkout（node_modules 不要のスクリプトを取得するだけ）に必要
+      contents: read
+      # gh api での issue 読み取り・gh issue create・gh label create に必要
+      issues: write
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - name: Decide and file the weekly issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/code-policy-weekly-issue.mjs
