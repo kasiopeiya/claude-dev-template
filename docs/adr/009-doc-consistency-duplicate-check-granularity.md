@@ -3,7 +3,7 @@ status: proposed
 date: 2026-09-26
 ---
 
-# ADR-005: `/doc-consistency` の重複確認はまとめ Issue の指摘単位で行い、完了済みと同じ指摘は再発として起票する
+# ADR-009: `/doc-consistency` の重複確認はまとめ Issue の指摘単位で行い、完了済みと同じ指摘は再発として起票する
 
 ## 決定（何を選んだか）
 
