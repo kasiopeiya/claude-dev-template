@@ -35,6 +35,10 @@ jobs:
       issues: write
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          # 起点は前回処理済みの週次 Issue の SHA（いつのものか実行時まで分からない）から HEAD までの
+          # docs/**/*.md 差分を取るため、浅い clone では差分が取れない
+          fetch-depth: 0
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
