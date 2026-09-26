@@ -80,12 +80,9 @@ flowchart LR
 
 ### AIによるレビューチェック処理と自動マージ: pr-ai-triage.yml
 
-AIにより以下を実施する
-
-- PRの説明を記載
-- PRの変更ファイルを見て変更種別ラベルをつける
-- pr-review-policy をもとにPRの人間レビューが必要かを判定する（`needs-human-review` ラベルをつける）
-- PRのサイズをチェックする（大きすぎる変更は拒否される）
+- PRの変更ファイルを見て変更種別ラベルをつける（AI）
+- pr-review-policy をもとにPRの人間レビューが必要かを判定する（AI。`needs-human-review` ラベルをつける）
+- 人間レビューが必要なPRのサイズを判定し、結果をコメントする（スクリプト。NG でもマージは止めない）
 
 ```mermaid
 flowchart LR
@@ -93,8 +90,8 @@ flowchart LR
 
     subgraph Triage["🤖 pr-triage ジョブ（merge 権限なし）"]
         Det["⓪ パス判定（決定論）<br/>Policy・CLAUDE.md に変更があれば<br/>policy も付与"]
-        Ai["① AI advisory<br/>PR 説明の書き換え・pr-label"]
-        Chk["② pr-check<br/>needs-human-review が付いていれば実行し<br/>前提条件が NG ならコメント"]
+        Ai["① AI advisory<br/>pr-label"]
+        Chk["② サイズ判定（決定論）<br/>needs-human-review が付いていれば<br/>scripts/pr-check.mjs を実行しコメント"]
         Iss["③ Issue 起票（決定論）<br/>needs-human-review が付いていれば<br/>PR 番号だけの Issue を1件"]
         Det --> Ai --> Chk --> Iss
     end
@@ -114,6 +111,7 @@ flowchart LR
     Ai -. 付与 .-> Label
     Ai -. 振る舞い変更判定不能 .-> Triage2
     Label -. 判定材料 .-> Judge
+    Label -. 実行の条件 .-> Chk
     Label -. 起票の条件 .-> Iss
     Judge -->|Yes| Human
     Judge -->|No| Merged
@@ -126,8 +124,8 @@ flowchart LR
     classDef substate fill:#EFE0F5,stroke:#4B0082,stroke-width:2px,stroke-dasharray: 4 4,color:#2b0047
 
     class Start,Human,Merged startEnd
-    class Det,Iss process
-    class Ai,Chk advisory
+    class Det,Chk,Iss process
+    class Ai advisory
     class Judge decision
     class Label state
     class Triage2 substate
@@ -137,6 +135,7 @@ flowchart LR
 <summary>設計意図</summary>
 
 - PRのサイズを小さく保ち、人間レビューの対象を絞ることで、開発スピードを犠牲にしないようにしている
+- サイズ判定は足し算と比較だけなので AI に数えさせず、手元の `/pr-check` と同じスクリプトを呼ぶ。CI で Claude Code を動かせない環境でも、手元から同じ判定を使える
 
 </details>
 
