@@ -1,6 +1,6 @@
 ---
 name: doc-consistency
-description: docs/ 配下を横断的に走査し、文書間の重複（DRY違反）と矛盾を検出する。「doc-consistency」「ドキュメントの整合性を見て」と指示されたとき。単一文書の品質レビューは /doc-review。
+description: docs/ 配下を横断的に走査し、文書間の重複（DRY違反）と矛盾を検出する。週次の定期チェック Issue と人間の指示で起動する。通常開発の Issue の実装フローには入れない。ただし文書の分割・統合・規定の移動そのものが作業である Issue は例外として入れてよい。「doc-consistency」「ドキュメントの整合性を見て」と指示されたとき。単一文書の品質レビューは /doc-review。
 argument-hint: '[file-path（複数可・空白区切り） | hub]'
 context: fork
 agent: doc-consistency-reviewer-agent

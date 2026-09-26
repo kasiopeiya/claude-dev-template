@@ -61,6 +61,17 @@ AI に任せて開発スピードを上げるほど、判断はぶれ、品質�
 
 このフローで Issue を起票したら、[Issueの階層ガイド](../reference/issue-hierarchy.md)に従って親の sub-issue にする。
 
+## 週次の docs 整合性チェック Issue が届く
+
+`doc-consistency-weekly` ワークフローが週1回、docs/ 全体を対象にした `/doc-consistency`（文書間の重複・矛盾を横断的に探す Skill）の実行を依頼する Issue を自動起票する（ラベル：`doc-consistency-weekly` と `ai-fixable`）。差分レビューでは変更行しか見ないため、既にある重複・矛盾はこの週次チェックでしか拾えない。
+
+届いたら次のどちらかで捌く。
+
+- **「issue N 対応して」と直接指示する**：その場で `/doc-consistency` を実行させる
+- **ボードで Ready に動かし、Auto Programmer に拾わせる**（手順は次節）
+
+open な週次 Issue が残っている間は、次の週のワークフローは新しく起票しない（未処理が積み上がるのを防ぐため）。実行そのものを GitHub Actions が行わない理由と合わせて、[ADR-005](../adr/005-doc-consistency-weekly-issue-only.md)・[ADR-006](../adr/006-skip-weekly-issue-when-open.md)・[ADR-007](../adr/007-doc-consistency-excluded-from-normal-dev-flow.md) を参照。
+
 ## ボードに積んだ Issue を無人で PR にする（Auto Programmer）
 
 Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積んだ Issue を AI に無人で PR まで進めさせることもできる。
