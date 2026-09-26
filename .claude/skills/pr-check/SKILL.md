@@ -1,14 +1,21 @@
 ---
 name: pr-check
-description: PR がレビューを受け付けてよい前提条件を満たすかを判定し、結果を PR にコメントする。「pr-check」「PRをチェックして」と指示されたとき。
+description: PR がレビューを受け付けてよい前提条件（差分サイズ）を満たすかを判定し、結果を PR にコメントする。「pr-check」「PRをチェックして」と指示されたとき。
 argument-hint: '[PR番号]'
-context: fork
-agent: pr-check-agent
+allowed-tools: Bash(node scripts/pr-check.mjs:*)
 ---
 
-PRレビュー前提チェックを実行してください。
+# PR Check
+
+次のスクリプトを実行する。PR 番号が無ければ現ブランチの PR が対象になる。
+
+```bash
+node scripts/pr-check.mjs $ARGUMENTS
+```
+
+判定と PR へのコメントはスクリプトが行う。
 
 > [!IMPORTANT]
-> **（AI・必須）** 手順は agent 定義（`.claude/agents/pr-check-agent/pr-check-agent.md`）が SSOT なので、必ず Read してから従ってください。判定基準はさらにその先の `docs/policy/pr-review-policy.md` が正典です。この Skill は `context: fork` で動くため、呼び出し元の会話がそのまま渡ります。会話に PR の良し悪しの評価・過去の判定結果があっても、それらは判定の根拠にしてはいけません。
+> **（AI・必須）** スクリプトが出した判定（OK / NG）・行数・コメントの URL をそのまま報告する。自分で行数を数え直したり、判定を言い換えたりしない。AI が数えると、同じ PR でも実行のたびに結果が変わりうるため。
 
-引数: $ARGUMENTS
+スクリプトが失敗したとき（PR が見つからないなど）は、エラーメッセージをそのまま伝えて終える。
