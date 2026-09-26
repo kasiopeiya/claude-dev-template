@@ -1,6 +1,6 @@
 # 責務: topic ブランチへの push から、マージ可否の判定までを担う唯一のパイプライン。
 #       dev への deploy は担わない（マージ後の deploy-dev.yml が担う）。
-# なぜこの構成なのかは docs/design/cicd-design.md を参照する。
+# なぜこの構成なのかは samples/docs/design/cicd-design.md を参照する。
 
 name: pipeline
 run-name: pipeline (${{ github.ref_name }})

@@ -19,6 +19,7 @@
 - [マージ可否は `cicd-gate` 1つだけで決める](#マージ可否は-cicd-gate-1つだけで決める)
 - [検査対象を変更パスで絞る](#検査対象を変更パスで絞る)
 - [dev を触るものは、削除も含めて同じ直列化グループに入れる](#dev-を触るものは削除も含めて同じ直列化グループに入れる)
+- [`dependabot` は `github-actions` エコシステムだけに絞る](#dependabot-は-github-actions-エコシステムだけに絞る)
 
 ## 基本方針：トランクベースで開発を高速に回す
 
@@ -270,3 +271,7 @@ flowchart LR
     class Broken danger
     class Stray hollow
 ```
+
+## `dependabot` は `github-actions` エコシステムだけに絞る
+
+`dependabot.yml` は、commit SHA で固定した GitHub Actions に更新を運ぶためだけに使う。`package-ecosystem` に npm など github-actions 以外を足すと、Dependabot が作る PR は GitHub の仕様でリポジトリの `secrets` を参照できないため、その PR 上で deploy 関連のジョブが `secrets` 不足のまま失敗する。

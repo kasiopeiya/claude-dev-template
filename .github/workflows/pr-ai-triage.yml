@@ -1,7 +1,7 @@
 # 責務: pipeline 完了後に、その PR へ判断基準（Policy・CLAUDE.md）変更の決定論ラベル付与と、
 #       advisory な AI 処理（pr-label）、サイズ判定（pr-check）、auto-merge を行う。PR 本文には触れない。
 #       マージ可否の判定（cicd-gate）には一切関与しない。
-# なぜこの構成なのかは docs/design/cicd-design.md を参照する。
+# なぜこの構成なのかは samples/docs/design/cicd-design.md を参照する。
 
 name: pr-ai-triage
 

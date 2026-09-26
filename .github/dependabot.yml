@@ -3,7 +3,8 @@
 # 固定した SHA に後から脆弱性が見つかっても誰も気づかない（dependency-policy ④）。
 #
 # github-actions エコシステムだけに絞るのは意図的な制約である。npm を足すと deploy が
-# secrets 制限で落ちる。理由は docs/design/cicd-design.md の「変更可能境界」を参照。
+# secrets 制限で落ちる。理由は samples/docs/design/cicd-design.md の
+# 「dependabot は github-actions エコシステムだけに絞る」を参照。
 
 version: 2
 
