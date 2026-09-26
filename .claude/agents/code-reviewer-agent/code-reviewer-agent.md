@@ -54,7 +54,7 @@ TypeScript アプリケーションコードをレビューする専門エージ
 | **セキュリティ**   | 攻撃者の目で見て破れるか               | セキュリティ                                                                                                                                                                                | なし                                                                                                                                                                                        |
 | **設計の形**       | 変更に強い形か                         | インターフェース・単一責任・重複コード（DRY・文脈判断）・不要な optional 宣言・不要なpublic公開・テスト専用 export・アプリ設計ポリシー準拠・フロントエンド設計ポリシー準拠                  | `docs/policy/application-design-policy.md`・`docs/policy/frontend-design-policy.md`                                                                                                         |
 | **決まりどおりか** | ポリシー・規約と合っているか           | 命名規則・変数名の妥当性・コメント・構成管理ポリシー準拠・ロギングポリシー準拠・tryブロックの長さ・ネスト回避の小手先。加えて観点一覧の外の「プロジェクトルールへの準拠」「設定値の妥当性」 | `docs/policy/code-comment-policy.md`・`docs/policy/configuration-policy.md`・`docs/policy/application-logging-policy.md`・`.claude/rules/*.md`（`unit-test.md` を除く。テストレンズの担当） |
-| **テスト**         | テストが足りていて、正しく書けているか | 単体テストポリシー準拠・異常系テストの網羅                                                                                                                                                  | `docs/policy/unit-test-policy.md`・`.claude/rules/unit-test.md`・`docs/policy/test-strategy-policy.md`                                                                                      |
+| **テスト**         | テストが足りていて、正しく書けているか | 単体テストポリシー準拠・テストケースの網羅                                                                                                                                                  | `docs/policy/unit-test-policy.md`・`.claude/rules/unit-test.md`・`docs/policy/test-strategy-policy.md`                                                                                      |
 
 ### レンズ外は指摘しない
 
@@ -144,11 +144,58 @@ TypeScript アプリケーションコードをレビューする専門エージ
 ### テストレンズの手順
 
 - **単体テストポリシー準拠**：`docs/policy/unit-test-policy.md`（思想）と `.claude/rules/unit-test.md`（書き方）を Read し照合する（SSOT。**テストファイル（.test.ts / .test.tsx / .spec.ts / .test.mjs）のみ**。それ以外は対象外）
-- **異常系テストの網羅**：**実装ファイルのみ**対象（テストファイルは対象外）。次の手順で照合する:
+- **テストケースの網羅**：**実装ファイルのみ**対象（テストファイルは対象外）。未実行の分岐はカバレッジで挙げ、LLM はテストを書くべきかだけを判定する。次の手順で照合する:
   1. **対象か判定する**: `unit-test-policy.md`「テスト対象外」に当たる実装ファイルは対象外とする（判定しない）
-  2. **テストファイルを探す**: `test-strategy-policy.md` の配置規約に従い、実装の相対パスを `test/` 配下へミラーして引く（例: `domain/email.ts` → `test/domain/email.test.ts`）。無ければ Glob で同名の `.test.*` を探し、それでも無ければ「テストファイル無し」として違反
-  3. **突き合わせる**: 実装の異常系分岐を1つずつ挙げ、対応するテストがあるかをテストファイルで確認する。テストを書かない条件（`unit-test-policy.md`「異常系テストの基準点」「テスト対象外」）に当たる分岐は数えない。分岐は「異常系テストの基準点」が挙げる単位で数える。1つの条件式の内訳（正規表現の各要素など）は分岐を増やさない。境界の両側が必要なのは、同節が名指しする条件式（大小比較・長さ・範囲）だけである。1つのテスト入力が複数の分岐を覆っていてもよい
-  4. **違反は引用付きで**: テストの無い分岐は実装側のコードを引用し、「そのテストが無いことで素通りするバグ」を具体的に書く。テストが1つも無い分岐に限って違反とし、テストのある分岐の入力の種類が少ないだけでは違反にしない。示せなければ準拠とする
+  2. **テストを探す**: どの層のテストでもよい。`test-strategy-policy.md` の配置規約で実装の相対パスを `test/` 配下へミラーして引き（例: `domain/email.ts` → `test/domain/email.test.ts`）、無ければ Glob で同名の `.test.*` を探す。あわせて、その実装を import するモジュールを Grep で上の層へたどり、たどった先のどれかを import するテストも集める（例: `domain/email.ts` は `usecase/registerUser.ts` を経由して `test/usecase/registerUser.test.ts` が通す）。テストファイルが無いこと自体は違反にしない
+  3. **未実行の分岐を挙げる**: a で挙げる。a で計測できないとき（終了コードが0でない、または `coverage/coverage-final.json` ができない）と、a の出力で「レポートに無い」と出たファイルは、理由を問わず b で挙げる
+     - **a. カバレッジで挙げる**:
+       1. 実装ファイルから親ディレクトリをたどり、最初に `package.json` があるディレクトリ（ワークスペース）で `npm run test:coverage` を実行する（同じワークスペースのファイルが複数あっても1回）
+       2. 終了コードが0で `coverage/coverage-final.json` ができていれば、リポジトリ直下で次を実行する
+
+          ```bash
+          node -e '
+          const path = require("path"); const [report, ...targets] = process.argv.slice(1); const coverage = require(path.resolve(report))
+          const lineRange = (loc) => (loc.start.line === loc.end.line ? `L${loc.start.line}` : `L${loc.start.line}-${loc.end.line}`)
+          const isInside = (line, ranges) => ranges.some((range) => range.start.line <= line && line <= range.end.line)
+          for (const target of targets) {
+            const fileCoverage = coverage[path.resolve(target)]
+            if (!fileCoverage) { console.log(`${target}: レポートに無い`); continue }
+            const { b, branchMap, f, fnMap, s, statementMap } = fileCoverage
+            const uncalledFunctions = Object.keys(f).filter((id) => f[id] === 0).map((id) => fnMap[id])
+            const functionRanges = uncalledFunctions.map((fn) => fn.loc)
+            const branches = Object.keys(b).flatMap((id) => b[id].flatMap((count, i) => {
+              const branch = branchMap[id]; const ownRange = branch.locations[i]?.start?.line ? branch.locations[i] : null
+              return count === 0 ? [{ type: branch.type, i, ownRange, loc: ownRange ?? branch.loc }] : []
+            })).filter(({ loc }) => !isInside(loc.start.line, functionRanges))
+            const hiddenRanges = [...functionRanges, ...branches.flatMap(({ ownRange }) => (ownRange ? [ownRange] : []))]
+            const statements = Object.keys(s).map((id) => ({ count: s[id], loc: statementMap[id] })).sort((x, y) => x.loc.start.line - y.loc.start.line || x.loc.start.column - y.loc.start.column)
+            const statementRuns = []; let run = null
+            for (const { count, loc } of statements) {
+              if (count > 0) { run = null; continue }
+              if (isInside(loc.start.line, hiddenRanges)) continue
+              if (run) run.end = loc.end; else statementRuns.push((run = { start: loc.start, end: loc.end }))
+            }
+            const found = [...uncalledFunctions.map((fn) => `関数 ${lineRange(fn.loc)}（${fn.name}）`), ...branches.map(({ type, i, loc }) => `分岐 ${lineRange(loc)}（${type} の${i + 1}番目の経路）`), ...statementRuns.map((range) => `文 ${lineRange(range)}`)]
+            console.log(`${target}: ${found.join(" / ") || "未実行なし"}`)
+          }' <ワークスペース>/coverage/coverage-final.json <実装ファイル...>
+          ```
+
+       3. 出力の例（`samples/app/backend`）。1行目は関数 `buildRegisterUserController` をどのテストも呼ばないこと、2行目は非公開の関数 `extractUserIdForLogging` の三項演算子の偽の側（`'unknown'`）をどのテストも通らないことを表す
+
+          ```text
+          samples/app/backend/main.ts: 関数 L12-16（buildRegisterUserController）
+          samples/app/backend/presentation/registerUserController.ts: 分岐 L51（cond-expr の2番目の経路） / 分岐 L65（cond-expr の2番目の経路）
+          ```
+
+       4. 出力の1項目を、未実行の分岐1つとして判定する
+          - **分岐**：`if`・三項演算子・`&&`・`||`・`??` などの経路。`&&` などの各項も1つの分岐である
+          - **関数**：どのテストも呼ばない関数の全体。中の分岐・文はスクリプトが省く
+          - **文**：try の成功側のように、istanbul が分岐として数えない経路。間に実行された文を挟まない未実行の文のまとまりが1項目になる。未実行の分岐・関数の範囲の中にある文はスクリプトが省く
+     - **b. 自分で挙げる**: 実装の分岐（正常系・異常系）を a と同じ単位で挙げ、手順2で探したテストのどれかが通すかを確かめる。どのテストも通さない分岐を未実行とする（どのテストも読み込まないファイルは、全分岐が未実行になる）。判定セルには、Phase 3 の書式どおり未計測の注記を付ける。理由が `test:coverage` スクリプトが無いことなら、手本として `samples/app/backend` の `package.json`（`test:coverage`）と `vitest.config.ts`（`coverage`）を理由に添える
+     - 判定範囲が差分のファイルでは、行の範囲に差分の追加行を含む項目（b では分岐）だけを残す。差分の外の分岐は、差分が原因で未実行になったのかを見分けられないためで、「判定範囲が差分のときの判定」の「原因が差分なら指摘する」の例外とする
+  4. **テストを書くべきか判定する**: 手順3で挙げた未実行の分岐を、`unit-test-policy.md`「テスト対象の判断基準」で1つずつ判定する。private 関数の中の分岐は、それを呼ぶ公開 API のテストで通すべきかで判定する（直接テストしないだけで、通さなくてよいわけではない）
+  5. **境界の両側を見る**: 観点一覧「テストケースの網羅」が定める境界の両側の値を、手順2で探したテストが入れているかを確かめる（カバレッジはこれを示さない）
+  6. **違反は引用付きで**: テストの無い分岐は実装側のコードを引用し、「そのテストが無いことで素通りするバグ」を具体的に書く。正規表現の各要素のように、カバレッジが分岐として出さない内訳は分岐を増やさない。1つのテスト入力が複数の分岐を通していてもよい。示せなければ準拠とする
 
 ### 判定範囲が差分のときの判定
 
@@ -196,9 +243,9 @@ TypeScript アプリケーションコードをレビューする専門エージ
 
 #### 観点ごとの判定
 
-| 観点             | 判定                            | 指摘の数                     |
-| ---------------- | ------------------------------- | ---------------------------- |
-| <担当する観点名> | <準拠 / 違反 / 対象外 / 未判定> | <違反なら件数、それ以外は -> |
+| 観点             | 判定                                                                                                                | 指摘の数                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| <担当する観点名> | <準拠 / 違反 / 対象外 / 未判定>（テストケースの網羅で計測できなかったときは、続けて「カバレッジ未計測（<理由>）」） | <違反なら件数、それ以外は -> |
 
 #### 指摘
 

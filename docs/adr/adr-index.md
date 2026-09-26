@@ -13,5 +13,6 @@
 | 001 | [Issue を自動実装するオーケストレーターをローカルで走らせる](001-auto-programmer-runs-locally.md)                                        | 提案       | 2026-09-21 |
 | 002 | [architecture-reviewer-agent を4レンズに分ける](002-architecture-reviewer-four-lenses.md)                                                | 提案       | 2026-09-23 |
 | 003 | [architecture-reviewer-agent のレンズ分割を、1体での取りこぼし検証なしに進める](003-architecture-reviewer-lens-split-skip-validation.md) | 提案       | 2026-09-23 |
+| 004 | [テストの無い分岐はカバレッジで挙げ、LLM はテストを書くべきかだけを判定する](004-coverage-lists-untested-branches.md)                    | 提案       | 2026-09-26 |
 
 <!-- ADR_INDEX_TABLE:END -->

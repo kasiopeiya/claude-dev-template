@@ -5,10 +5,12 @@
   "description": "クリーンアーキテクチャ構成のアプリケーションコード（backend）。ArchUnitTS によるアーキテクチャテストを backend のみに適用するためのプロジェクト境界（infra は対象外）",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
+    "@vitest/coverage-v8": "^4.1.10",
     "archunit": "^2.3.3",
     "typescript": "^6.0.3",
     "vitest": "^4.0.18"
