@@ -18,5 +18,6 @@
 | 005 | [週次の docs 整合性チェックは、GitHub Actions が起票だけを行い、実行は人間か Auto Programmer が行う](005-doc-consistency-weekly-issue-only.md)             | 提案       | 2026-09-26 |
 | 006 | [open な週次 docs 整合性チェック Issue があるときは、新しい週次 Issue を起票しない](006-skip-weekly-issue-when-open.md)                                    | 提案       | 2026-09-26 |
 | 007 | [`/doc-consistency` は通常開発の実装フローに含めない(文書の分割・統合作業は例外)](007-doc-consistency-excluded-from-normal-dev-flow.md)                    | 提案       | 2026-09-26 |
+| 008 | [週次 docs 整合性チェックの起点を、前回処理を終えた週次 Issue 以降に変わった `docs/**/*.md` にする](008-weekly-issue-scope-since-last-processed.md)        | 提案       | 2026-09-26 |
 
 <!-- ADR_INDEX_TABLE:END -->
