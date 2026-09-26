@@ -5,8 +5,11 @@
 //   確かめられず、選択肢を作り直すと黙って値が変わるため（Issue #480）。
 // - どのカードを拾うかは AI に決めさせず、ここで決定論的に決める。同じ盤面なら必ず同じ Issue が
 //   選ばれ、実行を追いかけられる状態を保つ。
-// - 候補の絞り込み（Status・ラベル・open な Issue）は Projects の検索に任せる。全カードを取ると
+// - 候補の絞り込み（Status・ラベル・担当者・open な Issue）は Projects の検索に任せる。全カードを取ると
 //   Issue 本文ごと数MBを読むことになり、閉じた Issue が着手待ちに残っていても検索が弾いてくれる。
+// - 候補は `gh` にログインしている自分が担当者の Issue に絞る。着手中へ動かすまでに準備で数分掛かり、
+//   その間に別の台が同じ Issue を選ぶ取り合いを、担当者を先に決めておくことで起こさない（Issue #683）。
+//   防げるのは1アカウント1台のときだけで、同じアカウントで2台動かすと取り合う。
 // - 表記の誤りは「候補0件」と区別がつかないので、着手待ちの表記も選択肢に実在するかを先に確かめる。
 // - ブロッカーの state は毎回 gh で引き直す。候補の本文に書かれた (closed) の印は、人間が
 //   `/issue-deps` を回した時点のものでしかない。引けなかったブロッカーは open と同じに扱う。
@@ -51,13 +54,13 @@ function resolveStatusOption(optionName) {
 }
 
 /**
- * 着手待ちで対象ラベル付きの、open な Issue のカードを取得する。
+ * 着手待ちで対象ラベル付きの、自分が担当者の open な Issue のカードを取得する。
  *
  * @returns {{ id: string, labels?: string[], repository?: string, content: { number: number, title: string, body?: string } }[]} カードの配列
  * @throws {Error} gh が失敗したとき・候補が一度に読める枚数を超えたとき
  */
 function listReadyItems() {
-  const query = `"${board.statusFieldName}":"${board.readyStatusName}" label:"${targetIssueLabel}" is:issue is:open`
+  const query = `"${board.statusFieldName}":"${board.readyStatusName}" label:"${targetIssueLabel}" is:issue is:open assignee:@me`
   const { items = [], totalCount = 0 } = runJson('gh', [
     'project',
     'item-list',
@@ -119,7 +122,7 @@ function findUnresolvedBlockerNumbers(candidates) {
 /**
  * いま着手できる Issue を、着手する順に並べて返す。
  *
- * 候補は「着手待ちの Status かつ対象ラベル付きの open な Issue」のうち対象リポジトリのもので、
+ * 候補は「着手待ちの Status かつ対象ラベル付きの、自分が担当者の open な Issue」のうち対象リポジトリのもので、
  * そこから closed だと確かめられないブロッカーが残るもの・ブロッカー節を読めないものを外し、
  * 段番号昇順 → Issue 番号昇順に並べる。
  *
