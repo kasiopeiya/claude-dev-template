@@ -188,7 +188,7 @@ async function startFirstStartableIssue() {
   const issues = listStartableIssues()
   if (issues.length === 0) {
     console.log(
-      `着手できる Issue はありません（${config.board.readyStatusName} かつ ${config.targetIssueLabel}、ブロッカーが全部 closed）`
+      `着手できる Issue はありません（${config.board.readyStatusName} かつ ${config.targetIssueLabel}、自分が担当者、ブロッカーが全部 closed）`
     )
     return null
   }
