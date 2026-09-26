@@ -274,4 +274,4 @@ flowchart LR
 
 ## `dependabot` は `github-actions` エコシステムだけに絞る
 
-`dependabot.yml` は、commit SHA で固定した GitHub Actions に更新を運ぶためだけに使う。`package-ecosystem` に npm など github-actions 以外を足すと、Dependabot が作る PR は GitHub の仕様でリポジトリの `secrets` を参照できないため、その PR 上で deploy 関連のジョブが `secrets` 不足のまま失敗する。
+`dependabot.yml` は、commit SHA で固定した GitHub Actions に更新を運ぶためだけに使う。`package-ecosystem` に npm など github-actions 以外を足すと、Dependabot がトリガーするワークフロー実行では通常の GitHub Actions の `secrets` が使えず、別途登録する `Dependabot secrets` に切り替わる。`Dependabot secrets` は用意していないため、その PR 上で deploy 関連のジョブが `secrets` 不足のまま失敗する。
