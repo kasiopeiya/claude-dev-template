@@ -34,6 +34,7 @@ import { decideAfterCiRun, readCiRunState } from './ciRun.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { recordRun } from './runLog.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
+import { startSleepGuard } from './sleepGuard.mjs'
 import { prepareTopicBranch } from './workspace.mjs'
 
 const MILLISECONDS_PER_SECOND = 1000
@@ -518,6 +519,9 @@ async function waitForNextPoll() {
 }
 
 async function main() {
+  // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
+  // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
+  startSleepGuard()
   runPreflight()
 
   let consecutiveSessionFailureCount = 0
