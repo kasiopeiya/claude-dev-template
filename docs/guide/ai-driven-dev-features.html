@@ -1700,6 +1700,13 @@
             一覧は自動生成する
           </text>
         </svg>
+
+        <p style="margin-top: 14px; font-size: 12.5px; color: var(--ink-2)">
+          <b>週次の docs 整合性チェック</b>：GitHub Actions が週1回、docs/ 全体を対象に
+          <code>/doc-consistency</code>（文書横断の重複・矛盾検出）の実行を依頼する Issue
+          を自動起票する。実行自体は人間か Auto Programmer が行う（Actions で Claude Code
+          を使えないプロジェクトでも動くようにするため）。
+        </p>
       </section>
       <footer style="margin-top: 56px; font-size: 11px; color: var(--muted); text-align: center">
         <a href="ai-driven-dev-flow.html">← ポリシー駆動開発とは何か</a>
