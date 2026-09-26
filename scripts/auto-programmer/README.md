@@ -55,24 +55,26 @@ npm run auto-programmer
 
 接続先と表記はすべて `config.mjs` に集めてある。**他のファイルにこれらの値は書かれていない。**
 
-| キー                          | 意味                                                        | 調べ方                                                                                        |
-| ----------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `repository`                  | Issue と PR の相手（`owner/repo`）                          | `gh repo view --json nameWithOwner`                                                           |
-| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る               | `gh repo view --json defaultBranchRef`                                                        |
-| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                              | `gh project list --owner <owner>`                                                             |
-| `board.statusFieldName`       | 進捗を持つフィールドの表記                                  | `gh project field-list <番号> --owner <owner>`                                                |
-| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                          | 同上                                                                                          |
-| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                | 同上                                                                                          |
-| `board.inReviewStatusName`    | 「CI が通り、レビューしてよい」を表す選択肢の表記           | 同上                                                                                          |
-| `targetIssueLabel`            | 対象にする Issue のラベル                                   | `gh label list`                                                                               |
-| `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数   | 長いほうの実装に掛かる時間の上限として決める                                                  |
-| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数 | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
-| `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名     | `.github/workflows/` の下のファイル名                                                         |
-| `ci.pollIntervalSeconds`      | CI の run の状態を見直す秒数                                | 短すぎると `gh run list` の呼び出し頻度が上がる                                               |
-| `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                     | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
-| `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限        | 使い切っても落ちていれば人間へ回す                                                            |
+| キー                          | 意味                                                                                                                                                               | 調べ方                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `repository`                  | Issue と PR の相手（`owner/repo`）                                                                                                                                 | `gh repo view --json nameWithOwner`                                                           |
+| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る                                                                                                                      | `gh repo view --json defaultBranchRef`                                                        |
+| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                                                                                                                                     | `gh project list --owner <owner>`                                                             |
+| `board.statusFieldName`       | 進捗を持つフィールドの表記                                                                                                                                         | `gh project field-list <番号> --owner <owner>`                                                |
+| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                                                                                                                                 | 同上                                                                                          |
+| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                                                                                                                       | 同上                                                                                          |
+| `board.inReviewStatusName`    | 「CI が通り、レビューしてよい」を表す選択肢の表記                                                                                                                  | 同上                                                                                          |
+| `targetIssueLabel`            | 対象にする Issue のラベル                                                                                                                                          | `gh label list`                                                                               |
+| `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数（macOS・Windows では `sleepGuard.mjs` がOSのスリープを止め、この時間がスリープ分だけ早く尽きるのを防ぐ） | 長いほうの実装に掛かる時間の上限として決める                                                  |
+| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数                                                                                                        | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
+| `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名                                                                                                            | `.github/workflows/` の下のファイル名                                                         |
+| `ci.pollIntervalSeconds`      | CI の run の状態を見直す秒数                                                                                                                                       | 短すぎると `gh run list` の呼び出し頻度が上がる                                               |
+| `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                                                                                                                            | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
+| `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                                                                                               | 使い切っても落ちていれば人間へ回す                                                            |
 
 フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。
+
+`sessionTimeoutMinutes` は壁時計（wall-clock）で数える。OS がアイドルスリープすると、寝ていた時間もここに数えられ、無人セッションが実際より早く打ち切られる（Issue #651）。`index.mjs` は起動直後にこれを防ぐコマンド（macOS は `caffeinate`、Windows は同梱の `sleepGuard.ps1`）を起動し続けるが、ノートPCの蓋を閉じたことによるスリープ（クラムシェルスリープ）までは止められない。実行中は蓋を閉じないか、外部ディスプレイに繋いでおくこと。Linux は `CLOCK_MONOTONIC` がサスペンド中に止まるため、この問題自体が起きず、何もしない。
 
 AI 専用 clone と実行記録は `~/dev/auto-programmer/` の下に置かれる。置き場を変えたいときは、`config.mjs` を編集せず環境変数 `AUTO_PROGRAMMER_HOME` で指定する。
 
