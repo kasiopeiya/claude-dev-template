@@ -32,7 +32,7 @@
 
 ### [documentation-policy-for-humans.md](policy/documentation-policy-for-humans.md)
 
-**参照タイミング**: 人間が読む設計書・ポリシー・手順書などを作成・編集・レビューする前
+**参照タイミング**: 人間が画面で読む設計書・ADR・ガイド・手順書・要件定義書・README などを作成・編集・レビューする前
 
 ---
 
