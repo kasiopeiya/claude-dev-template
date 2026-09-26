@@ -32,7 +32,10 @@ samples/app/backend/
 npm install        # 依存を導入
 npm run typecheck  # 型検査（このワークスペースのみ。infra は対象外）
 npm run test       # 単体テストとアーキテクチャテスト（境界・循環依存・凝集度）を実行
+npm run test:coverage  # カバレッジを測りながらテストを実行
 ```
+
+`/code-review` のテストレンズは `test:coverage` を実行し、`coverage/coverage-final.json`（istanbul の json 形式）から未実行の分岐を読む。`app/` に写すときもこのスクリプト名と出力先を変えない。
 
 リント・フォーマットはルート（リポジトリ直下）に共通化しているため、リポジトリ直下で `npm run lint` / `npm run format` を実行する。
 
