@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // 責務: open な週次コード Policy 準拠チェック Issue が無いときだけ、その Issue を起票する
 //   （docs/adr/010-code-policy-weekly-issue-separate-from-docs.md）。起点は計算せず、
-//   毎週 app/・samples/app 配下のコード全体を対象にする
-//   （docs/adr/011-code-policy-weekly-no-scope-diff.md）。
+//   毎週 app/ 配下のコード全体を対象にする（docs/adr/011-code-policy-weekly-no-scope-diff.md）。
+//   samples/ は参照実装であり AI が書き換えられないため対象にしない（README「変更してはならないパス」）。
 //   ラベルの作成から起票まで自分で行い、呼び出し側の GitHub Actions
 //   （.github/workflows/code-policy-weekly.yml）にはこのファイルを1回呼ぶことだけを残す。
 //
@@ -22,8 +22,8 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const WEEKLY_ISSUE_LABEL = 'code-policy-weekly'
 const AI_FIXABLE_LABEL = 'ai-fixable'
 
-// レビュー対象のディレクトリ
-const TARGET_DIRECTORIES = ['app', 'samples/app']
+// レビュー対象のディレクトリ。samples/ は参照実装で AI が書き換えられないため含めない
+const TARGET_DIRECTORIES = ['app']
 
 const WEEKLY_ISSUE_TITLE = `週次: ${TARGET_DIRECTORIES.join('・')} の Policy 準拠チェック (/code-review)`
 

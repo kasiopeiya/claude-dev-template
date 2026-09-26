@@ -3,15 +3,15 @@ status: proposed
 date: 2026-09-26
 ---
 
-# ADR-011: 週次コード Policy 準拠チェックは、起点を計算せず毎週 `app/`・`samples/app` 全体を対象にする
+# ADR-011: 週次コード Policy 準拠チェックは、起点を計算せず毎週 `app/` 全体を対象にする
 
 ## 決定(何を選んだか)
 
-`scripts/code-policy-weekly-issue.mjs` は、前回の週次チェック以降に変わったファイルへ範囲を絞る計算を行わない。`app/`・`samples/app` 配下の git 管理下ファイルから対象拡張子（`.ts`・`.tsx`・`.test.mjs`、`.config.ts`・`.config.js` は除く）を毎週すべて列挙する。
+`scripts/code-policy-weekly-issue.mjs` は、前回の週次チェック以降に変わったファイルへ範囲を絞る計算を行わない。`app/` 配下の git 管理下ファイルから対象拡張子（`.ts`・`.tsx`・`.test.mjs`、`.config.ts`・`.config.js` は除く）を毎週すべて列挙する。
 
 ## 採用理由(なぜこれを選んだか)
 
-docs 用の週次チェック（[ADR-008](008-weekly-issue-scope-since-last-processed.md)）は起点を前回処理以降の変更に絞っているが、これは起点計算のための実装（処理済み Issue の探索・HEAD SHA の記録・読み戻し）を新たに持つコストと引き換えに、文書数が増えても1回あたりのチェック量を抑える対策である。コード側の対象は現時点で `samples/app` が18ファイルと小さく、起点計算を持たなくても週1回全体を見るコストが見合う。
+docs 用の週次チェック（[ADR-008](008-weekly-issue-scope-since-last-processed.md)）は起点を前回処理以降の変更に絞っているが、これは起点計算のための実装（処理済み Issue の探索・HEAD SHA の記録・読み戻し）を新たに持つコストと引き換えに、文書数が増えても1回あたりのチェック量を抑える対策である。コード側の対象（`app/`）は当面小規模で、起点計算を持たなくても週1回全体を見るコストが見合う。
 
 ## 検討した代替案(なぜ却下したか)
 

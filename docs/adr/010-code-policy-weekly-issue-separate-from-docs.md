@@ -7,7 +7,7 @@ date: 2026-09-26
 
 ## 決定(何を選んだか)
 
-`app/`・`samples/app` を対象にした週次の Policy 準拠チェック（`/code-review` の2レンズ実行）は、専用ラベル `code-policy-weekly` を持つ独立した週次 Issue として起票する。docs 用の週次整合性チェック（ラベル `doc-consistency-weekly`）とは別の Issue・別のワークフロー（`.github/workflows/code-policy-weekly.yml`）にする。
+`app/` を対象にした週次の Policy 準拠チェック（`/code-review` の2レンズ実行）は、専用ラベル `code-policy-weekly` を持つ独立した週次 Issue として起票する。docs 用の週次整合性チェック（ラベル `doc-consistency-weekly`）とは別の Issue・別のワークフロー（`.github/workflows/code-policy-weekly.yml`）にする。
 
 ## 採用理由(なぜこれを選んだか)
 

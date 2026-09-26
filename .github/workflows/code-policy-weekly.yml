@@ -1,4 +1,4 @@
-# 責務: 週1回、app/・samples/app のコードに対する Policy 準拠チェック（/code-review の
+# 責務: 週1回、app/ のコードに対する Policy 準拠チェック（/code-review の
 #   「決まりどおりか」「設計の形」の2レンズ）を実行させる週次 Issue を起票する。
 #   判定・ラベル作成・起票は scripts/code-policy-weekly-issue.mjs が行い、ここでは呼ぶだけにする。
 #   実行そのものはこのワークフローでは行わない（人間か Auto Programmer が処理する）。
