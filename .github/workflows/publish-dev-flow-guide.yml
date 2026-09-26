@@ -1,5 +1,5 @@
 # 責務: 開発フロー解説 HTML（docs/guide/ai-driven-dev-flow.html）を GitHub Pages へ公開する。
-# なぜこの構成なのかは docs/design/cicd-design.md を参照する。
+# なぜこの構成なのかは samples/docs/design/cicd-design.md を参照する。
 
 name: publish-dev-flow-guide
 
