@@ -2,7 +2,7 @@
 // Stop hook: ターンを終える直前に、変更内容に対応する既存ゲートを実行し、落ちたら AI へ差し戻す。
 //
 // 設計意図（WHY）:
-// - 正式フロー（/code-dev・/cdk-dev）は CI を自動実行するが、Plan/Issue を経ないアドホックな
+// - 正式フロー（/code-dev・/cdk-dev）は CI を自動実行するが、これらの Skill を経ない
 //   直接編集には自動ゲートが無く、push 後に Actions で初めて落ちる。ターン末に1度だけ走らせて
 //   その穴を埋める。
 // - hook は検査ごとに増やさず、この1本に集約する（policy-driven-development-policy
