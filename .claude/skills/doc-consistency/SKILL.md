@@ -1,12 +1,12 @@
 ---
 name: doc-consistency
 description: docs/ 配下を横断的に走査し、文書間の重複（DRY違反）と矛盾を検出する。「doc-consistency」「ドキュメントの整合性を見て」と指示されたとき。単一文書の品質レビューは /doc-review。
-argument-hint: '[file-path | hub]'
+argument-hint: '[file-path（複数可・空白区切り） | hub]'
 context: fork
 agent: doc-consistency-reviewer-agent
 ---
 
-ドキュメント横断の整合性レビュー（重複・矛盾の検出）を実行してください。
+ドキュメント横断の整合性レビュー（重複・矛盾の検出）を実行してください。ファイルパスは空白区切りで複数渡せます。渡した各ファイルをそれぞれ起点として扱います。
 
 ## レビュー結果の起票
 
