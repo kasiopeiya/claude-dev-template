@@ -57,7 +57,7 @@ allowed-tools: Task, Bash, Read
 | Critical       | 1件ごとに1 Issue    | `[Critical] 要件定義書: <問題の概要>`         | 凍結を止める欠陥は1件ずつ着手・クローズされる。束ねると一部だけ直った状態が残る |
 | High ＋ Medium | 全件まとめて1 Issue | `[High・Medium] 要件定義書レビュー指摘まとめ` | 1件ずつ判断するほど重くない。件数分に割ると Critical の Issue が埋もれる        |
 
-タイトルの先頭ラベルは省略しないでください——Issue 一覧を眺めただけで、凍結を止める指摘かどうかが分かる必要があります。
+タイトルの先頭ラベルは省略しないでください——Issue 一覧を眺めただけで、凍結を止める指摘かどうかが分かる必要があります。タイトルの先頭には段番号を付けてください（例：`1. [Critical] …`）。振り方は Issueの階層ガイド（`docs/reference/issue-hierarchy.md`）の「段番号（着手順）」に従います。
 
 本文の書き方・ラベル・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md` が正典です。Read して従ってください。ラベルは `quick-issue` の指定に加えて `requirement`（説明：要件定義書のレビュー指摘に起因するIssue）を必ず付けます——要件定義の指摘だけを後から一括で追うためです。
 
