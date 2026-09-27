@@ -29,7 +29,7 @@ These are never reasons to ask:「後で困るから今決めておく」「つ�
 
 ## Interview
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer.
+Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer, and add one line stating whether taking that answer still satisfies the agreed sentence and the issue's purpose — a recommendation that would fail to satisfy either is not a valid recommendation.
 
 Ask the questions one at a time.
 
@@ -41,7 +41,7 @@ Before and during the interview, read the requirements (docs/requirements.md —
 
 When the plan implies documentation changes, ask which document's purpose (対象読者・目的) each piece of resulting content belongs to. Content that doesn't serve any existing document's purpose belongs elsewhere, or nowhere — surface this before it gets frozen into a task list. This catches purpose-mismatch at the source, since downstream sessions treat the issue's task list as ground truth.
 
-As you interview, hold each answer and proposed direction against the refined engineer judgment principles (docs/policy/refined-engineer-judgment-principles.md — the judgment north star). When an answer violates a principle, name the principle and push back before it freezes into the plan. Apply the whole set — e.g. premature tech lock-in (決定を遅らせる), needless complexity (Less is more), drifting from the stated purpose (目的を見失えば、速く進むほど遠ざかる). The most common case: wanting to build something not in the agreed requirements — probe whether it is actually needed (what present need drives it, what breaks if omitted); speculative "we might need it later" additions are YAGNI violations.
+As you interview, hold each answer and proposed direction against the refined engineer judgment principles (docs/policy/refined-engineer-judgment-principles.md — the judgment north star). When an answer violates a principle, name the principle and push back before it freezes into the plan. Apply the whole set — e.g. premature tech lock-in (決定を遅らせる), needless complexity (Less is more), drifting from the stated purpose (目的を見失えば、速く進むほど遠ざかる). The most common case: wanting to build something not in the agreed requirements — probe whether it is actually needed (what present need drives it, what breaks if omitted); speculative "we might need it later" additions are YAGNI violations. This pushback applies only to something absent from the agreed sentence. Never invoke YAGNI to cut down the volume of the work the agreed sentence itself asks for — that would produce a plan that fails the sentence it was supposed to satisfy.
 
 ## `--small` — the agreed sentence must be a thin vertical slice
 
