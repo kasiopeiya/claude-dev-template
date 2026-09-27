@@ -178,8 +178,7 @@ function reportAdrLinkViolations(adrLinks) {
     console.error(`  ${file}:${line} -> ${target}`)
   }
   console.error(
-    '\n直し方: 相対リンクをテンプレートリポジトリの URL に差し替えてください' +
-      '（例: https://github.com/kasiopeiya/claude-dev-template/blob/main/docs/adr/NNN-slug.md）。'
+    '\n直し方: ADR への参照を外してください。理由を残したいときは、ADR を指さずにその本文へ書いてください。'
   )
 }
 

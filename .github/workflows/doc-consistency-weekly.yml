@@ -1,9 +1,7 @@
 # 責務: 週1回、docs/ 横断の重複・矛盾チェック（/doc-consistency）を実行させる週次 Issue を起票する。
 #   判定・ラベル作成・起票は scripts/doc-consistency-weekly-issue.mjs が行い、ここでは呼ぶだけにする。
 #   実行そのものはこのワークフローでは行わない（人間か Auto Programmer が処理する）。
-#   なぜこの形なのかは scripts/auto-programmer/README.md「週次スクリプトが Issue を供給する」・
-#   https://github.com/kasiopeiya/claude-dev-template/blob/main/docs/adr/007-doc-consistency-excluded-from-normal-dev-flow.md
-#   （テンプレートの ADR-007）を参照する。
+#   なぜこの形なのかは scripts/auto-programmer/README.md「週次スクリプトが Issue を供給する」を参照する。
 
 name: doc-consistency-weekly
 run-name: doc-consistency-weekly
