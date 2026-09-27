@@ -305,6 +305,21 @@ function listCiRuns(headSha) {
 }
 
 /**
+ * commit の CI の run を1回引く。失敗しても投げず、理由を出して null を返す。
+ *
+ * @param {string} headSha 引く commit の SHA
+ * @returns {ReturnType<typeof listCiRuns> | null} run の一覧（引けなければ null）
+ */
+function tryListCiRuns(headSha) {
+  try {
+    return listCiRuns(headSha)
+  } catch (error) {
+    console.error(`CI の run を引けませんでした。引き直します: ${formatError(error)}`)
+    return null
+  }
+}
+
+/**
  * commit の CI の run が終わるまで待つ。待ち時間の上限を使い切るか、Ctrl+C が来たら、その時点の状態で戻る。
  * run を引けなかったときは、待ち時間の上限までは引き直す。
  *
@@ -316,13 +331,10 @@ async function waitForCiRun(headSha) {
   const deadline = Date.now() + CI_RUN_WAIT_LIMIT_MS
   for (;;) {
     const isLastTry = Date.now() >= deadline || stopController.signal.aborted
-    let runs
-    try {
-      runs = listCiRuns(headSha)
-    } catch (error) {
-      // 待つ時間が長いほど瞬断や GitHub の一時障害に当たりやすい。1回の失敗でやめると、落ちた PR が誰にも直されずに残る
-      if (isLastTry) throw error
-      console.error(`CI の run を引けませんでした。引き直します: ${formatError(error)}`)
+    // 待つ時間が長いほど瞬断や GitHub の一時障害に当たりやすい。1回の失敗でやめると、落ちた PR が誰にも直されずに残る。
+    // 最後の1回だけは握らず、引けなかったこと自体を呼び出し元へ伝える
+    const runs = isLastTry ? listCiRuns(headSha) : tryListCiRuns(headSha)
+    if (runs === null) {
       await sleepUnlessStopped(CI_POLL_INTERVAL_MS)
       continue
     }

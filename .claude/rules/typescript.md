@@ -2,13 +2,15 @@
 paths:
   - '**/*.ts'
   - '**/*.tsx'
+  - 'scripts/**/*.mjs'
+  - '.claude/hooks/**/*.mjs'
 ---
 
 # TypeScript 共通ルール
 
 ## 対象読者
 
-AIエージェントが、TypeScript を書く／レビューし、命名・規模の上限といったこのプロジェクトの書き方に迷ったとき。
+AIエージェントが、TypeScript（および `scripts/`・`.claude/hooks/` の `.mjs`）を書く／レビューし、命名・規模の上限といったこのプロジェクトの書き方に迷ったとき。
 
 ## コーディングスタイル
 

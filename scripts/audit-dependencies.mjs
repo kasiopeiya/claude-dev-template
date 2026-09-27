@@ -52,12 +52,11 @@ function runAudit(directory) {
  * 覆われたと言えるのは、開示情報も混入経路もすべて許容済みのときだけ。1つでも未許容が混じれば覆われていない。
  *
  * @param {object} vulnerability npm audit の1エントリ
- * @param {string} directory 監査対象ディレクトリ
- * @param {typeof ALLOWED_VULNERABILITIES} allowlist 許容リスト
  * @param {Set<string>} matchedKeys 実際に効いた許容エントリの記録先（副作用）
+ * @param {{ directory: string, allowlist: typeof ALLOWED_VULNERABILITIES }} context 監査対象ディレクトリと許容リスト
  * @returns {boolean} 覆われていれば true
  */
-function isFullyAllowed(vulnerability, directory, allowlist, matchedKeys) {
+function isFullyAllowed(vulnerability, matchedKeys, { directory, allowlist }) {
   const advisories = vulnerability.via.filter((via) => typeof via === 'object')
   if (advisories.length === 0) return false
 
@@ -106,7 +105,9 @@ function selectBlockingVulnerabilities(report, directory, allowlist) {
 
   const blocking = Object.values(report.vulnerabilities ?? {})
     .filter((vulnerability) => SEVERITY_ORDER.indexOf(vulnerability.severity) >= threshold)
-    .filter((vulnerability) => !isFullyAllowed(vulnerability, directory, allowlist, matchedKeys))
+    .filter(
+      (vulnerability) => !isFullyAllowed(vulnerability, matchedKeys, { directory, allowlist })
+    )
 
   return { blocking, matchedKeys }
 }
