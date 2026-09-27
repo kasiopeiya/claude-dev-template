@@ -4,8 +4,8 @@
 //   Issue を閉じないため、その後始末を人間が `npm run` で起動する。理由は docs/design/cicd-design.md「技術的制約」。
 //
 // 使い方:
-//   npm run close-issues-of-merged-prs   close した Issue と、その根拠の PR を1件1行で標準出力に返す。
-//                                          close するものが無ければ、その旨を返す
+//   npm run close-issues   close した Issue と、その根拠の PR を1件1行で標準出力に返す。
+//                          close するものが無ければ、その旨を返す
 
 import { execFileSync } from 'child_process'
 import { realpathSync } from 'fs'
@@ -44,7 +44,7 @@ function main() {
  * @param {string | null | undefined} body PR 本文
  * @returns {number[]} Issue 番号の一覧（重複なし、出てきた順）
  */
-export function extractClosingIssueNumbers(body) {
+function extractClosingIssueNumbers(body) {
   const issueNumbers = [...(body ?? '').matchAll(CLOSING_KEYWORD_PATTERN)].map((match) =>
     Number(match[1])
   )
@@ -60,7 +60,7 @@ export function extractClosingIssueNumbers(body) {
  *   mergedPullRequests: マージ済み PR の一覧 / openIssueNumbers: open な Issue 番号の集合
  * @returns {{ issueNumber: number, pullRequestNumber: number }[]} close する Issue と根拠の PR
  */
-export function findIssuesToClose({ mergedPullRequests, openIssueNumbers }) {
+function findIssuesToClose({ mergedPullRequests, openIssueNumbers }) {
   const pullRequestNumberByIssueNumber = new Map()
   for (const { number: pullRequestNumber, body } of mergedPullRequests) {
     for (const issueNumber of extractClosingIssueNumbers(body)) {
@@ -141,7 +141,7 @@ function closeIssue({ issueNumber, pullRequestNumber }) {
     '--reason',
     'completed',
     '--comment',
-    `#${pullRequestNumber} がマージ済みなので close する（\`npm run close-issues-of-merged-prs\`）`
+    `#${pullRequestNumber} がマージ済みなので close する（\`npm run close-issues\`）`
   ])
 }
 
