@@ -12,7 +12,7 @@ AIエージェントが、要件定義書（`docs/requirements.md`）を書く�
 
 ### 詳細トグルの記法
 
-記法は documentation-policy-for-humans「詳細と理由はトグルに畳む」に従う。要件定義書はそこに次を上乗せする。
+記法は Rule document-writing-for-humans.md「トグルの記法」に従う。要件定義書はそこに次を上乗せする。
 
 - `summary` は `ID 名前`。`ID` を持たない表では行の識別語（項目名・用語名）を書く。表には `ID`（または識別語）が残るので、読み手はそこから詳細を引ける。
 - 詳細は表と同じ `ID` 順に並べる。
