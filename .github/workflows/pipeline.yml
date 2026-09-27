@@ -5,7 +5,7 @@
 name: pipeline
 run-name: pipeline (${{ github.ref_name }})
 
-# git-policy の7プレフィックスのみを対象にし、ブランチ命名規約を仕組みで強制する。
+# git-commit Skill「ブランチ命名規則」の7プレフィックスのみを対象にし、ブランチ命名規約を仕組みで強制する。
 # 代償として、これ以外のブランチは checks が1つも走らず無言でマージ不可になる（cicd-design「既知の制約」）。
 # workflow レベルの paths フィルタは使わない。ワークフローごとスキップされると required check が
 # pending のまま残り、PR が永久にマージできなくなるため（job レベルの skip とは挙動が違う）。
@@ -57,7 +57,7 @@ jobs:
             echo "pull request already exists for $BRANCH"
             exit 0
           fi
-          # 本文はコミットメッセージから生成する。git-policy が既にコミットへ「なぜ」を
+          # 本文はコミットメッセージから生成する。git-commit Skill が既にコミットへ「なぜ」を
           # 書くことを義務付けており、同じ内容を人間に2度書かせないため（--fill）。
           gh pr create --base main --head "$BRANCH" --fill
 

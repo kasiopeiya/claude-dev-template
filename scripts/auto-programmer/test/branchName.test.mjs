@@ -1,4 +1,4 @@
-// 責務: ブランチ名の決定が、git-policy の7プレフィックスの内側に必ず収まることを検証する。
+// 責務: ブランチ名の決定が、git-commit Skill の7プレフィックスの内側に必ず収まることを検証する。
 //
 // ここが壊れると、pipeline.yml の push トリガに当たらないブランチができ、PR に checks が
 // 1つも走らないまま無言でマージ不可になる。
@@ -8,7 +8,7 @@ import assert from 'node:assert/strict'
 
 import { buildBranchName } from '../branchName.mjs'
 
-// git-policy「ブランチ命名規則」と pipeline.yml の push トリガが共に許す prefix（両者の写し）
+// git-commit Skill「ブランチ命名規則」と pipeline.yml の push トリガが共に許す prefix（両者の写し）
 const ALLOWED_PREFIXES = new Set(['feat', 'fix', 'refactor', 'chore', 'ci', 'test', 'docs'])
 
 /** ラベルだけを変えて、Issue 1 のブランチ名を作る */

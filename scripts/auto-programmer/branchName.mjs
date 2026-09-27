@@ -2,7 +2,7 @@
 //
 // 設計意図（WHY）:
 // - I/O を持たない層をここに切り出すことで、GitHub にも clone にも触れずに単体テストできる。
-// - prefix の語彙は docs/policy/git-policy.md「ブランチ命名規則」が正。pipeline.yml の push
+// - prefix の語彙は .claude/skills/git-commit/SKILL.md「ブランチ命名規則」が正。pipeline.yml の push
 //   トリガもこの7つだけを受けるため、ここに無い prefix を作ると CI が1つも走らない PR ができる。
 // - 種類ラベルが複数付いた Issue でも1つに決まるよう、表の並び順を優先順位そのものにしている。
 
@@ -26,7 +26,7 @@ const DEFAULT_BRANCH_PREFIX = 'chore'
  * 種類ラベルが複数あるときは、表の並び順で先に当たったものを使う。1つも無ければ 'chore' を返す。
  *
  * @param {string[]} labelNames Issue に付いているラベル名（種類ラベル以外を含んでよい）
- * @returns {string} ブランチ prefix（git-policy の7プレフィックスのいずれか）
+ * @returns {string} ブランチ prefix（git-commit Skill の7プレフィックスのいずれか）
  */
 function selectBranchPrefix(labelNames) {
   const names = new Set(Array.isArray(labelNames) ? labelNames : [])
