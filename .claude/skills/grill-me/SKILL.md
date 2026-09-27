@@ -13,7 +13,7 @@ Ask for an **externally observable state**, not a restatement of the work（✅�
 
 If the caller passed a scope or a stopping condition in the arguments (another Skill may invoke this one), adopt it as the agreed sentence and skip this question — the caller already fixed the scope, and asking the user again only widens it.
 
-**Default: don't ask.** A question is allowed only about an element that actually appears on the agreed sentence. Inside it, grill as relentlessly as ever.
+**Default: don't ask.** A question is allowed only about an element that actually appears on the agreed sentence. Inside it, grill as relentlessly as ever. An element's error handling and edge cases count as inside it — you may ask about them, but you don't have to.
 
 Ask about something outside it only when one of these holds — the list is exhaustive:
 
@@ -21,7 +21,7 @@ Ask about something outside it only when one of these holds — the list is exha
 2. `docs/requirements.md` states a constraint on what the agreed sentence touches (especially SLI/SLO in 非機能要件).
 3. The user raised the topic themselves.
 
-These are never reasons to ask:「後で困るから今決めておく」「ついでに聞いておく」「網羅的に詰めるのが本Skillの役目」「エラー処理・拡張性・エッジケースも詰めないと不完全」.
+These are never reasons to ask:「後で困るから今決めておく」「ついでに聞いておく」「網羅的に詰めるのが本Skillの役目」「拡張性も詰めないと不完全」.
 
 **Not-now list.** Every topic you did not ask about goes on a Not-now list — one line each, in the form `<論点> — <何が起きたら決める必要が出るか>`. Present it at the end alongside the confirmed decisions, and tell the user it carries into the Plan's スコープ「やらないこと」. It records a deferral, not a rejection.
 
