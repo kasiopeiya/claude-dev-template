@@ -36,7 +36,7 @@ allowed-tools: Task, Bash, Read
 - **同じ箇所への重複指摘は1件にまとめる。** 引用が重なっていれば同じ指摘とみなす
 - **引用の無い指摘は、統合の時点で落とす**
 - severity（Critical / High / Medium）はレンズの判定を尊重し、統合側で下げない
-- **修正案が食い違ったら裁定する**：同じ箇所に別々のレンズが逆向きの修正案を出したら、ポリシーの条文（該当が無ければ `docs/policy/refined-engineer-judgment-principles.md`）を引用して一方を採り、捨てた修正案と根拠を添える。迷ったら AI が決める。ただし、どちらを採っても要件・プロダクトの方針が変わるとき、またはどちらかが取り消せない操作・外部に出る操作になるときだけは裁定せず、Phase 3 でその食い違い1件をラベル `issue:needs-human-decision` で起票する
+- **修正案が食い違ったら裁定する**：同じ箇所に別々のレンズが逆向きの修正案を出したら、ポリシーの条文（該当が無ければ `docs/policy/refined-engineer-judgment-principles.md`）を引用して一方を採り、捨てた修正案と根拠を添える。迷ったら AI が決める。ただし、どちらを採っても要件・プロダクトの方針が変わるとき、またはどちらかが取り消せない操作・外部に出る操作になるときだけは裁定せず、Phase 3 でその食い違い1件をラベル `issue:needs-human-decision` で起票する。本文には、食い違った各指摘の観点名と引用を書き写す。同じワークフローの前回のレビューでこの手順により起票した Issue と同じ指摘なら、起票せず、既存の Issue 番号のまま起票済みとして扱う。同じ指摘かどうかは ai-review-gate-policy の「再レビューで同じ指摘が出たら、既存の Issue 番号で数える」で決める
 
 ### カバレッジを検証する
 
@@ -46,7 +46,7 @@ allowed-tools: Task, Bash, Read
 
 ## Phase 3: ゲート判定と起票
 
-**ゲート判定**：合否は [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい例外以外の Critical が0件）で決めます。Critical が1件でもあれば 🚫 要修正、無ければ ✅ 凍結可、と判定し、根拠を1〜2文で書きます。未判定の観点が残っている場合も、その事実を判定の根拠に併記します。
+**ゲート判定**：合否は [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい例外以外の Critical が0件）で決めます。対象の全指摘を通じた Critical の合計から、Phase 2 の「修正案が食い違ったら裁定する」で `issue:needs-human-decision` として起票した（または既存の Issue 番号のまま扱った）食い違いに含まれる Critical 指摘の件数を引き、残りが0件なら ✅ 凍結可、1件以上なら 🚫 要修正、と判定します。根拠を1〜2文で書き、起票・照合した Issue 番号があればそこに書きます。未判定の観点が残っている場合も、その事実を判定の根拠に併記します。
 
 レビュー結果を出力したら、続けて `gh issue create` で GitHub Issue を起票してください。**ユーザーへの確認は行いません**（CLAUDE.md の boy-scout ルール）。
 
