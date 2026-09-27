@@ -369,34 +369,45 @@ function toComparablePath(path) {
     .replace(/^([a-zA-Z]):/, (_, drive) => `${drive.toLowerCase()}:`)
 }
 
+const HOME_ALIASES = ['~', '$HOME', '${HOME}']
+// カレントディレクトリまるごとを指す相対パス。作業ディレクトリはたいていプロジェクトルートなので、
+// `rm -rf .` の被害は `rm -rf <プロジェクトルート>` と変わらない
+const WHOLE_DIRECTORY_TARGETS = ['.', './', '*', './*', '..']
+// Windows のドライブ始まり。`C:x`（ドライブ内の相対パス）も作業ディレクトリ基準ではないので絶対パス側に数える
+const DRIVE_PREFIX = /^[a-z]:/
+
+/**
+ * 再帰削除のときだけ危険とみなす削除先かを判定する。
+ * プロジェクト内の相対パスだけを安全側に残し、それ以外（ホーム配下・プロジェクト外・.git）は危険とみなす。
+ *
+ * @param {string} path 比較用に正規化済みの削除先
+ * @param {string} comparableProjectDir 比較用に正規化済みのプロジェクトルート
+ */
+function isDangerousRecursiveTarget(path, comparableProjectDir) {
+  const segments = path.split('/')
+  if (WHOLE_DIRECTORY_TARGETS.includes(path)) return true
+  if (segments.includes('.git') || segments.includes('..')) return true
+  if (HOME_ALIASES.some((alias) => path.startsWith(`${alias}/`))) return true
+
+  const isWindows = process.platform === 'win32'
+  if (!path.startsWith('/') && !(isWindows && DRIVE_PREFIX.test(path))) return false
+  return path === comparableProjectDir || !path.startsWith(`${comparableProjectDir}/`)
+}
+
 /**
  * 削除先が「消えても取り返しがつく場所」でないかを判定する。
- * プロジェクト内の相対パスだけを安全側とみなし、それ以外（ルート・ホーム・プロジェクト外・.git）は
- * 危険とみなす。ルートとホームそのものは再帰フラグの有無を問わず止める。
+ * ルートとホームそのものは再帰フラグの有無を問わず止める。
  */
 function isDangerousRemoveTarget(target, { recursive, projectDir }) {
   const comparableTarget = toComparablePath(target)
   const path = comparableTarget.length > 1 ? comparableTarget.replace(/\/+$/, '') : comparableTarget
-  const comparableProjectDir = toComparablePath(projectDir).replace(/\/+$/, '')
-  const HOME_ALIASES = ['~', '$HOME', '${HOME}']
-  // カレントディレクトリまるごとを指す相対パス。作業ディレクトリはたいていプロジェクトルートなので、
-  // `rm -rf .` の被害は `rm -rf <プロジェクトルート>` と変わらない
-  const WHOLE_DIRECTORY_TARGETS = ['.', './', '*', './*', '..']
-  // Windows のドライブ始まり。`C:x`（ドライブ内の相対パス）も作業ディレクトリ基準ではないので絶対パス側に数える
-  const DRIVE_PREFIX = /^[a-z]:/
-  const isWindows = process.platform === 'win32'
-  const isDriveRoot = isWindows && /^[a-z]:(\/\*?)?$/.test(path)
+  const isDriveRoot = process.platform === 'win32' && /^[a-z]:(\/\*?)?$/.test(path)
 
   if (path === '/' || path === '/*' || isDriveRoot) return true
   if (HOME_ALIASES.includes(path)) return true
   if (!recursive) return false
 
-  if (WHOLE_DIRECTORY_TARGETS.includes(path)) return true
-  if (path.split('/').includes('.git')) return true
-  if (HOME_ALIASES.some((alias) => path.startsWith(`${alias}/`))) return true
-  if (path.split('/').includes('..')) return true
-  if (!path.startsWith('/') && !(isWindows && DRIVE_PREFIX.test(path))) return false
-  return path === comparableProjectDir || !path.startsWith(`${comparableProjectDir}/`)
+  return isDangerousRecursiveTarget(path, toComparablePath(projectDir).replace(/\/+$/, ''))
 }
 
 function hasDangerousRemoveTarget(tokens, { projectDir }) {
@@ -450,6 +461,18 @@ function describeViolation(rule, detail) {
   return `${rule.label}（${rule.category}: ${rule.why}）: ${detail}${advice}`
 }
 
+/** コマンド1段分を全ルールに掛け、最初に該当したルールの説明を返す。該当しなければ null。 */
+function detectInStage(stage, projectDir) {
+  const tokens = normalizeCommandStart(tokenize(stage))
+  const context = { stage, projectDir }
+
+  for (const rule of FORBIDDEN_COMMANDS) {
+    if (rule.detectWholeCommand) continue
+    if (matchesRule(rule, tokens, context)) return describeViolation(rule, stage)
+  }
+  return null
+}
+
 /**
  * bashコマンド文字列を検査し、禁止コマンドに該当すればその説明文字列を返す。該当しなければ null。
  *
@@ -470,13 +493,8 @@ export function detectForbiddenCommand(command, { projectDir = process.cwd() } =
   const stages = splitStatements(commandText).flatMap(splitPipeStages)
 
   for (const stage of stages) {
-    const tokens = normalizeCommandStart(tokenize(stage))
-    const context = { stage, projectDir }
-
-    for (const rule of FORBIDDEN_COMMANDS) {
-      if (rule.detectWholeCommand) continue
-      if (matchesRule(rule, tokens, context)) return describeViolation(rule, stage)
-    }
+    const violation = detectInStage(stage, projectDir)
+    if (violation) return violation
   }
 
   return null

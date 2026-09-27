@@ -79,6 +79,19 @@ function resolveImport(target, sourceDir) {
 }
 
 /**
+ * 本文に書かれた import 先のうち、実ファイルへ辿れたものだけを絶対パスで返す。
+ *
+ * @param {string} source import 元ファイルの本文
+ * @param {string} sourceDir import 元ファイルのあるディレクトリ（絶対パス）
+ * @returns {string[]} 解決できた絶対パス
+ */
+function resolveImportTargets(source, sourceDir) {
+  return extractImportTargets(source)
+    .map((target) => resolveImport(target, sourceDir))
+    .filter((resolved) => resolved !== null)
+}
+
+/**
  * CLAUDE.md 1本の消費文字数を測る。`@` 記法で import したファイルを再帰的に合算する。
  *
  * import に逃がしても自動ロードされる以上、消費するコンテキストは変わらない。合算しないと
@@ -103,10 +116,7 @@ export function measureClaudeMd(claudeMdPath) {
       characters: countCharacters(source)
     })
 
-    for (const target of extractImportTargets(source)) {
-      const resolved = resolveImport(target, dirname(current))
-      if (resolved) queue.push(resolved)
-    }
+    queue.push(...resolveImportTargets(source, dirname(current)))
   }
 
   return { total: breakdown.reduce((sum, entry) => sum + entry.characters, 0), breakdown }
@@ -135,11 +145,13 @@ export function formatViolations(oversized) {
 
   for (const { path, total, breakdown } of oversized) {
     lines.push(`  ${path}: ${total} 文字（超過 ${total - CHARACTER_LIMIT}）`)
-    if (breakdown.length > 1) {
-      for (const entry of breakdown) {
-        lines.push(`    - ${entry.path}: ${entry.characters} 文字（@ import 先を合算）`)
-      }
-    }
+    // import 先が無いときの内訳は本体と同じ数字にしかならないので出さない
+    if (breakdown.length <= 1) continue
+    lines.push(
+      ...breakdown.map(
+        (entry) => `    - ${entry.path}: ${entry.characters} 文字（@ import 先を合算）`
+      )
+    )
   }
 
   lines.push(

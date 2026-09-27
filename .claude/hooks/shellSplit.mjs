@@ -72,18 +72,19 @@ function splitOutsideQuotes(text, separators) {
       continue
     }
 
+    // 区切り文字はクォートの外側だけで効く。クォート記号そのものは区切り文字に含まれないので、先に見てよい
+    const separator = openQuote === null ? findSeparatorAt(text, { index, separators }) : null
+    if (separator) {
+      segments.push(current)
+      current = ''
+      index += separator.length
+      continue
+    }
+
     if (openQuote === null && (char === SINGLE_QUOTE || char === DOUBLE_QUOTE)) {
       openQuote = char
     } else if (openQuote === char) {
       openQuote = null
-    } else if (openQuote === null) {
-      const separator = findSeparatorAt(text, { index, separators })
-      if (separator) {
-        segments.push(current)
-        current = ''
-        index += separator.length
-        continue
-      }
     }
 
     current += char

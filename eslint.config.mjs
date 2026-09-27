@@ -25,6 +25,18 @@ const TEST_NAME_CALLEE_PATHS = [
 const buildTestFunctionCallSelector = (functionNamePattern) =>
   `CallExpression:matches(${TEST_NAME_CALLEE_PATHS.map((path) => `[${path}=${functionNamePattern}]`).join(', ')})`
 
+// 規模・複雑度の上限。SSOT は .claude/rules/typescript.md の表で、値を変えるときはまずそちらを直す。
+// .ts と .mjs でブロックを分けるのは local プラグインの登録の都合なので、値はここ1箇所に持つ。
+// - 複雑度: CC は分岐数、Cognitive はネスト深度を織り込む。cognitive 併用を前提に CC は 15 へ緩めている（Issue #18 較正）
+// - 関数長・引数数・ネスト深さ: コメント・空行は数えない。多すぎる引数はオブジェクト化を促す
+const SIZE_AND_COMPLEXITY_RULES = {
+  complexity: ['error', 15],
+  'sonarjs/cognitive-complexity': ['error', 15],
+  'max-lines-per-function': ['error', { max: 50, skipBlankLines: true, skipComments: true }],
+  'max-params': ['error', 3],
+  'max-depth': ['error', 2]
+}
+
 const JAPANESE_CHARACTER_PATTERN = '/[ぁ-んァ-ヶ一-龥]/'
 const TEST_SUITE_OR_CASE_FUNCTION_NAMES = '/^(it|test|describe)$/'
 const TEST_CASE_FUNCTION_NAMES = '/^(it|test)$/'
@@ -111,20 +123,8 @@ export default tseslint.config(
       // ⑤ 型安全: any を禁止し型システムを使わせる
       '@typescript-eslint/no-explicit-any': 'error',
 
-      // ⑥ 複雑度: Cyclomatic Complexity と Cognitive Complexity を併用する。
-      //    CC は分岐数、Cognitive はネスト深度を織り込むため読みにくさをより反映する。
-      //    cognitive 併用を前提に CC のしきい値は 15 へ緩めている（Issue #18 較正）
-      complexity: ['error', 15],
-      'sonarjs/cognitive-complexity': ['error', 15],
-
-      // ⑦ 関数長: 50 行超で error（typescript.md の SSOT 値。コメント・空行は数えない）
-      'max-lines-per-function': ['error', { max: 50, skipBlankLines: true, skipComments: true }],
-
-      // ⑧ 引数数: 4 個以上で error（typescript.md の SSOT 値。多すぎる引数はオブジェクト化を促す）
-      'max-params': ['error', 3],
-
-      // ⑨ ネスト深さ: 3 重以上で error（typescript.md「ネストは2重まで」の SSOT 値）
-      'max-depth': ['error', 2]
+      // ⑥〜⑨ 規模・複雑度（しきい値は SIZE_AND_COMPLEXITY_RULES に集約）
+      ...SIZE_AND_COMPLEXITY_RULES
     }
   },
 
@@ -135,6 +135,25 @@ export default tseslint.config(
     files: ['**/*.tsx', '**/*.mjs'],
     plugins: { local: { rules: { 'code-comment-notation': codeCommentNotation } } },
     rules: { 'local/code-comment-notation': 'error' }
+  },
+
+  // 規模・複雑度と import 順序を .mjs のスクリプト・hook にもガードレール化（typescript.md の paths と同じ範囲）。
+  // 上の '**/*.ts' ブロックに .mjs を足すと、local プラグインを登録済みの '**/*.tsx'・'**/*.mjs' ブロックと
+  // 重複登録になりESLintが落ちるため、独立ブロックとして分離する。どのルールも型サービスを必要としない
+  {
+    files: ['scripts/**/*.mjs', '.claude/hooks/**/*.mjs'],
+    plugins: { sonarjs, 'import-x': importPlugin },
+    rules: {
+      ...SIZE_AND_COMPLEXITY_RULES,
+      'import-x/order': [
+        'error',
+        {
+          groups: ['builtin', 'external', ['internal', 'parent', 'sibling', 'index']],
+          'newlines-between': 'always'
+        }
+      ],
+      'import-x/first': 'error'
+    }
   },
 
   // アプリロジック(src)限定: マジックナンバーを定数へ切り出させる（typescript.md「定数は目的が伝わる名前に」）。
@@ -165,6 +184,12 @@ export default tseslint.config(
   {
     files: ['**/*.test.ts', '**/*.test.tsx', '**/*.test.mjs'],
     rules: {
+      // describe のコールバックはテストをまとめる入れ物であり、行数は「何件まとめたか」しか表さない。
+      // 上限を掛けると、意味のある単位をヘルパーごと割って分けることになるため外す（typescript.md の表に例外として記載）。
+      // ESLint は describe のコールバックだけを外せないので、it 側の上限も一緒に外れる。
+      // 長い Arrange は設計を見直すシグナル（unit-test.md）なので、そちらはレビューで見る
+      'max-lines-per-function': 'off',
+
       'no-restricted-syntax': [
         'error',
         ifStatementInTestCaseSelector,

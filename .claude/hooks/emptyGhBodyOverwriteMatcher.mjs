@@ -106,6 +106,17 @@ function judgeEmptyStdin({ heredocBody, hasPipedStdin, hasRedirectedStdin }) {
   return '標準入力の供給元が無い'
 }
 
+/** フラグ1つ分を見て、本文を空で渡していればその説明を返す。該当しなければ null。 */
+function judgeFlagValue(target, { flag, value, stdin }) {
+  if (target.bodyFlags.includes(flag) && stripQuotes(value) === '') {
+    return `${target.label} が ${flag} に空文字列を渡している`
+  }
+  if (!target.bodyFileFlags.includes(flag) || stripQuotes(value) !== '-') return null
+
+  const reason = judgeEmptyStdin(stdin)
+  return reason ? `${target.label} が ${flag} - に空の本文を渡している（${reason}）` : null
+}
+
 function inspectTarget(target, tokens, stdin) {
   const flagTokens = tokens.slice(3)
   if (target.requiredFlag && !flagTokens.includes(target.requiredFlag)) return null
@@ -113,13 +124,26 @@ function inspectTarget(target, tokens, stdin) {
   for (const [flag, value] of iterateFlagValues(flagTokens)) {
     if (value === undefined) continue
 
-    if (target.bodyFlags.includes(flag) && stripQuotes(value) === '') {
-      return `${target.label} が ${flag} に空文字列を渡している`
-    }
-    if (target.bodyFileFlags.includes(flag) && stripQuotes(value) === '-') {
-      const reason = judgeEmptyStdin(stdin)
-      if (reason) return `${target.label} が ${flag} - に空の本文を渡している（${reason}）`
-    }
+    const violation = judgeFlagValue(target, { flag, value, stdin })
+    if (violation) return violation
+  }
+  return null
+}
+
+/** パイプで繋がった各段を順に検査し、違反があればその説明を返す。該当しなければ null。 */
+function inspectStatement(statement, heredocBody) {
+  for (const [index, stage] of splitPipeStages(statement).entries()) {
+    // `env` や `gh --repo o/r` を剥がし、サブコマンドを位置で読めるようにする
+    const tokens = normalizeCommandStart(tokenize(stage))
+    const target = findTarget(tokens)
+    if (!target) continue
+
+    const violation = inspectTarget(target, tokens, {
+      heredocBody,
+      hasPipedStdin: index > 0,
+      hasRedirectedStdin: hasInputRedirect(stage)
+    })
+    if (violation) return `${violation}: ${stage.trim()}`
   }
   return null
 }
@@ -138,25 +162,13 @@ export function detectEmptyGhBodyOverwrite(command) {
   let heredocIndex = 0
 
   for (const statement of splitStatements(commandText)) {
-    const stages = splitPipeStages(statement)
     // ヒアドキュメントの中身は書かれた順に並ぶので、演算子を数えた順番で対応づける
     const operatorCount = countHeredocOperators(statement)
     const statementHeredocBody = operatorCount === 0 ? null : (heredocBodies[heredocIndex] ?? null)
     heredocIndex += operatorCount
 
-    for (const [index, stage] of stages.entries()) {
-      // `env` や `gh --repo o/r` を剥がし、サブコマンドを位置で読めるようにする
-      const tokens = normalizeCommandStart(tokenize(stage))
-      const target = findTarget(tokens)
-      if (!target) continue
-
-      const violation = inspectTarget(target, tokens, {
-        heredocBody: statementHeredocBody,
-        hasPipedStdin: index > 0,
-        hasRedirectedStdin: hasInputRedirect(stage)
-      })
-      if (violation) return `${violation}: ${stage.trim()}`
-    }
+    const violation = inspectStatement(statement, statementHeredocBody)
+    if (violation) return violation
   }
 
   return null

@@ -61,14 +61,19 @@ function extractClosingIssueNumbers(body) {
  * @returns {{ issueNumber: number, pullRequestNumber: number }[]} close する Issue と根拠の PR
  */
 function findIssuesToClose({ mergedPullRequests, openIssueNumbers }) {
+  const candidatePairs = mergedPullRequests.flatMap(({ number: pullRequestNumber, body }) =>
+    extractClosingIssueNumbers(body)
+      .filter((issueNumber) => openIssueNumbers.has(issueNumber))
+      .map((issueNumber) => ({ issueNumber, pullRequestNumber }))
+  )
+
   const pullRequestNumberByIssueNumber = new Map()
-  for (const { number: pullRequestNumber, body } of mergedPullRequests) {
-    for (const issueNumber of extractClosingIssueNumbers(body)) {
-      if (!openIssueNumbers.has(issueNumber)) continue
-      if (pullRequestNumberByIssueNumber.has(issueNumber)) continue
+  for (const { issueNumber, pullRequestNumber } of candidatePairs) {
+    if (!pullRequestNumberByIssueNumber.has(issueNumber)) {
       pullRequestNumberByIssueNumber.set(issueNumber, pullRequestNumber)
     }
   }
+
   return [...pullRequestNumberByIssueNumber].map(([issueNumber, pullRequestNumber]) => ({
     issueNumber,
     pullRequestNumber
