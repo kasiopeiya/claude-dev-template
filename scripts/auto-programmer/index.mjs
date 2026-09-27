@@ -22,9 +22,13 @@
 //   誰にも直されずに残る。CI が落ちたこと自体はセッションの失敗に数えない（claude が壊れている兆候ではない）。
 // - CI が通ったときだけカードを「レビュー待ち」へ動かす。人間がレビュー待ちの列だけを見ればよい状態を保つ。
 //   動かせなくても例外にせず記録に残す。PR はできているので、ボードの不調で次の Issue を止める理由が無い。
+// - 毎周、Issue を選ぶ前に、自動マージされた PR が閉じ損ねた Issue を閉じる（Issue #744）。起動時の1回だけだと、
+//   回っている間にマージされた PR の Issue が閉じず、それを「ブロッカー」に持つ Issue がいつまでも拾われない。
+//   閉じられなくても次の Issue は選べるので、失敗しても周回は止めない。
 
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
+import { closeIssuesOfMergedPullRequests } from '../close-issues.mjs'
 import { listStartableIssues, markAsInReview, markAsStarted } from './board.mjs'
 import { buildBranchName } from './branchName.mjs'
 import { runAutoDevSession, runAutoFixCiSession, runIssueCheckSession } from './claudeSession.mjs'
@@ -520,6 +524,19 @@ async function runSessionAndRecord({ issue, branchName, existingPullRequestNumbe
 }
 
 /**
+ * 自動マージされた PR が閉じ損ねた Issue を閉じる。失敗しても投げない。
+ *
+ * @returns {void}
+ */
+function tryCloseIssuesOfMergedPullRequests() {
+  try {
+    closeIssuesOfMergedPullRequests({ repository: config.repository })
+  } catch (error) {
+    console.error(`マージ済み PR の Issue を閉じられませんでした: ${formatError(error)}`)
+  }
+}
+
+/**
  * ボードを見直すまで待つ。Ctrl+C が来たら待たずに戻る。
  *
  * @returns {Promise<void>}
@@ -538,6 +555,7 @@ async function main() {
 
   let consecutiveSessionFailureCount = 0
   while (!stopController.signal.aborted) {
+    tryCloseIssuesOfMergedPullRequests()
     let startedIssue
     try {
       startedIssue = await startFirstStartableIssue()

@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // 責務: マージ済み PR の本文にある `Closes #N` を読み、まだ open な Issue を close する。
 //   GITHUB_TOKEN でマージされた PR（pr-ai-triage.yml の auto-merge job）は `Closes #N` があっても
-//   Issue を閉じないため、その後始末を人間が `npm run` で起動する。理由は docs/design/cicd-design.md「技術的制約」。
+//   Issue を閉じないため、その後始末をする。理由は docs/design/cicd-design.md「技術的制約」。
 //
 // 使い方:
 //   npm run close-issues   close した Issue と、その根拠の PR を1件1行で標準出力に返す。
 //                          close するものが無ければ、その旨を返す
+//   closeIssuesOfMergedPullRequests({ repository })
+//                          Auto Programmer（scripts/auto-programmer/index.mjs）が毎周、Issue を選ぶ前に呼ぶ
 
 import { execFileSync } from 'child_process'
 import { realpathSync } from 'fs'
@@ -20,9 +22,15 @@ const MERGED_PR_SCAN_LIMIT = 100
 const CLOSING_KEYWORD_PATTERN =
   /(?<![\w-])(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s+#(\d+)(?!\d)/gi
 
-function main() {
-  const openIssueNumbers = listOpenIssueNumbers()
-  const mergedPullRequests = listMergedPullRequests()
+/**
+ * マージ済み PR が閉じ損ねた Issue を close し、1件ごとに標準出力へ書く。
+ *
+ * @param {{ repository?: string }} [params] 対象リポジトリ（`owner/repo`）。省略するとカレントディレクトリのリポジトリ
+ * @returns {void}
+ */
+export function closeIssuesOfMergedPullRequests({ repository } = {}) {
+  const openIssueNumbers = listOpenIssueNumbers(repository)
+  const mergedPullRequests = listMergedPullRequests(repository)
 
   const closeTargets = findIssuesToClose({ mergedPullRequests, openIssueNumbers })
   if (closeTargets.length === 0) {
@@ -33,7 +41,7 @@ function main() {
   }
 
   for (const { issueNumber, pullRequestNumber } of closeTargets) {
-    closeIssue({ issueNumber, pullRequestNumber })
+    closeIssue({ issueNumber, pullRequestNumber, repository })
     console.log(`#${issueNumber} を close しました（PR #${pullRequestNumber}）`)
   }
 }
@@ -83,14 +91,15 @@ function findIssuesToClose({ mergedPullRequests, openIssueNumbers }) {
 /**
  * open な Issue の番号を全件返す。
  *
+ * @param {string | undefined} repository 対象リポジトリ（省略するとカレントディレクトリのリポジトリ）
  * @returns {Set<number>} open な Issue 番号の集合（PR は含まない）
  */
-function listOpenIssueNumbers() {
+function listOpenIssueNumbers(repository) {
   // issues 一覧（REST）は PR も返すので、pull_request を持つものを外す
   const output = runGhCommand([
     'api',
     '--paginate',
-    'repos/{owner}/{repo}/issues?state=open&per_page=100',
+    `repos/${repository ?? '{owner}/{repo}'}/issues?state=open&per_page=100`,
     '--jq',
     '.[] | select(.pull_request == null) | .number'
   ])
@@ -105,13 +114,15 @@ function listOpenIssueNumbers() {
 /**
  * 既定ブランチへマージされた直近の PR を返す。
  *
+ * @param {string | undefined} repository 対象リポジトリ（省略するとカレントディレクトリのリポジトリ）
  * @returns {{ number: number, body: string | null }[]} マージ済み PR の一覧（新しい順）
  */
-function listMergedPullRequests() {
+function listMergedPullRequests(repository) {
   // GitHub が `Closes #N` で Issue を閉じるのは既定ブランチへのマージだけなので、それに揃える
   const defaultBranchName = runGhCommand([
     'repo',
     'view',
+    ...(repository ? [repository] : []),
     '--json',
     'defaultBranchRef',
     '--jq',
@@ -127,7 +138,8 @@ function listMergedPullRequests() {
     '--limit',
     String(MERGED_PR_SCAN_LIMIT),
     '--json',
-    'number,body'
+    'number,body',
+    ...toRepositoryOption(repository)
   ])
   return JSON.parse(output)
 }
@@ -135,10 +147,11 @@ function listMergedPullRequests() {
 /**
  * Issue を完了として close し、根拠の PR をコメントに残す。
  *
- * @param {{ issueNumber: number, pullRequestNumber: number }} params close する Issue と根拠の PR
+ * @param {{ issueNumber: number, pullRequestNumber: number, repository?: string }} params
+ *   close する Issue と根拠の PR / repository: 対象リポジトリ（省略するとカレントディレクトリのリポジトリ）
  * @returns {void}
  */
-function closeIssue({ issueNumber, pullRequestNumber }) {
+function closeIssue({ issueNumber, pullRequestNumber, repository }) {
   runGhCommand([
     'issue',
     'close',
@@ -146,8 +159,19 @@ function closeIssue({ issueNumber, pullRequestNumber }) {
     '--reason',
     'completed',
     '--comment',
-    `#${pullRequestNumber} がマージ済みなので close する（\`npm run close-issues\`）`
+    `#${pullRequestNumber} がマージ済みなので close する（\`scripts/close-issues.mjs\`）`,
+    ...toRepositoryOption(repository)
   ])
+}
+
+/**
+ * 対象リポジトリを gh の `--repo` 引数にする。
+ *
+ * @param {string | undefined} repository 対象リポジトリ
+ * @returns {string[]} `--repo` 引数（省略時は空。gh がカレントディレクトリから決める）
+ */
+function toRepositoryOption(repository) {
+  return repository ? ['--repo', repository] : []
 }
 
 /**
@@ -162,7 +186,7 @@ function runGhCommand(args) {
 
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    main()
+    closeIssuesOfMergedPullRequests()
   } catch (error) {
     console.error(error.message)
     process.exit(1)
