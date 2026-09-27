@@ -43,7 +43,7 @@ const REVIEW_LENSES = ['決まりどおりか', '設計の形']
 const RESULT_COMMENT_HEADING = '## 実行結果'
 
 // GitHub の Issue 本文の上限文字数。対象ファイルが増えて超えるときは、起票せず失敗させる
-// （ADR-011 が対象範囲を計算しない代わりに引き受けた制約。超えたら起点を差分計算に切り替える判断材料にする）
+// （冒頭の README の「起点を計算せず、毎週 app/ 全体を対象にする」が引き受けた制約。超えたら起点を差分計算に切り替える判断材料にする）
 const GITHUB_ISSUE_BODY_MAX_LENGTH = 65536
 
 function main() {
@@ -209,7 +209,7 @@ ${implementationFlowRows}
 
   if (body.length > GITHUB_ISSUE_BODY_MAX_LENGTH) {
     throw new Error(
-      `週次 Issue 本文が ${body.length} 文字で GitHub の上限 ${GITHUB_ISSUE_BODY_MAX_LENGTH} を超える（対象 ${targetFiles.length} ファイル）。ADR-011 の対象範囲（起点を計算せず全体を対象にする）を見直す`
+      `週次 Issue 本文が ${body.length} 文字で GitHub の上限 ${GITHUB_ISSUE_BODY_MAX_LENGTH} を超える（対象 ${targetFiles.length} ファイル）。scripts/auto-programmer/README.md「週次スクリプトが Issue を供給する」の対象範囲（起点を計算せず全体を対象にする）を見直す`
     )
   }
   return body
