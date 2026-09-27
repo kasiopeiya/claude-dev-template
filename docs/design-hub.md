@@ -45,6 +45,6 @@
 
 ## ADR（意思決定の経緯）
 
-設計書が答えるのは「なぜ**今**この構造か」。「なぜ**旧設計から変えたか**」は ADR の領分（[design-doc-policy](policy/design-doc-policy.md)）。
+設計書が答えるのは「なぜ**今**この構造か」。「なぜ**旧設計から変えたか**」は、[adr-policy](policy/adr-policy.md) の判定で ADR 対象になる決定だけ ADR の領分、それ以外は決定した Issue の領分（[design-doc-policy](policy/design-doc-policy.md)）。
 
 - [adr-index.md](adr/adr-index.md) — ADR の一覧
