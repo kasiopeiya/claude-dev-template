@@ -4,10 +4,16 @@
 # /auto-dev・/auto-fix-ci は1ターンの中で push まで終えるため、ターン末ゲート（.claude/hooks/turn-end-gate.mjs）はここに届かない。
 # 検査するのは作業ツリーなので、未コミットの整形崩れでも止まる。
 
-if npm run --silent format:check; then
+npm run --silent format:check
+status=$?
+if [ "$status" -eq 0 ]; then
   exit 0
 fi
 
 echo "" >&2
-echo "整形崩れがあるため push を止めました。npm run format で整形し、変わったファイルをコミットしてから push し直してください。" >&2
+if [ "$status" -eq 127 ]; then
+  echo "prettier が見つからないため push を止めました。npm install を実行してから push し直してください。" >&2
+else
+  echo "整形崩れがあるため push を止めました。npm run format で整形し、変わったファイルをコミットしてから push し直してください。" >&2
+fi
 exit 1
