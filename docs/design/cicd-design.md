@@ -30,6 +30,11 @@
 
 ### 技術的制約
 
+- **自動マージした PR の `Closes #N` は Issue を閉じない**：`pr-ai-triage.yml` の `auto-merge` job は `GITHUB_TOKEN` でマージするので、本文に `Closes #N` があっても元の Issue は open のまま残る。後始末は、人間が `npm run close-issues-of-merged-prs`（`scripts/close-issues-of-merged-prs.mjs`）を手で起動して行う
+  - 定期実行のワークフローにはしない。常に動く CI ジョブの運用の手間を増やさないため
+  - マージに使うトークンを GitHub App や PAT に替えない。認証情報の発行・保管・更新の手間が増えるうえ、それで閉じるようになる保証も無いため
+  - GitHub が PR と Issue を結ぶリンク（`closingIssuesReferences`）ではなく、PR 本文の `Closes #N` を読む。本文を書き換えるとリンクが外れることがあるため（#508）
+
 ### 組織の制約
 
 ## GitHubリポジトリ設定
