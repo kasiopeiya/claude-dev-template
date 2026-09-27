@@ -19,6 +19,8 @@ import { fileURLToPath } from 'url'
 // 週次 Issue を見分ける専用ラベル
 const WEEKLY_LABEL = 'doc-consistency-weekly'
 
+const AI_FIXABLE_LABEL = 'ai-fixable'
+
 const WEEKLY_ISSUE_TITLE = '週次: docs/ 横断の重複・矛盾チェック (/doc-consistency)'
 
 // タスク一覧・完了条件に書く見出しと、処理済みの週次 Issue を見分ける目印を1か所で持つ
@@ -46,7 +48,7 @@ function main() {
   }
   ensureLabelExists(WEEKLY_LABEL, '週次の docs/ 横断整合性チェック Issue', '5319E7')
   ensureLabelExists(
-    'ai-fixable',
+    AI_FIXABLE_LABEL,
     '問題と対応方針が一意に定まり、AIが単独で対応できるIssue',
     '0E8A16'
   )
@@ -87,7 +89,7 @@ function decideCheckScope(headSha) {
  * @returns {void}
  */
 function ensureLabelExists(name, description, color) {
-  const existingLabelNames = gh([
+  const existingLabelNames = runGhCommand([
     'label',
     'list',
     '--limit',
@@ -98,7 +100,7 @@ function ensureLabelExists(name, description, color) {
     '.[].name'
   ])
   if (existingLabelNames.split('\n').includes(name)) return
-  gh(['label', 'create', name, '--description', description, '--color', color])
+  runGhCommand(['label', 'create', name, '--description', description, '--color', color])
 }
 
 /**
@@ -108,13 +110,13 @@ function ensureLabelExists(name, description, color) {
  * @returns {string} 起票した Issue の URL
  */
 function fileWeeklyIssue(body) {
-  return gh([
+  return runGhCommand([
     'issue',
     'create',
     '--title',
     WEEKLY_ISSUE_TITLE,
     '--label',
-    `ai-fixable,${WEEKLY_LABEL}`,
+    `${AI_FIXABLE_LABEL},${WEEKLY_LABEL}`,
     '--body',
     body
   ]).trim()
@@ -126,7 +128,7 @@ function fileWeeklyIssue(body) {
  * @param {string[]} args gh に渡す引数
  * @returns {string} 標準出力
  */
-function gh(args) {
+function runGhCommand(args) {
   return execFileSync('gh', args, { encoding: 'utf8' })
 }
 
@@ -137,7 +139,7 @@ function gh(args) {
  */
 function hasOpenWeeklyIssue() {
   // gh issue list --label は検索 API 経由で、起票直後は結果整合の遅延で漏れるため issues 一覧（REST）を使う
-  const openWeeklyIssueCount = gh([
+  const openWeeklyIssueCount = runGhCommand([
     'api',
     `repos/{owner}/{repo}/issues?labels=${WEEKLY_LABEL}&state=open`,
     '--jq',
@@ -157,7 +159,7 @@ function hasOpenWeeklyIssue() {
  */
 function findLastProcessedWeeklyIssueSha() {
   const issues = JSON.parse(
-    gh([
+    runGhCommand([
       'issue',
       'list',
       '--label',
@@ -188,7 +190,9 @@ function findLastProcessedWeeklyIssueSha() {
  * @returns {boolean} 付いていれば true
  */
 function hasResultComment(issueNumber) {
-  const { comments } = JSON.parse(gh(['issue', 'view', String(issueNumber), '--json', 'comments']))
+  const { comments } = JSON.parse(
+    runGhCommand(['issue', 'view', String(issueNumber), '--json', 'comments'])
+  )
   return comments.some(
     (comment) =>
       TRUSTED_AUTHOR_ASSOCIATIONS.has(comment.authorAssociation) &&
