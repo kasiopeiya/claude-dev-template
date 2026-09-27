@@ -5,7 +5,7 @@ import { BusinessError } from '../domain/businessError'
 import { RegisterUser } from '../usecase/registerUser'
 
 /** コントローラが返す結果。プレゼンテーション層の関心（成否と表示用メッセージ）に閉じる。 */
-export interface RegisterUserResult {
+interface RegisterUserResult {
   ok: boolean
   message: string
 }
@@ -69,21 +69,24 @@ function logTechnicalError(userId: string, error: unknown): void {
 
 /**
  * ユーザー登録のコントローラ。HTTP 等のプロトコル詳細をユースケースへ持ち込ませない。
- * ユースケースは注入され、この層は永続化実装(infrastructure)を直接は知らない。
+ * 型のない生の入力を受け取り登録を実行し、結果を表示用の形へ変換して返す。
+ * 失敗は例外の性質で振り分け、利用者が直せる失敗だけ理由を返す。
+ * @param rawInput 外部から渡された生の値（id と email を含む想定）
+ * @returns 登録の成否と表示用メッセージ
  */
-export class RegisterUserController {
-  constructor(private readonly registerUser: RegisterUser) {}
+export type RegisterUserController = (rawInput: unknown) => Promise<RegisterUserResult>
 
-  /**
-   * 型のない生の入力を受け取り登録を実行し、結果を表示用の形へ変換して返す。
-   * 失敗は例外の性質で振り分け、利用者が直せる失敗だけ理由を返す。
-   * @param rawInput 外部から渡された生の値（id と email を含む想定）
-   * @returns 登録の成否と表示用メッセージ
-   */
-  async handle(rawInput: unknown): Promise<RegisterUserResult> {
+/**
+ * ユーザー登録コントローラを組み立てる。
+ * ユースケースは注入され、この層は永続化実装(infrastructure)を直接は知らない。
+ * @param registerUser 登録処理を担うユースケース
+ * @returns 生の入力を受け取り登録を実行するコントローラ関数
+ */
+export function createRegisterUserController(registerUser: RegisterUser): RegisterUserController {
+  return async (rawInput) => {
     try {
       const input = parseRegisterUserRawInput(rawInput)
-      const user = await this.registerUser.execute(input)
+      const user = await registerUser(input)
       return { ok: true, message: `registered: ${user.id.value}` }
     } catch (error) {
       if (error instanceof BusinessError) {
