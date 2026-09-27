@@ -144,7 +144,7 @@ TypeScript アプリケーションコードをレビューする専門エージ
 ### テストレンズの手順
 
 - **単体テストポリシー準拠**：`docs/policy/unit-test-policy.md`（思想）と `.claude/rules/unit-test.md`（書き方）を Read し照合する（SSOT。**テストファイル（.test.ts / .test.tsx / .spec.ts / .test.mjs）のみ**。それ以外は対象外）
-- **テストケースの網羅**：**実装ファイルのみ**対象（テストファイルは対象外）。未実行の分岐はカバレッジで挙げ、LLM はテストを書くべきかだけを判定する。次の手順で照合する:
+- **テストケースの網羅**：**実装ファイルのみ**対象（テストファイルは対象外）。未実行の分岐はカバレッジで挙げ、LLM はテストを書くべきかだけを判定する（分岐を漏れなく挙げる作業は機械で解けるので LLM に任せない。`docs/policy/refined-engineer-judgment-principles.md`「確率論より決定論」）。次の手順で照合する:
   1. **対象か判定する**: `unit-test-policy.md`「テスト対象外」に当たる実装ファイルは対象外とする（判定しない）
   2. **テストを探す**: どの層のテストでもよい。`test-strategy-policy.md` の配置規約で実装の相対パスを `test/` 配下へミラーして引き（例: `domain/email.ts` → `test/domain/email.test.ts`）、無ければ Glob で同名の `.test.*` を探す。あわせて、その実装を import するモジュールを Grep で上の層へたどり、たどった先のどれかを import するテストも集める（例: `domain/email.ts` は `usecase/registerUser.ts` を経由して `test/usecase/registerUser.test.ts` が通す）。テストファイルが無いこと自体は違反にしない
   3. **未実行の分岐を挙げる**: a で挙げる。a で計測できないとき（終了コードが0でない、または `coverage/coverage-final.json` ができない）と、a の出力で「レポートに無い」と出たファイルは、理由を問わず b で挙げる

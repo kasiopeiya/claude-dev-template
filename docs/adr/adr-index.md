@@ -8,11 +8,7 @@
 
 <!-- ADR_INDEX_TABLE:START -->
 
-| No. | タイトル                                                                                                                                 | ステータス | 日付       |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ---------- |
-| 002 | [architecture-reviewer-agent を4レンズに分ける](002-architecture-reviewer-four-lenses.md)                                                | 提案       | 2026-09-23 |
-| 003 | [architecture-reviewer-agent のレンズ分割を、1体での取りこぼし検証なしに進める](003-architecture-reviewer-lens-split-skip-validation.md) | 提案       | 2026-09-23 |
-| 004 | [テストの無い分岐はカバレッジで挙げ、LLM はテストを書くべきかだけを判定する](004-coverage-lists-untested-branches.md)                    | 提案       | 2026-09-26 |
-| 007 | [`/doc-consistency` は通常開発の実装フローに含めない(文書の分割・統合作業は例外)](007-doc-consistency-excluded-from-normal-dev-flow.md)  | 提案       | 2026-09-26 |
+| No. | タイトル | ステータス | 日付 |
+| --- | -------- | ---------- | ---- |
 
 <!-- ADR_INDEX_TABLE:END -->
