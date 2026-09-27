@@ -59,7 +59,7 @@ ultrathink
 
 すべての基盤項目が決まったら、`AskUserQuestion` で確認のうえ、初期技術スタックADRを1枚作る。`/create-adr` からは**採番と frontmatter の規約（status / date / supersededBy）だけ**を引き継ぎ、テンプレートと節構成は下記のものを使う。**要約ファイル（tech-stack.md 等）は作らない**（理由が二重管理になり、要約は初回しか見られない）。
 
-- **保存先・採番**：`docs/adr/NNN-slug.md`（`docs/adr/` の既存最大番号+1、slug は英語。例：`001-initial-tech-stack.md`）。ステータスは **提案**。
+- **保存先・採番**：`docs/adr/NNN-slug.md`（`/create-adr` の「採番の調べ方」と同じ規則——削除済みを含む git 履歴上の最大番号+1、slug は英語。例：`001-initial-tech-stack.md`）。ステータスは **提案**。
 - **テンプレート**：`assets/tech-stack-adr-template.md` を使う（`docs/adr/adr-template.md` は単一の決定を書く器なので、十数項目を扱う本 ADR には使わない）。節・表の列・記入ルールはテンプレート側が持つ。
 - **サンプル**：**書き始める前に [`samples/docs/adr/sample-tech-stack-adr.md`](../../../samples/docs/adr/sample-tech-stack-adr.md) を読む。** 各欄に何をどの粒度で書くかの具体像はここが持つ。とくに比較表の「案」の列には、その項目と同じ種類のものだけを並べる（IaC ツールなら AWS CDK / Terraform / CloudFormation のように IaC ツール同士）。土俵の違うものを並べた比較は、比較になっていない。
 - **自己点検**：書き上げた直後に、下の項目だけを点検し、欠けていればその場で埋める。点検項目は**外形的に確かめられるものに限る**——作文で誤魔化せる観点（「十分に説明できているか」等）は増やさない。
