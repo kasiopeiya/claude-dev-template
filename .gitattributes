@@ -2,3 +2,7 @@
 # すると Prettier（endOfLine の既定は lf）が全ファイルを LF に書き戻し、
 # `npm run format` のたびに全件が modified 表示になる。これを防ぐため作業ツリーの改行を LF に固定する。
 * text=auto eol=lf
+
+# 決定記録のコミット一覧は、ブランチごとに pre-commit が再生成する生成物。
+# ブランチ間で別々の行が足されて衝突しないよう、行の和で合流させる（次の生成で整う）。
+docs/adr/adr-commit-list.md merge=union
