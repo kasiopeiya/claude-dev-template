@@ -42,6 +42,12 @@
 
 ---
 
+### [adr-policy.md](policy/adr-policy.md)
+
+**参照タイミング**: 決定の書き先を決めるとき（Issue の対応方針・Plan を書くとき）・ADR を作る前
+
+---
+
 ### [design-doc-policy.md](policy/design-doc-policy.md)
 
 **参照タイミング**: 設計書（docs/design/）を作成・編集・レビューする前。※「設計書を書く」ポリシーであり、アプリ/インフラを設計する application-design-policy 等とは別物
