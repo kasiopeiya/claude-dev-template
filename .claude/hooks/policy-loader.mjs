@@ -3,7 +3,8 @@
 //
 // 設計意図（WHY）:
 // - このファイルは stdin/stdout の入出力だけを担う。どのポリシー・Rule が効くかの判定は
-//   policyMatcher.mjs / ruleMatcher.mjs に委ね、中身はここに一切持たない。
+//   policyMatcher.mjs / ruleMatcher.mjs に、照合に使う相対パスへの変換（別フォルダの worktree の
+//   扱いを含む）は projectRelativePath.mjs に委ね、中身はここに一切持たない。
 // - Rule の指し示しには2つの経路がある。
 //   1. `paths`：対象ファイルが存在しないときだけ指す。既存ファイルは Edit・Write の前に Read
 //      しており標準ロードが既に効いているため、二重に指さない。
@@ -15,26 +16,18 @@
 
 import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { dirname, isAbsolute, resolve, relative, sep } from 'node:path'
+import { dirname, resolve } from 'node:path'
 
 import { collectMatchingPolicies } from './policyMatcher.mjs'
+import { toProjectRelativePath } from './projectRelativePath.mjs'
 import { collectMatchingRules, collectRulesByAppliesTo } from './ruleMatcher.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 // .claude/hooks/ からプロジェクトルートへ
 const projectRoot = resolve(scriptDir, '../..')
 const policyDir = resolve(projectRoot, 'docs/policy')
-const rulesDir = resolve(projectRoot, '.claude/rules')
-
-/**
- * OS の区切り文字で書かれたパスを `/` 区切りにする。
- *
- * @param {string} nativePath node:path が返したパス
- * @returns {string} `/` 区切りのパス
- */
-function toSlashSeparatedPath(nativePath) {
-  return nativePath.split(sep).join('/')
-}
+const RULES_RELATIVE_DIR = '.claude/rules'
+const rulesDir = resolve(projectRoot, RULES_RELATIVE_DIR)
 
 /**
  * 適用される Rule のファイル名一覧を、重複なしで返す。
@@ -62,18 +55,14 @@ function main() {
   if (!targetFilePath) return
 
   const targetAbsolutePath = resolve(targetFilePath)
-  const nativeRelativePath = relative(projectRoot, targetAbsolutePath)
-  // 別ドライブ（Windows）だと relative は相対パスにならず、絶対パスをそのまま返す
-  const isOutsideProject = nativeRelativePath.startsWith('..') || isAbsolute(nativeRelativePath)
-  if (isOutsideProject) return
-  // applies-to・paths の glob は `/` 区切りで書かれている。Windows の `\` 区切りのままだと1件も当たらない
-  const targetRelativePath = toSlashSeparatedPath(nativeRelativePath)
+  const targetRelativePath = toProjectRelativePath(targetAbsolutePath, projectRoot)
+  if (targetRelativePath === undefined) return
 
   const matchedPolicyPaths = collectMatchingPolicies(targetRelativePath, policyDir).map(
     (name) => `docs/policy/${name}`
   )
   const matchedRulePaths = collectRuleNames(targetAbsolutePath, targetRelativePath).map(
-    (name) => `${toSlashSeparatedPath(relative(projectRoot, rulesDir))}/${name}`
+    (name) => `${RULES_RELATIVE_DIR}/${name}`
   )
 
   const appliedDocumentPaths = [...matchedPolicyPaths, ...matchedRulePaths]

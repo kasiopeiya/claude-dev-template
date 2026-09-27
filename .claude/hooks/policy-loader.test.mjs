@@ -1,16 +1,18 @@
-// 責務: hook の配線（stdin から PreToolUse JSON を読み、hookSpecificOutput を stdout に返す）と、
-// 対象ファイルの実在で Rule を指すかが切り替わることを、プロセスとして起動して検証する。
+// 責務: hook の配線（stdin から PreToolUse JSON を読み、hookSpecificOutput を stdout に返す）、
+// 照合に使う相対パスへの変換（別フォルダの worktree・別リポジトリ・git に問い合わせられないとき）、
+// 対象ファイルの実在で Rule を指すかの切り替えを、プロセスとして起動して検証する。
 //
-// マッチ判定そのものは policyMatcher.test.mjs が担う（ruleMatcher.mjs は unit-test-policy の
-// 例外一覧に無いため、ここでの end-to-end 検証だけでカバーする）。返るポリシー名・Rule 名の
+// マッチ判定そのものは policyMatcher.test.mjs が担う（ruleMatcher.mjs・projectRelativePath.mjs は
+// unit-test-policy の例外一覧に無いため、ここでの end-to-end 検証だけでカバーする）。返るポリシー名・Rule 名の
 // 期待表には依存しない。
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { dirname, resolve } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
 const loaderScriptPath = resolve(scriptDir, 'policy-loader.mjs')
@@ -19,14 +21,21 @@ const HOOK_TIMEOUT_MS = 5000
 
 // SUT: policy-loader hook をサブプロセスとして起動し、stdout（注入内容）を返す。
 // hook は作業をブロックしないため常に正常終了する契約であり、それを前提の不変条件として守る。
-function runHook(toolInput) {
+function runHook(toolInput, env = process.env) {
   const hookProcess = spawnSync('node', [loaderScriptPath], {
     input: JSON.stringify({ tool_input: toolInput }),
     encoding: 'utf8',
-    timeout: HOOK_TIMEOUT_MS
+    timeout: HOOK_TIMEOUT_MS,
+    env
   })
   assert.equal(hookProcess.status, 0, `hook exited non-zero: ${hookProcess.stderr}`)
   return hookProcess.stdout
+}
+
+// テストの準備に使う git を実行する。準備の失敗を hook の不具合と取り違えないよう、ここで止める
+function runGitForArrange(gitArguments, workingDirectory) {
+  const gitProcess = spawnSync('git', gitArguments, { cwd: workingDirectory, encoding: 'utf8' })
+  assert.equal(gitProcess.status, 0, `git ${gitArguments[0]} failed: ${gitProcess.stderr}`)
 }
 
 describe('policy-loader hook の配線', () => {
@@ -51,6 +60,57 @@ describe('policy-loader hook の配線', () => {
     })
 
     assert.equal(hookOutput.trim(), '')
+  })
+
+  test('別フォルダの worktree のパスにも、同じ相対パスと同じ指し示しを返す', () => {
+    const targetRelativePath = 'scripts/__synthetic__.mjs'
+    const hookOutputInProject = runHook({ file_path: resolve(projectRoot, targetRelativePath) })
+    // hook からの相対パスが .. で始まる状況を再現するため、置き場所の外に worktree を作る。
+    // 展開を省くのは、検証に使うのがパスだけでファイルの実在は要らないため
+    const temporaryDirectory = mkdtempSync(join(tmpdir(), 'policy-loader-'))
+    const worktreePath = join(temporaryDirectory, 'worktree')
+
+    // 準備の失敗でも一時ディレクトリを片付けるため、worktree の作成から try に入れる
+    try {
+      runGitForArrange(
+        ['worktree', 'add', '--quiet', '--detach', '--no-checkout', worktreePath],
+        projectRoot
+      )
+
+      const hookOutputInWorktree = runHook({ file_path: join(worktreePath, targetRelativePath) })
+
+      assert.match(hookOutputInWorktree, /docs\/policy\//)
+      assert.equal(hookOutputInWorktree, hookOutputInProject)
+    } finally {
+      spawnSync('git', ['worktree', 'remove', '--force', worktreePath], { cwd: projectRoot })
+      rmSync(temporaryDirectory, { recursive: true, force: true })
+    }
+  })
+
+  test('別リポジトリのパスには何も出力しない', () => {
+    const otherRepositoryPath = mkdtempSync(join(tmpdir(), 'policy-loader-other-repository-'))
+
+    try {
+      runGitForArrange(['init', '--quiet'], otherRepositoryPath)
+
+      const hookOutput = runHook({ file_path: join(otherRepositoryPath, 'app/backend/x.ts') })
+
+      assert.equal(hookOutput.trim(), '')
+    } finally {
+      rmSync(otherRepositoryPath, { recursive: true, force: true })
+    }
+  })
+
+  test('git に問い合わせられないときも、プロジェクト内のパスにはポリシー参照を返す', () => {
+    const gitUnavailableEnv = { ...process.env, GIT_DIR: join(tmpdir(), '__no_such_git_dir__') }
+
+    const hookOutput = runHook(
+      { file_path: resolve(projectRoot, 'app/backend/__synthetic__.ts') },
+      gitUnavailableEnv
+    )
+
+    assert.match(hookOutput, /「app\/backend\/__synthetic__\.ts」/)
+    assert.match(hookOutput, /docs\/policy\//)
   })
 
   test('file_path が無ければ何も出力しない', () => {
