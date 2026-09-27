@@ -119,7 +119,7 @@ hook:
 
 ### 視覚的に文字を強調する
 
-`コマンド・パス・リソース名` はバッククォートで囲む。注意・警告は Admonition 記法（`> [!WARNING]` 等）で示す。補足・背景は本文を伸ばさず `<details>` トグルに畳む。
+`コマンド・パス・リソース名` はバッククォートで囲む。注意・警告は Admonition 記法（`> [!WARNING]` 等）で示す。トグルに畳むかどうかは [documentation-policy-for-humans](documentation-policy-for-humans.md)「詳細と理由はトグルに畳む」の条件に従う。
 
 ---
 
