@@ -21,7 +21,7 @@ const MILLISECONDS_PER_MINUTE = 60 * 1000
  */
 function runUnattendedSession(slashCommand) {
   // 権限確認を飛ばして起動する。無人セッションには権限プロンプトへ答える人間がおらず、
-  // `--allowedTools` での列挙は漏れたところで空転するため（ADR-001「トレードオフ・影響」）。
+  // `--allowedTools` での列挙は漏れたところで空転するため（README.md「使う前に済ませておくこと」）。
   // この形は .claude/hooks/forbiddenCommandMatcher.mjs が「ゲートの迂回」として禁じているが、
   // それは Bash ツールへ渡すコマンドへの禁止であり、ローカルのファイルへの影響は AI 専用 clone の中に閉じる。
   // clone の中でも .claude/hooks/ のガードは効き続け、このツール自体の起動も AI には禁じている。

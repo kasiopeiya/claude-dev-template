@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// 責務: open な週次 docs/ 横断整合性チェック Issue が無いときだけ、その Issue を起票する
-//   （docs/adr/006-skip-weekly-issue-when-open.md）。起点は、実行結果コメントが付いた
-//   直近の週次 Issue の HEAD SHA から今回の HEAD までに変わった docs/**/*.md に絞る
-//   （docs/adr/008-weekly-issue-scope-since-last-processed.md）。
+// 責務: open な週次 docs/ 横断整合性チェック Issue が無いときだけ、その Issue を起票する。
+//   起点は、実行結果コメントが付いた直近の週次 Issue の HEAD SHA から今回の HEAD までに
+//   変わった docs/**/*.md に絞る（設計判断は scripts/auto-programmer/README.md
+//   「週次スクリプトが Issue を供給する」を参照）。
 //   ラベルの作成から起票まで自分で行い、呼び出し側の GitHub Actions
 //   （.github/workflows/doc-consistency-weekly.yml）にはこのファイルを1回呼ぶことだけを残す
 //   （判定に使うラベルと起票時に付けるラベルを分けて持つと、一致を呼び出し側の約束に頼ることになるため）。

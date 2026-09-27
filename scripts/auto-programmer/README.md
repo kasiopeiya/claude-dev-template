@@ -35,7 +35,7 @@
 
 11 で直させるのは `ci.maxFixAttempts` 回までで、使い切っても落ちていれば Issue にコメントと `issue:needs-clean-session` を残して次へ進む。キャンセルされた run・`ci.runWaitLimitMinutes` 分待っても終わらない run は、差分を直しても通らないので直させない。9 で `/auto-dev` が離脱したときは 10 へ進まない。
 
-AI が触るのは **AI 専用 clone の中だけ**で、人間の作業ツリーには一切触れない。人間が編集中のファイルが AI のコミットへ混ざることはない。実行場所をローカルにした理由は [ADR-001](../../docs/adr/001-auto-programmer-runs-locally.md) にある。
+AI が触るのは **AI 専用 clone の中だけ**で、人間の作業ツリーには一切触れない。実行をローカルにしているのは、hook・Policy・SubAgent を含むこのリポジトリのハーネスがそのまま動き、実行時間の上限も無いためである。Projects の読み書きも、ローカルの `gh auth` をそのまま使えるため追加の認証情報を要しない。作業ツリーを AI 専用 clone へ分けることが、`/sweep` が人間の起動タイミングから受け取っていた前提（作業してよいブランチ・汚れていないツリー）の代替物になる。
 
 ## 週次スクリプトが Issue を供給する
 
@@ -47,6 +47,12 @@ AI が触るのは **AI 専用 clone の中だけ**で、人間の作業ツリ�
 | `scripts/code-policy-weekly-issue.mjs`     | `app/`（`/code-review` の「決まりどおりか」「設計の形」の2レンズ） | `code-policy-weekly`     |
 
 こうした補助スクリプトは、専用の設計書を持たない（`docs/design-hub.md` から辿れる設計書はアプリ・インフラ・IaC・CI/CD・テスト戦略が対象で、ハーネス側のスクリプトを担当するものが無い）。決定が1つ1つは軽く、ADR にするほどではないため、ここにまとめて書く。
+
+`scripts/doc-consistency-weekly-issue.mjs` の設計判断：
+
+- **起票だけを GitHub Actions（`doc-consistency-weekly.yml`）が行い、実行そのものは人間か Auto Programmer が行う**：このテンプレートは、GitHub Actions で Claude Code を使えないプロジェクトへの配布も前提にしている。実行そのものを Actions に持たせると、そうしたプロジェクトでは仕組みごと動かない。
+- **専用ラベル（`doc-consistency-weekly`）が付いた open な Issue が既にあれば起票しない**：処理待ちの週次 Issue は1件で足りる。起点を前回処理以降の変更に絞れば、処理が1週遅れても次回でその分を追いつけるため、未処理のまま複数積み上げる必要が無い。
+- **起点は、実行結果コメントが付いた直近の週次 Issue の HEAD SHA から今回の HEAD までに変わった `docs/**/*.md` にする**：2文書間の重複・矛盾は、どちらかが変わったときにしか生まれない。最初に1回全体を見て、以後の変更を途切れずに起点へつなげれば、すべての組み合わせを一度は見たことになる。該当する週次 Issue が無い、または SHA を読み取れない場合だけ、これまでどおり `docs/` 全体を対象にする。
 
 `scripts/code-policy-weekly-issue.mjs` の設計判断：
 

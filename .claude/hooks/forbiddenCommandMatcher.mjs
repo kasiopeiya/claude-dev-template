@@ -201,7 +201,7 @@ const RULE_GROUPS = [
       { label: '権限確認を飛ばすエージェント CLI の起動', detect: isAgentBypassInvocation },
       {
         label: 'auto-programmer の起動',
-        why: '権限確認を飛ばした claude を起動するツールで、起動してよいのは人間だけである（ADR-001）',
+        why: '権限確認を飛ばした claude を起動するツールで、起動してよいのは人間だけである（scripts/auto-programmer/README.md「使う前に済ませておくこと」）',
         detect: isAutoProgrammerInvocation
       },
       {

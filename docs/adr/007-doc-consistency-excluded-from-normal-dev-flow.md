@@ -25,4 +25,4 @@ date: 2026-09-26
 ## 参照
 
 - Issue #651 — この決定を行った Issue
-- [ADR-005](005-doc-consistency-weekly-issue-only.md) — 週次チェックを誰がどこで実行するか
+- [auto-programmer の README「週次スクリプトが Issue を供給する」](../../scripts/auto-programmer/README.md#週次スクリプトが-issue-を供給する) — 週次チェックを誰がどこで実行するか
