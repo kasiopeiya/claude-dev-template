@@ -105,7 +105,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - **決定を残す**：[adr-policy](../../../docs/policy/adr-policy.md) を Read して判定に当て、「作る」なら ADR（`docs/adr/NNN-slug.md`）
 - **「何を作るか」が変わる**：要件定義書（`docs/requirements.md`）
 - **既存の設計書の記述が間違っている、または明確に欠けている**：その設計書
-- **ADR 判定が「作らない」だった決定**：その仕組みの本文（`.claude/skills/*/SKILL.md`・README・設計書・ファイル冒頭の責務コメント）。README や設計書が無い仕組みなら、そのファイル自身の責務コメントか `--help` に書き、ADR にも README の新設にも逃がさない。却下案と経緯は Issue 本文にだけ残す
+- **ADR 判定が「作らない」だった決定**：いまの理由はその仕組みの本文（`.claude/skills/*/SKILL.md`・README・設計書・ファイル冒頭の責務コメント）、経緯はコミットの決定記録（`/git-commit` の書式）。README や設計書が無い仕組みでも、ADR にも README の新設にも逃がさない。却下案と経緯は Issue 本文にも残す
 - **コード・設定の修正だけで完結する（文書に残す決定を含まない）**：文書への書き先は不要。`ai-fixable` の判定へ進む
 - **上のどれにも当てはまらない**：**書き先はまだ無い**。`issue:needs-human-decision` を付ける
 

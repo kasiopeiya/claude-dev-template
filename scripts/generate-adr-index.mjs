@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 // 責務: 各 ADR（NNN-*.md）の frontmatter から、同じディレクトリの adr-index.md の一覧テーブルを生成する。
 //   frontmatter を SSOT とし、手動転記によるドリフトを構造的になくす（Issue #50）。
+//   加えて、決定記録を残したコミット（トレーラー Decision-Record: yes）の一覧 docs/adr/adr-commit-list.md を
+//   git log から生成する。コミットに残した決定は探しにくいので、一覧から引けるようにする（Issue #765）。
 
-import { readFileSync, writeFileSync, readdirSync } from 'fs'
+import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs'
+import { execFileSync } from 'child_process'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -144,19 +147,80 @@ async function formatWithPrettier(content, indexPath) {
   return prettier.format(content, { ...config, filepath: indexPath })
 }
 
+// 決定記録のコミットを見分けるトレーラー。本文で言及しただけのコミットを拾わないよう、トレーラーとして読む。
+const DECISION_TRAILER = 'Decision-Record'
+const commitListPath = join(repoRoot, 'docs/adr/adr-commit-list.md')
+
+/**
+ * git log から、トレーラー Decision-Record: yes を持つコミットを新しい順に集める。
+ * @returns {{ hash: string, date: string, subject: string }[]}
+ */
+function collectDecisionCommits() {
+  const output = execFileSync(
+    'git',
+    [
+      'log',
+      `--grep=${DECISION_TRAILER}`,
+      '--date=short',
+      `--format=%h%x1f%ad%x1f%s%x1f%(trailers:key=${DECISION_TRAILER},valueonly,separator=%x2C)%x1e`
+    ],
+    { cwd: repoRoot, encoding: 'utf8' }
+  )
+  return output
+    .split('\x1e')
+    .map((record) => record.trim())
+    .filter(Boolean)
+    .map((record) => record.split('\x1f'))
+    .filter(([, , , value = '']) => value.trim().toLowerCase() === 'yes')
+    .map(([hash, date, subject]) => ({ hash, date, subject }))
+}
+
+/**
+ * 決定記録のコミット一覧の全文を組み立てる（ファイル全体が生成物）。
+ * @param {{ hash: string, date: string, subject: string }[]} commits
+ * @returns {string}
+ */
+function renderCommitList(commits) {
+  const rows = commits.map(
+    ({ hash, date, subject }) => `| \`${hash}\` | ${date} | ${subject.replaceAll('|', '\\|')} |`
+  )
+  return [
+    '# 決定記録を残したコミットの一覧',
+    '',
+    'ADR にするほどではない決定を残したコミットの一覧。基準は `docs/policy/adr-policy.md`、書き方は `/git-commit` が定める。中身は `git show <コミット>` で読む。',
+    '',
+    '`npm run gen:adr-index` が `git log` から生成する。手で編集しない。',
+    '',
+    '| コミット | 日付 | 件名 |',
+    '| --- | --- | --- |',
+    ...rows,
+    ''
+  ].join('\n')
+}
+
+/**
+ * 生成した全文をファイルと比べ、違えば書き込む。
+ * @param {string} path 書き込み先の絶対パス
+ * @param {string} content 整形前の全文
+ */
+async function writeIfChanged(path, content) {
+  const expected = await formatWithPrettier(content, path)
+  const actual = existsSync(path) ? readFileSync(path, 'utf8') : ''
+
+  if (expected !== actual) {
+    writeFileSync(path, expected)
+    console.log(`${path} を再生成しました。`)
+  } else {
+    console.log(`${path} は最新です（変更なし）。`)
+  }
+}
+
 async function main() {
   for (const adrDir of adrDirs) {
     const indexPath = join(adrDir, 'adr-index.md')
-    const expected = await formatWithPrettier(renderIndex(adrDir, indexPath), indexPath)
-    const actual = readFileSync(indexPath, 'utf8')
-
-    if (expected !== actual) {
-      writeFileSync(indexPath, expected)
-      console.log(`${indexPath} を再生成しました。`)
-    } else {
-      console.log(`${indexPath} は最新です（変更なし）。`)
-    }
+    await writeIfChanged(indexPath, renderIndex(adrDir, indexPath))
   }
+  await writeIfChanged(commitListPath, renderCommitList(collectDecisionCommits()))
 }
 
 main().catch((error) => {
