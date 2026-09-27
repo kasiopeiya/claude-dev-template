@@ -2,33 +2,31 @@
 
 import { BusinessError } from '../../domain/businessError'
 import { InMemoryUserRepository } from '../../infrastructure/inMemoryUserRepository'
-import { RegisterUser } from '../../usecase/registerUser'
+import { createRegisterUserUseCase } from '../../usecase/registerUser'
 
 describe('ユーザー登録ユースケース', () => {
   it('未登録のIDの場合に登録したユーザーを返す', async () => {
-    const sut = new RegisterUser(new InMemoryUserRepository())
+    const sut = createRegisterUserUseCase(new InMemoryUserRepository())
 
-    const user = await sut.execute({ id: 'user-001', email: 'user@example.com' })
+    const user = await sut({ id: 'user-001', email: 'user@example.com' })
 
     expect(user.id.value).toBe('user-001')
     expect(user.email.value).toBe('user@example.com')
   })
 
   it('同一IDが既に登録済みの場合にビジネス例外を投げる', async () => {
-    const sut = new RegisterUser(new InMemoryUserRepository())
-    await sut.execute({ id: 'user-001', email: 'user@example.com' })
+    const sut = createRegisterUserUseCase(new InMemoryUserRepository())
+    await sut({ id: 'user-001', email: 'user@example.com' })
 
-    await expect(sut.execute({ id: 'user-001', email: 'other@example.com' })).rejects.toThrow(
-      BusinessError
-    )
+    await expect(sut({ id: 'user-001', email: 'other@example.com' })).rejects.toThrow(BusinessError)
   })
 
   it('同一IDで並行に呼ばれた場合に1件だけ登録して残りを拒否する', async () => {
-    const sut = new RegisterUser(new InMemoryUserRepository())
+    const sut = createRegisterUserUseCase(new InMemoryUserRepository())
 
     const results = await Promise.allSettled([
-      sut.execute({ id: 'user-001', email: 'user@example.com' }),
-      sut.execute({ id: 'user-001', email: 'other@example.com' })
+      sut({ id: 'user-001', email: 'user@example.com' }),
+      sut({ id: 'user-001', email: 'other@example.com' })
     ])
 
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1)
@@ -36,11 +34,9 @@ describe('ユーザー登録ユースケース', () => {
   })
 
   it('前後に空白を含むIDが既に登録済みの場合に同一IDとしてビジネス例外を投げる', async () => {
-    const sut = new RegisterUser(new InMemoryUserRepository())
-    await sut.execute({ id: ' user-001 ', email: 'user@example.com' })
+    const sut = createRegisterUserUseCase(new InMemoryUserRepository())
+    await sut({ id: ' user-001 ', email: 'user@example.com' })
 
-    await expect(sut.execute({ id: 'user-001', email: 'other@example.com' })).rejects.toThrow(
-      BusinessError
-    )
+    await expect(sut({ id: 'user-001', email: 'other@example.com' })).rejects.toThrow(BusinessError)
   })
 })

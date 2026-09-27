@@ -4,8 +4,11 @@ import { TechnicalError } from '../../domain/technicalError'
 import { User } from '../../domain/user'
 import { UserRepository } from '../../domain/userRepository'
 import { InMemoryUserRepository } from '../../infrastructure/inMemoryUserRepository'
-import { RegisterUserController } from '../../presentation/registerUserController'
-import { RegisterUser } from '../../usecase/registerUser'
+import {
+  createRegisterUserController,
+  RegisterUserController
+} from '../../presentation/registerUserController'
+import { createRegisterUserUseCase } from '../../usecase/registerUser'
 
 /** 技術的例外の経路を再現するためのスタブ。永続化層の障害（接続断など）を模す。 */
 class UnavailableUserRepository implements UserRepository {
@@ -19,7 +22,7 @@ class UnavailableUserRepository implements UserRepository {
 }
 
 const buildControllerWith = (repository: UserRepository): RegisterUserController =>
-  new RegisterUserController(new RegisterUser(repository))
+  createRegisterUserController(createRegisterUserUseCase(repository))
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -29,7 +32,7 @@ describe('ユーザー登録コントローラ', () => {
   it('登録できた場合に成功として登録されたIDを返す', async () => {
     const sut = buildControllerWith(new InMemoryUserRepository())
 
-    const result = await sut.handle({ id: 'user-001', email: 'user@example.com' })
+    const result = await sut({ id: 'user-001', email: 'user@example.com' })
 
     expect(result).toEqual({ ok: true, message: 'registered: user-001' })
   })
@@ -37,7 +40,7 @@ describe('ユーザー登録コントローラ', () => {
   it('利用者が入力を直せば解消する失敗の場合に理由をそのまま返す', async () => {
     const sut = buildControllerWith(new InMemoryUserRepository())
 
-    const result = await sut.handle({ id: 'user-001', email: 'not-an-email' })
+    const result = await sut({ id: 'user-001', email: 'not-an-email' })
 
     expect(result.ok).toBe(false)
     expect(result.message).toContain('invalid email')
@@ -47,7 +50,7 @@ describe('ユーザー登録コントローラ', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const sut = buildControllerWith(new UnavailableUserRepository())
 
-    const result = await sut.handle({ id: 'user-001', email: 'user@example.com' })
+    const result = await sut({ id: 'user-001', email: 'user@example.com' })
 
     expect(result.ok).toBe(false)
     expect(result.message).not.toContain('connection to user store lost')
@@ -57,7 +60,7 @@ describe('ユーザー登録コントローラ', () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sut = buildControllerWith(new UnavailableUserRepository())
 
-    await sut.handle({ id: 'user-001', email: 'user@example.com' })
+    await sut({ id: 'user-001', email: 'user@example.com' })
 
     expect(errorLog).toHaveBeenCalledTimes(1)
     const loggedEntry = JSON.parse(String(errorLog.mock.calls[0]?.[0]))
@@ -69,7 +72,7 @@ describe('ユーザー登録コントローラ', () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sut = buildControllerWith(new UnavailableUserRepository())
 
-    await sut.handle({ id: 'user-001', email: 'user@example.com' })
+    await sut({ id: 'user-001', email: 'user@example.com' })
 
     expect(String(errorLog.mock.calls[0]?.[0])).not.toContain('user@example.com')
   })
@@ -83,7 +86,7 @@ describe('ユーザー登録コントローラの境界検証', () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sut = buildControllerWith(new InMemoryUserRepository())
 
-    const result = await sut.handle(rawInput)
+    const result = await sut(rawInput)
 
     expect(result.ok).toBe(false)
     expect(result.message).toContain('id')
@@ -97,7 +100,7 @@ describe('ユーザー登録コントローラの境界検証', () => {
     const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
     const sut = buildControllerWith(new InMemoryUserRepository())
 
-    const result = await sut.handle(rawInput)
+    const result = await sut(rawInput)
 
     expect(result.ok).toBe(false)
     expect(result.message).toContain('email')
@@ -115,7 +118,7 @@ describe('ユーザー登録コントローラの境界検証', () => {
       const errorLog = vi.spyOn(console, 'error').mockImplementation(() => {})
       const sut = buildControllerWith(new InMemoryUserRepository())
 
-      const result = await sut.handle(rawInput)
+      const result = await sut(rawInput)
 
       expect(result.ok).toBe(false)
       expect(errorLog).not.toHaveBeenCalled()
