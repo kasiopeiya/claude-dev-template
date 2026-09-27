@@ -84,13 +84,14 @@ npm run format       # フォーマット
 
 このテンプレートを使う手順:
 
-1. `docs/project-context/project-claude.md` に自分のシステムの情報を書く（テンプレート同期の対象外なので、テンプレート側の更新で上書きされない）
-2. `docs/project-context/core-parts.md` の一覧を自分のシステムのコア（壊れると全体が回らなくなる部分）に書き換える。まだ決まっていなければ表を空にする
-3. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
-4. 実装は `app/`・`infra/` に書く。どちらも空なので、[`samples/`](samples/README.md) の参照実装を手本にして写す（`samples/` 自体は書き換えない）
-5. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
-6. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
-7. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
+1. `docs/adr/` にあるテンプレートの ADR（`NNN-*.md`）を削除し、`npm run gen:adr-index` で一覧を作り直す（`docs/adr/` は同期対象外なので、消さずに残すとテンプレートのハーネスに関する ADR が自分のプロジェクトの一覧に混ざり続ける）
+2. `docs/project-context/project-claude.md` に自分のシステムの情報を書く（テンプレート同期の対象外なので、テンプレート側の更新で上書きされない）
+3. `docs/project-context/core-parts.md` の一覧を自分のシステムのコア（壊れると全体が回らなくなる部分）に書き換える。まだ決まっていなければ表を空にする
+4. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
+5. 実装は `app/`・`infra/` に書く。どちらも空なので、[`samples/`](samples/README.md) の参照実装を手本にして写す（`samples/` 自体は書き換えない）
+6. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
+7. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
+8. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
 
 ## 変更してはならないパス
 
@@ -103,7 +104,7 @@ npm run format       # フォーマット
 - **`docs/design-hub.md`**：CLAUDE.md・design/to-plan/cdk-imp スキル・plan-reviewer-agent 等が起点として直接参照
 - **`docs/design/`（ディレクトリ名）**：`design-doc-policy.md` の `applies-to` が参照。中の個別設計書は自由に追加・更新可
 - **`docs/runbook/`（ディレクトリ名）**：`runbook-policy.md` の `applies-to` が参照。中の個別手順書は自由に追加・更新可
-- **`docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`**：create-adr/decide-tech-stack スキル・`.githooks/pre-commit` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない）
+- **`docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`**：create-adr/decide-tech-stack スキル・`.githooks/pre-commit` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない）。`docs/adr/`（`adr-template.md` を除く）は `sync-template.sh` の同期対象外
 - **`docs/reference/non-functional-requirement-items.md`**：to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照
 - **`docs/reference/test-terms.md`**：`policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照
 - **`docs/reference/docs-directory-definitions.md`**：`documentation-policy.md` と doc-review スキルの観点一覧（`references/review-criteria.md`）が、docs/ 配下の置き場所の SSOT として直接参照

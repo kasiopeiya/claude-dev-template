@@ -70,7 +70,7 @@ AI に任せて開発スピードを上げるほど、判断はぶれ、品質�
 - **「issue N 対応して」と直接指示する**：その場で `/doc-consistency` を実行させる
 - **ボードで Ready に動かし、Auto Programmer に拾わせる**（手順は次節）
 
-open な週次 Issue が残っている間は、次の週のワークフローは新しく起票しない（未処理が積み上がるのを防ぐため）。実行そのものを GitHub Actions が行わない理由を含む設計判断は [auto-programmer の README](../../scripts/auto-programmer/README.md#週次スクリプトが-issue-を供給する)、通常開発の実装フローに含めない理由は [ADR-007](../adr/007-doc-consistency-excluded-from-normal-dev-flow.md) を参照。
+open な週次 Issue が残っている間は、次の週のワークフローは新しく起票しない（未処理が積み上がるのを防ぐため）。実行そのものを GitHub Actions が行わない理由を含む設計判断は [auto-programmer の README](../../scripts/auto-programmer/README.md#週次スクリプトが-issue-を供給する)、通常開発の実装フローに含めない理由は [テンプレートの ADR-007](https://github.com/kasiopeiya/claude-dev-template/blob/main/docs/adr/007-doc-consistency-excluded-from-normal-dev-flow.md) を参照。
 
 ## 週次のコード Policy 準拠チェック Issue が届く
 
