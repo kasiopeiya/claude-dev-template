@@ -72,6 +72,14 @@ AI に任せて開発スピードを上げるほど、判断はぶれ、品質�
 
 open な週次 Issue が残っている間は、次の週のワークフローは新しく起票しない（未処理が積み上がるのを防ぐため）。実行そのものを GitHub Actions が行わない理由と合わせて、[ADR-005](../adr/005-doc-consistency-weekly-issue-only.md)・[ADR-006](../adr/006-skip-weekly-issue-when-open.md)・[ADR-007](../adr/007-doc-consistency-excluded-from-normal-dev-flow.md) を参照。
 
+## 週次のコード Policy 準拠チェック Issue が届く
+
+`code-policy-weekly` ワークフローが週1回、`app/` のコードに `/code-review` を実行するよう依頼する Issue を自動起票する（ラベル：`code-policy-weekly` と `ai-fixable`）。Policy を変えたときに違反になった既存コードは、コードに差分が出ないので差分レビューでは拾えない。それをこの週次チェックで拾う。
+
+Issue 本文に書かれた `/code-review` を実行し、**指摘は直さず `/quick-issue` で起票する**。捌き方（直接指示するか、ボードで Ready に動かすか）と、open な週次 Issue が残っている間は次を起票しない点は、docs 用と同じである。
+
+実行するレンズと、`samples/` を対象にしない理由などの設計判断は [scripts/auto-programmer/README.md](../../scripts/auto-programmer/README.md) の「週次スクリプトが Issue を供給する」を参照。
+
 ## ボードに積んだ Issue を無人で PR にする（Auto Programmer）
 
 Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積んだ Issue を AI に無人で PR まで進めさせることもできる。
