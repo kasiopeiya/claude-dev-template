@@ -34,7 +34,7 @@ Plan を書いたセッションが自分で点検すると、書かれていな
 
 ## Phase 2: 判定基準を読む
 
-**着手前に** `docs/design-hub.md`・`docs/policy-hub.md`・`docs/policy/refined-engineer-judgment-principles.md`（判断の北極星）を読む。加えて、Plan が触れる領域に該当 ADR（`docs/adr/`）があれば読む。
+**着手前に** `docs/design-hub.md`・`docs/policy-hub.md`・`docs/policy/refined-engineer-judgment-principles.md`（判断の北極星）・`docs/policy/adr-policy.md`（ADR にするかの判定基準）を読む。加えて、Plan が触れる領域に該当 ADR（`docs/adr/`）があれば読む。
 
 ## Phase 3: 観点ごとに判定する
 
@@ -51,7 +51,7 @@ Plan が挙げる変更箇所と、実際のコードベースを照合する。
 
 ### 影響範囲の網羅（ドキュメント）
 
-`docs/design-hub.md` を起点に、変更が影響する設計書を洗い出す。Plan の「設計書・要件定義への影響」と突き合わせ、ハブから辿れるのに記載漏れしている設計書が無いかを確認する。ADR が必要な意思決定（`/create-adr` 対象）が含まれていないかも見る。
+`docs/design-hub.md` を起点に、変更が影響する設計書を洗い出す。Plan の「設計書・要件定義への影響」と突き合わせ、ハブから辿れるのに記載漏れしている設計書が無いかを確認する。`docs/policy/adr-policy.md` の判定で ADR 対象になる意思決定が Plan に含まれているのに ADR 化が計画されていないケースも見る。
 
 ### ポリシー整合・判断原則との照合
 

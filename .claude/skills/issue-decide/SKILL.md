@@ -10,7 +10,7 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 `issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。**`/sweep` の前処理**として、人間が対話しながら打つ。
 
-`/quick-issue` は[名指し例外](../quick-issue/SKILL.md)——不可逆・外部に出る／要件が変わる／ポリシー同士の衝突／実測が要る／恒久的に保守が要る資産の新設——に当たる Issue に `issue:needs-human-decision` を貼る。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、`/sweep` は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
+`/quick-issue` は[名指し例外](../quick-issue/SKILL.md#どちらを付けるか)に当たる Issue に `issue:needs-human-decision` を貼る。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、`/sweep` は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
 
 ```mermaid
 stateDiagram-v2
@@ -24,7 +24,8 @@ stateDiagram-v2
     Pending --> Pending: /issue-decide で保留
     Pending --> [*]: /issue-decide で「対応しない」を選んだ
     Fixable --> Pending: /issue-check が名指し例外に当たると判定
-    Decided --> Pending: /issue-check が方針をポリシー違反と判定
+    Decided --> Fixable: /issue-check が方針差し替えと判定（issue:decided を外す）
+    Decided --> Pending: /issue-check が判定不能と判定
     Decided --> [*]: /sweep が実装して close
     Fixable --> [*]: /sweep が実装して close
 ```
@@ -90,7 +91,7 @@ gh issue view <番号> --json body --jq .body > <スクラッチパッド>/issue
 
 **1問で終わらせない。** 1問ずつ出し、決着するまで問いを重ねる。
 
-**決着の判定基準**：この会話を知らない別セッションが、方針を決め直さずに着手できるか。具体的には「対応方針」の**採る案・「いま→変えた後」の対比・根拠・却下した案を、推測を混ぜずに書き切れる**状態になったら決着とする。書けない項目が残っているうちは、その項目を埋める問いを次に出す。
+**決着の判定基準**：この会話を知らない別セッションが、方針を決め直さずに着手できるか。具体的には「対応方針」の[quick-issue テンプレートの全項目](../quick-issue/SKILL.md#対応方針)を、**推測を混ぜずに書き切れる**状態になったら決着とする。書けない項目が残っているうちは、その項目を埋める問いを次に出す。
 
 最初の問いは案の選択にする。
 
@@ -134,8 +135,8 @@ gh issue view <番号> --json body --jq .body | diff - <スクラッチパッド
 
 書き出したファイルを Read し、Edit で該当セクションだけを差し替える。本文全体を書き直してはならない。
 
-1. **「人間に決めてほしいこと」を削除し、同じ位置に「対応方針」を書く。** `/quick-issue` はこの2セクションを排他と定めている（[quick-issue のテンプレート](../quick-issue/SKILL.md)）。書式もそこに従う（採る案・「いま→変えた後」の対比表・根拠・却下した案）。
-2. 根拠に **「人間が決定（YYYY-MM-DD）」** を明記し、選ばれなかった案を「却下した案」へ移す。
+1. **「人間に決めてほしいこと」を削除し、同じ位置に「対応方針」を書く。** `/quick-issue` はこの2セクションを排他と定めている（[quick-issue のテンプレート](../quick-issue/SKILL.md)）。書式もそこに従う（[対応方針の全項目](../quick-issue/SKILL.md#対応方針)）。
+2. 根拠に **「人間が決定（YYYY-MM-DD）」** を明記し、選ばれなかった案を「却下した案」へ移す。決めた内容が `docs/policy/adr-policy.md` の判定で ADR 対象になるなら、「実装フロー（使用するSkill）」に `/create-adr` を加える（却下した案は Issue に残したまま、`/create-adr` が ADR を書くときの材料にする）。
 3. **タスク一覧から「案を人間が決める」タスクを消し、決まった案に沿って書き直す。** 残すと `/sweep` が何を直すか決められず、離脱する。
 4. 完了条件が案に依存していれば直す。
 
@@ -166,7 +167,7 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 次を全部満たしてから次の Issue へ移る。1つでも欠けると、**人間が決めたのに `/sweep` が動かない Issue** が残る。
 
 - [ ] 決めた内容の1文を人間に見せた
-- [ ] 「人間に決めてほしいこと」が消え、「対応方針」に採る案・「いま→変えた後」の対比・根拠・却下した案が入っている
+- [ ] 「人間に決めてほしいこと」が消え、「対応方針」に[quick-issue テンプレートの全項目](../quick-issue/SKILL.md#対応方針)が入っている
 - [ ] タスク一覧から「案を人間が決める」タスクが消えている
 - [ ] ラベルが `ai-fixable` ＋ `issue:decided` になっている
 - [ ] 決定のコメントを残した
