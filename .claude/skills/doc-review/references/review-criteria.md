@@ -7,7 +7,7 @@
 観点は番号でなく**観点名で識別する**（agent 定義・レポート書式からも観点名で参照する）。番号を振ると、観点の増減で番号がずれ、参照側が無言で壊れるためである。
 
 > [!NOTE]
-> **（AI・必須）** 以下の判定基準は、速度のため `docs/policy/documentation-policy.md`・`docs/policy/documentation-policy-for-humans.md`・`docs/policy/policy-driven-development-policy.md` から書き下した派生コピーである。どれかが改訂されたら、ここも追従して見直すこと。
+> **（AI・必須）** 以下の判定基準は、速度のため `docs/policy/documentation-policy.md`・`docs/policy/documentation-policy-for-humans.md`・`docs/policy/policy-driven-development-policy.md` と Rule `.claude/rules/document-writing.md`・`.claude/rules/document-writing-for-humans.md` から書き下した派生コピーである。どれかが改訂されたら、ここも追従して見直すこと。
 
 ## 条件付き観点の読み方
 
@@ -139,7 +139,7 @@ Mermaid ブロック・表・箇条書きの数を数え、文章量とのバラ
 
 ### リンクの最小性
 
-documentation-policy.md「他文書へのリンクは既定で張らない」に基づき、**本文中の他文書リンクを1本ずつ**検査する。まず Grep（パターン `\]\([^)]*\.md[^)]*\)`、output_mode: content、`-n` 付き）で全リンクを列挙してから判定する。目視で拾おうとすると取りこぼす。
+documentation-policy.md「他文書へのリンクは既定で張らない」と Rule document-writing.md「他文書へのリンクの禁則」に基づき、**本文中の他文書リンクを1本ずつ**検査する。まず Grep（パターン `\]\([^)]*\.md[^)]*\)`、output_mode: content、`-n` 付き）で全リンクを列挙してから判定する。目視で拾おうとすると取りこぼす。
 
 判定テスト（**リンク削除テスト**）：「そのリンクを消したとき、読者はこの文書だけで判断・行動できるか？」できないなら、本文が足りていない証拠として指摘する。
 
@@ -190,7 +190,7 @@ documentation-policy-for-humans.md「冒頭に「決定事項」を3行で先出
 
 ### 俯瞰の一覧
 
-documentation-policy-for-humans.md「1つの文書の中でも俯瞰を先に置く」に基づく。
+Rule document-writing-for-humans.md「1つの文書の中でも俯瞰を先に置く」に基づく。
 
 - 見るのは並びの直前で、文書の冒頭ではない。文書の行数も関係しない
 - 目次があることは、一覧が無くてよい理由にならない。目次は話題しか示さず、一覧は各項目の中身を1行で示す
