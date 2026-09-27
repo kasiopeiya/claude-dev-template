@@ -1,8 +1,11 @@
 // 責務: 各層を結線する合成ルート（Composition Root）。ここだけが全層の具体を知ってよい
 
 import { InMemoryUserRepository } from './infrastructure/inMemoryUserRepository'
-import { RegisterUserController } from './presentation/registerUserController'
-import { RegisterUser } from './usecase/registerUser'
+import {
+  createRegisterUserController,
+  RegisterUserController
+} from './presentation/registerUserController'
+import { createRegisterUserUseCase } from './usecase/registerUser'
 
 /**
  * 依存を結線して、すぐ使えるコントローラを組み立てる。
@@ -11,6 +14,6 @@ import { RegisterUser } from './usecase/registerUser'
  */
 export function buildRegisterUserController(): RegisterUserController {
   const repository = new InMemoryUserRepository()
-  const registerUser = new RegisterUser(repository)
-  return new RegisterUserController(registerUser)
+  const registerUser = createRegisterUserUseCase(repository)
+  return createRegisterUserController(registerUser)
 }
