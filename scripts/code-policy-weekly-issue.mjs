@@ -1,10 +1,9 @@
 #!/usr/bin/env node
-// 責務: open な週次コード Policy 準拠チェック Issue が無いときだけ、その Issue を起票する
-//   （docs/adr/010-code-policy-weekly-issue-separate-from-docs.md）。起点は計算せず、
-//   毎週 app/ 配下のコード全体を対象にする（docs/adr/011-code-policy-weekly-no-scope-diff.md）。
-//   samples/ は参照実装であり AI が書き換えられないため対象にしない（README「変更してはならないパス」）。
+// 責務: open な週次コード Policy 準拠チェック Issue が無いときだけ、その Issue を起票する。
+//   起点は計算せず、毎週 app/ 配下のコード全体を対象にする（samples/ は対象外）。
 //   ラベルの作成から起票まで自分で行い、呼び出し側の GitHub Actions
 //   （.github/workflows/code-policy-weekly.yml）にはこのファイルを1回呼ぶことだけを残す。
+//   設計判断の理由は scripts/auto-programmer/README.md「週次スクリプトが Issue を供給する」を参照。
 //
 // 使い方:
 //   node scripts/code-policy-weekly-issue.mjs   起票したら、その URL を標準出力に返す。
@@ -38,7 +37,7 @@ const REVIEW_EXCLUDED_SUFFIXES = ['.config.ts', '.config.js']
 // タスク一覧に「命令」として混入する（プロンプトインジェクション）。埋め込む前に許可リストで弾く
 const EMBEDDABLE_PATH_PATTERN = /^[\p{L}\p{N}._/@-]+$/u
 
-// 週次 Issue で実行を依頼するレンズ（docs/adr/012-code-policy-weekly-two-lenses.md）
+// 週次 Issue で実行を依頼するレンズ（理由は scripts/auto-programmer/README.md 参照）
 const REVIEW_LENSES = ['決まりどおりか', '設計の形']
 
 const RESULT_COMMENT_HEADING = '## 実行結果'
