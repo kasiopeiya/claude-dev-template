@@ -10,6 +10,9 @@ import type { CheckOptions } from 'archunit'
 // 実行時のマッチャー登録は archunit 側の副作用 import（`archunit` の import で自動実行）のまま変えていない。
 // TestResult は archunit の公開APIから export されていないため、実体と同じ形を書き写している。
 declare module 'vitest' {
+  // 宣言マージ対象の型引数 R・T は本体で使わないが、TS2428（型引数の不一致）を避けるため
+  // vitest 本家の Assertion と同じ名前・制約・デフォルト値で揃える必要がある。
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface Assertion<R extends void | Promise<void> = void, T = unknown> {
     toPassAsync(options?: CheckOptions): Promise<{ pass: boolean; message: () => string }>
   }
