@@ -22,7 +22,7 @@ readonly EXCLUDE_PATHS=(
   'docs/requirements.md'
   'docs/design/'
   'docs/design-hub.md'
-  'docs/adr/adr-index.md'
+  'docs/adr/'
   'docs/project-context/'
   '.github/'
   'scripts/auto-programmer/config.mjs'
@@ -32,6 +32,7 @@ readonly EXCLUDE_PATHS=(
 readonly EXCLUDE_EXCEPTIONS=(
   '.github/workflows/doc-consistency-weekly.yml'
   '.github/workflows/code-policy-weekly.yml'
+  'docs/adr/adr-template.md'
 )
 
 usage() {
@@ -46,12 +47,17 @@ usage() {
 
 除外するパス（プロジェクト固有の内容に育つため、テンプレート側の変更を取り込まない）:
   README.md / .gitignore / docs/requirements.md / docs/design/ / docs/design-hub.md /
-  docs/adr/adr-index.md / docs/project-context/ / .github/ / scripts/auto-programmer/config.mjs
+  docs/adr/ / docs/project-context/ / .github/ / scripts/auto-programmer/config.mjs
+
+  docs/adr/ を除外するのは、利用先ではハーネスが補助でありテンプレートの ADR を
+  利用先の ADR 一覧に混ぜないため。同期されるファイルからは ADR を参照しない
+  （利用先ではテンプレートの ADR を消すので、参照が切れる）。
 
 除外の例外（除外パスに当たっても同期する。.github/ は丸ごと除外のため、テンプレート側の
 ワークフローを利用先へ届けるにはここへ足す必要がある）:
   .github/workflows/doc-consistency-weekly.yml
   .github/workflows/code-policy-weekly.yml
+  docs/adr/adr-template.md
 
 衝突したときの対処:
   衝突が出ても中断せず、除外処理まで進めて衝突ファイル一覧を表示して停止する。
