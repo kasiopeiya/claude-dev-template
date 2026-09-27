@@ -31,6 +31,7 @@ readonly EXCLUDE_PATHS=(
 # 除外の例外。EXCLUDE_PATHS に当たっても、ここに挙げたパスは同期する。
 readonly EXCLUDE_EXCEPTIONS=(
   '.github/workflows/doc-consistency-weekly.yml'
+  '.github/workflows/code-policy-weekly.yml'
 )
 
 usage() {
@@ -50,6 +51,7 @@ usage() {
 除外の例外（除外パスに当たっても同期する。.github/ は丸ごと除外のため、テンプレート側の
 ワークフローを利用先へ届けるにはここへ足す必要がある）:
   .github/workflows/doc-consistency-weekly.yml
+  .github/workflows/code-policy-weekly.yml
 
 衝突したときの対処:
   衝突が出ても中断せず、除外処理まで進めて衝突ファイル一覧を表示して停止する。
