@@ -11,9 +11,14 @@
 //   間、画面を更新する手段が無い（Issue #782）。短時間で終わり自前で進捗を流す npm ci・clone は同期のまま残し、非同期化の影響範囲を絞る。
 // - runStreamingAsync は子の出力を端末へ直結せず、パイプで受けて中継する。直結すると、その場更新中の
 //   ステータス行の末尾へ子の出力が連結される。中継は内容を解析しない素通しにして、claude の出力形式に依存しない。
+// - runStreamingAsync の打ち切りはプロセスツリーごと止める。spawn の timeout は直下の子しか殺さず、孫（Windows の
+//   .cmd 経由なら本体の claude）が AI 専用 clone を書き換え続けて次の Issue とぶつかる（Issue #791）。
+//   POSIX では子を別のプロセスグループで起動するので、端末のシグナルは子に届かず、index.mjs が中継する。
+//   中継できない SIGKILL で親を止めると子は残る。Ctrl+Z（SIGTSTP）も中継しないので、止まるのは親だけで子は動き続ける。
 // - 標準出力の上限を既定（1MB）から広げている。gh の JSON 出力は MB 単位になりうる。
 
 import { spawn, spawnSync } from 'node:child_process'
+import { constants } from 'node:os'
 
 // 標準出力として受け取れる上限。gh の JSON 出力がこれを超えると ENOBUFS で落ちる
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024
@@ -160,26 +165,107 @@ export function runStreaming(command, args, options = {}) {
 }
 
 /**
- * コマンドを1回 spawn し、終了を待つ。起動に失敗したときは例外にせず error に入れて返す
- * （Windows の .cmd で実行し直すかを呼び出し側が判定するため）。
+ * 子プロセスを、子孫ごとまとめて止められる形で起動する。起動の形と止め方は対になっているので、1か所で決める。
  *
- * 終わりの合図は close ではなく exit にする。close は子の出力パイプがすべて閉じるまで来ず、timeout が殺すのは
- * 直下の子だけなので、孫（Windows の .cmd 経由なら本体の claude）がパイプを握っていると打ち切っても戻らない。
+ * POSIX では子を別のプロセスグループ（detached）で起動し、グループ全体へシグナルを送って止める。
+ * Windows で detached にすると子が別のコンソールを持つので使わず、taskkill でツリーごと強制終了する
+ * （シグナルは選べない）。
+ *
+ * 標準入力は端末を引き継がず /dev/null にする。別グループの子が端末を読むと SIGTTIN で止まる。
+ * パイプにもしない。claude -p が標準入力を読みに行き、閉じられるまで待つ。
  *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
- * @param {{ spawnOptions: import('node:child_process').SpawnOptions, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} params spawn のオプションと、子の出力の中継先
- * @returns {Promise<{ error: Error | null, status: number | null, signal: string | null }>} 終了状態
+ * @param {{ cwd?: string, shell?: boolean }} options 実行ディレクトリと、シェルを介すか
+ * @returns {{ child: import('node:child_process').ChildProcess, killTree: (signal: NodeJS.Signals) => void }} 子プロセスと、子孫ごと止める関数（子がもう居なければ何もしない）
  */
-function spawnAndWaitForExit(command, args, { spawnOptions, onOutput }) {
+function spawnProcessTree(command, args, { cwd, shell }) {
+  const usesProcessGroup = process.platform !== 'win32'
+  const child = spawn(command, args, {
+    cwd,
+    shell,
+    detached: usesProcessGroup,
+    stdio: ['ignore', 'pipe', 'pipe']
+  })
+  const killTree = (signal) => {
+    if (child.pid === undefined || child.exitCode !== null || child.signalCode !== null) return
+    if (!usesProcessGroup) {
+      const result = spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+        stdio: 'ignore'
+      })
+      // taskkill が使えなくても直下の子だけは止め、exit を返させる。止まらないと待ちが終わらない
+      if (result.error || result.status !== 0) child.kill(signal)
+      return
+    }
+    try {
+      process.kill(-child.pid, signal)
+    } catch (error) {
+      // 子が exit を通知する前にグループが消えていれば ESRCH になる。止める対象が無いだけなので無視する
+      if (error.code !== 'ESRCH') throw error
+    }
+  }
+  return { child, killTree }
+}
+
+/**
+ * 子への打ち切り（時間切れ・呼び出し側からの中止）を見張り、子孫ごと止める。見張りは子が終わると自分で片付ける。
+ *
+ * 中止の合図は AbortSignal で受け、reason に入ったシグナルをそのまま子のグループへ送る。親が受けたシグナルを
+ * どう扱うか（中継するか・親も終わるか）は入口の index.mjs が決め、ここはプロセス全体のシグナルに触れない。
+ *
+ * @param {{ child: import('node:child_process').ChildProcess, killTree: (signal: NodeJS.Signals) => void }} processTree 見張る子プロセスと、子孫ごと止める関数
+ * @param {{ timeoutMs?: number, abortSignal?: AbortSignal }} triggers 打ち切るまでの時間と、中止の合図（reason に送るシグナル名。シグナル名でなければ SIGTERM）
+ * @returns {{ wasTimedOut: () => boolean }} 時間切れで止めたかを返す関数
+ */
+function watchForTermination({ child, killTree }, { timeoutMs, abortSignal }) {
+  let isTimedOut = false
+  const timeoutTimer =
+    timeoutMs === undefined
+      ? undefined
+      : setTimeout(() => {
+          isTimedOut = true
+          killTree('SIGTERM')
+        }, timeoutMs)
+  const killOnAbort = () => {
+    const reason = abortSignal?.reason
+    // 理由なしの abort() では reason が DOMException になる。シグナル名でなければ SIGTERM で止める
+    killTree(typeof reason === 'string' && reason in constants.signals ? reason : 'SIGTERM')
+  }
+  if (abortSignal?.aborted) killOnAbort()
+  abortSignal?.addEventListener('abort', killOnAbort, { once: true })
+  const stop = () => {
+    clearTimeout(timeoutTimer)
+    abortSignal?.removeEventListener('abort', killOnAbort)
+  }
+  child.once('exit', stop)
+  child.once('error', stop)
+  return { wasTimedOut: () => isTimedOut }
+}
+
+/**
+ * コマンドを1回 spawn し、終了を待つ。起動に失敗したときは例外にせず error に入れて返す
+ * （Windows の .cmd で実行し直すかを呼び出し側が判定するため）。
+ *
+ * 終わりの合図は close ではなく exit にする。close は子の出力パイプがすべて閉じるまで来ず、止め損ねた孫が
+ * パイプを握っていると打ち切っても戻らない。
+ *
+ * @param {string} command 実行するコマンド
+ * @param {string[]} args 引数
+ * @param {{ cwd?: string, shell?: boolean, timeoutMs?: number, abortSignal?: AbortSignal, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} params 実行ディレクトリ・シェルを介すか・打ち切るまでの時間・中止の合図・子の出力の中継先
+ * @returns {Promise<{ error: Error | null, status: number | null, signal: string | null }>} 終了状態（打ち切ったときは signal が入る）
+ */
+function spawnAndWaitForExit(command, args, { cwd, shell, timeoutMs, abortSignal, onOutput }) {
   return new Promise((resolve) => {
-    // 標準入力は端末を引き継ぐ。パイプにすると claude -p が標準入力を読みに行き、閉じられるまで待つ
-    const child = spawn(command, args, { ...spawnOptions, stdio: ['inherit', 'pipe', 'pipe'] })
+    const processTree = spawnProcessTree(command, args, { cwd, shell })
+    const { child } = processTree
+    const watcher = watchForTermination(processTree, { timeoutMs, abortSignal })
     child.stdout.on('data', (chunk) => onOutput('stdout', chunk))
     child.stderr.on('data', (chunk) => onOutput('stderr', chunk))
     // 起動に失敗すると error の後に exit も来うる。先に来た方だけを採る（Promise は2回目の resolve を無視する）
     child.once('error', (error) => resolve({ error, status: null, signal: null }))
-    child.once('exit', (status, signal) => {
+    child.once('exit', (status, exitSignal) => {
+      // taskkill で止めた Windows では signal が入らないので、打ち切ったことを SIGTERM として揃える
+      const signal = watcher.wasTimedOut() ? (exitSignal ?? 'SIGTERM') : exitSignal
       const drainTimer = setTimeout(() => {
         child.stdout.destroy()
         child.stderr.destroy()
@@ -197,21 +283,31 @@ function spawnAndWaitForExit(command, args, { spawnOptions, onOutput }) {
  * コマンドを非同期に実行し、子の出力を中継しながら終了を待つ。待っている間も Node のタイマーが動くので、
  * onTick で経過を画面に出せる。claude セッション専用（使い分けはファイル冒頭の設計意図を参照）。
  *
+ * 子には標準入力を渡さない。子は POSIX では親と別のプロセスグループで動くので、端末の Ctrl+C や切断は子に
+ * 届かない。子を止めたいときは abortSignal を中止する（reason に入れたシグナルを子孫ごと送る）。
+ *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
- * @param {{ cwd?: string, timeoutMs?: number, onTick: (elapsedMs: number) => void, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} options 実行ディレクトリ・打ち切るまでの時間・1秒ごとに経過時間を受け取る関数・子の出力の中継先
+ * @param {{ cwd?: string, timeoutMs?: number, abortSignal?: AbortSignal, onTick: (elapsedMs: number) => void, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} options 実行ディレクトリ・打ち切るまでの時間・中止の合図・1秒ごとに経過時間を受け取る関数・子の出力の中継先
  * @returns {Promise<{ exitCode: number, signal: string | null }>} 終了状態（打ち切られたときは signal が入る）
  * @throws {Error} コマンドを起動できなかったとき（PATH に無い・.cmd に渡せない引数がある など）
  */
-export async function runStreamingAsync(command, args, { cwd, timeoutMs, onTick, onOutput }) {
+export async function runStreamingAsync(
+  command,
+  args,
+  { cwd, timeoutMs, abortSignal, onTick, onOutput }
+) {
   const startedAt = Date.now()
   const tickTimer = setInterval(() => onTick(Date.now() - startedAt), ELAPSED_TIME_TICK_INTERVAL_MS)
   try {
-    // spawn の timeout は打ち切っても error を出さず、exit に signal を入れて返す（同期版と同じ終了状態になる）
+    // 打ち切っても error は出さず、signal を入れて返す（同期版と同じ終了状態になる）
     const result = await spawnWithWindowsShimFallbackAsync(
       (resolvedCommand, resolvedArgs, extraOptions) =>
         spawnAndWaitForExit(resolvedCommand, resolvedArgs, {
-          spawnOptions: { cwd, timeout: timeoutMs, ...extraOptions },
+          cwd,
+          ...extraOptions,
+          timeoutMs,
+          abortSignal,
           onOutput
         }),
       command,
