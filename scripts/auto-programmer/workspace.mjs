@@ -13,6 +13,7 @@
 
 import { config } from './config.mjs'
 import { runOrThrow } from './shell.mjs'
+import { showInfo } from './ui.mjs'
 
 /**
  * AI 専用 clone の中で git を実行する。
@@ -45,7 +46,7 @@ function stashUncommittedChanges(workingDir) {
   // なる。衝突マーカーごと index に載せてから退避する
   if (runGit(['diff', '--name-only', '--diff-filter=U']).trim() !== '') runGit(['add', '--all'])
   runGit(['stash', 'push', '--include-untracked', '--message', message])
-  console.log(`未コミットの変更を stash へ退避しました: ${message}`)
+  showInfo(`未コミットの変更を stash へ退避しました: ${message}`)
 }
 
 /**

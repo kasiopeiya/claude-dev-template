@@ -39,6 +39,8 @@ import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { recordRun } from './runLog.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
+import { showError, showInfo, showIssueBanner, showSuccess, showWarning } from './ui.mjs'
+import { collapseToSingleLine, formatElapsedTime } from './uiFormat.mjs'
 import { prepareTopicBranch } from './workspace.mjs'
 
 const MILLISECONDS_PER_SECOND = 1000
@@ -142,22 +144,39 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
     )
     return created.length > 0 ? created[created.length - 1].url : ''
   } catch (error) {
-    console.error(`PR の有無を確かめられませんでした: ${formatError(error)}`)
+    showWarning(`PR の有無を確かめられませんでした: ${formatError(error)}`)
     return null
   }
 }
 
 /**
- * 実行結果を1行で表示する。
+ * Issue 1件の締めとして、所要時間・CI の結果・PR・記録先をまとめて表示する。
  *
- * @param {{ pullRequestUrl: string | null, ciOutcome?: string }} record 記録した内容
+ * 締めの記号は、例外の有無だけでなく「人間の手当てが要るか」で決める。実装が失敗しても例外は出ない
+ * （セッションが 0 以外で終わるだけ）ので、例外だけで決めると失敗した実行に ✓ が出て、異常が埋もれる。
+ *
+ * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, skippedReason?: string | null, error?: string }} record 記録した内容
+ * @param {boolean} isAllSessionsSucceeded 走らせた claude セッションがすべて正常終了したか
  * @returns {void}
  */
-function printOutcome({ pullRequestUrl, ciOutcome }) {
-  if (ciOutcome) console.log(`CI: ${ciOutcome}`)
-  if (pullRequestUrl === null) console.log('PR の有無は GitHub で確かめてください')
-  else console.log(pullRequestUrl ? `PR: ${pullRequestUrl}` : 'PR は作られませんでした')
-  console.log(`記録: ${config.runLogPath}`)
+function showRunSummary(record, isAllSessionsSucceeded) {
+  const elapsedTime = formatElapsedTime(
+    Date.parse(record.finishedAt) - Date.parse(record.sessionStartedAt)
+  )
+  const headline = `#${record.issueNumber} を終えました（${elapsedTime}）`
+  const needsHumanAttention =
+    Boolean(record.skippedReason) || !isAllSessionsSucceeded || record.isCiPassed === false
+  if (record.error) showError(headline)
+  else if (needsHumanAttention) showWarning(headline)
+  else showSuccess(headline)
+
+  if (record.ciOutcome) {
+    const showCiOutcome = record.isCiPassed ? showInfo : showWarning
+    showCiOutcome(`CI: ${record.ciOutcome}`)
+  }
+  if (record.pullRequestUrl === null) showWarning('PR の有無は GitHub で確かめてください')
+  else showInfo(record.pullRequestUrl ? `PR: ${record.pullRequestUrl}` : 'PR は作られませんでした')
+  showInfo(`記録: ${config.runLogPath}`)
 }
 
 /**
@@ -169,7 +188,7 @@ function printOutcome({ pullRequestUrl, ciOutcome }) {
  */
 function startIssue(issue) {
   const branchName = buildBranchName({ issueNumber: issue.number, labelNames: issue.labelNames })
-  console.log(`ブランチ: ${branchName}`)
+  showInfo(`ブランチ: ${branchName}`)
 
   prepareTopicBranch(branchName)
   ensureDependencies()
@@ -191,7 +210,7 @@ function startIssue(issue) {
 async function startFirstStartableIssue() {
   const issues = listStartableIssues()
   if (issues.length === 0) {
-    console.log(
+    showInfo(
       `着手できる Issue はありません（${config.board.readyStatusName} かつ ${config.targetIssueLabel}、自分が担当者、ブロッカーが全部 closed）`
     )
     return null
@@ -202,14 +221,14 @@ async function startFirstStartableIssue() {
     await yieldToEventLoop()
     if (stopController.signal.aborted) return null
 
-    console.log(`#${issue.number} ${issue.title}`)
+    showIssueBanner({ issueNumber: issue.number, title: issue.title })
     try {
       return { issue, ...startIssue(issue) }
     } catch (error) {
-      console.error(`#${issue.number} を飛ばします: ${formatError(error)}`)
+      showWarning(`#${issue.number} を飛ばします: ${formatError(error)}`)
     }
   }
-  console.log(`着手できる Issue ${issues.length} 件をすべて飛ばしました`)
+  showWarning(`着手できる Issue ${issues.length} 件をすべて飛ばしました`)
   return null
 }
 
@@ -226,8 +245,9 @@ async function startFirstStartableIssue() {
 function auditThenImplement(issueNumber, record) {
   record.issueCheckSkipped = readIssueStatus(issueNumber).labelNames.includes(ISSUE_CHECKED_LABEL)
   if (record.issueCheckSkipped) {
-    console.log(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
+    showInfo(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
   } else {
+    showInfo(`/issue-check を起動します: #${issueNumber}`)
     const issueCheckStatus = runIssueCheckSession(issueNumber)
     record.issueCheckExitCode = issueCheckStatus.exitCode
     record.issueCheckSignal = issueCheckStatus.signal
@@ -251,6 +271,7 @@ function auditThenImplement(issueNumber, record) {
     '--remove-label',
     NEEDS_CLEAN_SESSION_LABEL
   ])
+  showInfo(`/auto-dev を起動します: #${issueNumber}`)
   const autoDevStatus = runAutoDevSession(issueNumber)
   record.autoDevExitCode = autoDevStatus.exitCode
   record.autoDevSignal = autoDevStatus.signal
@@ -318,7 +339,7 @@ function tryListCiRuns(headSha) {
   try {
     return listCiRuns(headSha)
   } catch (error) {
-    console.error(`CI の run を引けませんでした。引き直します: ${formatError(error)}`)
+    showWarning(`CI の run を引けませんでした。引き直します: ${formatError(error)}`)
     return null
   }
 }
@@ -444,6 +465,8 @@ function concludeCiWatch({ issue, nextStep, runState }) {
  */
 async function watchCiAndFix(issue, branchName, record) {
   record.ciRuns = []
+  // CI が通ったときだけ true にする。通らずに戻る経路（離脱・未 push・打ち切り）はどれも人間の手当てが要る
+  record.isCiPassed = false
   let fixAttemptCount = 0
   let previousHeadSha = null
   for (;;) {
@@ -459,7 +482,7 @@ async function watchCiAndFix(issue, branchName, record) {
     }
     previousHeadSha = headSha
 
-    console.log(`CI を待ちます: ${config.ci.workflowFile} @ ${headSha.slice(0, 7)}`)
+    showInfo(`CI を待ちます: ${config.ci.workflowFile} @ ${headSha.slice(0, 7)}`)
     const runState = await waitForCiRun(headSha)
     record.ciRuns.push({ headSha, ...runState })
     if (stopController.signal.aborted) {
@@ -474,12 +497,13 @@ async function watchCiAndFix(issue, branchName, record) {
     })
     if (nextStep !== 'fix') {
       record.ciOutcome = concludeCiWatch({ issue, nextStep, runState })
+      record.isCiPassed = nextStep === 'finish-passed'
       return true
     }
 
     fixAttemptCount += 1
     record.ciFixAttemptCount = fixAttemptCount
-    console.log(
+    showWarning(
       `CI が落ちました。/auto-fix-ci に直させます（${fixAttemptCount} 回目）: ${runState.url}`
     )
     const fixStatus = runAutoFixCiSession({ issueNumber: issue.number, runId: runState.runId })
@@ -506,19 +530,21 @@ async function runSessionAndRecord({ issue, branchName, existingPullRequestNumbe
   try {
     // 途中で例外が出たら false のまま残すため、最後にまとめて代入する
     const isImplemented = auditThenImplement(issue.number, record)
-    if (record.skippedReason) console.log(`実装へ進みません: ${record.skippedReason}`)
+    if (record.skippedReason) showWarning(`実装へ進みません: ${record.skippedReason}`)
     const shouldWatchCi = isImplemented && !record.skippedReason
     isAllSessionsSucceeded = shouldWatchCi
       ? await watchCiAndFix(issue, branchName, record)
       : isImplemented
   } catch (error) {
+    // 無人実行の画面はセッションの出力で流れるため、スタックを出すと原因の1行が埋もれる（Issue #780）
     record.error = formatError(error)
-    console.error(formatError(error, { withStack: true }))
+    record.errorStack = formatError(error, { withStack: true })
+    showError(`#${issue.number} の処理が落ちました: ${collapseToSingleLine(record.error)}`)
   } finally {
     record.pullRequestUrl = findCreatedPullRequestUrl(branchName, existingPullRequestNumbers)
     record.finishedAt = new Date().toISOString()
     recordRun(record)
-    printOutcome(record)
+    showRunSummary(record, isAllSessionsSucceeded)
   }
   return isAllSessionsSucceeded
 }
@@ -532,7 +558,7 @@ function tryCloseIssuesOfMergedPullRequests() {
   try {
     closeIssuesOfMergedPullRequests({ repository: config.repository })
   } catch (error) {
-    console.error(`マージ済み PR の Issue を閉じられませんでした: ${formatError(error)}`)
+    showWarning(`マージ済み PR の Issue を閉じられませんでした: ${formatError(error)}`)
   }
 }
 
@@ -543,7 +569,7 @@ function tryCloseIssuesOfMergedPullRequests() {
  */
 async function waitForNextPoll() {
   if (stopController.signal.aborted) return
-  console.log(`${POLL_INTERVAL_MS / MILLISECONDS_PER_SECOND} 秒後に見直します`)
+  showInfo(`${POLL_INTERVAL_MS / MILLISECONDS_PER_SECOND} 秒後に見直します`)
   await sleepUnlessStopped(POLL_INTERVAL_MS)
 }
 
@@ -560,7 +586,7 @@ async function main() {
     try {
       startedIssue = await startFirstStartableIssue()
     } catch (error) {
-      console.error(`候補を引けませんでした: ${formatError(error, { withStack: true })}`)
+      showError(`候補を引けませんでした: ${formatError(error, { withStack: true })}`)
     }
     if (!startedIssue) {
       await waitForNextPoll()
@@ -576,12 +602,12 @@ async function main() {
     }
     await yieldToEventLoop()
   }
-  console.log('止めました')
+  showInfo('止めました')
 }
 
 try {
   await main()
 } catch (error) {
-  console.error(formatError(error, { withStack: true }))
+  showError(formatError(error, { withStack: true }))
   process.exitCode = 1
 }

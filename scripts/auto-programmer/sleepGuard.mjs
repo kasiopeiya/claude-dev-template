@@ -16,6 +16,8 @@ import { spawn } from 'node:child_process'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { showWarning } from './ui.mjs'
+
 const moduleDir = dirname(fileURLToPath(import.meta.url))
 const SLEEP_GUARD_SCRIPT_PATH = join(moduleDir, 'sleepGuard.ps1')
 
@@ -72,7 +74,7 @@ export function startSleepGuard() {
   // 'error' はリスナが無いと例外として投げられ、無人のメインループごと落としてしまう。
   // caffeinate・powershell.exe が万一無くても、警告だけ出して続行する
   child.on('error', (error) => {
-    console.error(`スリープ抑止の起動に失敗しました（続行します）: ${error.message}`)
+    showWarning(`スリープ抑止の起動に失敗しました（続行します）: ${error.message}`)
   })
   child.unref()
 }
