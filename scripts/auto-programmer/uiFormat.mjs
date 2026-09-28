@@ -68,6 +68,18 @@ export function buildMessageLines({ clockTime, symbol, message }) {
 }
 
 /**
+ * その場更新するステータス行の文字列を、他の行と同じ「時刻 記号 内容」の形に組み立てる。
+ * 複数行には分けず、改行は空白へ畳む（その場更新は1行の中でしか成り立たない）。
+ *
+ * @param {{ clockTime: string, symbol: string, message: string }} params 時刻・記号・出す内容
+ * @returns {string} `時刻 記号 メッセージ`（その場更新を壊す制御文字は落とす）
+ */
+export function buildStatusLineText({ clockTime, symbol, message }) {
+  const singleLineMessage = String(message).replace(/\n/g, ' ')
+  return `${clockTime} ${symbol} ${singleLineMessage.replace(CONTROL_CHARACTER_PATTERN, '')}`
+}
+
+/**
  * Issue 1件の区切りバナーの文字列を作る。
  *
  * @param {{ issueNumber: number, title: string }} issue 対象 Issue の番号とタイトル

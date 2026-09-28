@@ -1,4 +1,5 @@
-// 責務: 画面へ出す1行の組み立てが、時刻・レベル記号を落とさず、原因の1行を埋もれさせないことを検証する。
+// 責務: 画面へ出す行の組み立てが、時刻・レベル記号を落とさず、原因の1行を埋もれさせず、
+// その場更新のステータス行を壊さないことを検証する。
 //
 // ここが壊れると、無人実行の画面から「いつ」「正常か異常か」が読めなくなり、起動した人間が
 // 異常に気づけないまま着手待ちのカードを空振りで使い切る。
@@ -9,6 +10,7 @@ import assert from 'node:assert/strict'
 import {
   buildIssueBannerText,
   buildMessageLines,
+  buildStatusLineText,
   collapseToSingleLine,
   formatClockTime,
   formatElapsedTime
@@ -89,6 +91,36 @@ describe('メッセージ行の組み立て', () => {
     const lines = sut({ clockTime: '01:02:03', symbol: 'ℹ', message: '偽の行\r\u001b[2K本物' })
 
     assert.deepEqual(lines, ['01:02:03 ℹ 偽の行[2K本物'])
+  })
+})
+
+describe('ステータス行の組み立て', () => {
+  test('時刻・記号・メッセージを1行に並べる', () => {
+    const sut = buildStatusLineText
+
+    const line = sut({
+      clockTime: '01:02:03',
+      symbol: '⏳',
+      message: '待機中（着手できる Issue なし）· 12回目'
+    })
+
+    assert.equal(line, '01:02:03 ⏳ 待機中（着手できる Issue なし）· 12回目')
+  })
+
+  test('改行を空白へ畳んで1行にする', () => {
+    const sut = buildStatusLineText
+
+    const line = sut({ clockTime: '01:02:03', symbol: '⏳', message: '1行目\n2行目' })
+
+    assert.equal(line, '01:02:03 ⏳ 1行目 2行目')
+  })
+
+  test('その場更新を壊す制御文字を落とす', () => {
+    const sut = buildStatusLineText
+
+    const line = sut({ clockTime: '01:02:03', symbol: '⏳', message: '偽の行\r\u001b[2K本物' })
+
+    assert.equal(line, '01:02:03 ⏳ 偽の行[2K本物')
   })
 })
 
