@@ -18,6 +18,7 @@
 import { config } from './config.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
 import { extractBlockerIssueNumbers, selectStartableIssues } from './startOrder.mjs'
+import { showWarning } from './ui.mjs'
 
 const { board, repository, targetIssueLabel } = config
 
@@ -97,7 +98,7 @@ function readIssueState(issueNumber) {
     ])
     return state ?? null
   } catch (error) {
-    console.error(`ブロッカー #${issueNumber} の state を引けませんでした: ${error.message}`)
+    showWarning(`ブロッカー #${issueNumber} の state を引けませんでした: ${error.message}`)
     return null
   }
 }

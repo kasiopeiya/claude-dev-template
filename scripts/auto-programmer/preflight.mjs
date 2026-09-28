@@ -12,6 +12,7 @@ import { basename, dirname, join } from 'node:path'
 
 import { config } from './config.mjs'
 import { runCapture, runOrThrow, runStreaming } from './shell.mjs'
+import { showInfo } from './ui.mjs'
 
 // npm のロックファイル名。これを持つディレクトリごとに依存を入れる
 const LOCK_FILE_NAME = 'package-lock.json'
@@ -95,7 +96,7 @@ function ensureWorkspaceClone() {
     return
   }
 
-  console.log(`AI 専用 clone を作成します: ${config.workspaceDir}`)
+  showInfo(`AI 専用 clone を作成します: ${config.workspaceDir}`)
   mkdirSync(dirname(config.workspaceDir), { recursive: true })
   const { exitCode } = runStreaming('gh', ['repo', 'clone', config.repository, config.workspaceDir])
   if (exitCode !== 0) throw new Error(`clone に失敗しました: ${config.repository}`)
@@ -146,7 +147,7 @@ export function ensureDependencies() {
     const directory = join(config.workspaceDir, relativeDirectory)
     if (!needsDependencyInstall(directory)) continue
 
-    console.log(`AI 専用 clone に依存をインストールします: ${relativeDirectory}`)
+    showInfo(`AI 専用 clone に依存をインストールします: ${relativeDirectory}`)
     const { exitCode } = runStreaming('npm', ['ci'], { cwd: directory })
     if (exitCode !== 0) throw new Error(`npm ci に失敗しました: ${relativeDirectory}`)
     writeFileSync(join(directory, 'node_modules', INSTALL_STAMP_FILE_NAME), '')

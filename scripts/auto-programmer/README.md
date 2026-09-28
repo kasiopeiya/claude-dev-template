@@ -106,6 +106,21 @@ npm run auto-programmer
 
 AI 専用 clone と実行記録は `~/dev/auto-programmer/` の下に置かれる。置き場を変えたいときは、`config.mjs` を編集せず環境変数 `AUTO_PROGRAMMER_HOME` で指定する。
 
+## 画面の読み方
+
+このツール自身が出す行には、どれも時刻とレベル記号が付く。記号の付かない行は、起動した `claude` セッション・`gh`・`npm` がそのまま流している出力である。
+
+| 記号 | 意味                               | 行き先 |
+| ---- | ---------------------------------- | ------ |
+| ℹ    | 進行中の出来事                     | stdout |
+| ✓    | うまくいった（1件の締め）          | stdout |
+| ⚠    | 処理は続くが、人間に見てほしいこと | stderr |
+| ✗    | 異常                               | stderr |
+
+Issue 1件の始まりには `── #123 タイトル ──` の区切りバナーが出る。claude のセッションが流す大量の出力の中から、このツール自身の話に戻った場所をここで見つける。1件の終わりには、所要時間・CI の結果・PR の URL・記録先がまとめて出る。
+
+色は端末に直接出すときだけ付く。ファイルへリダイレクトしたときと、`NO_COLOR=1` を付けたときは自動で落ちる。
+
 ## 実行の記録
 
 Issue 1件につき1行の JSON が `runLogPath` に追記される。端末を閉じた後でも、いつ・どの Issue を・どうなったかを追える。
@@ -128,7 +143,7 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 
 | 症状                                                                                               | 意味                                                                                                                                 | 直し方                                                                                                                                                            |
 | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 「claude のセッションが … 回続けて失敗しました」                                                   | claude がログイン切れ・利用上限などで動けない                                                                                        | 記録の `issueCheckExitCode`・`issueCheckSignal`・`autoDevExitCode`・`autoDevSignal`・`ciFixExitCode`・`ciFixSignal`・`error` を読んで直し、打ち直す               |
+| 「claude のセッションが … 回続けて失敗しました」                                                   | claude がログイン切れ・利用上限などで動けない                                                                                        | 記録の `issueCheckExitCode`・`issueCheckSignal`・`autoDevExitCode`・`autoDevSignal`・`ciFixExitCode`・`ciFixSignal`・`error`・`errorStack` を読んで直し、打ち直す |
 | 「候補を引けませんでした」                                                                         | `gh` が失敗したか、ボードの表記が `config.mjs` と食い違っている                                                                      | 続く理由を読んで直す（`pollIntervalMinutes` ごとにやり直す）                                                                                                      |
 | 「GitHub CLI が未ログインです」                                                                    | `gh auth status` が通らない                                                                                                          | `gh auth login`                                                                                                                                                   |
 | 「着手できる Issue はありません」                                                                  | Ready に対象ラベル付きで自分が担当者の open な Issue が無いか、全部にブロッカーが残っている（ブロッカー節を読めないものも含む）      | ボードのカードを Ready へ動かして自分を担当者にする・ブロッカーを片付ける                                                                                         |
@@ -140,7 +155,8 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 | 「実装へ進みません: /issue-check が判定を書き戻しませんでした」                                    | 監査は終わったが `issue:checked` が貼られていない（判定を読めなかった・`gh` が失敗したなど）                                         | Issue のコメントを読み、必要なら人間が `/issue-check #<番号>` を打ってからカードを Ready へ戻す                                                                   |
 | 「実装へ進みません: /issue-check のセッションが失敗しました」                                      | 監査の結果が書き戻されたか分からないので、実装へ進まなかった                                                                         | 記録の `issueCheckExitCode`・`issueCheckSignal` を読んで原因を直し、カードを Ready へ戻す                                                                         |
 | Issue が「In progress」のまま残った                                                                | `/auto-dev`・`/auto-fix-ci` が離脱したか、`ci.maxFixAttempts` 回直させても CI が通らなかった（Issue にコメントとラベルが残っている） | コメントを読み、専用のセッションでその Issue に着手する                                                                                                           |
-| 同上で、Issue にコメントが無い                                                                     | セッションが打ち切られたか、起動後に落ちた                                                                                           | 記録の `autoDevSignal`・`ciFixSignal`・`error` を読んで原因を直す                                                                                                 |
+| 同上で、Issue にコメントが無い                                                                     | セッションが打ち切られたか、起動後に落ちた                                                                                           | 記録の `autoDevSignal`・`ciFixSignal`・`error`・`errorStack` を読んで原因を直す                                                                                   |
+| 「#… の処理が落ちました: …」                                                                       | 着手中へ動かした後の処理で例外が出た。カードは In progress に残る                                                                    | 続く1行の理由を読む。足りなければ記録の `errorStack` を読む                                                                                                       |
 | 途中まで実装したはずの変更が clone から消えた                                                      | セッションが commit より前に落ち、次の巡回が clone を `origin/main` へ戻す前に未コミットの変更を stash へ退避した                    | clone の中で `git stash list` を開き、`auto-programmer: <ブランチ名> の未コミット変更` を探して、そのトピックブランチの上で `git stash apply stash@{<番号>}` する |
 | 「CI: CI の run が … 分以内に終わりませんでした」「CI: CI の run が … で終わったので直させません」 | CI が詰まっているか、run がキャンセルされた。差分を直しても通らないので直させずに次へ進んだ。カードは In progress に残る             | 記録の `ciRuns` の URL で run を見て、再実行するか、専用のセッションでその Issue に着手する                                                                       |
 | 「CI: CI が通りました。カードを In Review へ動かせませんでした: …」                                | PR はでき CI も通ったが、ボードの表記が `config.mjs` と食い違っているか `gh` が失敗した。カードは In progress に残る                 | 理由を読んで直し、カードを手で In Review へ動かす                                                                                                                 |
