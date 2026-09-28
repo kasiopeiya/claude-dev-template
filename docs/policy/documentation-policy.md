@@ -8,6 +8,7 @@ hook:
       'infra/**/*.md',
       'README.md',
       'CLAUDE.md',
+      'scripts/**/*.md',
       '.claude/skills/decide-tech-stack/assets/tech-stack-adr-template.md'
     ]
 ---

@@ -37,7 +37,7 @@
 
 11 で直させるのは `ci.maxFixAttempts` 回までで、使い切っても落ちていれば Issue にコメントと `issue:needs-clean-session` を残して次へ進む。キャンセルされた run・`ci.runWaitLimitMinutes` 分待っても終わらない run は、差分を直しても通らないので直させない。9 で `/auto-dev` が離脱したときは 10 へ進まない。
 
-AI が触るのは **AI 専用 clone の中だけ**で、人間の作業ツリーには一切触れない。実行をローカルにしているのは、hook・Policy・SubAgent を含むこのリポジトリのハーネスがそのまま動き、実行時間の上限も無いためである。Projects の読み書きも、ローカルの `gh auth` をそのまま使えるため追加の認証情報を要しない。作業ツリーを AI 専用 clone へ分けることが、`/sweep` が人間の起動タイミングから受け取っていた前提（作業してよいブランチ・汚れていないツリー）の代替物になる。
+AI が触るのは **AI 専用 clone の中だけ**で、人間の作業ツリーには一切触れない。実行をローカルにしているのは、hook・Policy・SubAgent を含むこのリポジトリのハーネスがそのまま動き、実行時間の上限も無いためである。Projects の読み書きも、ローカルの `gh auth` をそのまま使えるため追加の認証情報を要しない。
 
 ## 週次スクリプトが Issue を供給する
 
@@ -47,8 +47,6 @@ AI が触るのは **AI 専用 clone の中だけ**で、人間の作業ツリ�
 | ------------------------------------------ | ------------------------------------------------------------------ | ------------------------ |
 | `scripts/doc-consistency-weekly-issue.mjs` | `docs/` 全体（`/doc-consistency`）                                 | `doc-consistency-weekly` |
 | `scripts/code-policy-weekly-issue.mjs`     | `app/`（`/code-review` の「決まりどおりか」「設計の形」の2レンズ） | `code-policy-weekly`     |
-
-こうした補助スクリプトは、専用の設計書を持たない（`docs/design-hub.md` から辿れる設計書はアプリ・インフラ・IaC・CI/CD・テスト戦略が対象で、ハーネス側のスクリプトを担当するものが無い）。決定が1つ1つは軽く、ADR にするほどではないため、ここにまとめて書く。
 
 `scripts/doc-consistency-weekly-issue.mjs` の設計判断：
 
@@ -83,26 +81,26 @@ npm run auto-programmer
 
 接続先と表記はすべて `config.mjs` に集めてある。**他のファイルにこれらの値は書かれていない。**
 
-| キー                          | 意味                                                                                                                                                               | 調べ方                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| `repository`                  | Issue と PR の相手（`owner/repo`）                                                                                                                                 | `gh repo view --json nameWithOwner`                                                           |
-| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る                                                                                                                      | `gh repo view --json defaultBranchRef`                                                        |
-| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                                                                                                                                     | `gh project list --owner <owner>`                                                             |
-| `board.statusFieldName`       | 進捗を持つフィールドの表記                                                                                                                                         | `gh project field-list <番号> --owner <owner>`                                                |
-| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                                                                                                                                 | 同上                                                                                          |
-| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                                                                                                                       | 同上                                                                                          |
-| `board.inReviewStatusName`    | 「CI が通り、レビューしてよい」を表す選択肢の表記                                                                                                                  | 同上                                                                                          |
-| `targetIssueLabel`            | 対象にする Issue のラベル                                                                                                                                          | `gh label list`                                                                               |
-| `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数（macOS・Windows では `sleepGuard.mjs` がOSのスリープを止め、この時間がスリープ分だけ早く尽きるのを防ぐ） | 長いほうの実装に掛かる時間の上限として決める                                                  |
-| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数                                                                                                        | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
-| `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名                                                                                                            | `.github/workflows/` の下のファイル名                                                         |
-| `ci.pollIntervalSeconds`      | CI の run の状態を見直す秒数                                                                                                                                       | 短すぎると `gh run list` の呼び出し頻度が上がる                                               |
-| `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                                                                                                                            | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
-| `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                                                                                               | 使い切っても落ちていれば人間へ回す                                                            |
+| キー                          | 意味                                                        | 調べ方                                                                                        |
+| ----------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `repository`                  | Issue と PR の相手（`owner/repo`）                          | `gh repo view --json nameWithOwner`                                                           |
+| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る               | `gh repo view --json defaultBranchRef`                                                        |
+| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                              | `gh project list --owner <owner>`                                                             |
+| `board.statusFieldName`       | 進捗を持つフィールドの表記                                  | `gh project field-list <番号> --owner <owner>`                                                |
+| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                          | 同上                                                                                          |
+| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                | 同上                                                                                          |
+| `board.inReviewStatusName`    | 「CI が通り、レビューしてよい」を表す選択肢の表記           | 同上                                                                                          |
+| `targetIssueLabel`            | 対象にする Issue のラベル                                   | `gh label list`                                                                               |
+| `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数   | 長いほうの実装に掛かる時間の上限として決める                                                  |
+| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数 | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
+| `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名     | `.github/workflows/` の下のファイル名                                                         |
+| `ci.pollIntervalSeconds`      | CI の run の状態を見直す秒数                                | 短すぎると `gh run list` の呼び出し頻度が上がる                                               |
+| `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                     | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
+| `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限        | 使い切っても落ちていれば人間へ回す                                                            |
 
 フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。
 
-`sessionTimeoutMinutes` は壁時計（wall-clock）で数える。OS がアイドルスリープすると、寝ていた時間もここに数えられ、無人セッションが実際より早く打ち切られる（Issue #651）。`index.mjs` は起動直後にこれを防ぐコマンド（macOS は `caffeinate`、Windows は同梱の `sleepGuard.ps1`）を起動し続けるが、ノートPCの蓋を閉じたことによるスリープ（クラムシェルスリープ）までは止められない。実行中は蓋を閉じないか、外部ディスプレイに繋いでおくこと。Linux は `CLOCK_MONOTONIC` がサスペンド中に止まるため、この問題自体が起きず、何もしない。
+`sessionTimeoutMinutes` は壁時計（wall-clock）で数える。OS がアイドルスリープすると、寝ていた時間もここに数えられ、無人セッションが実際より早く打ち切られる。`index.mjs` は起動直後にこれを防ぐコマンド（macOS は `caffeinate`、Windows は同梱の `sleepGuard.ps1`）を起動し続けるが、ノートPCの蓋を閉じたことによるスリープ（クラムシェルスリープ）までは止められない。実行中は蓋を閉じないか、外部ディスプレイに繋いでおくこと。Linux は `CLOCK_MONOTONIC` がサスペンド中に止まるため、この問題自体が起きず、何もしない。
 
 AI 専用 clone と実行記録は `~/dev/auto-programmer/` の下に置かれる。置き場を変えたいときは、`config.mjs` を編集せず環境変数 `AUTO_PROGRAMMER_HOME` で指定する。
 
@@ -170,5 +168,5 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 | 同上で、Issue にコメントが無い                                                                     | セッションが打ち切られたか、起動後に落ちた                                                                                           | 記録の `autoDevSignal`・`ciFixSignal`・`error`・`errorStack` を読んで原因を直す                                                                                   |
 | 「#… の処理が落ちました: …」                                                                       | 着手中へ動かした後の処理で例外が出た。カードは In progress に残る                                                                    | 続く1行の理由を読む。足りなければ記録の `errorStack` を読む                                                                                                       |
 | 途中まで実装したはずの変更が clone から消えた                                                      | セッションが commit より前に落ち、次の巡回が clone を `origin/main` へ戻す前に未コミットの変更を stash へ退避した                    | clone の中で `git stash list` を開き、`auto-programmer: <ブランチ名> の未コミット変更` を探して、そのトピックブランチの上で `git stash apply stash@{<番号>}` する |
-| 「CI: CI の run が … 分以内に終わりませんでした」「CI: CI の run が … で終わったので直させません」 | CI が詰まっているか、run がキャンセルされた。差分を直しても通らないので直させずに次へ進んだ。カードは In progress に残る             | 記録の `ciRuns` の URL で run を見て、再実行するか、専用のセッションでその Issue に着手する                                                                       |
+| 「CI: CI の run が … 分以内に終わりませんでした」「CI: CI の run が … で終わったので直させません」 | CI が詰まっているか、run がキャンセルされた。直させずに次へ進んだ。カードは In progress に残る                                       | 記録の `ciRuns` の URL で run を見て、再実行するか、専用のセッションでその Issue に着手する                                                                       |
 | 「CI: CI が通りました。カードを In Review へ動かせませんでした: …」                                | PR はでき CI も通ったが、ボードの表記が `config.mjs` と食い違っているか `gh` が失敗した。カードは In progress に残る                 | 理由を読んで直し、カードを手で In Review へ動かす                                                                                                                 |
