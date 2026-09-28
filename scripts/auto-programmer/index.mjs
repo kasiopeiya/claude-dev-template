@@ -71,9 +71,19 @@ const NEEDS_CLEAN_SESSION_LABEL = 'issue:needs-clean-session'
 // 待たずに次のカードを着手中へ送り、Ready のカードを PR 無しのまま使い切るため
 const MAX_CONSECUTIVE_SESSION_FAILURES = 2
 
-// Ctrl+C を「実行中の1件を記録してから止める」にする。リスナが無いと node はその場で終了し、記録が残らない
+// Ctrl+C を「実行中の1件を記録してから止める」にする。リスナが無いと node はその場で終了し、記録が残らない。
+// reason には受けたシグナルを入れる。claude セッションは別のプロセスグループで動くので、端末のシグナルは
+// 届かず、この中止を通して同じシグナルを子孫ごと送る（shell.mjs の runStreamingAsync）
 const stopController = new AbortController()
-process.on('SIGINT', () => stopController.abort())
+process.on('SIGINT', () => stopController.abort('SIGINT'))
+// 端末の切断（SIGHUP）・SIGTERM・Ctrl+\（SIGQUIT）は、claude セッションへ送ってから、既定どおりこのプロセスも終わる。
+// once にするのは、送り直した同じシグナルでリスナが再び呼ばれず、既定の終了に至るようにするため
+for (const signal of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
+  process.once(signal, () => {
+    stopController.abort(signal)
+    process.kill(process.pid, signal)
+  })
+}
 
 /**
  * 例外を表示用の文字列にする。
@@ -255,7 +265,7 @@ async function auditThenImplement(issueNumber, record) {
   if (record.issueCheckSkipped) {
     showInfo(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
   } else {
-    const issueCheckStatus = await runIssueCheckSession(issueNumber)
+    const issueCheckStatus = await runIssueCheckSession(issueNumber, stopController.signal)
     record.issueCheckExitCode = issueCheckStatus.exitCode
     record.issueCheckSignal = issueCheckStatus.signal
     if (!hasSessionSucceeded(issueCheckStatus)) {
@@ -278,7 +288,7 @@ async function auditThenImplement(issueNumber, record) {
     '--remove-label',
     NEEDS_CLEAN_SESSION_LABEL
   ])
-  const autoDevStatus = await runAutoDevSession(issueNumber)
+  const autoDevStatus = await runAutoDevSession(issueNumber, stopController.signal)
   record.autoDevExitCode = autoDevStatus.exitCode
   record.autoDevSignal = autoDevStatus.signal
   return hasSessionSucceeded(autoDevStatus)
@@ -537,7 +547,11 @@ async function fixFailedCi({ issueNumber, runState, attemptNumber, record }) {
   showWarning(
     `CI が落ちました。/auto-fix-ci に直させます（${attemptNumber} 回目）: ${runState.url}`
   )
-  const fixStatus = await runAutoFixCiSession({ issueNumber, runId: runState.runId })
+  const fixStatus = await runAutoFixCiSession({
+    issueNumber,
+    runId: runState.runId,
+    abortSignal: stopController.signal
+  })
   record.ciFixExitCode = fixStatus.exitCode
   record.ciFixSignal = fixStatus.signal
   if (hasSessionSucceeded(fixStatus)) return true
