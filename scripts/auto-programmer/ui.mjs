@@ -1,5 +1,5 @@
-// 責務: auto-programmer 自身の画面出力を1か所に集める。追記する行には時刻・レベル記号・色を付け、
-//   待っている間の状況はステータス行として出す。
+// 責務: auto-programmer の画面出力を1か所に集める。追記する行には時刻・レベル記号・色を付け、
+//   待っている間の状況はステータス行として出し、claude セッションの出力はステータス行を避けて中継する。
 //
 // 設計意図（WHY）:
 // - 素の console.log は、いつ出た行か・正常なのか異常なのかを画面に残さない。無人で回すツールでは、
@@ -32,10 +32,18 @@ const LINE_STYLES = {
   status: { symbol: '⏳', textStyle: null, stream: STATUS_LINE_STREAM }
 }
 
-// TTY でその場更新中のステータス行が残っているか。自前の追記はどれも writeLines を通るので、
-// ここで先に消せば、追記と、追記の後に走る子プロセス（claude セッションなど）の出力が
-// ステータス行の末尾へ連結されずに済む
-let hasActiveStatusLine = false
+const LINE_FEED_BYTE = 0x0a
+
+// TTY でその場更新中のステータス行の内容（無ければ null）。自前の追記はどれも writeLines を、claude セッションの
+// 出力は relayChildProcessOutput を通るので、どちらも先に消せば、ステータス行の末尾へ連結されずに済む。
+// 端末へ直結する同期の子（preflight の npm ci・clone）は、自前の追記の後に走らせることで守っている。
+// 内容を持つのは、子の出力を中継した後に同じ行を引き直すため
+let activeStatusLineMessage = null
+
+// 中継した子の出力が改行で終わっていないストリームの名前。途中の行の上でステータス行を書くと、行頭へ戻って
+// 消すときにその行ごと消える。自前の行を書くときは改行を足して、子の行の末尾へ連結させない。
+// ストリームごとに持つのは、stdout と stderr を別々の先へ流したときに、片方の状態で他方を判断しないため
+const midLineRelayedStreamNames = new Set()
 
 /**
  * メッセージを1行以上の行にして書き出す。改行を含むメッセージも、行ごとに時刻とレベル記号が付く。
@@ -46,6 +54,7 @@ let hasActiveStatusLine = false
  */
 function writeLines(kind, message) {
   clearStatusLine()
+  closeRelayedOutputLines()
   const { symbol, textStyle, stream } = LINE_STYLES[kind]
   const lines = buildMessageLines({ clockTime: formatClockTime(new Date()), symbol, message })
   for (const line of lines) {
@@ -69,14 +78,36 @@ function isStdoutInteractiveTerminal() {
  * @returns {void}
  */
 function clearStatusLine() {
-  if (!hasActiveStatusLine) return
+  if (activeStatusLineMessage === null) return
   STATUS_LINE_STREAM.write(ERASE_CURRENT_LINE)
-  hasActiveStatusLine = false
+  activeStatusLineMessage = null
 }
 
 /**
- * 待っている間の状況を出す。TTY ではその場を書き換え、非TTY では時刻・レベル記号付きの1行として
- * 追記する（追記だけになる非TTY では、この行自体が生存確認を兼ねる）。
+ * 中継した子の出力が行の途中で終わっているストリームへ改行を足し、次の行を行頭から書けるようにする。
+ *
+ * @returns {void}
+ */
+function closeRelayedOutputLines() {
+  for (const streamName of midLineRelayedStreamNames) process[streamName].write('\n')
+  midLineRelayedStreamNames.clear()
+}
+
+/**
+ * ステータス行を書く端末で、中継した子の出力が行の途中になっているか。stderr は TTY のときだけ、
+ * ステータス行と同じ端末に出ているとみなす。
+ *
+ * @returns {boolean} true なら行の途中
+ */
+function isStatusLineTerminalMidLine() {
+  if (midLineRelayedStreamNames.has('stdout')) return true
+  return midLineRelayedStreamNames.has('stderr') && process.stderr.isTTY === true
+}
+
+/**
+ * 待っている間の状況を出す。TTY ではその場を書き換え（中継した子の出力が行の途中で終わっているときは
+ * 何も出さない）、非TTY では時刻・レベル記号付きの1行として追記する（追記だけになる非TTY では、
+ * この行自体が生存確認を兼ねる）。
  *
  * @param {string} message 出す内容（1行想定）
  * @returns {void}
@@ -86,17 +117,37 @@ export function showStatusLine(message) {
     writeLines('status', message)
     return
   }
+  // 子の出力が行の途中なら書かない。次の呼び出し（1秒ごとの経過表示など）で、行が閉じてから出る
+  if (isStatusLineTerminalMidLine()) return
   const line = buildStatusLineText({
     clockTime: formatClockTime(new Date()),
     symbol: LINE_STYLES.status.symbol,
     message
   })
   STATUS_LINE_STREAM.write(`${ERASE_CURRENT_LINE}${line}`)
-  hasActiveStatusLine = true
+  activeStatusLineMessage = message
 }
 
 /**
- * 間引いて追記するステータス行を作る。TTY は毎回その場更新し、非TTY は `minAppendIntervalMs`
+ * 子プロセスの出力を、内容に手を加えずに端末へ中継する。その場更新中のステータス行があれば、
+ * 消してから書き、子の出力が改行で終わっていれば同じ内容で引き直す（行の途中で終わったときは、
+ * 行が閉じるまで引き直さない）。
+ *
+ * @param {'stdout' | 'stderr'} streamName 子のどちらのストリームから来たか（親の同じ名前のストリームへ書く）
+ * @param {Buffer} chunk 子が書いた内容
+ * @returns {void}
+ */
+export function relayChildProcessOutput(streamName, chunk) {
+  const interruptedStatusLineMessage = activeStatusLineMessage
+  clearStatusLine()
+  process[streamName].write(chunk)
+  if (chunk.at(-1) === LINE_FEED_BYTE) midLineRelayedStreamNames.delete(streamName)
+  else midLineRelayedStreamNames.add(streamName)
+  if (interruptedStatusLineMessage !== null) showStatusLine(interruptedStatusLineMessage)
+}
+
+/**
+ * 間引いて追記するステータス行を作る。TTY は呼ばれるたびに showStatusLine へ渡し、非TTY は `minAppendIntervalMs`
  * 未満の間隔では追記しない（間引かないと、ポーリング間隔の短い場面でログが溢れる）。
  * 呼ぶたびに新しい間引き区間を始めたい場面（CI の run を待つループなど）では、呼び出し側で
  * そのたびに作り直す。
@@ -163,6 +214,7 @@ export function showError(message) {
 export function showIssueBanner({ issueNumber, title }) {
   // 先に消さずに '\n' を書くと、その場更新中のステータス行が改行の上に取り残される
   clearStatusLine()
+  closeRelayedOutputLines()
   LINE_STYLES.banner.stream.write('\n')
   writeLines('banner', buildIssueBannerText({ issueNumber, title }))
 }
