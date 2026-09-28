@@ -10,6 +10,7 @@ paths:
   - 'samples/README.md'
   - 'app/backend/README.md'
   - 'samples/app/backend/README.md'
+  - 'scripts/**/*.md'
   - '.claude/skills/decide-tech-stack/assets/tech-stack-adr-template.md'
 hook:
   applies-to: ['docs/design-hub.md']
