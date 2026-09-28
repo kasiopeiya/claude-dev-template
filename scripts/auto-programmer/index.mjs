@@ -247,16 +247,15 @@ async function startFirstStartableIssue() {
  *
  * @param {number} issueNumber 対象 Issue の番号
  * @param {Record<string, unknown>} record 書き足す先の記録
- * @returns {boolean} 走らせた claude セッションがすべて正常終了したら true
+ * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
  * @throws {Error} claude を起動できなかったとき・Issue のラベルを外せなかった／引き直せなかったとき
  */
-function auditThenImplement(issueNumber, record) {
+async function auditThenImplement(issueNumber, record) {
   record.issueCheckSkipped = readIssueStatus(issueNumber).labelNames.includes(ISSUE_CHECKED_LABEL)
   if (record.issueCheckSkipped) {
     showInfo(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
   } else {
-    showInfo(`/issue-check を起動します: #${issueNumber}`)
-    const issueCheckStatus = runIssueCheckSession(issueNumber)
+    const issueCheckStatus = await runIssueCheckSession(issueNumber)
     record.issueCheckExitCode = issueCheckStatus.exitCode
     record.issueCheckSignal = issueCheckStatus.signal
     if (!hasSessionSucceeded(issueCheckStatus)) {
@@ -279,8 +278,7 @@ function auditThenImplement(issueNumber, record) {
     '--remove-label',
     NEEDS_CLEAN_SESSION_LABEL
   ])
-  showInfo(`/auto-dev を起動します: #${issueNumber}`)
-  const autoDevStatus = runAutoDevSession(issueNumber)
+  const autoDevStatus = await runAutoDevSession(issueNumber)
   record.autoDevExitCode = autoDevStatus.exitCode
   record.autoDevSignal = autoDevStatus.signal
   return hasSessionSucceeded(autoDevStatus)
@@ -518,17 +516,33 @@ async function watchCiAndFix(issue, branchName, record) {
 
     fixAttemptCount += 1
     record.ciFixAttemptCount = fixAttemptCount
-    showWarning(
-      `CI が落ちました。/auto-fix-ci に直させます（${fixAttemptCount} 回目）: ${runState.url}`
-    )
-    const fixStatus = runAutoFixCiSession({ issueNumber: issue.number, runId: runState.runId })
-    record.ciFixExitCode = fixStatus.exitCode
-    record.ciFixSignal = fixStatus.signal
-    if (!hasSessionSucceeded(fixStatus)) {
-      record.ciOutcome = '/auto-fix-ci のセッションが失敗しました'
-      return false
-    }
+    const hasFixSessionSucceeded = await fixFailedCi({
+      issueNumber: issue.number,
+      runState,
+      attemptNumber: fixAttemptCount,
+      record
+    })
+    if (!hasFixSessionSucceeded) return false
   }
+}
+
+/**
+ * 落ちた CI を `/auto-fix-ci` に直させる。結果は record へ書き足す。
+ *
+ * @param {{ issueNumber: number, runState: { runId: number, url: string }, attemptNumber: number, record: Record<string, unknown> }} params 対象 Issue の番号・落ちた CI の run・今回が何回目か・書き足す先の記録
+ * @returns {Promise<boolean>} `/auto-fix-ci` のセッションが正常終了したら true
+ * @throws {Error} claude を起動できなかったとき
+ */
+async function fixFailedCi({ issueNumber, runState, attemptNumber, record }) {
+  showWarning(
+    `CI が落ちました。/auto-fix-ci に直させます（${attemptNumber} 回目）: ${runState.url}`
+  )
+  const fixStatus = await runAutoFixCiSession({ issueNumber, runId: runState.runId })
+  record.ciFixExitCode = fixStatus.exitCode
+  record.ciFixSignal = fixStatus.signal
+  if (hasSessionSucceeded(fixStatus)) return true
+  record.ciOutcome = '/auto-fix-ci のセッションが失敗しました'
+  return false
 }
 
 /**
@@ -544,7 +558,7 @@ async function runSessionAndRecord({ issue, branchName, existingPullRequestNumbe
   let isAllSessionsSucceeded = false
   try {
     // 途中で例外が出たら false のまま残すため、最後にまとめて代入する
-    const isImplemented = auditThenImplement(issue.number, record)
+    const isImplemented = await auditThenImplement(issue.number, record)
     if (record.skippedReason) showWarning(`実装へ進みません: ${record.skippedReason}`)
     const shouldWatchCi = isImplemented && !record.skippedReason
     isAllSessionsSucceeded = shouldWatchCi
