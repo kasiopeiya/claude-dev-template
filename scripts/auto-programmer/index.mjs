@@ -39,7 +39,15 @@ import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { recordRun } from './runLog.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
-import { showError, showInfo, showIssueBanner, showSuccess, showWarning } from './ui.mjs'
+import {
+  createThrottledStatusLine,
+  showError,
+  showInfo,
+  showIssueBanner,
+  showStatusLine,
+  showSuccess,
+  showWarning
+} from './ui.mjs'
 import { collapseToSingleLine, formatElapsedTime } from './uiFormat.mjs'
 import { prepareTopicBranch } from './workspace.mjs'
 
@@ -51,6 +59,10 @@ const POLL_INTERVAL_MS = config.pollIntervalMinutes * MILLISECONDS_PER_MINUTE
 
 const CI_POLL_INTERVAL_MS = config.ci.pollIntervalSeconds * MILLISECONDS_PER_SECOND
 const CI_RUN_WAIT_LIMIT_MS = config.ci.runWaitLimitMinutes * MILLISECONDS_PER_MINUTE
+
+// 非TTY で CI 待ちの経過を追記する間隔。CI_POLL_INTERVAL_MS のまま追記すると、
+// 上限（runWaitLimitMinutes）いっぱい待つ実行で数十行に膨らむ
+const CI_WAIT_PROGRESS_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
 
 // /auto-dev・/auto-fix-ci が離脱するときに貼るラベル。両 Skill の SKILL.md（離脱手順）の表記と一字一句合わせる
 const NEEDS_CLEAN_SESSION_LABEL = 'issue:needs-clean-session'
@@ -202,19 +214,15 @@ function startIssue(issue) {
 /**
  * 着手できる Issue を着手順に試し、最初に着手中へ動かせた1件を返す。
  *
- * 着手前に落ちた Issue は理由を出して飛ばす。
+ * 着手前に落ちた Issue は理由を出して飛ばす。着手できる Issue が無いときは何も出さない
+ * （呼び出し側がアイドル中のステータス行にまとめて示す）。
  *
  * @returns {Promise<{ issue: { itemId: string, number: number, title: string }, branchName: string, existingPullRequestNumbers: Set<number> } | null>} 着手した Issue（着手できる Issue が無い・全部飛ばした・止められたときは null）
  * @throws {Error} 候補を引けなかったとき
  */
 async function startFirstStartableIssue() {
   const issues = listStartableIssues()
-  if (issues.length === 0) {
-    showInfo(
-      `着手できる Issue はありません（${config.board.readyStatusName} かつ ${config.targetIssueLabel}、自分が担当者、ブロッカーが全部 closed）`
-    )
-    return null
-  }
+  if (issues.length === 0) return null
 
   for (const issue of issues) {
     // 同期処理の合間にイベントループを回し、Ctrl+C を受け取る
@@ -354,6 +362,10 @@ function tryListCiRuns(headSha) {
  */
 async function waitForCiRun(headSha) {
   const deadline = Date.now() + CI_RUN_WAIT_LIMIT_MS
+  const startedAt = Date.now()
+  const showCiWaitProgress = createThrottledStatusLine({
+    minAppendIntervalMs: CI_WAIT_PROGRESS_APPEND_INTERVAL_MS
+  })
   for (;;) {
     const isLastTry = Date.now() >= deadline || stopController.signal.aborted
     // 待つ時間が長いほど瞬断や GitHub の一時障害に当たりやすい。1回の失敗でやめると、落ちた PR が誰にも直されずに残る。
@@ -365,6 +377,9 @@ async function waitForCiRun(headSha) {
     }
     const runState = readCiRunState(runs, headSha)
     if (runState.state !== 'pending' || isLastTry) return runState
+    showCiWaitProgress(
+      `CI 待ち… 経過 ${formatElapsedTime(Date.now() - startedAt)} / 上限${config.ci.runWaitLimitMinutes}分`
+    )
     await sleepUnlessStopped(CI_POLL_INTERVAL_MS)
   }
 }
@@ -550,26 +565,33 @@ async function runSessionAndRecord({ issue, branchName, existingPullRequestNumbe
 }
 
 /**
- * 自動マージされた PR が閉じ損ねた Issue を閉じる。失敗しても投げない。
+ * 自動マージされた PR が閉じ損ねた Issue を閉じる。失敗しても投げない。close した Issue は
+ * 状態変化として1件ごとに表示するが、何も無かったときは何も出さない（アイドル中の連投を避ける）。
  *
  * @returns {void}
  */
 function tryCloseIssuesOfMergedPullRequests() {
   try {
-    closeIssuesOfMergedPullRequests({ repository: config.repository })
+    closeIssuesOfMergedPullRequests({
+      repository: config.repository,
+      onClosed: ({ issueNumber, pullRequestNumber }) =>
+        showInfo(`#${issueNumber} を close しました（PR #${pullRequestNumber}）`)
+    })
   } catch (error) {
     showWarning(`マージ済み PR の Issue を閉じられませんでした: ${formatError(error)}`)
   }
 }
 
 /**
- * ボードを見直すまで待つ。Ctrl+C が来たら待たずに戻る。
+ * ボードを見直すまで待つ。待つ間は待機中のステータス行を出す。Ctrl+C が来たら待たずに戻る。
  *
+ * @param {number} idlePollCount 連続して着手しなかった回数（今回を含む）
+ * @param {string} idleReason 待機中のステータス行に出す理由
  * @returns {Promise<void>}
  */
-async function waitForNextPoll() {
+async function waitForNextPoll(idlePollCount, idleReason) {
   if (stopController.signal.aborted) return
-  showInfo(`${POLL_INTERVAL_MS / MILLISECONDS_PER_SECOND} 秒後に見直します`)
+  showStatusLine(`待機中（${idleReason}）· ${idlePollCount}回目`)
   await sleepUnlessStopped(POLL_INTERVAL_MS)
 }
 
@@ -580,18 +602,25 @@ async function main() {
   runPreflight()
 
   let consecutiveSessionFailureCount = 0
+  let idlePollCount = 0
   while (!stopController.signal.aborted) {
     tryCloseIssuesOfMergedPullRequests()
     let startedIssue
+    // 候補を引けなかった回は「着手できる Issue が無い」とは別の理由なので、待機行に書き分ける。
+    // 書き分けないと、gh の失敗などで待ち続けている間も「正常に空振りしている」ように見える
+    let idleReason = '着手できる Issue なし'
     try {
       startedIssue = await startFirstStartableIssue()
     } catch (error) {
       showError(`候補を引けませんでした: ${formatError(error, { withStack: true })}`)
+      idleReason = '候補を引けず、次の見直しで再試行'
     }
     if (!startedIssue) {
-      await waitForNextPoll()
+      idlePollCount += 1
+      await waitForNextPoll(idlePollCount, idleReason)
       continue
     }
+    idlePollCount = 0
 
     const isAllSessionsSucceeded = await runSessionAndRecord(startedIssue)
     consecutiveSessionFailureCount = isAllSessionsSucceeded ? 0 : consecutiveSessionFailureCount + 1

@@ -6,8 +6,9 @@
 // 使い方:
 //   npm run close-issues   close した Issue と、その根拠の PR を1件1行で標準出力に返す。
 //                          close するものが無ければ、その旨を返す
-//   closeIssuesOfMergedPullRequests({ repository })
-//                          Auto Programmer（scripts/auto-programmer/index.mjs）が毎周、Issue を選ぶ前に呼ぶ
+//   closeIssuesOfMergedPullRequests({ repository, onClosed })
+//                          Auto Programmer（scripts/auto-programmer/index.mjs）が毎周、Issue を選ぶ前に呼ぶ。
+//                          契約は下の JSDoc を見よ
 
 import { execFileSync } from 'child_process'
 import { realpathSync } from 'fs'
@@ -23,26 +24,26 @@ const CLOSING_KEYWORD_PATTERN =
   /(?<![\w-])(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s+#(\d+)(?!\d)/gi
 
 /**
- * マージ済み PR が閉じ損ねた Issue を close し、1件ごとに標準出力へ書く。
+ * マージ済み PR が閉じ損ねた Issue を close する。
  *
- * @param {{ repository?: string }} [params] 対象リポジトリ（`owner/repo`）。省略するとカレントディレクトリのリポジトリ
- * @returns {void}
+ * @param {{ repository?: string, onClosed: (params: { issueNumber: number, pullRequestNumber: number }) => void }} params
+ *   repository: 対象リポジトリ（`owner/repo`）。省略するとカレントディレクトリのリポジトリ /
+ *   onClosed: Issue を1件 close するたびに呼ばれる。close を利用者へどう知らせるかは呼び出し側が決める
+ * @returns {{ scannedPullRequestCount: number, closedIssueCount: number }} 確認したマージ済み PR の件数と、close した Issue の件数
  */
-export function closeIssuesOfMergedPullRequests({ repository } = {}) {
+export function closeIssuesOfMergedPullRequests({ repository, onClosed }) {
   const openIssueNumbers = listOpenIssueNumbers(repository)
   const mergedPullRequests = listMergedPullRequests(repository)
 
   const closeTargets = findIssuesToClose({ mergedPullRequests, openIssueNumbers })
-  if (closeTargets.length === 0) {
-    console.log(
-      `close する Issue はありません（直近 ${mergedPullRequests.length} 件のマージ済み PR を確認）`
-    )
-    return
-  }
-
   for (const { issueNumber, pullRequestNumber } of closeTargets) {
     closeIssue({ issueNumber, pullRequestNumber, repository })
-    console.log(`#${issueNumber} を close しました（PR #${pullRequestNumber}）`)
+    onClosed({ issueNumber, pullRequestNumber })
+  }
+
+  return {
+    scannedPullRequestCount: mergedPullRequests.length,
+    closedIssueCount: closeTargets.length
   }
 }
 
@@ -177,16 +178,39 @@ function toRepositoryOption(repository) {
 /**
  * gh を実行して標準出力を返す。
  *
+ * execFileSync は既定だと、失敗時に子の標準エラー出力を呼び出し元の標準エラー出力へもそのまま流す。
+ * この関数の呼び出し元（Auto Programmer）は自前の画面出力（ui.mjs）にだけ時刻・レベル記号を
+ * 付けているため、素通しされた行が紛れ込むと出所の分からない生の行が画面に混じる。stdio を
+ * 明示し、素通しさせず失敗理由を戻り値の例外にだけ持たせる。
+ *
  * @param {string[]} args gh に渡す引数
  * @returns {string} 標準出力
  */
 function runGhCommand(args) {
-  return execFileSync('gh', args, { encoding: 'utf8' })
+  return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+}
+
+/**
+ * CLI として実行したときの本体。close した Issue を1件ごとに出力し、何も無ければその旨を出力する。
+ *
+ * @returns {void}
+ * @throws {Error} gh が失敗したとき（未ログイン・ネットワーク断など）
+ */
+function runCli() {
+  const { scannedPullRequestCount, closedIssueCount } = closeIssuesOfMergedPullRequests({
+    onClosed: ({ issueNumber, pullRequestNumber }) =>
+      console.log(`#${issueNumber} を close しました（PR #${pullRequestNumber}）`)
+  })
+  if (closedIssueCount === 0) {
+    console.log(
+      `close する Issue はありません（直近 ${scannedPullRequestCount} 件のマージ済み PR を確認）`
+    )
+  }
 }
 
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    closeIssuesOfMergedPullRequests()
+    runCli()
   } catch (error) {
     console.error(error.message)
     process.exit(1)
