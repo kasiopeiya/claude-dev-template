@@ -1,7 +1,7 @@
 ---
 name: issue-split
 description: 大きすぎる／複数の関心事を含む既存 GitHub Issue を sub-issue に割り、親を umbrella に作り替える。「issue-split」「issueを分割して」「issueをsub-issueに割って」と指示されたとき。
-argument-hint: '<Issue番号>'
+argument-hint: '<Issue番号> [--from-issue-check]'
 allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 ---
 
@@ -11,11 +11,11 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 **Plan を割るのは `/to-issues`、既に Issue になっているものを割るのが本スキルである。** `/to-issues` は「親 Issue はクローズも変更もしてはならない」と定めており、親本文の作り替えを担当できない。その担当が本スキルである。
 
-人間が起動し、AI が Phase 1 以降を実行する。
+人間か `/issue-check` が起動し、AI が Phase 1 以降を実行する。
 
 ## 前提
 
-- **いつ割るかは人間が決める。** 親 Issue の本文を書き換えるため、AI は「割った方がよい」と提案するまでに留める。
+- **いつ割るかは人間が決める。** 親 Issue の本文を書き換えるため、AI は「割った方がよい」と提案するまでに留める。例外は `--from-issue-check` の起動で、`/issue-check` のレンズが割ると決め切っている。
 - **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・sub-issue 紐付け）だけ。
 - **分割規則と子 Issue の本文テンプレートは書き写さない。** 縦スライスの規則は [`/to-issues`](../to-issues/SKILL.md)、本文テンプレート `<issue-template>` とラベル判定は [`/quick-issue`](../quick-issue/SKILL.md) が正典。2箇所に持つと、片方が古いまま残る。
 - **親はクローズしない。** すべての sub-issue が close されるまで親は open のまま置く（`/sweep`・`/issue-check` の「sub-issue が open な親は閉じない」ガードと揃える）。例外は [`/issue-regroup`](../issue-regroup/SKILL.md) だけである。親の open な子が全部ブロッカー待ちになったときに限り、子を他の親へ移してこの親を close する。
@@ -38,6 +38,8 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 ## Phase 2: 割るかどうかを決める
 
+**`--from-issue-check` なら、この Phase を飛ばして Phase 3 へ進む。** レンズが同じ表で「割る」と決め切っており、ここで判定し直すと、統合側が判定を決め直すことになる（[review-subagent-lens-policy](../../../docs/policy/review-subagent-lens-policy.md) が禁じている）。
+
 次の表を**上から順に評価し、先に当たった行で確定する**。**割れない・割らないと判定したら、ここで終了し Issue には一切触らない。**
 
 | 判定     | 条件（1つでも当たれば該当）                                                                                                                                                                                 | どうするか                                                       |
@@ -52,13 +54,15 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 ## Phase 3: 分割案を人間に確認する
 
+**`--from-issue-check` なら確認を飛ばし、分割案をそのまま Phase 4 で起票する。** 分割は GitHub Issue の操作だけで、誤っても子を閉じて親を戻せる。
+
 分割案を番号付きリストで提示し、承認を得るまで直す。粒度・依存関係・統合や分割の要否をユーザーに問う（提示の型は `/to-issues` の「ユーザーに確認する」が正典）。
 
 あわせて、親に残す内容（この変更が必要な理由・作るもの・トレース）と子へ移す内容を一覧で示す。**親から消えるものを人間が見ないまま本文を書き換えない。**
 
 ## Phase 4: 子 Issue を起票する
 
-承認された案を、依存順（ブロッカーが先）に起票する。
+分割案を、依存順（ブロッカーが先）に起票する。
 
 本文は `/quick-issue` の `<issue-template>` に従う。人間が上から3節（「この変更が必要な理由」「対応方針」「タスク一覧」）を読むだけで、何の話で結局何をするのかが分かる型だからである。
 
@@ -128,7 +132,7 @@ gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
 ## エラーハンドリング
 
 - **対象 Issue が close 済み**：割らずに終了する（close 済みの Issue は着手対象ではない）
-- **対象が既に他の Issue の sub-issue**：割ってよいか `AskUserQuestion` で確認する（入れ子が深くなるため）
+- **対象が既に他の Issue の sub-issue**：割ってよいか `AskUserQuestion` で確認する（入れ子が深くなるため）。`--from-issue-check` なら確認せずに割る
 - **`addSubIssue` が失敗する**：その子の番号を報告に残し、他の子の処理は続ける
 - **`gh issue edit` が失敗する**：親の作り替えを中断し、起票済みの子の番号を添えて報告する。紐付けにも失敗した子があれば、その子の本文末尾に親 Issue 番号を追記して親子を辿れるようにする
 - **親 Issue に別セッションの更新が入っている**：上書きせず中断し、その事実を報告する
@@ -137,6 +141,9 @@ gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
 
 ```
 /issue-split 123
+/issue-split 123 --from-issue-check
 ```
+
+`--from-issue-check` は `/issue-check` だけが付ける引数である。判定と確認をどちらも飛ばすので、人間が打つときは付けない。
 
 引数: $ARGUMENTS
