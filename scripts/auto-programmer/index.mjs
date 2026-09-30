@@ -17,6 +17,9 @@
 //   監査は `issue:checked` が無い Issue にだけ走らせ、貼られたことを「今回の判定が書き戻された」印にする。
 // - `issue:checked` が付いた Issue は監査し直さない。人間がローカルでまとめて監査してから Ready へ積む
 //   運用が多く、毎回の再監査は同じ判定を繰り返すだけになる。監査後に前提が崩れていれば `/auto-dev` が離脱する。
+// - open な sub-issue を持つ Issue は実装せず、子を着手待ちに載せて拾わせる（どの子を載せるかは subIssueHandover.mjs）。
+//   確かめるのは `/issue-check` の前と後で、前は割り済みの親に監査の費用を掛けないため、後は今回の監査が割った分を
+//   拾うため。親のカードは着手中のまま残す。子が進んでいる間、親は作業中である。
 // - PR を作った後は、CI の結果が出るまで次の Issue へ進まない。落ちていれば `/auto-fix-ci` を
 //   別プロセスで起こして直させ、上限まで直させても落ちていれば人間へ回す。待たずに次へ進むと、落ちた PR が
 //   誰にも直されずに残る。CI が落ちたこと自体はセッションの失敗に数えない（claude が壊れている兆候ではない）。
@@ -29,16 +32,29 @@
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
 import { closeIssuesOfMergedPullRequests } from '../close-issues.mjs'
-import { listStartableIssues, markAsInReview, markAsStarted } from './board.mjs'
+import {
+  listStartableIssues,
+  markAsInReview,
+  markAsStarted,
+  putOnReadyAssignedToMe
+} from './board.mjs'
 import { buildBranchName } from './branchName.mjs'
 import { runAutoDevSession, runAutoFixCiSession, runIssueCheckSession } from './claudeSession.mjs'
 import { config } from './config.mjs'
-import { findReasonToSkipImplementation, ISSUE_CHECKED_LABEL } from './issueCheckVerdict.mjs'
+import {
+  findReasonToSkipImplementation,
+  ISSUE_CHECKED_LABEL,
+  NEEDS_HUMAN_DECISION_LABEL
+} from './issueCheckVerdict.mjs'
 import { decideAfterCiRun, readCiRunState } from './ciRun.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { recordRun } from './runLog.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
+import {
+  findReasonToSkipForOpenSubIssues,
+  selectSubIssuesToPutOnReady
+} from './subIssueHandover.mjs'
 import {
   createThrottledStatusLine,
   showError,
@@ -66,6 +82,38 @@ const CI_WAIT_PROGRESS_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
 
 // /auto-dev・/auto-fix-ci が離脱するときに貼るラベル。両 Skill の SKILL.md（離脱手順）の表記と一字一句合わせる
 const NEEDS_CLEAN_SESSION_LABEL = 'issue:needs-clean-session'
+
+// GraphQL が1つの接続（sub-issue・ラベル・カード）から一度に返せる件数の上限。sub-issue は超えていたら読み落としとして止める
+const GRAPHQL_CONNECTION_FETCH_LIMIT = 100
+
+// 1つの Issue に付けられる担当者の上限（GitHub の仕様）。この件数を読めば全員がそろう
+const ISSUE_ASSIGNEE_LIMIT = 10
+
+// gh issue view の --json は sub-issue を返さないので、GraphQL で引く。自分のログイン名（viewer）も同じ呼び出しで引く
+const SUB_ISSUES_QUERY = `query($owner: String!, $name: String!, $number: Int!, $statusFieldName: String!) {
+  viewer { login }
+  repository(owner: $owner, name: $name) {
+    issue(number: $number) {
+      subIssues(first: ${GRAPHQL_CONNECTION_FETCH_LIMIT}) {
+        totalCount
+        nodes {
+          number
+          url
+          state
+          repository { nameWithOwner }
+          assignees(first: ${ISSUE_ASSIGNEE_LIMIT}) { nodes { login } }
+          labels(first: ${GRAPHQL_CONNECTION_FETCH_LIMIT}) { nodes { name } }
+          projectItems(first: ${GRAPHQL_CONNECTION_FETCH_LIMIT}) {
+            nodes {
+              project { number owner { ... on User { login } ... on Organization { login } } }
+              fieldValueByName(name: $statusFieldName) { ... on ProjectV2ItemFieldSingleSelectValue { name } }
+            }
+          }
+        }
+      }
+    }
+  }
+}`
 
 // セッションがこの回数続けて失敗したら止める。claude 側が壊れている（ログイン切れ・利用上限など）と、
 // 待たずに次のカードを着手中へ送り、Ready のカードを PR 無しのまま使い切るため
@@ -140,6 +188,103 @@ function readIssueStatus(issueNumber) {
 }
 
 /**
+ * GraphQL が返した sub-issue のノードを、子を選ぶ純粋関数が受け取る形にする。
+ *
+ * @param {{ number: number, url: string, state: string, repository: { nameWithOwner: string }, assignees: { nodes: { login: string }[] }, labels: { nodes: { name: string }[] }, projectItems: { nodes: { project?: { number: number, owner: { login?: string } }, fieldValueByName?: { name?: string } | null }[] } }} node sub-issue のノード
+ * @returns {{ number: number, url: string, state: string, repository: string, labelNames: string[], assigneeLogins: string[], boardStatusName: string | null }} 子（boardStatusName は config.mjs のボードに無ければ null）
+ */
+function toSubIssue({ number, url, state, repository, assignees, labels, projectItems }) {
+  const boardItem = projectItems.nodes.find(
+    ({ project }) =>
+      project?.number === config.board.number && project.owner.login === config.board.owner
+  )
+  return {
+    number,
+    url,
+    state,
+    repository: repository.nameWithOwner,
+    labelNames: labels.nodes.map((label) => label.name),
+    assigneeLogins: assignees.nodes.map((assignee) => assignee.login),
+    boardStatusName: boardItem?.fieldValueByName?.name ?? null
+  }
+}
+
+/**
+ * Issue の sub-issue と、gh にログインしている自分のログイン名を引く。
+ *
+ * @param {number} issueNumber 親 Issue の番号
+ * @returns {{ viewerLogin: string, subIssues: ReturnType<typeof toSubIssue>[] }} 自分のログイン名と sub-issue（state は 'OPEN' / 'CLOSED'）
+ * @throws {Error} gh が失敗したとき・sub-issue が一度に読める件数を超えたとき
+ */
+function listSubIssues(issueNumber) {
+  const [repositoryOwner, repositoryName] = config.repository.split('/')
+  const { data } = runJson('gh', [
+    'api',
+    'graphql',
+    '-f',
+    `query=${SUB_ISSUES_QUERY}`,
+    '-f',
+    `owner=${repositoryOwner}`,
+    '-f',
+    `name=${repositoryName}`,
+    '-F',
+    `number=${issueNumber}`,
+    '-f',
+    `statusFieldName=${config.board.statusFieldName}`
+  ])
+  const { totalCount, nodes } = data.repository.issue.subIssues
+  if (totalCount > nodes.length) {
+    throw new Error(
+      `#${issueNumber} の sub-issue ${totalCount} 件のうち ${nodes.length} 件しか読めていません。読み落とした子を載せ損ねるため止めます`
+    )
+  }
+  return { viewerLogin: data.viewer.login, subIssues: nodes.map(toSubIssue) }
+}
+
+/**
+ * open な sub-issue を持つ Issue なら、子のうち載せてよいものを着手待ちに載せ、担当者を自分にする。結果を record.subIssueHandover へ書く。
+ *
+ * @param {number} issueNumber 対象 Issue の番号
+ * @param {Record<string, unknown>} record 書き足す先の記録
+ * @returns {void} open な sub-issue が無ければ record に何も書かない
+ * @throws {Error} gh が失敗したとき・sub-issue が一度に読める件数を超えたとき・ボードの表記が config.mjs と食い違うとき
+ */
+function handOverToSubIssuesIfAny(issueNumber, record) {
+  const { viewerLogin, subIssues } = listSubIssues(issueNumber)
+  const reason = findReasonToSkipForOpenSubIssues(subIssues)
+  if (!reason) return
+
+  const subIssueHandover = { reason, putOnReadySubIssueNumbers: [] }
+  record.subIssueHandover = subIssueHandover
+  const subIssuesToPutOnReady = selectSubIssuesToPutOnReady(subIssues, {
+    repository: config.repository,
+    viewerLogin,
+    targetIssueLabel: config.targetIssueLabel,
+    needsHumanDecisionLabel: NEEDS_HUMAN_DECISION_LABEL,
+    notStartedStatusNames: [config.board.todoStatusName, config.board.readyStatusName]
+  })
+  for (const subIssue of subIssuesToPutOnReady) {
+    putOnReadyAssignedToMe(subIssue.url)
+    subIssueHandover.putOnReadySubIssueNumbers.push(subIssue.number)
+    showInfo(
+      `子 #${subIssue.number} を ${config.board.readyStatusName} に載せ、担当者を自分にしました`
+    )
+  }
+}
+
+/**
+ * 子へ引き継ごうとして、1件も着手待ちに載せられなかったか。
+ *
+ * 親は着手中に残るので、子も進んでいなければ、人間が見るまで誰も進めない。
+ *
+ * @param {{ subIssueHandover?: { putOnReadySubIssueNumbers: number[] } }} record 記録した内容
+ * @returns {boolean} 子へ引き継いだうえで、載せた子が0件なら true
+ */
+function isSubIssueHandoverEmpty(record) {
+  return record.subIssueHandover?.putOnReadySubIssueNumbers.length === 0
+}
+
+/**
  * claude プロセスが正常終了したか。
  *
  * @param {{ exitCode: number, signal: string | null }} status 終了状態
@@ -177,7 +322,7 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
  * 締めの記号は、例外の有無だけでなく「人間の手当てが要るか」で決める。実装が失敗しても例外は出ない
  * （セッションが 0 以外で終わるだけ）ので、例外だけで決めると失敗した実行に ✓ が出て、異常が埋もれる。
  *
- * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, skippedReason?: string | null, error?: string }} record 記録した内容
+ * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, skippedReason?: string | null, subIssueHandover?: { reason: string, putOnReadySubIssueNumbers: number[] }, error?: string }} record 記録した内容
  * @param {boolean} isAllSessionsSucceeded 走らせた claude セッションがすべて正常終了したか
  * @returns {void}
  */
@@ -187,7 +332,10 @@ function showRunSummary(record, isAllSessionsSucceeded) {
   )
   const headline = `#${record.issueNumber} を終えました（${elapsedTime}）`
   const needsHumanAttention =
-    Boolean(record.skippedReason) || !isAllSessionsSucceeded || record.isCiPassed === false
+    Boolean(record.skippedReason) ||
+    isSubIssueHandoverEmpty(record) ||
+    !isAllSessionsSucceeded ||
+    record.isCiPassed === false
   if (record.error) showError(headline)
   else if (needsHumanAttention) showWarning(headline)
   else showSuccess(headline)
@@ -251,16 +399,21 @@ async function startFirstStartableIssue() {
 }
 
 /**
- * `issue:checked` が無ければ `/issue-check` を通し、止める理由が無ければ `/auto-dev` を走らせる。結果は record へ書き足す。
+ * open な sub-issue を持つなら子を着手待ちに載せて終える。そうでなければ `issue:checked` が無いときだけ `/issue-check` を通し、
+ * 監査が割っていれば子を着手待ちに載せ、止める理由も子も無ければ `/auto-dev` を走らせる。結果は record へ書き足す。
  *
  * record を引数で受けるのは、途中で例外が出ても、そこまでの結果を呼び出し側が記録できるようにするため。
  *
  * @param {number} issueNumber 対象 Issue の番号
  * @param {Record<string, unknown>} record 書き足す先の記録
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
- * @throws {Error} claude を起動できなかったとき・Issue のラベルを外せなかった／引き直せなかったとき
+ * @throws {Error} claude を起動できなかったとき・Issue のラベルを外せなかった／引き直せなかったとき・sub-issue を引けなかった／子を着手待ちに載せられなかったとき
  */
-async function auditThenImplement(issueNumber, record) {
+async function handOverOrImplement(issueNumber, record) {
+  handOverToSubIssuesIfAny(issueNumber, record)
+  // 監査前の親のラベルは止める理由の判定に通さない。`/to-issues` のまとめ用の親は issue:checked を持たないことがある
+  if (record.subIssueHandover) return true
+
   record.issueCheckSkipped = readIssueStatus(issueNumber).labelNames.includes(ISSUE_CHECKED_LABEL)
   if (record.issueCheckSkipped) {
     showInfo(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
@@ -273,10 +426,12 @@ async function auditThenImplement(issueNumber, record) {
       record.skippedReason = '/issue-check のセッションが失敗しました'
       return false
     }
+    // 割るのに失敗して人間判断になった親も、できた子は引き継ぐ。人間判断は下の判定で記録に残す
+    handOverToSubIssuesIfAny(issueNumber, record)
   }
 
   record.skippedReason = findReasonToSkipImplementation(readIssueStatus(issueNumber))
-  if (record.skippedReason) return true
+  if (record.skippedReason || record.subIssueHandover) return true
 
   // 前の実行が残した離脱の印を外し、CI を待つ前に付いていれば今回の離脱と読めるようにする
   runOrThrow('gh', [
@@ -560,6 +715,20 @@ async function fixFailedCi({ issueNumber, runState, attemptNumber, record }) {
 }
 
 /**
+ * 子への引き継ぎの結果を出す。1件も載せられなければ、人間に見てほしいこととして出す。
+ *
+ * @param {{ subIssueHandover: { reason: string, putOnReadySubIssueNumbers: number[] } }} record 記録した内容
+ * @returns {void}
+ */
+function showSubIssueHandover(record) {
+  const { reason, putOnReadySubIssueNumbers } = record.subIssueHandover
+  const showHandover = isSubIssueHandoverEmpty(record) ? showWarning : showInfo
+  showHandover(
+    `実装せず子へ引き継ぎます: ${reason}。${config.board.readyStatusName} に載せた子は ${putOnReadySubIssueNumbers.length} 件です`
+  )
+}
+
+/**
  * 着手中へ動かした Issue 1件を監査し、止める理由が無ければ実装させ、CI が通るまで直させる。途中で落ちても結果を記録する。
  *
  * @param {{ issue: { itemId: string, number: number, title: string }, branchName: string, existingPullRequestNumbers: Set<number> }} startedIssue startFirstStartableIssue の結果
@@ -572,9 +741,10 @@ async function runSessionAndRecord({ issue, branchName, existingPullRequestNumbe
   let isAllSessionsSucceeded = false
   try {
     // 途中で例外が出たら false のまま残すため、最後にまとめて代入する
-    const isImplemented = await auditThenImplement(issue.number, record)
+    const isImplemented = await handOverOrImplement(issue.number, record)
+    if (record.subIssueHandover) showSubIssueHandover(record)
     if (record.skippedReason) showWarning(`実装へ進みません: ${record.skippedReason}`)
-    const shouldWatchCi = isImplemented && !record.skippedReason
+    const shouldWatchCi = isImplemented && !record.skippedReason && !record.subIssueHandover
     isAllSessionsSucceeded = shouldWatchCi
       ? await watchCiAndFix(issue, branchName, record)
       : isImplemented
