@@ -8,22 +8,22 @@
 
 `npm run auto-programmer` を1回打つと、次の順に進む。1件終えると 2 へ戻り、着手できる Issue が無ければ `pollIntervalMinutes` の時間だけ待って見直す。**人間が Ctrl+C で止めるまで終了しない。** 実装中に止めても、その1件の記録を残してから終わる。ただし claude のセッションが続けて失敗したら、カードを空振りで In progress へ送り続けないよう自分で止まる。
 
-| 順  | すること                                                                                                    | 担当                          |
-| --- | ----------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| 1   | `gh` の認証と `claude` の有無の確認・AI 専用 clone の作成                                                   | preflight                     |
-| 2   | 閉じ損ねた Issue を閉じ、Ready・`ai-fixable`・自分が担当者の open Issue から着手できる1件を選ぶ             | このツール                    |
-| 3   | 未コミットの変更を stash へ退避して clone を `origin/main` へ戻し、トピックブランチを作り、依存を揃える     | このツール                    |
-| 4   | 選んだ Issue のカードを「In progress」へ動かす                                                              | このツール                    |
-| 5   | Issue に `issue:checked` が無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する             | `.claude/skills/issue-check/` |
-| 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す                 | `/issue-check`                |
-| 7   | Issue のラベルと state を読み、実装へ進むか止めるかを決める                                                 | このツール                    |
-| 8   | Issue から前回の `issue:needs-clean-session` を外し、clone の中で `claude -p "/auto-dev <番号>"` を起動する | `.claude/skills/auto-dev/`    |
-| 9   | 実装・検証・コミット・push・PR 本文の差し替え                                                               | `/auto-dev`                   |
-| 10  | push した commit の CI（`ci.workflowFile`）が終わるまで待つ                                                 | このツール                    |
-| 11  | CI が落ちていれば、clone の中で `claude -p "/auto-fix-ci <番号> <run ID>"` を起動し、10 へ戻る              | `.claude/skills/auto-fix-ci/` |
-| 12  | 落ちた原因を直し、コミット・push する                                                                       | `/auto-fix-ci`                |
-| 13  | CI が通っていれば、カードを「In Review」へ動かす                                                            | このツール                    |
-| 14  | PR の URL・終了コード・CI の結果を記録ファイルへ1行追記する                                                 | このツール                    |
+| 順  | すること                                                                                                                                                          | 担当                                      |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| 1   | `gh` の認証と `claude` の有無の確認・AI 専用 clone の作成                                                                                                         | preflight                                 |
+| 2   | 閉じ損ねた Issue を閉じ、Ready・`ai-fixable`・自分が担当者の open Issue から着手できる1件を選ぶ                                                                   | このツール                                |
+| 3   | 未コミットの変更を stash へ退避して clone を `origin/main` へ戻し、トピックブランチを作り、依存を揃える                                                           | このツール                                |
+| 4   | 選んだ Issue のカードを「In progress」へ動かす                                                                                                                    | このツール                                |
+| 5   | Issue が open な sub-issue を持てば、子を Ready に載せて 14 へ飛ぶ。持たず `issue:checked` も無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する | このツール・`.claude/skills/issue-check/` |
+| 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す                                                                       | `/issue-check`                            |
+| 7   | 6 で open な sub-issue ができていれば、子を Ready に載せる。続けて Issue のラベルと state を読み、子を載せたか止める理由があれば 14 へ飛ぶ                        | このツール                                |
+| 8   | Issue から前回の `issue:needs-clean-session` を外し、clone の中で `claude -p "/auto-dev <番号>"` を起動する                                                       | `.claude/skills/auto-dev/`                |
+| 9   | 実装・検証・コミット・push・PR 本文の差し替え                                                                                                                     | `/auto-dev`                               |
+| 10  | push した commit の CI（`ci.workflowFile`）が終わるまで待つ                                                                                                       | このツール                                |
+| 11  | CI が落ちていれば、clone の中で `claude -p "/auto-fix-ci <番号> <run ID>"` を起動し、10 へ戻る                                                                    | `.claude/skills/auto-fix-ci/`             |
+| 12  | 落ちた原因を直し、コミット・push する                                                                                                                             | `/auto-fix-ci`                            |
+| 13  | CI が通っていれば、カードを「In Review」へ動かす                                                                                                                  | このツール                                |
+| 14  | PR の URL・終了コード・CI の結果を記録ファイルへ1行追記する                                                                                                       | このツール                                |
 
 2 で「自分」とは、`gh` にログインしているアカウントを指す。複数人が同時に動かしても、担当者が1人なら同じ Issue を拾う台は1台だけになる。担当者の無い Issue は誰にも拾われないので、カードを Ready へ動かすときに実行する人を担当者にする。1つのアカウントで2台を動かすと、今までどおり同じ Issue を取り合う。
 
@@ -31,9 +31,18 @@
 
 2 で先に Issue を閉じるのは、自動マージされた PR の `Closes #N` が Issue を閉じないためである（`scripts/close-issues.mjs`）。毎周閉じるので、回している間にマージされた PR の Issue も次の周で閉じ、それをブロッカーに持つ Issue を拾える。閉じられなくても、そのまま Issue を選びに進む。
 
+5 と 7 で「子を Ready に載せる」とは、open な子をボードに載せ、Status を Ready にし、担当者を自分にすることを指す。載せた子は次の周から 2 で拾われる。親は実装せず、カードは In progress のまま残す。子を持つ親を実装すると、子と作業が二重になるためである。
+
+載せるのは、次のどれにも当たらない子だけである。
+
+- **自分以外の担当者がいる**：他人の担当を取り合わない
+- **`ai-fixable` が無い・`issue:needs-human-decision` が付いた**：判断待ちの子を「着手してよい」Ready に置かない
+- **カードが Todo・Ready 以外の列にある**：着手した後（In progress・In Review・Done）の子を Ready へ戻すと、同じ Issue をもう一度拾う。ボードに無い子は載せる
+- **対象リポジトリ（`repository`）の外にある**：2 は対象リポジトリの Issue しか拾わないので、載せても拾われない
+
 5 で `issue:checked` が付いていれば、6 を飛ばして 7 へ進む。監査の後に前提が崩れていれば、9 で `/auto-dev` が離脱する。
 
-7 で止めるのは、`issue:checked` が貼られていない（判定が書き戻されていない）とき・`issue:needs-human-decision` が付いたとき・close されたときだけである。`/issue-check` が「方針差し替え」に倒した Issue は、差し替わった本文のまま 8 へ進む。
+7 で実装へ進まないのは、open な sub-issue ができたとき・`issue:checked` が貼られていない（判定が書き戻されていない）とき・`issue:needs-human-decision` が付いたとき・close されたときだけである。`/issue-check` が「方針差し替え」に倒した Issue は、差し替わった本文のまま 8 へ進む。
 
 11 で直させるのは `ci.maxFixAttempts` 回までで、使い切っても落ちていれば Issue にコメントと `issue:needs-clean-session` を残して次へ進む。キャンセルされた run・`ci.runWaitLimitMinutes` 分待っても終わらない run は、差分を直しても通らないので直させない。9 で `/auto-dev` が離脱したときは 10 へ進まない。
 
@@ -81,22 +90,23 @@ npm run auto-programmer
 
 接続先と表記はすべて `config.mjs` に集めてある。**他のファイルにこれらの値は書かれていない。**
 
-| キー                          | 意味                                                        | 調べ方                                                                                        |
-| ----------------------------- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `repository`                  | Issue と PR の相手（`owner/repo`）                          | `gh repo view --json nameWithOwner`                                                           |
-| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る               | `gh repo view --json defaultBranchRef`                                                        |
-| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                              | `gh project list --owner <owner>`                                                             |
-| `board.statusFieldName`       | 進捗を持つフィールドの表記                                  | `gh project field-list <番号> --owner <owner>`                                                |
-| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                          | 同上                                                                                          |
-| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                | 同上                                                                                          |
-| `board.inReviewStatusName`    | 「CI が通り、レビューしてよい」を表す選択肢の表記           | 同上                                                                                          |
-| `targetIssueLabel`            | 対象にする Issue のラベル                                   | `gh label list`                                                                               |
-| `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数   | 長いほうの実装に掛かる時間の上限として決める                                                  |
-| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数 | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
-| `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名     | `.github/workflows/` の下のファイル名                                                         |
-| `ci.pollIntervalSeconds`      | CI の run の状態を見直す秒数                                | 短すぎると `gh run list` の呼び出し頻度が上がる                                               |
-| `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                     | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
-| `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限        | 使い切っても落ちていれば人間へ回す                                                            |
+| キー                          | 意味                                                           | 調べ方                                                                                        |
+| ----------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `repository`                  | Issue と PR の相手（`owner/repo`）                             | `gh repo view --json nameWithOwner`                                                           |
+| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る                  | `gh repo view --json defaultBranchRef`                                                        |
+| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                                 | `gh project list --owner <owner>`                                                             |
+| `board.statusFieldName`       | 進捗を持つフィールドの表記                                     | `gh project field-list <番号> --owner <owner>`                                                |
+| `board.todoStatusName`        | 積まれただけで、まだ着手待ちにしていないことを表す選択肢の表記 | 同上                                                                                          |
+| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                             | 同上                                                                                          |
+| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                   | 同上                                                                                          |
+| `board.inReviewStatusName`    | 「CI が通り、レビューしてよい」を表す選択肢の表記              | 同上                                                                                          |
+| `targetIssueLabel`            | 対象にする Issue のラベル                                      | `gh label list`                                                                               |
+| `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数      | 長いほうの実装に掛かる時間の上限として決める                                                  |
+| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数    | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
+| `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名        | `.github/workflows/` の下のファイル名                                                         |
+| `ci.pollIntervalSeconds`      | CI の run の状態を見直す秒数                                   | 短すぎると `gh run list` の呼び出し頻度が上がる                                               |
+| `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                        | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
+| `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限           | 使い切っても落ちていれば人間へ回す                                                            |
 
 フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。
 
@@ -163,6 +173,8 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 | 「claude コマンドが見つかりません」                                                                | Claude Code が入っていない                                                                                                           | Claude Code を入れる                                                                                                                                              |
 | 「実装へ進みません: /issue-check が人間の判断を要すると判定しました」「… close しました」          | `/issue-check` が人間の判断を要すると判定したか、不要として close した。カードは In progress に残る                                  | Issue のコメントを読む。人間判断なら `/issue-decide` で決めてからカードを Ready へ戻す                                                                            |
 | 「実装へ進みません: /issue-check が判定を書き戻しませんでした」                                    | 監査は終わったが `issue:checked` が貼られていない（判定を読めなかった・`gh` が失敗したなど）                                         | Issue のコメントを読み、必要なら人間が `/issue-check #<番号>` を打ってからカードを Ready へ戻す                                                                   |
+| 「実装せず子へ引き継ぎます: open な sub-issue を … 件持ちます。Ready に載せた子は 0 件です」       | 親を実装せずに止めたが、載せられる子が無かった（open な子がどれも、載せない条件に当たった）。親のカードは In progress に残る         | 子の担当者・ラベル・カードの Status を見て、載せなかった理由が正しいかを確かめる                                                                                  |
+| 「実装せず子へ引き継ぎます: open な sub-issue を … 件持ちます」（上記以外）                        | umbrella（子への入口）になった親。子を Ready に載せて引き継いだ。親のカードは、子が全部 close されるまで In progress に残る          | 対処は不要                                                                                                                                                        |
 | 「実装へ進みません: /issue-check のセッションが失敗しました」                                      | 監査の結果が書き戻されたか分からないので、実装へ進まなかった                                                                         | 記録の `issueCheckExitCode`・`issueCheckSignal` を読んで原因を直し、カードを Ready へ戻す                                                                         |
 | Issue が「In progress」のまま残った                                                                | `/auto-dev`・`/auto-fix-ci` が離脱したか、`ci.maxFixAttempts` 回直させても CI が通らなかった（Issue にコメントとラベルが残っている） | コメントを読み、専用のセッションでその Issue に着手する                                                                                                           |
 | 同上で、Issue にコメントが無い                                                                     | セッションが打ち切られたか、起動後に落ちた                                                                                           | 記録の `autoDevSignal`・`ciFixSignal`・`error`・`errorStack` を読んで原因を直す                                                                                   |
