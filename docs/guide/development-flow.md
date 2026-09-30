@@ -86,7 +86,7 @@ Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積�
 
 1. **カードを Ready へ動かし、担当者を付ける（人間）**：対象は `ai-fixable` が付いた open な Issue。拾うのは担当者のマシンの auto-programmer だけなので、担当者の無い Issue は誰にも拾われない。本文の「ブロッカー」に並ぶ Issue が全部 closed になるまでは拾われない。open な sub-issue を持つ親は、親のカードだけ動かせばよい。スクリプトは親を実装せず、子を Ready に載せて自分を担当者にする
 2. **起動する（人間）**：`npm run auto-programmer` を打つ。1件終えると次の1件へ進み、Ctrl+C で止めるまで回り続ける。AI のセッションからは起動できない
-3. **実装して push する（AI）**：スクリプトが AI 専用 clone にブランチを切り、`/auto-dev <Issue番号>` を起動する。`/auto-dev` は Issue の「実装フロー（使用するSkill）」に並ぶ Skill で実装し、検証・コミット・push と、`/pr-body` による PR 本文の差し替えまで確認なしで進める。リポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は、PR を作らずに `/auto-dev` が閉じる
+3. **実装して push する（AI）**：スクリプトが AI 専用 clone にブランチを切る。`issue:checked` の無い Issue は、先に `/issue-check` で監査する。見込み 400 行以上で割れる Issue は、ここで `/issue-split` が sub-issue に割る。それ以外は `/auto-dev <Issue番号>` を起動する。`/auto-dev` は Issue の「実装フロー（使用するSkill）」に並ぶ Skill で実装し、検証・コミット・push と、`/pr-body` による PR 本文の差し替えまで確認なしで進める。リポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は、PR を作らずに `/auto-dev` が閉じる
 4. **CI が通るまで直す（AI）**：スクリプトが push 後の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。CI が通ればカードを In Review へ動かす。CI の結果が出てから次の1件へ進む
 5. **PR 以降は 10〜11 と同じ**：In Review のカードの PR をレビューする。自動マージされた PR の Issue は、スクリプトが次の Issue を選ぶ前に閉じる。スクリプトを止めているときは `npm run close-issues` を打って閉じる
 
