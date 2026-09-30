@@ -12,7 +12,7 @@
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
 
 export const ISSUE_CHECKED_LABEL = 'issue:checked'
-const NEEDS_HUMAN_DECISION_LABEL = 'issue:needs-human-decision'
+export const NEEDS_HUMAN_DECISION_LABEL = 'issue:needs-human-decision'
 
 /**
  * 監査後の Issue を実装へ進めてはいけない理由を返す。

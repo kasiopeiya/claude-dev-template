@@ -29,6 +29,8 @@ export const config = {
     number: 2,
     // ボード上の表記。`gh project field-list <番号> --owner <owner>` の表示と一字一句合わせる
     statusFieldName: 'Status',
+    // 積まれただけで、まだ着手待ちにしていないことを表す選択肢
+    todoStatusName: 'Todo',
     readyStatusName: 'Ready',
     inProgressStatusName: 'In progress',
     // CI が通り、人間がレビューしてよくなった Issue のカードを動かす先

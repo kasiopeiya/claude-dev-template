@@ -1,4 +1,5 @@
 // 責務: GitHub Projects のボードの着手待ちから、いま着手できる Issue を着手順に選び出し、カードの Status を書き換える。
+//   拾わせたい Issue を着手待ちに置くのもここが担う。
 //
 // 設計意図（WHY）:
 // - フィールド ID・選択肢 ID を設定に持たせず、毎回表記から引き直す。ID は人間が見ても正しさを
@@ -171,6 +172,30 @@ function moveCardToStatus(itemId, statusName) {
     '--single-select-option-id',
     optionId
   ])
+}
+
+/**
+ * Issue をこのツールが拾える形で着手待ちに置く。カードをボードに載せて Status を着手待ちへ動かし、担当者に自分を足す。
+ *
+ * 担当者を足さないと、着手待ちにあっても候補の検索（`assignee:@me`）に掛からず拾われない。
+ * 既にカードがあれば、そのカードを動かす。
+ *
+ * @param {string} issueUrl Issue の URL
+ * @returns {void}
+ * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
+ */
+export function putOnReadyAssignedToMe(issueUrl) {
+  // item-add は、既に載っている Issue にはカードを作り足さず、既存のカードを返す
+  const { id: itemId } = runJson('gh', [
+    'project',
+    'item-add',
+    ...ghProjectJsonArgs,
+    '--url',
+    issueUrl
+  ])
+  if (!itemId) throw new Error('gh project item-add の出力にカードの ID がありません')
+  moveCardToStatus(itemId, board.readyStatusName)
+  runOrThrow('gh', ['issue', 'edit', issueUrl, '--add-assignee', '@me'])
 }
 
 /**
