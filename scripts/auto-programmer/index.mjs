@@ -4,9 +4,11 @@
 // 設計意図（WHY）:
 // - 拾う・順序を決める・記録するはすべてここで決定論的に行う。AI に任せると、同じ盤面から毎回
 //   違う Issue を拾い、何が起きたかを追えなくなる。AI に渡すのは Issue 1件の監査・実装・CI の修正だけ。
-// - 人間が止めるまで終了しない。候補が尽きたら待って見に行く。自分から終了すると、人間が
-//   Issue の数だけ打ち直すことになる（Issue #481）。例外は claude のセッションが続けて失敗したときで、
-//   このときは続けるほどカードを空振りで着手中へ送るので止める。
+// - 着手できる Issue が無くても、すぐには終了せず、待って見に行く。自分から終了すると、人間が
+//   Issue の数だけ打ち直すことになる（Issue #481）。ただし着手できない周が続いて maxConsecutiveIdleWaits 回
+//   待っても、次の周でまだ着手できなければ止まる。放置したまま見に行き続けると、gh の呼び出しが積み上がって GitHub API の
+//   レート制限に触れ、ほかの gh 操作まで失敗するからである（Issue #834）。例外がもう1つあり、
+//   claude のセッションが続けて失敗したときも止める。続けるほどカードを空振りで着手中へ送るためである。
 // - 着手前に落ちた Issue は飛ばして次の候補へ進む。カードは着手待ちに残るので、原因を直せば
 //   次の巡回で拾われる。飛ばさずに止まると、先頭の1件が詰まっただけで後ろの全件が止まる。
 // - 落ちうるローカルの準備（clone の巻き戻し・依存）をすべて済ませてから、カードを「着手中」へ動かす。
@@ -41,6 +43,7 @@ import {
 import { buildBranchName } from './branchName.mjs'
 import { runAutoDevSession, runAutoFixCiSession, runIssueCheckSession } from './claudeSession.mjs'
 import { config } from './config.mjs'
+import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait.mjs'
 import {
   findReasonToSkipImplementation,
   ISSUE_CHECKED_LABEL,
@@ -781,19 +784,34 @@ function tryCloseIssuesOfMergedPullRequests() {
 }
 
 /**
- * ボードを見直すまで待つ。待つ間は待機中のステータス行を出す。Ctrl+C が来たら待たずに戻る。
+ * 着手できない周が上限を超えていなければ、ボードを見直すまで待つ。待つ間は待機中のステータス行を出す。
+ * 上限を超えていたら、待たずに止める理由を警告に出して true を返す。戻り値を捨てて周回を続けると、
+ * 眠らずに gh を呼び続ける。Ctrl+C が来たら待たずに戻る。
  *
  * @param {number} idlePollCount 連続して着手しなかった回数（今回を含む）
  * @param {string} idleReason 待機中のステータス行に出す理由
- * @returns {Promise<void>}
+ * @returns {Promise<boolean>} 上限を超えたので止めるなら true
  */
-async function waitForNextPoll(idlePollCount, idleReason) {
-  if (stopController.signal.aborted) return
-  showStatusLine(`待機中（${idleReason}）· ${idlePollCount}回目`)
+async function waitUnlessIdleWaitLimitReached(idlePollCount, idleReason) {
+  if (stopController.signal.aborted) return false
+  const maxConsecutiveIdleWaits = config.maxConsecutiveIdleWaits
+  if (decideAfterIdlePoll({ idlePollCount, maxConsecutiveIdleWaits }) === 'stop') {
+    // pollIntervalMinutes は利用先が小数で書き換えるので、掛け算の誤差（3.3000000000000003 など）を丸める
+    const idleMinutes = Number((maxConsecutiveIdleWaits * config.pollIntervalMinutes).toFixed(1))
+    showWarning(
+      `着手できない状態が ${maxConsecutiveIdleWaits} 回（約 ${idleMinutes} 分）続いたので止めます。` +
+        '直前の警告・エラーを読み、カードを Ready へ動かすか原因を直してから、もう一度 npm run auto-programmer を打ってください'
+    )
+    return true
+  }
+  showStatusLine(`待機中（${idleReason}）· ${idlePollCount}/${maxConsecutiveIdleWaits}回目`)
   await sleepUnlessStopped(POLL_INTERVAL_MS)
+  return false
 }
 
 async function main() {
+  // 上限が欠けたまま動かさない。config.mjs はテンプレート同期の対象外で、同期した利用先では欠けうる
+  validateMaxConsecutiveIdleWaits(config.maxConsecutiveIdleWaits)
   // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
   // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
   startSleepGuard()
@@ -801,7 +819,8 @@ async function main() {
 
   let consecutiveSessionFailureCount = 0
   let idlePollCount = 0
-  while (!stopController.signal.aborted) {
+  let isIdleWaitLimitReached = false
+  while (!stopController.signal.aborted && !isIdleWaitLimitReached) {
     tryCloseIssuesOfMergedPullRequests()
     let startedIssue
     // 候補を引けなかった回は「着手できる Issue が無い」とは別の理由なので、待機行に書き分ける。
@@ -815,7 +834,7 @@ async function main() {
     }
     if (!startedIssue) {
       idlePollCount += 1
-      await waitForNextPoll(idlePollCount, idleReason)
+      isIdleWaitLimitReached = await waitUnlessIdleWaitLimitReached(idlePollCount, idleReason)
       continue
     }
     idlePollCount = 0
