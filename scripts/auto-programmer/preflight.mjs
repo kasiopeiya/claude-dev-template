@@ -12,7 +12,8 @@ import { basename, dirname, join } from 'node:path'
 
 import { config } from './config.mjs'
 import { runCapture, runOrThrow, runStreaming } from './shell.mjs'
-import { showInfo } from './ui.mjs'
+import { relayChildProcessOutput, showInfo, showSuccess } from './ui.mjs'
+import { formatElapsedTime } from './uiFormat.mjs'
 
 // npm のロックファイル名。これを持つディレクトリごとに依存を入れる
 const LOCK_FILE_NAME = 'package-lock.json'
@@ -147,10 +148,21 @@ export function ensureDependencies() {
     const directory = join(config.workspaceDir, relativeDirectory)
     if (!needsDependencyInstall(directory)) continue
 
+    // 取り込むと終わるまで何も出ず止まって見えるので、始まりの行は先に出す
     showInfo(`AI 専用 clone に依存をインストールします: ${relativeDirectory}`)
-    const { exitCode } = runStreaming('npm', ['ci'], { cwd: directory })
-    if (exitCode !== 0) throw new Error(`npm ci に失敗しました: ${relativeDirectory}`)
+    const startedAt = Date.now()
+    // 出力は取り込み、失敗したときだけ出す。成功時の funding・audit の行は、画面の半分以上を埋めて
+    // 要る情報を探しにくくする（Issue #848）
+    const { exitCode, stdout, stderr } = runCapture('npm', ['ci'], { cwd: directory })
+    if (exitCode !== 0) {
+      relayChildProcessOutput('stdout', Buffer.from(stdout))
+      relayChildProcessOutput('stderr', Buffer.from(stderr))
+      throw new Error(`npm ci に失敗しました: ${relativeDirectory}`)
+    }
     writeFileSync(join(directory, 'node_modules', INSTALL_STAMP_FILE_NAME), '')
+    showSuccess(
+      `依存をインストール  ${relativeDirectory}  ${formatElapsedTime(Date.now() - startedAt)}`
+    )
   }
 }
 

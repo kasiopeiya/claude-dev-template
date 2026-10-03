@@ -8,7 +8,7 @@
 //   前者に重ねたものである。
 // - 基本は同期の spawnSync で待つ。例外は claude セッション用の runStreamingAsync だけである。
 //   spawnSync の間は Node のタイマーが1つも発火せず、数十分に及ぶセッション（上限は config.sessionTimeoutMinutes）の
-//   間、画面を更新する手段が無い（Issue #782）。短時間で終わり自前で進捗を流す npm ci・clone は同期のまま残し、非同期化の影響範囲を絞る。
+//   間、画面を更新する手段が無い（Issue #782）。短時間で終わる npm ci（出力は取り込む）・clone（自前で進捗を流す）は同期のまま残し、非同期化の影響範囲を絞る。
 // - runStreamingAsync は子の出力を端末へ直結せず、パイプで受けて中継する。直結すると、その場更新中の
 //   ステータス行の末尾へ子の出力が連結される。中継は内容を解析しない素通しにして、claude の出力形式に依存しない。
 // - runStreamingAsync の打ち切りはプロセスツリーごと止める。spawn の timeout は直下の子しか殺さず、孫（Windows の

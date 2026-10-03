@@ -8,12 +8,17 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
+  CHILD_OUTPUT_GUTTER,
+  alignLabeledValues,
   buildIssueBannerText,
   buildMessageLines,
+  buildSessionProgressText,
   buildStatusLineText,
   collapseToSingleLine,
   formatClockTime,
-  formatElapsedTime
+  formatElapsedTime,
+  pickSpinnerFrame,
+  prefixChunkLines
 } from '../uiFormat.mjs'
 
 describe('時刻の整形', () => {
@@ -92,6 +97,128 @@ describe('メッセージ行の組み立て', () => {
 
     assert.deepEqual(lines, ['01:02:03 ℹ 偽の行[2K本物'])
   })
+
+  test('本文の色付けは制御文字を落とした後に掛け、色の制御文字を残す', () => {
+    const sut = buildMessageLines
+
+    const lines = sut({
+      clockTime: '01:02:03',
+      symbol: '⚠',
+      message: '警告\r',
+      styleLineText: (text) => `\u001b[33m${text}\u001b[39m`
+    })
+
+    assert.deepEqual(lines, ['01:02:03 ⚠ \u001b[33m警告\u001b[39m'])
+  })
+})
+
+describe('セッション中のステータス行の本文', () => {
+  const limitMs = 60 * 60_000
+
+  test('経過を上限と同じ桁数に揃え、秒を2桁にする', () => {
+    const sut = buildSessionProgressText
+
+    const text = sut({ elapsedMs: 151_000, limitMs })
+
+    assert.equal(text, '実行中  [░░░░░░░░░░]   2:31 / 60:00')
+  })
+
+  test('進み具合に応じて10マスのうちを塗る', () => {
+    const sut = buildSessionProgressText
+
+    const text = sut({ elapsedMs: 27 * 60_000, limitMs })
+
+    assert.equal(text, '実行中  [████░░░░░░]  27:00 / 60:00')
+  })
+
+  test('上限を超えたら、バーは全部塗り、経過は時間に繰り上げない', () => {
+    const sut = buildSessionProgressText
+
+    const text = sut({ elapsedMs: 61 * 60_000 + 5_000, limitMs })
+
+    assert.equal(text, '実行中  [██████████]  61:05 / 60:00')
+  })
+
+  test('負の経過は0秒として扱い、バーを塗らない', () => {
+    const sut = buildSessionProgressText
+
+    const text = sut({ elapsedMs: -1000, limitMs })
+
+    assert.equal(text, '実行中  [░░░░░░░░░░]   0:00 / 60:00')
+  })
+})
+
+describe('スピナーの絵柄', () => {
+  test('1秒ごとに次の絵柄へ進み、4つで一周する', () => {
+    const sut = pickSpinnerFrame
+
+    const frames = [1000, 2000, 3000, 4000, 5000].map(sut)
+
+    assert.deepEqual(frames, ['/', '-', '\\', '|', '/'])
+  })
+
+  test('タイマーのずれで tick が前後しても同じ絵柄を選ぶ', () => {
+    const sut = pickSpinnerFrame
+
+    const frames = [1999, 2001].map(sut)
+
+    assert.deepEqual(frames, ['-', '-'])
+  })
+
+  test('どの絵柄も ASCII である（WGL4 に無い記号は Windows で崩れる）', () => {
+    const sut = pickSpinnerFrame
+
+    const frames = [0, 1000, 2000, 3000].map(sut)
+
+    assert.ok(frames.every((frame) => /^[\x20-\x7e]$/.test(frame)))
+  })
+})
+
+describe('子の出力への罫線の差し込み', () => {
+  const prefix = '│ '
+
+  test('行頭から始まるチャンクは、先頭と各改行の直後に差し込む', () => {
+    const sut = prefixChunkLines
+
+    const result = sut({ chunk: Buffer.from('a\nb\n'), prefix, isAtLineStart: true })
+
+    assert.equal(result.toString(), '│ a\n│ b\n')
+  })
+
+  test('行の途中から始まるチャンクは、先頭に差し込まない', () => {
+    const sut = prefixChunkLines
+
+    const result = sut({ chunk: Buffer.from('続き\n次'), prefix, isAtLineStart: false })
+
+    assert.equal(result.toString(), '続き\n│ 次')
+  })
+
+  test('改行の後ろに1バイトだけ残るチャンクも、その前に差し込む', () => {
+    const sut = prefixChunkLines
+
+    const result = sut({ chunk: Buffer.from('a\nb'), prefix, isAtLineStart: true })
+
+    assert.equal(result.toString(), '│ a\n│ b')
+  })
+
+  test('チャンクの境目で割れた多バイト文字を壊さない', () => {
+    const sut = prefixChunkLines
+    const bytes = Buffer.from('あ\nい')
+    const headChunk = { chunk: bytes.subarray(0, 2), prefix, isAtLineStart: true }
+    const tailChunk = { chunk: bytes.subarray(2), prefix, isAtLineStart: false }
+
+    const result = Buffer.concat([sut(headChunk), sut(tailChunk)]).toString()
+
+    assert.equal(result, '│ あ\n│ い')
+  })
+
+  test('罫線は時刻と空白の幅だけ空けた位置に置く', () => {
+    const sut = CHILD_OUTPUT_GUTTER
+
+    const gutterColumn = sut.indexOf('│')
+
+    assert.equal(gutterColumn, `${formatClockTime(new Date(0))} `.length)
+  })
 })
 
 describe('ステータス行の組み立て', () => {
@@ -125,12 +252,52 @@ describe('ステータス行の組み立て', () => {
 })
 
 describe('区切りバナー', () => {
-  test('Issue 番号とタイトルを罫線で挟む', () => {
+  test('二重罫線の行の下に、字下げしたタイトルとブランチ名を置く', () => {
     const sut = buildIssueBannerText
 
-    const banner = sut({ issueNumber: 123, title: '表示層を入れる' })
+    const banner = sut({ issueNumber: 123, title: '表示層を入れる', branchName: 'feat/issue-123' })
 
-    assert.equal(banner, '── #123 表示層を入れる ──')
+    const [ruleLine, titleLine, branchLine] = banner.split('\n')
+    assert.match(ruleLine, /^══ #123 ═+$/)
+    assert.equal(titleLine, '   表示層を入れる')
+    assert.equal(branchLine, '   ブランチ: feat/issue-123')
+  })
+})
+
+describe('項目名の揃え', () => {
+  test('全角の項目名は1文字を2桁に数えて、値が同じ桁から始まるようにする', () => {
+    const sut = alignLabeledValues
+
+    const lines = sut([
+      { label: 'CI', value: 'success' },
+      { label: '記録', value: 'runs.jsonl' }
+    ])
+
+    assert.deepEqual(lines, ['CI    success', '記録  runs.jsonl'])
+  })
+
+  test('全角の範囲の端ちょうどの文字も2桁に数える', () => {
+    const sut = alignLabeledValues
+
+    // 一（範囲の先頭 U+4E00）・｠（範囲の末尾 U+FF60）
+    const lines = sut([
+      { label: '\u4e00\uff60', value: 'x' },
+      { label: 'abcd', value: 'y' }
+    ])
+
+    assert.deepEqual(lines, ['\u4e00\uff60  x', 'abcd  y'])
+  })
+
+  test('全角の範囲のすぐ外の文字は1桁に数える', () => {
+    const sut = alignLabeledValues
+
+    // ䷿（先頭の1つ前 U+4DFF）・｡（末尾の1つ後ろ U+FF61）
+    const lines = sut([
+      { label: '\u4dff\uff61', value: 'x' },
+      { label: 'abcd', value: 'y' }
+    ])
+
+    assert.deepEqual(lines, ['\u4dff\uff61    x', 'abcd  y'])
   })
 })
 
