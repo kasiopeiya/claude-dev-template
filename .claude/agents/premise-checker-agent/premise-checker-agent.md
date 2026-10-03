@@ -1,6 +1,6 @@
 ---
 name: premise-checker-agent
-description: 計画・設計などの文書のパスだけを受け取り、文書に名前が出た外部の製品・サービス・プラットフォーム・ツールそれぞれに決まった調査項目をすべて当て、制約を一次資料の URL と原文の引用付きで返す専門エージェント。重大度と合否は付けない。/premise-check から起動される。
+description: 計画・設計などの文書のパスだけを受け取り、文書に名前が出た外部の製品・サービス・プラットフォーム・ツールそれぞれに決まった調査項目をすべて当て、制約を一次資料の URL と原文の引用付きで返す専門エージェント。重大度と合否は付けない。/premise-check と /issue-check から起動される。
 tools: Read, Grep, Glob, WebSearch, WebFetch
 model: opus
 effort: xhigh
