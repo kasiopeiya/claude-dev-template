@@ -10,6 +10,9 @@
 //   「いつ走らせるか」だけ。判定を hook 側に写すと二重管理になる。
 // - 促さず自分で実行する。走らせたかを AI の自己申告に委ねると、決定論的な関門にならない。
 // - 1回だけ: stop_hook_active（＝この停止自体が本フックの継続）なら素通りし、無限ループを防ぐ。
+// - 検査する作業ツリーは、hook の置き場所ではなく stdin の cwd で決める。置き場所
+//   （CLAUDE_PROJECT_DIR）はセッションを起動した元のフォルダのままで、EnterWorktree で
+//   worktree に入っても変わらない。置き場所で決めると、worktree の変更が検査されず素通りする。
 // - 判定できない・実行できない場合はブロックしない（fail-open）。
 
 import { readFileSync } from 'node:fs'
@@ -20,8 +23,8 @@ import { dirname, resolve } from 'node:path'
 import { selectTurnEndGates } from './turnEndGateMatcher.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
-// .claude/hooks/ からプロジェクトルートへ
-const projectRoot = resolve(scriptDir, '../..')
+// .claude/hooks/ からプロジェクトルートへ。stdin の cwd から作業ツリーを決められないときの既定
+const hookProjectRoot = resolve(scriptDir, '../..')
 
 // lint は全違反を吐きうる。差し戻しで文脈を溢れさせないよう、末尾だけを渡す。
 const MAX_OUTPUT_CHARS = 3000
@@ -29,13 +32,54 @@ const MAX_OUTPUT_CHARS = 3000
 const GATE_TIMEOUT_MS = 180_000
 
 /**
+ * `git rev-parse` の出力を返す。git が無い・git の外などで失敗したら例外を投げる。
+ *
+ * @param {string} directory 実行するディレクトリ
+ * @param {string[]} options `git rev-parse` に渡すオプション
+ * @returns {string} 前後の空白を除いた出力
+ */
+function readGitRevParse(directory, options) {
+  return execFileSync('git', ['-C', directory, 'rev-parse', ...options], {
+    encoding: 'utf8',
+    // 失敗は呼び出し元が既定のルートへ戻る通常の経路なので、git の標準エラーを出さない
+    stdio: ['ignore', 'pipe', 'ignore']
+  }).trim()
+}
+
+/**
+ * ゲートで検査する作業ツリーのルートを返す。
+ * セッションの cwd が、この hook と同じリポジトリの作業ツリー（別の worktree を含む）にあれば
+ * そのルート。cwd が無い・git の外・別のリポジトリなら、hook の置き場所から決めたルート。
+ *
+ * @param {unknown} sessionWorkingDirectory Stop hook の入力の cwd
+ * @returns {string} 検査する作業ツリーのルート
+ */
+function resolveGateRoot(sessionWorkingDirectory) {
+  if (typeof sessionWorkingDirectory !== 'string' || sessionWorkingDirectory === '') {
+    return hookProjectRoot
+  }
+  try {
+    const commonDirOptions = ['--path-format=absolute', '--git-common-dir']
+    const isSameRepository =
+      readGitRevParse(sessionWorkingDirectory, commonDirOptions) ===
+      readGitRevParse(hookProjectRoot, commonDirOptions)
+    return isSameRepository
+      ? readGitRevParse(sessionWorkingDirectory, ['--show-toplevel'])
+      : hookProjectRoot
+  } catch {
+    return hookProjectRoot
+  }
+}
+
+/**
  * 作業ツリーの未コミット変更パス一覧を返す（追跡外・ステージ済み・未ステージを含む）。
  * リネームは新パス側を採る。git が無い等で失敗したら例外を投げる（呼び出し元で fail-open）。
  *
- * @returns {string[]} プロジェクトルート相対の変更パス
+ * @param {string} gateRoot 検査する作業ツリーのルート
+ * @returns {string[]} gateRoot 相対の変更パス
  */
-function collectChangedPaths() {
-  const porcelain = execFileSync('git', ['-C', projectRoot, 'status', '--porcelain'], {
+function collectChangedPaths(gateRoot) {
+  const porcelain = execFileSync('git', ['-C', gateRoot, 'status', '--porcelain'], {
     encoding: 'utf8'
   })
   return porcelain
@@ -54,11 +98,12 @@ function collectChangedPaths() {
  * 実行できなかった場合（npm が無い・タイムアウト）は通過扱いにする（fail-open）。
  *
  * @param {string} npmScript 実行する npm script 名
+ * @param {string} gateRoot 検査する作業ツリーのルート（npm script はここで実行する）
  * @returns {string | null} 落ちたときの出力。通過・実行不能なら null
  */
-function collectGateFailure(npmScript) {
+function collectGateFailure(npmScript, gateRoot) {
   const result = spawnSync('npm', ['run', '--silent', npmScript], {
-    cwd: projectRoot,
+    cwd: gateRoot,
     encoding: 'utf8',
     timeout: GATE_TIMEOUT_MS,
     // Windows の npm は npm.cmd で、シェルを介さないと起動できず（ENOENT／EINVAL）、fail-open で
@@ -79,8 +124,9 @@ function main() {
   // この停止自体が本フックの再開由来なら、もう走らせない（1回だけ・無限ループ防止）。
   if (input?.stop_hook_active) return
 
-  const failures = selectTurnEndGates(collectChangedPaths())
-    .map((npmScript) => ({ npmScript, output: collectGateFailure(npmScript) }))
+  const gateRoot = resolveGateRoot(input?.cwd)
+  const failures = selectTurnEndGates(collectChangedPaths(gateRoot))
+    .map((npmScript) => ({ npmScript, output: collectGateFailure(npmScript, gateRoot) }))
     .filter(({ output }) => output !== null)
   if (failures.length === 0) return
 
