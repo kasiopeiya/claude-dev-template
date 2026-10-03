@@ -23,7 +23,29 @@ const FAILING_SEVERITY = 'high'
  * `nodePathPrefix` で混入経路を1つに縛るのが要点。同じパッケージの同じ脆弱性でも、
  * 別経路（自分たちが直接足した依存など）で入ってきたものは許容せず落とす。
  */
-const ALLOWED_VULNERABILITIES = []
+const ALLOWED_VULNERABILITIES = [
+  // samples/infra の brace-expansion は aws-cdk-lib が同梱していて、lockfile からは上げられない。
+  // 根拠: aws-cdk-lib の最新版 2.272.0 も、brace-expansion 5.0.9 を同梱している（2026-10-03 確認）。
+  // 失効条件: 同梱版が 5.0.12 以上の aws-cdk-lib が出たら、上げてこの3エントリを削除する。
+  {
+    directory: 'samples/infra',
+    packageName: 'brace-expansion',
+    advisoryUrl: 'https://github.com/advisories/GHSA-q2hr-2g5m-vwhr',
+    nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/brace-expansion'
+  },
+  {
+    directory: 'samples/infra',
+    packageName: 'brace-expansion',
+    advisoryUrl: 'https://github.com/advisories/GHSA-qhr7-859c-m2p7',
+    nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/brace-expansion'
+  },
+  {
+    directory: 'samples/infra',
+    packageName: 'brace-expansion',
+    advisoryUrl: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
+    nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/brace-expansion'
+  }
+]
 
 /**
  * npm audit を JSON で実行する。脆弱性があると npm は非ゼロ終了するため、その場合も標準出力を読む。
