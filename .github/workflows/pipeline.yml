@@ -237,7 +237,7 @@ jobs:
       - run: npm run knip
 
       # 3階層の npm 依存を舐めて high 以上で落とす。どこを検査するか・どこで落とすか・
-      # 上流が同梱していて手元で直せないものをどう扱うかは scripts/audit-dependencies.mjs にある。
+      # 上流に修正版が無く手元で直せないものをどう扱うかは scripts/audit-dependencies.mjs にある。
       - run: npm run check:audit
 
   # app 固有の検査。ルールが app/backend に閉じているため条件実行できる（ci-common との違い）。
