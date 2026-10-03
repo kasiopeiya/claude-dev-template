@@ -37,17 +37,23 @@ gh issue list --state open --limit 100 --search 'label:boy-scout' \
 - **数字1つ**：一覧の古い順にその件数
 - **`#` 付き番号（複数可）**：その Issue だけ（ラベルの有無を問わない）
 
-対象が0件なら、その旨を伝えて終了します。決めた対象リストを表示してから Phase 2 へ進みます。
+### open な sub-issue を持つ Issue を外す
+
+決めた対象から、**open な sub-issue を持つ Issue を外します。** 一覧から取った分にも、`#` 付きで指定した分にも掛けます。親は子をまとめる入れ物で、中身の監査は子で行われます。割り済みの親を監査しても判定材料が無く、費用と、umbrella に作り替えた本文を方針差し替えで書き換えるおそれだけが残ります。
+
+Issue ごとに sub-issue を引き、`state` が `OPEN` の子が1件以上あれば外します。子が全部 close 済みの親は外しません。外した Issue も「数字1つ」の件数に数え、Phase 4 の報告に並べます。
+
+```bash
+gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number:<番号>){subIssues(first:50){nodes{number state}}}}}'
+```
+
+対象が0件なら（外した結果0件になったときも）、その旨と外した Issue を伝えて終了します。決めた対象リストと外した Issue を表示してから Phase 2 へ進みます。
 
 ## Phase 2: 並列監査
 
 `issue-auditor-agent` を、**Issue 1件につきレンズごとに1回ずつ、1メッセージ内でまとめて** Task 起動します。逐次に投げると、割った意味（速さ）が消えます。1波は Issue 5件までとし、超える分は次の波へ回します。
 
-**分割検討レンズは、`boy-scout` ラベルが無く、open な sub-issue も持たない Issue にだけ起動します。** boy-scout は小さく直す前提で、割り済みの親はもう割る必要がないからです。起動の前に、Issue ごとに sub-issue を引きます。
-
-```bash
-gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number:<番号>){subIssues(first:50){nodes{number state}}}}}'
-```
+**分割検討レンズは、`boy-scout` ラベルが無い Issue にだけ起動します。** boy-scout は小さく直す前提だからです。
 
 起動の前に `.claude/agents/issue-auditor-agent/issue-auditor-agent.md` の「レンズ一覧と担当観点（正典）」を Read し、そこにあるレンズ名をそのまま使います。各起動に渡すのは **レンズ名と Issue 番号だけ**です。本文もポリシーもエージェント自身が読みます。**この SKILL.md に書いた指示は Task 起動されたエージェントには届かない**ので、判定に要る情報をここから渡そうとしないでください。
 
@@ -134,6 +140,9 @@ gh issue close <番号> --comment "<なぜ不要と判定したかを、引用�
 | #124  | …        | 方針差し替え | 対応方針が documentation-policy の「〜」に反する | 本文差し替え＋コメント         |
 | #125  | …        | 不要         | 対象箇所が既に存在しない                         | close                          |
 | #127  | …        | 分割         | 見込み 520 行で、タスクが2つの変更種別にまたがる | 子 #128・#129 を起票＋コメント |
+| #130  | …        | 飛ばした     | open な sub-issue がある（#131・#132）           | なし                           |
+
+「飛ばした」は Phase 1 で外した Issue です。判定を出していないので、`issue:checked` も貼りません。
 
 末尾に **GO と判定した Issue 番号の一覧**を出します。人間はこれを見て `/sweep` を打ちます。
 
