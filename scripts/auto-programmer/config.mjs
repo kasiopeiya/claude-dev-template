@@ -47,6 +47,12 @@ export const config = {
   // 頻度が上がり、GitHub API のレートリミットに達しやすくなる
   pollIntervalMinutes: 1.5,
 
+  // 着手できない周（Issue なし・候補を引けず・全件飛ばし）が続いたとき、待ってよい回数の上限。使い切った
+  // 次の周も着手できなければ、待たずに止まる（止まるまでおよそ pollIntervalMinutes × この回数）。
+  // 放置したまま見直し続けると gh のレートリミットに達するため。
+  // このファイルはテンプレート同期の対象外なので、同期した利用先では手で足す。無いと起動時に落ちる
+  maxConsecutiveIdleWaits: 10,
+
   ci: {
     // push で走り、マージ可否を決めるワークフローのファイル名（.github/workflows/ の下）
     workflowFile: 'pipeline.yml',
