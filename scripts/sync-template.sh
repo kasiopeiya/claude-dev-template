@@ -32,6 +32,7 @@ readonly EXCLUDE_PATHS=(
 readonly EXCLUDE_EXCEPTIONS=(
   '.github/workflows/doc-consistency-weekly.yml'
   '.github/workflows/code-policy-weekly.yml'
+  '.github/workflows/close-human-review-issue.yml'
   'docs/adr/adr-template.md'
 )
 
@@ -57,6 +58,7 @@ usage() {
 ワークフローを利用先へ届けるにはここへ足す必要がある）:
   .github/workflows/doc-consistency-weekly.yml
   .github/workflows/code-policy-weekly.yml
+  .github/workflows/close-human-review-issue.yml
   docs/adr/adr-template.md
 
 衝突したときの対処:
