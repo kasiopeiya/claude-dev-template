@@ -8,22 +8,22 @@
 
 `npm run auto-programmer` を1回打つと、次の順に進む。1件終えると 2 へ戻り、着手できる Issue が無ければ `pollIntervalMinutes` の時間だけ待って見直す。着手できない周が続いて `maxConsecutiveIdleWaits` 回待っても、まだ着手できなければ、放置のまま `gh` の呼び出しが積み上がらないよう自分で止まる（正常終了）。実装中に Ctrl+C で止めても、その1件の記録を残してから終わる。ただし claude のセッションが続けて失敗したら、カードを空振りで In progress へ送り続けないよう自分で止まる。
 
-| 順  | すること                                                                                                                                                            | 担当                                      |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| 1   | `gh` の認証と `claude` の有無の確認・AI 専用 clone の作成                                                                                                           | preflight                                 |
-| 2   | 閉じ損ねた Issue を閉じ、Ready・`ai-fixable`・自分が担当者の open Issue から着手できる1件を選ぶ                                                                     | このツール                                |
-| 3   | 未コミットの変更を stash へ退避して clone を `origin/main` へ戻し、トピックブランチを作り、依存を揃える                                                             | このツール                                |
-| 4   | 選んだ Issue のカードを「In progress」へ動かす                                                                                                                      | このツール                                |
-| 5   | Issue が open な sub-issue を持てば、子を Ready に載せて 14 へ飛ぶ。持たず `issue:checked` も無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する   | このツール・`.claude/skills/issue-check/` |
-| 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す。1つの PR に収まらず割れる Issue は、`/issue-split` で sub-issue に割る | `/issue-check`                            |
-| 7   | 6 で open な sub-issue ができていれば、子を Ready に載せる。続けて Issue のラベルと state を読み、子を載せたか止める理由があれば 14 へ飛ぶ                          | このツール                                |
-| 8   | Issue から前回の `issue:needs-clean-session` を外し、clone の中で `claude -p "/auto-dev <番号>"` を起動する                                                         | `.claude/skills/auto-dev/`                |
-| 9   | 実装・検証・コミット・push・PR 本文の差し替え                                                                                                                       | `/auto-dev`                               |
-| 10  | push した commit の CI（`ci.workflowFile`）が終わるまで待つ                                                                                                         | このツール                                |
-| 11  | CI が落ちていれば、clone の中で `claude -p "/auto-fix-ci <番号> <run ID>"` を起動し、10 へ戻る                                                                      | `.claude/skills/auto-fix-ci/`             |
-| 12  | 落ちた原因を直し、コミット・push する                                                                                                                               | `/auto-fix-ci`                            |
-| 13  | CI が通っていれば、カードを「In Review」へ動かす                                                                                                                    | このツール                                |
-| 14  | PR の URL・終了コード・CI の結果を記録ファイルへ1行追記する                                                                                                         | このツール                                |
+| 順  | すること                                                                                                                                                                                                                                | 担当                                      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| 1   | `gh` の認証と `claude` の有無の確認・AI 専用 clone の作成                                                                                                                                                                               | preflight                                 |
+| 2   | 閉じ損ねた Issue を閉じ、Ready・`ai-fixable`・自分が担当者の open Issue から着手できる1件を選ぶ                                                                                                                                         | このツール                                |
+| 3   | 未コミットの変更を stash へ退避して clone を `origin/main` へ戻し、トピックブランチを作り、依存を揃える                                                                                                                                 | このツール                                |
+| 4   | 選んだ Issue のカードを「In progress」へ動かす                                                                                                                                                                                          | このツール                                |
+| 5   | Issue が open な sub-issue を持てば、子を Ready に載せて 14 へ飛ぶ。持たず `issue:checked` も無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する                                                                       | このツール・`.claude/skills/issue-check/` |
+| 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す。1つの PR に収まらず割れる Issue は、`/issue-split` で sub-issue に割る。初回の検査で、本文に新しい技術要素があれば、外部依存の制約も調べる | `/issue-check`                            |
+| 7   | 6 で open な sub-issue ができていれば、子を Ready に載せる。続けて Issue のラベルと state を読み、子を載せたか止める理由があれば 14 へ飛ぶ                                                                                              | このツール                                |
+| 8   | Issue から前回の `issue:needs-clean-session` を外し、clone の中で `claude -p "/auto-dev <番号>"` を起動する                                                                                                                             | `.claude/skills/auto-dev/`                |
+| 9   | 実装・検証・コミット・push・PR 本文の差し替え                                                                                                                                                                                           | `/auto-dev`                               |
+| 10  | push した commit の CI（`ci.workflowFile`）が終わるまで待つ                                                                                                                                                                             | このツール                                |
+| 11  | CI が落ちていれば、clone の中で `claude -p "/auto-fix-ci <番号> <run ID>"` を起動し、10 へ戻る                                                                                                                                          | `.claude/skills/auto-fix-ci/`             |
+| 12  | 落ちた原因を直し、コミット・push する                                                                                                                                                                                                   | `/auto-fix-ci`                            |
+| 13  | CI が通っていれば、カードを「In Review」へ動かす                                                                                                                                                                                        | このツール                                |
+| 14  | PR の URL・終了コード・CI の結果を記録ファイルへ1行追記する                                                                                                                                                                             | このツール                                |
 
 2 で「自分」とは、`gh` にログインしているアカウントを指す。複数人が同時に動かしても、担当者が1人なら同じ Issue を拾う台は1台だけになる。担当者の無い Issue は誰にも拾われないので、カードを Ready へ動かすときに実行する人を担当者にする。1つのアカウントで2台を動かすと、今までどおり同じ Issue を取り合う。
 
@@ -41,6 +41,8 @@
 - **対象リポジトリ（`repository`）の外にある**：2 は対象リポジトリの Issue しか拾わないので、載せても拾われない
 
 5 で `issue:checked` が付いていれば、6 を飛ばして 7 へ進む。監査の後に前提が崩れていれば、9 で `/auto-dev` が離脱する。
+
+6 で外部依存の制約を調べるのは、`issue:checked` が無く、本文に出た外部の製品・サービス・ツールの名前が `docs/adr/`・`docs/design/`・各 `package.json` のどこにも無い Issue だけである。Plan を通らない Issue の前提の誤りを、実装の前に拾うためである。人間にまだ示していない制約が見つかれば、判定は人間判断になり、7 で止まる。調べられなかったときは、Issue にコメントを残して監査を続ける。
 
 7 で実装へ進まないのは、open な sub-issue ができたとき・`issue:checked` が貼られていない（判定が書き戻されていない）とき・`issue:needs-human-decision` が付いたとき・close されたときだけである。`/issue-check` が「方針差し替え」に倒した Issue は、差し替わった本文のまま 8 へ進む。
 
@@ -167,7 +169,7 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 
 - **`config.mjs`**：上の表の値をその環境のものへ書き換える。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）
 - **`package.json`**：`auto-programmer` と `test:scripts` のスクリプトを写す
-- **`.claude/skills/auto-dev/`・`.claude/skills/auto-fix-ci/`・`.claude/skills/issue-check/`**：そのリポジトリの `.claude/skills/` へ写す（`/auto-dev`・`/auto-fix-ci` が無いと手順が無い。`/issue-check` は `.claude/agents/issue-auditor-agent/` と、割るときに使う `.claude/skills/issue-split/` も要る。`/issue-split` は正典として `.claude/skills/to-issues/`・`.claude/skills/quick-issue/` を参照するので、これも写す）
+- **`.claude/skills/auto-dev/`・`.claude/skills/auto-fix-ci/`・`.claude/skills/issue-check/`**：そのリポジトリの `.claude/skills/` へ写す（`/auto-dev`・`/auto-fix-ci` が無いと手順が無い。`/issue-check` は `.claude/agents/issue-auditor-agent/` と、割るときに使う `.claude/skills/issue-split/` も要る。`/issue-split` は正典として `.claude/skills/to-issues/`・`.claude/skills/quick-issue/` を参照するので、これも写す。初回の検査で外部依存の制約を調べるために `.claude/agents/premise-checker-agent/` も要る。これは一次資料の定義を `.claude/skills/origin-search/` から読むので、これも写す）
 
 `/auto-dev` は移した先の CLAUDE.md・Policy・hook をそのまま使う。実装の進め方をそのリポジトリに合わせたいときは、Issue 本文の「実装フロー（使用するSkill）」で指定する。
 
