@@ -1,6 +1,6 @@
 ---
 name: to-plan
-description: grill-me の対話や事前調査の結果を Plan ファイルに構造化して書き出し、続けて /check-plan で監査する。「to-plan」「plan ファイルにして」と指示されたとき。
+description: grill-me の対話や事前調査の結果を Plan ファイルに構造化して書き出し、続けて /check-plan で監査する（新しい技術要素が入るときは、先に /premise-check の実行を提案する）。「to-plan」「plan ファイルにして」と指示されたとき。
 ---
 
 # To Plan
@@ -57,6 +57,24 @@ Plan は **会話履歴を一切持たない別セッション** が読む前提
 
 `/grill-me` の **Not-now リスト**が会話にあれば、スコープの「やらないこと」欄へ**全行転記する**（「何が起きたら決める必要が出るか」のトリガーも一緒に）。Not-now は却下ではなく先送りなので、転記しないとここで消える。
 
-### 4. check-plan を自動実行（シフトレフト）
+### 4. 新しい技術要素を照合し、check-plan を自動実行（シフトレフト）
 
-Plan を書き出したら、続けて `/check-plan <Planパス>` を実行する。必須セクションの充足とコードベース・ドキュメントの影響範囲の網羅を Issue 化前に監査し、不足があれば Plan を修正する。判定基準と報告フォーマットは check-plan スキルに委ねる。
+Plan を書き出したら、`/check-plan` の前に、Plan の新しい技術要素を照合する。`/check-plan` は外部の制約を調べないので、公式に無い機能やツール名を前提にしたまま Issue 化へ進むのを、ここで止める。
+
+**新しい技術要素**：Plan に名前が出た外部の製品・サービス・ツール（その機能名を含む）のうち、`docs/adr/`・`docs/design/`・各 `package.json` のどこにも同じ名前が出てこないもの。
+
+1. Plan から、外部の製品・サービス・ツールの名前を取り出す
+2. 名前ごとに、大文字小文字を区別しない文字列検索で照合する。どこにもヒットしなければ新しい
+
+   ```bash
+   grep -rliF -- "<名前>" docs/adr docs/design $(git ls-files 'package.json' '*/package.json')
+   ```
+
+3. 新しい技術要素が無ければ、聞かずに `/check-plan <Planパス>` を実行する
+4. あれば `AskUserQuestion` で、新しい技術要素の名前を挙げて「外部の制約を調べる `/premise-check` を実行するか」を聞く。選択肢は「実行する」「実行しない」の2つ
+   - 「実行しない」：`/check-plan <Planパス>` を実行する
+   - 「実行する」：`/check-plan` を走らせず、`/to-issues` へ進む案内も出さず、`/premise-check <Planのパス>` を打つよう案内して止まる。`/premise-check` はモデルから呼べない。見直すなら Plan を直し、続けて `/check-plan <Planパス>` を打つことも添える
+
+「実行する」で `/check-plan` を走らせないのは、`/check-plan` が合格すると `/to-issues` へ進む案内を必ず出し、調べる前に進む道が開くからである。
+
+`/check-plan` は、必須セクションの充足とコードベース・ドキュメントの影響範囲の網羅を Issue 化前に監査し、不足があれば Plan を修正する。判定基準と報告フォーマットは check-plan スキルに委ねる。
