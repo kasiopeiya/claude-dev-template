@@ -25,8 +25,9 @@ export const CHILD_OUTPUT_GUTTER = `${' '.repeat(CLOCK_TIME_WIDTH + 1)}│ `
 
 const LINE_FEED_BYTE = 0x0a
 
-// 進み具合のバーのマス数。曖昧幅の文字が2桁で描かれても、1行に収まる短さにする
-const PROGRESS_BAR_CELLS = 10
+// 進み具合のバーのマス数。1マスの長さは上限÷マス数（上限60分なら3分）で、少ないと塗られるまで動かなく見える。
+// 曖昧幅の文字が2桁で描かれても、ステータス行が80桁に収まる上限は20（1行が約77桁。30だと約97桁で折り返す）
+const PROGRESS_BAR_CELLS = 20
 
 // 待っている間に回すスピナーの絵柄。点字のスピナーは WGL4 に無いので ASCII にする
 const SPINNER_FRAMES = ['|', '/', '-', '\\']
@@ -154,7 +155,7 @@ export function buildStatusLineText({ clockTime, symbol, message }) {
  * 経過は上限と同じ桁数に揃え、行の幅が揺れないようにする。
  *
  * @param {{ elapsedMs: number, limitMs: number }} params 経過時間と打ち切るまでの上限（どちらもミリ秒）
- * @returns {string} 例: `実行中  [████░░░░░░]   2:31 / 60:00`
+ * @returns {string} 例: `実行中  [████████░░░░░░░░░░░░]  24:31 / 60:00`
  */
 export function buildSessionProgressText({ elapsedMs, limitMs }) {
   const limitText = formatMinutesSeconds(limitMs)
@@ -166,7 +167,7 @@ export function buildSessionProgressText({ elapsedMs, limitMs }) {
  * 進み具合を、マスを塗ったバーにする。
  *
  * @param {number} ratio 進み具合（0〜1。範囲外は端に寄せる）
- * @returns {string} 例: `[████░░░░░░]`
+ * @returns {string} 例: `[████░░░░░░░░░░░░░░░░]`
  */
 function buildProgressBar(ratio) {
   const filledCells = Math.min(
