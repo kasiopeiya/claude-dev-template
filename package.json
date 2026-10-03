@@ -17,6 +17,7 @@
     "test:scripts": "node --test \"scripts/**/*.test.mjs\"",
     "auto-programmer": "node scripts/auto-programmer/index.mjs",
     "close-issues": "node scripts/close-issues.mjs",
+    "prune-branches": "node scripts/prune-branches.mjs",
     "gen:adr-index": "node scripts/generate-adr-index.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix"
