@@ -69,6 +69,16 @@ gh issue close $ARGUMENTS --comment "<何をしたか>"
 
 ### Phase 4: コミットする
 
+**先に、最新の `origin/main` を取り込む。** ステージする前に行う（ステージ済みの変更があると、git が取り込みを断る）。取り込みから push までを短くし、その間に main が進んで再び衝突するのを減らすため、最後のコミットの直前に置く。取り込みの後のコミットで、pre-commit hook が `npm run gen:adr-index` の生成物を作り直す。
+
+```bash
+git fetch origin main
+git merge --no-edit origin/main
+```
+
+- 衝突したら、衝突したファイルを解く。生成物は中身を手で直さず、`npm run gen:adr-index` で作り直して `git add` する。解けなければ離脱手順へ進む
+- 「Your local changes ... would be overwritten」で止まったら、取り込みが未コミットの変更と重なっている。先に下の手順でコミットし、そのあとで取り込む。自動で完了する merge コミットでは pre-commit hook が走らないので、取り込んだ後に `npm run gen:adr-index` を実行し、差分が出たら `git add` して `/git-commit stage` でコミットする
+
 その Issue で編集したファイルだけを `git add <パス>` でステージし、`/git-commit stage` を実行する。ワーキングツリー全体を対象にしてはならない。
 
 件名末尾の `(#$ARGUMENTS)` は git-commit Skill が必須としている。**`Closes` はコミットメッセージに書かない**（同じく git-commit Skill）。
@@ -93,7 +103,7 @@ PR の URL・実行した検証・更新したタスクを表示して終了す�
 
 - 本文から何を直すか決まらない（「対応方針」の見出しが無い・見出しの中に「採る案」の記述が無い／「対象箇所」に挙げた箇所が既に無い）
 - Phase 3 の検証が通らず、2回直しても同じ箇所で落ちる
-- 修正が、本文の「対象箇所」の外へ波及した
+- 修正が、本文の「対象箇所」の外へ波及した（Phase 4 の取り込みで衝突を解いた変更は数えない）
 - Phase 5・Phase 6 が「エラーハンドリング」の表のとおりに失敗した
 
 人間が気付ける形にするため、終了前に次の2つを必ず行う。
