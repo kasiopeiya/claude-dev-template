@@ -67,7 +67,7 @@ import {
   showSuccess,
   showWarning
 } from './ui.mjs'
-import { collapseToSingleLine, formatElapsedTime } from './uiFormat.mjs'
+import { alignLabeledValues, collapseToSingleLine, formatElapsedTime } from './uiFormat.mjs'
 import { prepareTopicBranch } from './workspace.mjs'
 
 const MILLISECONDS_PER_SECOND = 1000
@@ -343,33 +343,45 @@ function showRunSummary(record, isAllSessionsSucceeded) {
   else if (needsHumanAttention) showWarning(headline)
   else showSuccess(headline)
 
+  // 値が同じ桁から始まるよう、項目名の幅を揃えてから行ごとのレベルで出す
+  const details = []
   if (record.ciOutcome) {
-    const showCiOutcome = record.isCiPassed ? showInfo : showWarning
-    showCiOutcome(`CI: ${record.ciOutcome}`)
+    details.push({
+      label: 'CI',
+      value: record.ciOutcome,
+      show: record.isCiPassed ? showInfo : showWarning
+    })
   }
-  if (record.pullRequestUrl === null) showWarning('PR の有無は GitHub で確かめてください')
-  else showInfo(record.pullRequestUrl ? `PR: ${record.pullRequestUrl}` : 'PR は作られませんでした')
-  showInfo(`記録: ${config.runLogPath}`)
+  if (record.pullRequestUrl === null) {
+    details.push({ label: 'PR', value: '有無は GitHub で確かめてください', show: showWarning })
+  } else {
+    details.push({
+      label: 'PR',
+      value: record.pullRequestUrl || '作られませんでした',
+      show: showInfo
+    })
+  }
+  details.push({ label: '記録', value: config.runLogPath, show: showInfo })
+  const lines = alignLabeledValues(details)
+  details.forEach(({ show }, index) => show(lines[index]))
 }
 
 /**
  * 落ちうるローカルの準備をすべて済ませてから、カードを着手中へ動かす。
  *
  * @param {{ itemId: string, number: number, labelNames: string[] }} issue 対象 Issue
- * @returns {{ branchName: string, existingPullRequestNumbers: Set<number> }} 作ったトピックブランチ名と、着手前からあった PR の番号
+ * @param {string} branchName 作るトピックブランチ名
+ * @returns {Set<number>} 着手前からあった PR の番号
  * @throws {Error} 着手中へ動かすまでの処理が落ちたとき（カードは着手待ちのまま残る）
  */
-function startIssue(issue) {
-  const branchName = buildBranchName({ issueNumber: issue.number, labelNames: issue.labelNames })
-  showInfo(`ブランチ: ${branchName}`)
-
+function startIssue(issue, branchName) {
   prepareTopicBranch(branchName)
   ensureDependencies()
   const existingPullRequestNumbers = new Set(
     listPullRequests(branchName).map(({ number }) => number)
   )
   markAsStarted(issue.itemId)
-  return { branchName, existingPullRequestNumbers }
+  return existingPullRequestNumbers
 }
 
 /**
@@ -390,9 +402,13 @@ async function startFirstStartableIssue() {
     await yieldToEventLoop()
     if (stopController.signal.aborted) return null
 
-    showIssueBanner({ issueNumber: issue.number, title: issue.title })
     try {
-      return { issue, ...startIssue(issue) }
+      const branchName = buildBranchName({
+        issueNumber: issue.number,
+        labelNames: issue.labelNames
+      })
+      showIssueBanner({ issueNumber: issue.number, title: issue.title, branchName })
+      return { issue, branchName, existingPullRequestNumbers: startIssue(issue, branchName) }
     } catch (error) {
       showWarning(`#${issue.number} を飛ばします: ${formatError(error)}`)
     }

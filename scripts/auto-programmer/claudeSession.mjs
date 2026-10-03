@@ -7,12 +7,20 @@
 //   プロンプト文字列に手順を書かない（書くとドキュメントレビューの対象外になる）。
 // - 時間で打ち切る。無人のセッションが固まると、止める手段は起動側にしか無い。
 // - セッション中は経過時間をステータス行に出し続ける。claude -p は終わるまで何も出さないことが多く、
-//   無音のままだと、人間は固まったのか動いているのかを見分けられない（Issue #782）。
+//   無音のままだと、人間は固まったのか動いているのかを見分けられない（Issue #782）。TTY では上限までの
+//   残りが一目で分かるよう、スピナーとプログレスバーで出す。
+// - セッションの終わりに、終了状態と所要時間の行を出す。無いと、何分かかったかを時刻の引き算でしか知れない。
 
 import { config } from './config.mjs'
 import { runStreamingAsync } from './shell.mjs'
-import { createThrottledStatusLine, relayChildProcessOutput, showInfo } from './ui.mjs'
-import { formatElapsedTime } from './uiFormat.mjs'
+import {
+  createThrottledStatusLine,
+  relayChildProcessOutput,
+  showInfo,
+  showSuccess,
+  showWarning
+} from './ui.mjs'
+import { buildSessionProgressText, formatElapsedTime, pickSpinnerFrame } from './uiFormat.mjs'
 
 const MILLISECONDS_PER_MINUTE = 60 * 1000
 
@@ -27,26 +35,56 @@ const ELAPSED_TIME_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
  * @returns {Promise<{ exitCode: number, signal: string | null }>} claude プロセスの終了状態（打ち切られたときは signal が入る）
  * @throws {Error} claude を起動できなかったとき
  */
-function runUnattendedSession(slashCommand, abortSignal) {
+async function runUnattendedSession(slashCommand, abortSignal) {
   showInfo(`▶ ${slashCommand} を実行`)
-  const showElapsedTime = createThrottledStatusLine({
+  const timeoutMs = config.sessionTimeoutMinutes * MILLISECONDS_PER_MINUTE
+  const showSessionProgress = createThrottledStatusLine({
     minAppendIntervalMs: ELAPSED_TIME_APPEND_INTERVAL_MS
   })
+  const startedAt = Date.now()
   // 権限確認を飛ばして起動する。無人セッションには権限プロンプトへ答える人間がおらず、
   // `--allowedTools` での列挙は漏れたところで空転するため（README.md「使う前に済ませておくこと」）。
   // この形は .claude/hooks/forbiddenCommandMatcher.mjs が「ゲートの迂回」として禁じているが、
   // それは Bash ツールへ渡すコマンドへの禁止であり、ローカルのファイルへの影響は AI 専用 clone の中に閉じる。
   // clone の中でも .claude/hooks/ のガードは効き続け、このツール自体の起動も AI には禁じている。
-  return runStreamingAsync('claude', ['-p', slashCommand, '--dangerously-skip-permissions'], {
-    cwd: config.workspaceDir,
-    timeoutMs: config.sessionTimeoutMinutes * MILLISECONDS_PER_MINUTE,
-    abortSignal,
-    onTick: (elapsedMs) =>
-      showElapsedTime(
-        `実行中… 経過 ${formatElapsedTime(elapsedMs)} / 上限${config.sessionTimeoutMinutes}分`
-      ),
-    onOutput: relayChildProcessOutput
-  })
+  const exitStatus = await runStreamingAsync(
+    'claude',
+    ['-p', slashCommand, '--dangerously-skip-permissions'],
+    {
+      cwd: config.workspaceDir,
+      timeoutMs,
+      abortSignal,
+      onTick: (elapsedMs) =>
+        showSessionProgress(
+          `実行中… 経過 ${formatElapsedTime(elapsedMs)} / 上限${config.sessionTimeoutMinutes}分`,
+          {
+            liveMessage: buildSessionProgressText({ elapsedMs, limitMs: timeoutMs }),
+            symbol: pickSpinnerFrame(elapsedMs)
+          }
+        ),
+      onOutput: relayChildProcessOutput
+    }
+  )
+  showSessionOutcome(slashCommand, exitStatus, Date.now() - startedAt)
+  return exitStatus
+}
+
+/**
+ * セッション1つの終わりを、終了状態と所要時間の1行で示す。
+ *
+ * @param {string} slashCommand 実行したスラッシュコマンド
+ * @param {{ exitCode: number, signal: string | null }} status claude プロセスの終了状態
+ * @param {number} elapsedMs 所要時間（ミリ秒）
+ * @returns {void}
+ */
+function showSessionOutcome(slashCommand, { exitCode, signal }, elapsedMs) {
+  const elapsedTime = formatElapsedTime(elapsedMs)
+  if (exitCode === 0 && signal === null) {
+    showSuccess(`${slashCommand}  ${elapsedTime}`)
+    return
+  }
+  const exitStatusText = signal === null ? `終了コード ${exitCode}` : `シグナル ${signal} で停止`
+  showWarning(`${slashCommand}  ${exitStatusText}  ${elapsedTime}`)
 }
 
 /**
