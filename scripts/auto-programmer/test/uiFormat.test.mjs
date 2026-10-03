@@ -120,15 +120,25 @@ describe('セッション中のステータス行の本文', () => {
 
     const text = sut({ elapsedMs: 151_000, limitMs })
 
-    assert.equal(text, '実行中  [░░░░░░░░░░]   2:31 / 60:00')
+    assert.equal(text, '実行中  [░░░░░░░░░░░░░░░░░░░░]   2:31 / 60:00')
   })
 
-  test('進み具合に応じて10マスのうちを塗る', () => {
+  test('進み具合に応じて20マスのうちを塗る', () => {
     const sut = buildSessionProgressText
 
     const text = sut({ elapsedMs: 27 * 60_000, limitMs })
 
-    assert.equal(text, '実行中  [████░░░░░░]  27:00 / 60:00')
+    assert.equal(text, '実行中  [█████████░░░░░░░░░░░]  27:00 / 60:00')
+  })
+
+  test('3分で1マス目を塗り、それまでは塗らない', () => {
+    const sut = buildSessionProgressText
+
+    const justBefore = sut({ elapsedMs: 3 * 60_000 - 1000, limitMs })
+    const justAfter = sut({ elapsedMs: 3 * 60_000, limitMs })
+
+    assert.equal(justBefore, '実行中  [░░░░░░░░░░░░░░░░░░░░]   2:59 / 60:00')
+    assert.equal(justAfter, '実行中  [█░░░░░░░░░░░░░░░░░░░]   3:00 / 60:00')
   })
 
   test('上限を超えたら、バーは全部塗り、経過は時間に繰り上げない', () => {
@@ -136,7 +146,7 @@ describe('セッション中のステータス行の本文', () => {
 
     const text = sut({ elapsedMs: 61 * 60_000 + 5_000, limitMs })
 
-    assert.equal(text, '実行中  [██████████]  61:05 / 60:00')
+    assert.equal(text, '実行中  [████████████████████]  61:05 / 60:00')
   })
 
   test('負の経過は0秒として扱い、バーを塗らない', () => {
@@ -144,7 +154,7 @@ describe('セッション中のステータス行の本文', () => {
 
     const text = sut({ elapsedMs: -1000, limitMs })
 
-    assert.equal(text, '実行中  [░░░░░░░░░░]   0:00 / 60:00')
+    assert.equal(text, '実行中  [░░░░░░░░░░░░░░░░░░░░]   0:00 / 60:00')
   })
 })
 
