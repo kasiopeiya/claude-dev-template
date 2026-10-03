@@ -8,6 +8,10 @@
 //   この表に1行足す。hook は1本あたり node の起動コスト（実測で約44ms）が全 Bash 実行に乗るが、
 //   表を伸ばしても判定コストはほぼ増えない（policy-driven-development-policy の
 //   「ターン末ゲートは1本に統合する」と同じ理屈）。
+// - `git branch -D` は main 以外のブランチも一律に禁止する。ブランチ削除はそのブランチ専用の reflog
+//   （.git/logs/refs/heads/<branch>）を一緒に消し、未マージの作業の復元手段が残らないため。禁止を main
+//   だけに絞ると、守る対象（ローカル main）より失う対象（未マージのブランチ）の方が大きい。
+//   掃除は scripts/prune-branches.mjs が `-d` だけで行う。
 // - 判定はコマンドの語頭に立つトークンだけを見る。引用符の中とヒアドキュメントの中身は実行されない
 //   文字列なので、shellSplit.mjs の段階で判定対象から外れる（Issue #396）。
 // - シェルの厳密なパースはしない。判定できない入力は通す（fail-open）。完全な安全機構ではなく、
@@ -161,7 +165,18 @@ const RULE_GROUPS = [
       },
       { label: 'git reset --hard', prefix: ['git', 'reset'], anyFlag: ['--hard'] },
       { label: 'git clean -f / -x', prefix: ['git', 'clean'], detect: hasGitCleanDestructiveFlag },
-      { label: 'git branch -D', prefix: ['git', 'branch'], anyFlag: ['-D'] },
+      {
+        label: 'git branch の強制削除（-D・--delete --force・-fd）',
+        prefix: ['git', 'branch'],
+        detect: isForceBranchDelete,
+        advice: '取り込み済みブランチの掃除は人間が npm run prune-branches で行う'
+      },
+      {
+        label: 'main を含む git branch の削除',
+        prefix: ['git', 'branch'],
+        detect: isBranchDeleteOfMain,
+        why: 'main は作業の基準点で、消すと作り直すまで基準が無くなる'
+      },
       { label: 'git tag -d', prefix: ['git', 'tag'], anyFlag: ['-d', '--delete'] },
       { label: 'git stash drop', prefix: ['git', 'stash', 'drop'] },
       { label: 'git stash clear', prefix: ['git', 'stash', 'clear'] },
@@ -255,6 +270,23 @@ function hasDestructivePushArgument(tokens) {
 function hasGitCleanDestructiveFlag(tokens) {
   if (tokens.includes('--force')) return true
   return shortFlagLetters(tokens).some((letter) => letter === 'f' || letter.toLowerCase() === 'x')
+}
+
+// `-D` と、`-d` の強制版（`--delete --force`・`-fd` の束ね）を強制削除とみなす。束ねたフラグは文字単位で見る
+function isForceBranchDelete(tokens) {
+  const letters = shortFlagLetters(tokens)
+  if (letters.includes('D')) return true
+  const deletes = tokens.includes('--delete') || letters.includes('d')
+  const forces = tokens.includes('--force') || letters.includes('f')
+  return deletes && forces
+}
+
+// 削除のフラグ（-d・-D・--delete）があり、ブランチ名（tokens[2] 以降）に main が並ぶ場合
+function isBranchDeleteOfMain(tokens) {
+  const letters = shortFlagLetters(tokens)
+  const deletes = tokens.includes('--delete') || letters.includes('d') || letters.includes('D')
+  if (!deletes) return false
+  return tokens.slice(2).some((token) => ['main', 'refs/heads/main'].includes(stripQuotes(token)))
 }
 
 // 危険なのは猶予期間を無視する指定だけ。既定の猶予（`--prune=2.weeks.ago` など）は通常の運用値である
