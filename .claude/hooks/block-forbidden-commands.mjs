@@ -7,10 +7,20 @@
 //   node の起動コストが全 Bash 実行に乗るため、禁止を増やすときは hook ではなくルール表を増やす。
 // - 判定ロジックは forbiddenCommandMatcher.mjs に委ね、ここは stdin/stdout の配線と
 //   permissionDecision の返却だけを担う。
+// - 「プロジェクト内」の基準（projectDir）は、環境変数 CLAUDE_PROJECT_DIR ではなく stdin の cwd の
+//   作業ツリーで決める。CLAUDE_PROJECT_DIR は EnterWorktree の後も元のフォルダのままで、これで決めると
+//   worktree 内の絶対パスが「外」、元のフォルダ内の絶対パスが「内」と判定されるため。
+//   決められないとき（cwd が無い・git の外・別のリポジトリ）だけ CLAUDE_PROJECT_DIR に戻す。
 
 import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 import { detectForbiddenCommand } from './forbiddenCommandMatcher.mjs'
+import { findSessionWorktreeRoot } from './sessionWorktreeRoot.mjs'
+
+// .claude/hooks/ からプロジェクトルートへ。cwd の作業ツリーが同じリポジトリかの比較に使う
+const hookProjectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 function main() {
   // Claude Code の hook 契約（外部仕様）：type: "command" の PreToolUse フックは、
@@ -19,7 +29,11 @@ function main() {
   const command = input?.tool_input?.command
   if (!command) return
 
-  const projectDir = process.env.CLAUDE_PROJECT_DIR ?? input?.cwd ?? process.cwd()
+  const projectDir =
+    findSessionWorktreeRoot(input?.cwd, hookProjectRoot) ??
+    process.env.CLAUDE_PROJECT_DIR ??
+    input?.cwd ??
+    process.cwd()
   const violation = detectForbiddenCommand(command, { projectDir })
   if (!violation) return
 
