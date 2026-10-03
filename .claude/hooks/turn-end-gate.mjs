@@ -20,6 +20,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
+import { findSessionWorktreeRoot } from './sessionWorktreeRoot.mjs'
 import { selectTurnEndGates } from './turnEndGateMatcher.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
@@ -30,46 +31,6 @@ const hookProjectRoot = resolve(scriptDir, '../..')
 const MAX_OUTPUT_CHARS = 3000
 // ゲートが固まってもターンを永久に止めない。
 const GATE_TIMEOUT_MS = 180_000
-
-/**
- * `git rev-parse` の出力を返す。git が無い・git の外などで失敗したら例外を投げる。
- *
- * @param {string} directory 実行するディレクトリ
- * @param {string[]} options `git rev-parse` に渡すオプション
- * @returns {string} 前後の空白を除いた出力
- */
-function readGitRevParse(directory, options) {
-  return execFileSync('git', ['-C', directory, 'rev-parse', ...options], {
-    encoding: 'utf8',
-    // 失敗は呼び出し元が既定のルートへ戻る通常の経路なので、git の標準エラーを出さない
-    stdio: ['ignore', 'pipe', 'ignore']
-  }).trim()
-}
-
-/**
- * ゲートで検査する作業ツリーのルートを返す。
- * セッションの cwd が、この hook と同じリポジトリの作業ツリー（別の worktree を含む）にあれば
- * そのルート。cwd が無い・git の外・別のリポジトリなら、hook の置き場所から決めたルート。
- *
- * @param {unknown} sessionWorkingDirectory Stop hook の入力の cwd
- * @returns {string} 検査する作業ツリーのルート
- */
-function resolveGateRoot(sessionWorkingDirectory) {
-  if (typeof sessionWorkingDirectory !== 'string' || sessionWorkingDirectory === '') {
-    return hookProjectRoot
-  }
-  try {
-    const commonDirOptions = ['--path-format=absolute', '--git-common-dir']
-    const isSameRepository =
-      readGitRevParse(sessionWorkingDirectory, commonDirOptions) ===
-      readGitRevParse(hookProjectRoot, commonDirOptions)
-    return isSameRepository
-      ? readGitRevParse(sessionWorkingDirectory, ['--show-toplevel'])
-      : hookProjectRoot
-  } catch {
-    return hookProjectRoot
-  }
-}
 
 /**
  * 作業ツリーの未コミット変更パス一覧を返す（追跡外・ステージ済み・未ステージを含む）。
@@ -124,7 +85,7 @@ function main() {
   // この停止自体が本フックの再開由来なら、もう走らせない（1回だけ・無限ループ防止）。
   if (input?.stop_hook_active) return
 
-  const gateRoot = resolveGateRoot(input?.cwd)
+  const gateRoot = findSessionWorktreeRoot(input?.cwd, hookProjectRoot) ?? hookProjectRoot
   const failures = selectTurnEndGates(collectChangedPaths(gateRoot))
     .map((npmScript) => ({ npmScript, output: collectGateFailure(npmScript, gateRoot) }))
     .filter(({ output }) => output !== null)
