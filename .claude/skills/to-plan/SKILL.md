@@ -61,14 +61,16 @@ Plan は **会話履歴を一切持たない別セッション** が読む前提
 
 Plan を書き出したら、`/check-plan` の前に、Plan の新しい技術要素を照合する。`/check-plan` は外部の制約を調べないので、公式に無い機能やツール名を前提にしたまま Issue 化へ進むのを、ここで止める。
 
-**新しい技術要素**：Plan に名前が出た外部の製品・サービス・ツール（その機能名を含む）のうち、`docs/adr/`・`docs/design/`・各 `package.json` のどこにも同じ名前が出てこないもの。
+**新しい技術要素**：Plan に名前が出た外部の製品・サービス・ツール（その機能名を含む）のうち、`docs/adr/`・`docs/design/`・各 `package.json`・`README.md`・`.claude/` 配下（追跡されたファイル）のどこにも同じ名前が出てこないもの。
 
 1. Plan から、外部の製品・サービス・ツールの名前を取り出す
 2. 名前ごとに、大文字小文字を区別しない文字列検索で照合する。どこにもヒットしなければ新しい
 
    ```bash
-   grep -rliF -- "<名前>" docs/adr docs/design $(git ls-files 'package.json' '*/package.json')
+   grep -rliF -- "<名前>" docs/adr docs/design $(git ls-files 'package.json' '*/package.json') $(git ls-files README.md .claude)
    ```
+
+   `README.md`・`.claude/` は `git ls-files` で追跡されたものだけを渡す。端末ごとに作られる `.claude/settings.local.json` を混ぜると、同じ名前の判定が端末で変わるからである。
 
 3. 新しい技術要素が無ければ、聞かずに `/check-plan <Planパス>` を実行する
 4. あれば `AskUserQuestion` で、新しい技術要素の名前を挙げて「外部の制約を調べる `/premise-check` を実行するか」を聞く。選択肢は「実行する」「実行しない」の2つ
