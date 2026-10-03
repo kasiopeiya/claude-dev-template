@@ -178,6 +178,8 @@ jobs:
       # Issueを起票する。
       # ラベルは ⓪決定論ステップと ①AI の両方から付くため、その両方の後ろで最終状態を読む。
       # AI が失敗しても決定論ラベルは残るため !cancelled()（キャンセル時は後続ランが拾う）。
+      # PR が閉じたときに Issue を閉じる close-human-review-issue.yml が、下の title で Issue を探す。
+      # title を変えるときは、そちらの照合も同じ文字列に直す。
       - name: Open a review issue for human-review PRs
         if: ${{ !cancelled() && steps.pr.outputs.number != '' }}
         env:

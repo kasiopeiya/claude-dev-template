@@ -1,0 +1,45 @@
+# 責務: PR が閉じられたら、その PR の人間レビュー Issue（pr-ai-triage.yml が起票する「PR #N の人間レビュー」）を
+#   close する。マージでも、マージせずの Close でも閉じる。needs-human-review の PR は auto-merge されず、
+#   人間がマージか Close をした時点がレビューの終わりになる。
+#   Issue を探す鍵はタイトル `PR #N の人間レビュー`。pr-ai-triage.yml の起票ステップと一致させる。
+
+name: close-human-review-issue
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  close-review-issue:
+    # fork の PR は GITHUB_TOKEN が読み取り専用で close できない。fork の PR は pr-ai-triage の対象外で
+    # 人間レビュー Issue も立たないため、実行ごと省く。
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # gh issue list・gh issue close に必要
+      issues: write
+    steps:
+      # checkout をしないので、gh はリポジトリを git リモートから引けない。GH_REPO で渡す。
+      - name: Close the review issue of the closed PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          # pr-ai-triage.yml の「Open a review issue for human-review PRs」ステップと同じタイトル。
+          title="PR #$PR の人間レビュー"
+          number=$(gh issue list --label needs-human-review --state open --limit 200 --json number,title |
+            jq -r --arg t "$title" 'map(select(.title == $t)) | .[0].number // empty')
+          if [ -z "$number" ]; then
+            echo "no open review issue for PR #$PR; nothing to close"
+            exit 0
+          fi
+          gh issue close "$number" --reason completed \
+            --comment "PR #$PR が閉じられたので close する（close-human-review-issue.yml）"
