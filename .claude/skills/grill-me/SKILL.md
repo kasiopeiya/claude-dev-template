@@ -13,6 +13,8 @@ Ask for an **externally observable state**, not a restatement of the work（✅�
 
 If the caller passed a scope or a stopping condition in the arguments (another Skill may invoke this one), adopt it as the agreed sentence and skip this question — the caller already fixed the scope, and asking the user again only widens it.
 
+**Look up past decisions next — always.** Right after the scope is agreed (or adopted from the caller) and before the first question, run `/past-decision-search` with the Skill tool, passing the mechanisms, paths, and keywords that appear on the agreed sentence. Do this every time, not only when it seems needed: an AI cannot tell which past decisions it is missing. When a recommendation would overturn a decision it returned, cite that decision and say why it should be overturned.
+
 **Default: don't ask.** A question is allowed only about an element that actually appears on the agreed sentence. Inside it, grill as relentlessly as ever. An element's error handling and edge cases count as inside it — you may ask about them, but you don't have to.
 
 Ask about something outside it only when one of these holds — the list is exhaustive:

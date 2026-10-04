@@ -104,7 +104,7 @@ npm run format       # フォーマット
 - **`docs/design-hub.md`**：CLAUDE.md・design/to-plan/cdk-imp スキル・plan-reviewer-agent 等が起点として直接参照
 - **`docs/design/`（ディレクトリ名）**：`design-doc-policy.md` の `applies-to` が参照。中の個別設計書は自由に追加・更新可
 - **`docs/runbook/`（ディレクトリ名）**：`runbook-policy.md` の `applies-to` が参照。中の個別手順書は自由に追加・更新可
-- **`docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`, `docs/adr/adr-commit-list.md`**：create-adr/decide-tech-stack スキル・`.githooks/pre-commit`・`scripts/generate-adr-index.mjs` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から、決定記録のコミット一覧は `git log` から `npm run gen:adr-index` で生成する（手編集しない）
+- **`docs/adr/`, `docs/adr/adr-template.md`, `docs/adr/adr-index.md`**：create-adr/decide-tech-stack スキル・`.githooks/pre-commit`・`scripts/generate-adr-index.mjs` がファイル名までハードコード参照。一覧表は各 ADR の frontmatter から `npm run gen:adr-index` で生成する（手編集しない）
 - **`docs/reference/non-functional-requirement-items.md`**：to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照
 - **`docs/reference/test-terms.md`**：`policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照
 - **`docs/reference/docs-directory-definitions.md`**：`documentation-policy.md` と doc-review スキルの観点一覧（`references/review-criteria.md`）が、docs/ 配下の置き場所の SSOT として直接参照

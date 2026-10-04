@@ -36,6 +36,8 @@ Plan を書いたセッションが自分で点検すると、書かれていな
 
 **着手前に** `docs/design-hub.md`・`docs/policy-hub.md`・`docs/policy/refined-engineer-judgment-principles.md`（判断の北極星）・`docs/policy/adr-policy.md`（ADR にするかの判定基準）を読む。加えて、Plan が触れる領域に該当 ADR（`docs/adr/`）があれば読む。
 
+続けて、**毎回必ず** `.claude/skills/past-decision-search/SKILL.md` を Read し、その「手順」を Plan が触れる仕組み・パス・キーワードについて Bash で実行して、過去の決定を引く（このエージェントは Skill ツールを持たない）。
+
 ## Phase 3: 観点ごとに判定する
 
 ### 必須セクションの充足
@@ -55,7 +57,7 @@ Plan が挙げる変更箇所と、実際のコードベースを照合する。
 
 ### ポリシー整合・判断原則との照合
 
-`docs/policy/` の指針・該当 ADR に反する方針が Plan に含まれていないか確認する。あわせて、`docs/policy/refined-engineer-judgment-principles.md` を Plan に当てる。各原則の**トリガー**に状況を引き当てたうえで、特に Plan 段階で効く次の観点を確認し、反していれば指摘する：
+`docs/policy/` の指針・該当 ADR・Phase 2 で引いた過去の決定に反する方針が Plan に含まれていないか確認する。過去の決定を覆す方針なのに、Plan がその決定に触れず覆す理由も書いていなければ違反とする。あわせて、`docs/policy/refined-engineer-judgment-principles.md` を Plan に当てる。各原則の**トリガー**に状況を引き当てたうえで、特に Plan 段階で効く次の観点を確認し、反していれば指摘する：
 
 - **決定を遅らせる**：確信のない詳細（DB / FW / 外部サービス）を今 Plan で固定していないか
 - **新規開発（0 からの立ち上げ）の場合**：[new-development-policy](../../../docs/policy/new-development-policy.md) に照らし、薄い縦スライス（曳光弾/walking skeleton）先行・スパイクは使い捨て・ドメイン/コアから着手の方針か。水平な層ごとの作り込みや FW/DB から始める計画なら**違反（High）**（この項目の出所は new-development-policy）
