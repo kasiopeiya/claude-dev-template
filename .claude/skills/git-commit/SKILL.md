@@ -78,7 +78,7 @@ issueの方針とは別に自前のメッセージ生成へ差し替えた。
 
 ### 決定記録を残すコミット
 
-コミットに含まれる決定が、`docs/policy/adr-policy.md` の判定で「コミットの決定記録」になるときは、本文に決定・理由・却下した案を書き、最後のトレーラーの段落に `Decision-Record: yes` を足す。Issue の「対応方針」の書き先に決定記録と書かれていれば、それに従う。このトレーラーの付いたコミットは、`npm run gen:adr-index` が `docs/adr/adr-commit-list.md` の一覧に載せる。トレーラーの段落以外に `Decision-Record: yes` の行を書かない。
+コミットに含まれる決定が、`docs/policy/adr-policy.md` の判定で「コミットの決定記録」になるときは、本文に決定・理由・却下した案を書き、最後のトレーラーの段落に `Decision-Record: yes` を足す。Issue の「対応方針」の書き先に決定記録と書かれていれば、それに従う。このトレーラーの付いたコミットは、`/past-decision-search` が `git log` から引く。トレーラーの段落以外に `Decision-Record: yes` の行を書かない。
 
 ```
 feat: 一覧 API のページングをカーソル方式にする (#123)
