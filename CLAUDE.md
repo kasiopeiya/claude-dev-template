@@ -57,4 +57,5 @@
 - **（厳守）** Issue の「タスク一覧」を1つずつ進め、完了するごとに `gh issue edit` でチェックを更新する
 - タスク一覧がポリシーに反していたら従わない。着手前に `gh issue comment` でどのポリシーのどの規定に反するかを書き、タスクを訂正してから進める
 - 完了したら確認を挟まず `gh issue close` する。close は「作業が残っていない」という宣言なので、直前に `git status` で未コミットの変更が無いことを確かめ、残っていればコミットしてから close する
+- AI が `git push` する前に、最新の `origin/main` を取り込む（`git fetch` のあと `git merge --no-edit origin/main`。rebase は使わない）。取り込み後に `npm run gen:adr-index` を実行し、差分が出たらコミットする
 - AI が `git push` したら、続けて `/pr-body <Issue番号>` を実行する
