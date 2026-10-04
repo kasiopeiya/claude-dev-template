@@ -35,7 +35,7 @@
 
 ## 開発フロー
 
-仕様駆動で開発する（[docs/guide/development-flow.md](docs/guide/development-flow.md)）。実装を変えたら `docs/` の設計書の更新要否を判断し、不要なら理由を書く（「更新不要・理由：〇〇」）。
+仕様駆動で開発する（[docs/guide/development-flow.md](docs/guide/development-flow.md)）。
 
 > [!IMPORTANT]
 > **（AI・必須）** **issue番号だけで開発フローを自動追従する**：「issue 111 対応して」のように番号だけ渡されたら、`gh issue view 111` の「実装フロー（使用するSkill）」に書かれた Skill を記載順に実行する。同セクションが無ければ、変更種別から下の一覧で決める。
