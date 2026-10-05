@@ -74,7 +74,7 @@ const CONTROL_CHARACTER_PATTERN = /[\u0000-\u0008\u000B-\u001F\u007F]/g
  * @returns {string} `HH:MM:SS`
  */
 export function formatClockTime(time) {
-  const padToTwoDigits = (value) => String(value).padStart(2, '0')
+  const padToTwoDigits = (timePart) => String(timePart).padStart(2, '0')
   return [time.getHours(), time.getMinutes(), time.getSeconds()].map(padToTwoDigits).join(':')
 }
 

@@ -16,18 +16,18 @@ export class Email {
 
   /**
    * メールアドレスを生成する。不正な値は生成を拒否する。
-   * @param value メールアドレス文字列
+   * @param rawEmailAddress 検証前のメールアドレス文字列
    * @returns 生成された Email
    * @throws {BusinessError} 形式が不正な場合、または長さ（UTF-16 コード単位）が254文字を超える場合
    */
-  static create(value: string): Email {
+  static create(rawEmailAddress: string): Email {
     // 下の正規表現は最悪で入力長の2乗の時間がかかるため、先に長さで弾く
-    if (value.length > MAX_EMAIL_LENGTH) {
-      throw new BusinessError(`email too long: ${value.length} chars`)
+    if (rawEmailAddress.length > MAX_EMAIL_LENGTH) {
+      throw new BusinessError(`email too long: ${rawEmailAddress.length} chars`)
     }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value)) {
-      throw new BusinessError(`invalid email: ${value}`)
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rawEmailAddress)) {
+      throw new BusinessError(`invalid email: ${rawEmailAddress}`)
     }
-    return new Email(value)
+    return new Email(rawEmailAddress)
   }
 }

@@ -107,11 +107,11 @@ function judgeEmptyStdin({ heredocBody, hasPipedStdin, hasRedirectedStdin }) {
 }
 
 /** フラグ1つ分を見て、本文を空で渡していればその説明を返す。該当しなければ null。 */
-function judgeFlagValue(target, { flag, value, stdin }) {
-  if (target.bodyFlags.includes(flag) && stripQuotes(value) === '') {
+function judgeFlagValue(target, { flag, flagValue, stdin }) {
+  if (target.bodyFlags.includes(flag) && stripQuotes(flagValue) === '') {
     return `${target.label} が ${flag} に空文字列を渡している`
   }
-  if (!target.bodyFileFlags.includes(flag) || stripQuotes(value) !== '-') return null
+  if (!target.bodyFileFlags.includes(flag) || stripQuotes(flagValue) !== '-') return null
 
   const reason = judgeEmptyStdin(stdin)
   return reason ? `${target.label} が ${flag} - に空の本文を渡している（${reason}）` : null
@@ -121,10 +121,10 @@ function inspectTarget(target, tokens, stdin) {
   const flagTokens = tokens.slice(3)
   if (target.requiredFlag && !flagTokens.includes(target.requiredFlag)) return null
 
-  for (const [flag, value] of iterateFlagValues(flagTokens)) {
-    if (value === undefined) continue
+  for (const [flag, flagValue] of iterateFlagValues(flagTokens)) {
+    if (flagValue === undefined) continue
 
-    const violation = judgeFlagValue(target, { flag, value, stdin })
+    const violation = judgeFlagValue(target, { flag, flagValue, stdin })
     if (violation) return violation
   }
   return null

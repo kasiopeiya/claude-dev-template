@@ -168,15 +168,15 @@ export function tokenize(statement) {
 /**
  * トークンを囲む引用符を外す。囲まれていなければそのまま返す。
  *
- * @param {string} value トークン
+ * @param {string} token シェルの1トークン
  * @returns {string} 引用符を外した値
  */
-export function stripQuotes(value) {
-  if (typeof value !== 'string') return value
-  if (value.length >= 2 && value[0] === value.at(-1) && (value[0] === '"' || value[0] === "'")) {
-    return value.slice(1, -1)
+export function stripQuotes(token) {
+  if (typeof token !== 'string') return token
+  if (token.length >= 2 && token[0] === token.at(-1) && (token[0] === '"' || token[0] === "'")) {
+    return token.slice(1, -1)
   }
-  return value
+  return token
 }
 
 /**
