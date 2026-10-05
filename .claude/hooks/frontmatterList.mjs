@@ -60,14 +60,14 @@ export function parseFrontmatterList(frontmatter, key) {
   const keyLineIndex = lines.findIndex((line) => keyPattern.test(line))
   if (keyLineIndex === -1) return []
 
-  const value = lines[keyLineIndex].replace(new RegExp(`^\\s*${key}:\\s*`), '').trim()
+  const inlineValueText = lines[keyLineIndex].replace(new RegExp(`^\\s*${key}:\\s*`), '').trim()
 
   // インライン配列: key: ['a', 'b']（値が同じ行にある場合）
-  if (value.startsWith('[')) {
+  if (inlineValueText.startsWith('[')) {
     return splitInline(joinBracketed(lines, keyLineIndex))
   }
   // インライン単一スカラー: key: '**/*.md'
-  if (value) return [stripQuotes(value)]
+  if (inlineValueText) return [stripQuotes(inlineValueText)]
 
   // 複数行インライン配列: key: の次行が `[` で始まり、`]` の行まで続く
   if (lines[keyLineIndex + 1]?.trim().startsWith('[')) {
