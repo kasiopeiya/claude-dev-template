@@ -70,6 +70,11 @@ export default tseslint.config(
   },
   // CommonJS の設定ファイル(.prettierrc.js など)
   { files: ['**/*.{js,cjs}'], languageOptions: { sourceType: 'commonjs' } },
+  // Skill が生成する HTML に差し込むブラウザ用スクリプト。document・window はブラウザ、MathJax は CDN が供給する
+  {
+    files: ['.claude/skills/**/design-system/*.js'],
+    languageOptions: { globals: { ...globals.browser, MathJax: 'readonly' } }
+  },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
