@@ -5,20 +5,20 @@ import { Email } from '../../domain/email'
 
 describe('メールアドレスの値オブジェクト', () => {
   it('形式が有効な場合に元の文字列を保持して生成される', () => {
-    const sut = Email.create('user@example.com')
+    const sut = new Email('user@example.com')
 
     expect(sut.value).toBe('user@example.com')
   })
 
   it('形式が不正な場合にビジネス例外を投げる', () => {
-    expect(() => Email.create('not-an-email')).toThrow(BusinessError)
+    expect(() => new Email('not-an-email')).toThrow(BusinessError)
   })
 
   it('長さが上限の254文字の場合に生成される', () => {
     const domainWithAtSign = '@example.com'
     const email = `${'a'.repeat(254 - domainWithAtSign.length)}${domainWithAtSign}`
 
-    const sut = Email.create(email)
+    const sut = new Email(email)
 
     expect(sut.value).toBe(email)
   })
@@ -27,6 +27,6 @@ describe('メールアドレスの値オブジェクト', () => {
     const domainWithAtSign = '@example.com'
     const email = `${'a'.repeat(255 - domainWithAtSign.length)}${domainWithAtSign}`
 
-    expect(() => Email.create(email)).toThrow(BusinessError)
+    expect(() => new Email(email)).toThrow(BusinessError)
   })
 })
