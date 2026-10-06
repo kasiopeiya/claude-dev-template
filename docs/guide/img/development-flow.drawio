@@ -1,0 +1,123 @@
+<mxfile host="Electron">
+  <diagram name="dev-flow" id="LId1gZZWrcA0g5Csnq6B">
+    <mxGraphModel dx="1753" dy="1315" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#ECECEC,#EBEBEB)" math="0" shadow="0">
+      <root>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-0" />
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-1" parent="UcEs89pxkK5Q5NqgFq-a-0" />
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-2" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-1" source="UcEs89pxkK5Q5NqgFq-a-3" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="UcEs89pxkK5Q5NqgFq-a-5" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-3" parent="UcEs89pxkK5Q5NqgFq-a-1" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Georgia;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="&lt;font&gt;要件定義&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="160" x="252.5" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-4" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-1" source="UcEs89pxkK5Q5NqgFq-a-5" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="UcEs89pxkK5Q5NqgFq-a-11" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-5" parent="UcEs89pxkK5Q5NqgFq-a-1" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Georgia;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="開発準備" vertex="1">
+          <mxGeometry height="80" width="160" x="252.5" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-6" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="&lt;span style=&quot;font-family: Georgia;&quot;&gt;インフラアーキテクチャ設計&lt;br&gt;CI/CD整備など&lt;/span&gt;&lt;br style=&quot;scrollbar-color: rgba(111, 195, 223, 0.6) rgb(0, 0, 0); font-family: Georgia;&quot;&gt;&lt;span style=&quot;font-family: Georgia;&quot;&gt;足場作成&lt;/span&gt;" vertex="1">
+          <mxGeometry height="30" width="275" x="435" y="480" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-7" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="fixする&lt;div&gt;（→アジャイルではない）&lt;/div&gt;" vertex="1">
+          <mxGeometry height="30" width="260" x="435" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-8" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="&lt;span&gt;機能ごとに&lt;/span&gt;ループを回し、&lt;br&gt;インクリメンタルに積み上げる&lt;br&gt;（→ウォーターフォールでもない）" vertex="1">
+          <mxGeometry height="30" width="363.5" x="430" y="840" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-9" parent="UcEs89pxkK5Q5NqgFq-a-1" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Georgia;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="システムテスト" vertex="1">
+          <mxGeometry height="80" width="170" x="247.5" y="860" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-10" connectable="0" parent="UcEs89pxkK5Q5NqgFq-a-1" style="group;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#ECECEC,#FFFFFF);fontSize=20;" value="" vertex="1">
+          <mxGeometry height="210" width="585" x="40" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-11" parent="UcEs89pxkK5Q5NqgFq-a-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="" vertex="1">
+          <mxGeometry height="210" width="584.9999999999999" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-12" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-10" source="UcEs89pxkK5Q5NqgFq-a-13" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="UcEs89pxkK5Q5NqgFq-a-15" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-13" parent="UcEs89pxkK5Q5NqgFq-a-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="設計" vertex="1">
+          <mxGeometry height="70" width="94.35483870967742" x="56.61290322580645" y="93.33333333333334" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-14" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-10" source="UcEs89pxkK5Q5NqgFq-a-15" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="UcEs89pxkK5Q5NqgFq-a-17" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-15" parent="UcEs89pxkK5Q5NqgFq-a-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="実装" vertex="1">
+          <mxGeometry height="70" width="94.35483870967742" x="188.70967741935485" y="93.33333333333334" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-16" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-10" source="UcEs89pxkK5Q5NqgFq-a-17" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="UcEs89pxkK5Q5NqgFq-a-18" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-17" parent="UcEs89pxkK5Q5NqgFq-a-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="テスト" vertex="1">
+          <mxGeometry height="70" width="94.35483870967742" x="311.37096774193543" y="93.33333333333334" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-18" parent="UcEs89pxkK5Q5NqgFq-a-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="レビュー" vertex="1">
+          <mxGeometry height="70" width="94.35483870967742" x="434.0322580645161" y="93.33333333333334" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-19" parent="UcEs89pxkK5Q5NqgFq-a-10" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=24;" value="仕様駆動開発" vertex="1">
+          <mxGeometry height="70" width="188.70967741935485" x="9.44" y="10" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-20" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-10" source="UcEs89pxkK5Q5NqgFq-a-11" style="edgeStyle=orthogonalEdgeStyle;html=1;innerLoopWaypoints=1;entryX=0.997;entryY=0.602;entryDx=0;entryDy=0;entryPerimeter=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;strokeWidth=2;" target="UcEs89pxkK5Q5NqgFq-a-11">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="665" y="95" />
+              <mxPoint x="665" y="126.43" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-21" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-1" source="UcEs89pxkK5Q5NqgFq-a-11" style="edgeStyle=none;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="UcEs89pxkK5Q5NqgFq-a-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-22" parent="UcEs89pxkK5Q5NqgFq-a-1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;legacyAnchorPoints=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="638" width="20" x="850" y="312" as="geometry" />
+        </mxCell>
+        <mxCell id="UcEs89pxkK5Q5NqgFq-a-23" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=24;" value="AI駆動開発" vertex="1">
+          <mxGeometry height="30" width="180" x="870" y="616" as="geometry" />
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-4" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="&lt;span class=&quot;s1&quot;&gt;AI駆動開発はイテレーティブなスタイルが前提、ループ内は仕様駆動&lt;/span&gt;" vertex="1">
+          <mxGeometry height="64" width="1383" x="37" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-63" connectable="0" parent="UcEs89pxkK5Q5NqgFq-a-1" style="group" value="" vertex="1">
+          <mxGeometry height="100" width="1619" x="37" y="13" as="geometry" />
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-3" parent="7J6yEzP9-KpsayN5k1T5-63" style="text;whiteSpace=wrap;html=1;fontSize=75;" value="&lt;span class=&quot;s1&quot;&gt;開発フロー：要件固定型インクリメンタル&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="1606" x="13" as="geometry" />
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-5" parent="7J6yEzP9-KpsayN5k1T5-63" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
+          <mxGeometry height="90" width="7" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-64" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="ループ" vertex="1">
+          <mxGeometry height="30" width="60" x="635" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-65" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-1" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;dashed=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="750" y="367.5" as="sourcePoint" />
+            <mxPoint x="1080" y="367.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-67" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="受託開発では要件定義で契約が変わる事情を考慮" vertex="1">
+          <mxGeometry height="30" width="275" x="1140" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-68" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-1" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;dashed=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="750" y="477.5" as="sourcePoint" />
+            <mxPoint x="1080" y="477.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-69" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="ウォーターフォール型の&lt;br&gt;先に決める部分を取り入れた&lt;br&gt;ハイブリッド型" vertex="1">
+          <mxGeometry height="30" width="275" x="1140" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-70" edge="1" parent="UcEs89pxkK5Q5NqgFq-a-1" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;dashed=1;" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="750" y="707.5" as="sourcePoint" />
+            <mxPoint x="1080" y="707.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7J6yEzP9-KpsayN5k1T5-71" parent="UcEs89pxkK5Q5NqgFq-a-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="AIがメイン作業者となるAI駆動開発では、フィードバックループを回し、AI自身が改善できるイテレーティブな開発スタイルが前提" vertex="1">
+          <mxGeometry height="30" width="380" x="1140" y="700" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
