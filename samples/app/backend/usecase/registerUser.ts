@@ -28,11 +28,11 @@ export type RegisterUser = (input: RegisterUserInput) => Promise<User>
  */
 export function createRegisterUserUseCase(userRepository: UserRepository): RegisterUser {
   return async (input) => {
-    const id = UserId.create(input.id)
-    const email = Email.create(input.email)
+    const id = new UserId(input.id)
+    const email = new Email(input.email)
 
     // 存在確認を自分で行うと確認と保存の間に別の登録が割り込むため、重複の判定ごと永続化へ委ねる
-    const user = User.create(id, email)
+    const user = new User(id, email)
     await userRepository.saveNewUser(user)
     return user
   }

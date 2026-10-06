@@ -8,18 +8,25 @@ import { UserId } from './userId'
  * id・email は生成時に不変条件を検証済みの値オブジェクトなので、User 自身は検証を持たず合成に徹する。
  */
 export class User {
-  private constructor(
-    public readonly id: UserId,
-    public readonly email: Email
-  ) {}
+  readonly #id: UserId
+
+  readonly #email: Email
 
   /**
    * User を生成する。
    * @param id ユーザーID（検証済み）
    * @param email メールアドレス（検証済み）
-   * @returns 生成された User
    */
-  static create(id: UserId, email: Email): User {
-    return new User(id, email)
+  constructor(id: UserId, email: Email) {
+    this.#id = id
+    this.#email = email
+  }
+
+  get id(): UserId {
+    return this.#id
+  }
+
+  get email(): Email {
+    return this.#email
   }
 }

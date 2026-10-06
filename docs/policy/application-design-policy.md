@@ -122,29 +122,37 @@ sendSms('user@example.com') // OK（別概念すら通る）
 ```typescript
 // ✅ 電話番号という概念に型を与え、不正な値を作れなくする
 function sendSms(phoneNumber: PhoneNumber) { ... }
-sendSms(PhoneNumber.create('090-1234-5678')) // 生成時に検証を通った値だけが渡る
+sendSms(new PhoneNumber('090-1234-5678')) // 生成時に検証を通った値だけが渡る
 sendSms('abc') // コンパイルエラー（生の string は渡せない）
 ```
 
 ### クラスで実装する——ブランド型で代替しない
 
-形は `private constructor` ＋ 検証する `static create` ＋ `readonly` の値に揃え、ブランド型（型エイリアスとファクトリ関数の組み合わせ）で代替しない。**他がほぼ関数で書かれる中では、クラスという形そのものが「これは値オブジェクトだ」という標識になる**——読み手は定義を開かずに見分けられる。
+**不変条件はコンストラクタで検証し、値はプライベートフィールドに持ってゲッターで読ませる。** ファクトリの `static create` は置かない（生成の入口は1つに保つ）。ブランド型（型エイリアスとファクトリ関数の組み合わせ）でも代替しない。**他がほぼ関数で書かれる中では、クラスという形そのものが「これは値オブジェクトだ」という標識になる**——読み手は定義を開かずに見分けられる。
 
 ```typescript
 // ❌ ブランド型：'03-0000-0000' as PhoneNumber で検証を素通りできる
 type PhoneNumber = string & { readonly __brand: 'PhoneNumber' }
-const toPhoneNumber = (value: string): PhoneNumber => { ... }
+const toPhoneNumber = (rawPhoneNumber: string): PhoneNumber => { ... }
 
-// ✅ クラス：create を通った値しか存在できない
+// ✅ クラス：コンストラクタを通った値しか存在できない
 export class PhoneNumber {
-  private constructor(public readonly value: string) {}
+  readonly #value: string
 
-  static create(value: string): PhoneNumber {
-    if (!PHONE_NUMBER_REGEX.test(value)) throw new BusinessError(`invalid phone number: ${value}`)
-    return new PhoneNumber(value)
+  constructor(rawPhoneNumber: string) {
+    if (!PHONE_NUMBER_REGEX.test(rawPhoneNumber)) {
+      throw new BusinessError(`invalid phone number: ${rawPhoneNumber}`)
+    }
+    this.#value = rawPhoneNumber
+  }
+
+  get value(): string {
+    return this.#value
   }
 }
 ```
+
+ゲッターにするのは、**値を `public readonly` のフィールドで公開すると、`{ value: '不正な値' }` というオブジェクトリテラルがそのままその型として通る**ためである。
 
 > [!WARNING]
 > **（AI・必須）** 「不変条件はファクトリ関数でも守れる」を理由にブランド型を選ばない。判断軸にかけずクラスと決めているのは、判定の余地を残すと既定の関数に倒れるためである。
