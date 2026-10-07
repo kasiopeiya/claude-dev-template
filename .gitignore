@@ -51,6 +51,7 @@ __pycache__/
 !.eslintrc.js
 !.prettierrc.js
 !.versionrc.js
+!.claude/skills/**/design-system/*.js
 *.d.ts
 node_modules
 **/tmp/
