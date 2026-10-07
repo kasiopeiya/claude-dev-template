@@ -1,0 +1,162 @@
+<mxfile host="Electron">
+  <diagram name="adr-decision" id="adrDecisionRecord0001">
+    <mxGraphModel dx="1607" dy="1205" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#ECECEC,#EBEBEB)" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="adr-1" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="100" width="1619" x="37" y="13" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-2" parent="adr-1" style="text;whiteSpace=wrap;html=1;fontSize=75;" value="&lt;span class=&quot;s1&quot;&gt;設計判断の記録：ADR はどこまで書くか&lt;/span&gt;" vertex="1">
+          <mxGeometry height="100" width="1606" x="13" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-3" parent="adr-1" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
+          <mxGeometry height="90" width="7" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-4" parent="1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="重めの決定はADR、軽い決定はコミットに書き、AI が git log で引く" vertex="1">
+          <mxGeometry height="64" width="1523" x="37" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#D4D2CD;strokeColor=#000000;" value="" vertex="1">
+          <mxGeometry height="140" width="580" x="37" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-6" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#000000;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.robotics;" value="" vertex="1">
+          <mxGeometry height="64" width="64" x="58" y="253" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-7" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="&lt;b&gt;なぜ記録するか&lt;/b&gt;&lt;br&gt;AI は前のセッションを覚えていない&lt;br&gt;→ 経緯が無いと同じ検討を繰り返す&lt;br&gt;（グラウンドホッグデイアンチパターン）" vertex="1">
+          <mxGeometry height="126" width="470" x="135" y="222" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-8" parent="1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#000000;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.robotics;" value="" vertex="1">
+          <mxGeometry height="56" width="56" x="60" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-9" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="設計判断が出た&lt;br&gt;（Plan・対応方針を書く段階で判定）" vertex="1">
+          <mxGeometry height="66" width="470" x="130" y="395" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-10" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=#000000;fontSize=20;labelBackgroundColor=none;" value="後から「なぜこうした？」と&lt;br&gt;問われそう&lt;br&gt;後戻り困難な決定" vertex="1">
+          <mxGeometry height="160" width="440" x="80" y="490" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=#000000;fontSize=20;align=left;spacingLeft=14;spacingLeft=80;" value="&lt;b&gt;ADR&lt;/b&gt;（docs/adr/）&lt;br&gt;一覧に載るのはこれだけ" vertex="1">
+          <mxGeometry height="100" width="270" x="37" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-13" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=#000000;fontSize=20;align=left;spacingLeft=14;spacingLeft=70;" value="&lt;b&gt;コミットの決定記録&lt;/b&gt;&lt;br&gt;気楽に書ける・一覧が汚れない" vertex="1">
+          <mxGeometry height="100" width="290" x="330" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-14" parent="1" style="html=1;outlineConnect=0;aspect=fixed;shape=mxgraph.azure.git_repository;fillColor=#000000;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontSize=20;" value="" vertex="1">
+          <mxGeometry height="50" width="50" x="345" y="765" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-15" edge="1" parent="1" source="adr-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=18;labelBackgroundColor=none;verticalAlign=bottom;" target="adr-10" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="88" y="470" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="adr-16" edge="1" parent="1" source="adr-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=18;labelBackgroundColor=none;verticalAlign=bottom;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="adr-11" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="690" />
+              <mxPoint x="172" y="690" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="adr-17" edge="1" parent="1" source="adr-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=18;labelBackgroundColor=none;verticalAlign=bottom;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="adr-13" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="690" />
+              <mxPoint x="475" y="690" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="adr-18" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="Yes" vertex="1">
+          <mxGeometry height="30" width="60" x="130" y="655" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-19" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="No／迷う" vertex="1">
+          <mxGeometry height="30" width="120" x="400" y="655" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-20" edge="1" parent="1" style="endArrow=none;html=1;strokeColor=#000000;dashed=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="650" y="215" as="sourcePoint" />
+            <mxPoint x="650" y="950" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="adr-21" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=26;" value="&lt;b&gt;コミットの決定記録を AI が読む仕組み&lt;/b&gt;" vertex="1">
+          <mxGeometry height="40" width="700" x="690" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-22" parent="1" style="text;html=1;strokeColor=#000000;fillColor=#000000;align=center;verticalAlign=middle;whiteSpace=wrap;overflow=hidden;fontSize=18;fontColor=#ffffff;" value="① 書く（/git-commit）" vertex="1">
+          <mxGeometry height="32" width="230" x="690" y="268" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-23" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#000000;fontFamily=Courier New;fontSize=17;align=left;verticalAlign=top;spacing=12;labelBackgroundColor=none;" value="feat: 一覧 API のページングをカーソル方式にする (#123)&lt;br&gt;&lt;br&gt;&lt;b&gt;決定&lt;/b&gt;: オフセットではなくカーソルで行う&lt;br&gt;&lt;b&gt;理由&lt;/b&gt;: 途中で行が増減しても重複・抜けが出ない&lt;br&gt;&lt;b&gt;却下した案&lt;/b&gt;:&lt;br&gt;- オフセット方式：件数が増えるほど遅い&lt;br&gt;&lt;br&gt;&lt;b style=&quot;background-color: rgb(179, 179, 179);&quot;&gt;Decision-Record: yes&lt;/b&gt;" vertex="1">
+          <mxGeometry height="200" width="560" x="690" y="310" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-25" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="◀ トレーラー＝検索キー" vertex="1">
+          <mxGeometry height="40" width="300" x="1260" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-26" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=18;" value="AI は Skillを使用して、git log で引く" vertex="1">
+          <mxGeometry height="30" width="870" x="690" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-27" parent="1" style="text;html=1;strokeColor=#000000;fillColor=#000000;align=center;verticalAlign=middle;whiteSpace=wrap;overflow=hidden;fontSize=18;fontColor=#ffffff;" value="② 引く（/past-decision-search）" vertex="1">
+          <mxGeometry height="32" width="300" x="690" y="580" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-28" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#000000;shape=mxgraph.mscae.intune.policy;fontSize=20;" value="" vertex="1">
+          <mxGeometry height="50" width="50" x="700" y="655" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-29" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="&lt;b&gt;設計書&lt;/b&gt;&lt;br&gt;git grep →「設計意図」の記述" vertex="1">
+          <mxGeometry height="70" width="330" x="765" y="645" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-31" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="&lt;b&gt;ADR&lt;/b&gt;&lt;br&gt;git grep -- docs/adr" vertex="1">
+          <mxGeometry height="70" width="330" x="765" y="745" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-32" parent="1" style="html=1;outlineConnect=0;aspect=fixed;shape=mxgraph.azure.git_repository;fillColor=#000000;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontSize=20;" value="" vertex="1">
+          <mxGeometry height="50" width="50" x="700" y="855" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-33" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="&lt;b&gt;決定記録のコミット&lt;/b&gt;&lt;br&gt;git log --grep &amp;quot;Decision-Record: yes&amp;quot;&lt;br&gt;→ git show で本文を読む" vertex="1">
+          <mxGeometry height="90" width="360" x="765" y="835" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-35" parent="1" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);strokeColor=#000000;fontSize=19;align=left;spacingLeft=14;" value="&lt;b&gt;過去の決定：〈対象〉&lt;/b&gt;&lt;br&gt;・決定&lt;br&gt;・理由&lt;br&gt;・却下した案&lt;br&gt;・出典&lt;br&gt;　（本文・コミット・ADR）" vertex="1">
+          <mxGeometry height="180" width="260" x="1315" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-39" edge="1" parent="1" source="adr-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontSize=18;labelBackgroundColor=none;verticalAlign=bottom;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="adr-35" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-40" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=18;" value="Plan・Issue 監査から呼ぶ&lt;br&gt;→ 却下済みの案を蒸し返さない" vertex="1">
+          <mxGeometry height="70" width="290" x="1280" y="885" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-41" edge="1" parent="1" style="endArrow=none;html=1;strokeColor=#000000;dashed=1;" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="37" y="985" as="sourcePoint" />
+            <mxPoint x="1560" y="985" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="adr-43" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#000000;shape=mxgraph.mscae.intune.policy;fontSize=20;" value="" vertex="1">
+          <mxGeometry height="60" width="60" x="122" y="1065" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-44" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" value="&lt;b&gt;いまの設計の&lt;/b&gt;&lt;b&gt;理由は設計書に記載&lt;/b&gt;&lt;br&gt;なぜそのアーキテクチャにしたのかなど、&lt;br&gt;現在の設計意図は設計書に記載&lt;br&gt;経緯や背景はADRやコミットに記録する" vertex="1">
+          <mxGeometry height="125" width="470" x="197" y="1040" as="geometry" />
+        </mxCell>
+        <mxCell id="xSrj3A2Req8BVtPjLut0-1" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="重めの判断&lt;br&gt;→ファイルとして管理" vertex="1">
+          <mxGeometry height="56" width="203.5" x="70.25" y="869" as="geometry" />
+        </mxCell>
+        <mxCell id="xSrj3A2Req8BVtPjLut0-2" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=20;" value="重めの判断&lt;br&gt;→gitコメントに記載" vertex="1">
+          <mxGeometry height="56" width="203.5" x="373.25" y="869" as="geometry" />
+        </mxCell>
+        <mxCell id="xSrj3A2Req8BVtPjLut0-3" parent="1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;legacyAnchorPoints=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);strokeColor=light-dark(#000000,#000000);" value="" vertex="1">
+          <mxGeometry height="305" width="20" x="1095" y="632.5" as="geometry" />
+        </mxCell>
+        <mxCell id="xSrj3A2Req8BVtPjLut0-7" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="125" width="215" x="1100" y="745" as="geometry" />
+        </mxCell>
+        <mxCell id="adr-34" parent="xSrj3A2Req8BVtPjLut0-7" style="shape=mxgraph.signs.healthcare.brain;html=1;pointerEvents=1;fillColor=#000000;strokeColor=none;verticalLabelPosition=top;verticalAlign=bottom;align=center;fontSize=20;" value="" vertex="1">
+          <mxGeometry height="70" width="80" x="50" as="geometry" />
+        </mxCell>
+        <mxCell id="xSrj3A2Req8BVtPjLut0-6" parent="xSrj3A2Req8BVtPjLut0-7" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;past-decision-search&lt;br&gt;skill&lt;/font&gt;" vertex="1">
+          <mxGeometry height="30" width="215" y="95" as="geometry" />
+        </mxCell>
+        <mxCell id="xSrj3A2Req8BVtPjLut0-8" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#000000;shape=mxgraph.mscae.oms.log_management;fontColor=#000000;" value="" vertex="1">
+          <mxGeometry height="56" width="50" x="50" y="757" as="geometry" />
+        </mxCell>
+        <mxCell id="xSrj3A2Req8BVtPjLut0-9" parent="1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#000000;shape=mxgraph.mscae.oms.log_management;fontColor=#000000;" value="" vertex="1">
+          <mxGeometry height="56" width="50" x="697" y="752" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
