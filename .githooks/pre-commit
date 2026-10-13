@@ -3,7 +3,7 @@
 # コミット前にステージ済みファイルだけを prettier で整形して再ステージする。
 # 拡張子で絞らず、CI と同じく prettier が扱える全ファイルを対象にする（扱えないものは --ignore-unknown で読み飛ばす）。
 # 併せて、ADR の一覧表を再生成し再ステージする（Issue #50）。
-# ADR 本体の変更の有無を見ずに毎回生成する。main の取り込みで食い違った一覧表を、ADR を触らない次のコミットでも直すため（/auto-dev が当てにしている）。
+# ADR 本体の変更の有無を見ずに毎回生成する。デフォルトブランチの取り込みで食い違った一覧表を、ADR を触らない次のコミットでも直すため（/auto-dev が当てにしている）。
 npm run --silent gen:adr-index >/dev/null || exit 1
 git add docs/adr/adr-index.md
 
