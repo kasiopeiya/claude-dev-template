@@ -125,7 +125,7 @@ function listPackageLockDirectories() {
 /**
  * 依存を入れ直す必要があるかを判定する。
  *
- * clone は毎回 origin/main まで戻されるので、main 側で依存が変わるとロックファイルだけが新しくなる。
+ * clone は毎回デフォルトブランチまで戻されるので、そちらで依存が変わるとロックファイルだけが新しくなる。
  *
  * @param {string} directory 判定するディレクトリ（絶対パス）。ロックファイルを持つこと
  * @returns {boolean} 成功した npm ci の印が無いか、印がロックファイルより古ければ true
@@ -167,7 +167,7 @@ export function ensureDependencies() {
 }
 
 /**
- * Issue を選ぶ前に済ませられる準備を整える。依存は clone を origin/main へ戻した後でないと
+ * Issue を選ぶ前に済ませられる準備を整える。依存は clone をデフォルトブランチへ戻した後でないと
  * 判定できないため、ここには含めず ensureDependencies で別に行う。
  *
  * @returns {void}

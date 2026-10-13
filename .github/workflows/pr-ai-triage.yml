@@ -6,7 +6,7 @@
 name: pr-ai-triage
 
 # claude-code-action は push イベント非対応のため、pipeline の完了を workflow_run で受ける。
-# 定義は常に main から取られ PR 側から改変できず、fork PR は起点になれない（詳細: cicd-design）。
+# 定義は常にデフォルトブランチから取られ PR 側から改変できず、fork PR は起点になれない（詳細: cicd-design）。
 on:
   workflow_run:
     workflows: [pipeline]
@@ -43,7 +43,7 @@ jobs:
       # 後段の auto-merge job へ解決済み PR 番号を渡す（#66）。
       pr_number: ${{ steps.pr.outputs.number }}
     steps:
-      # skill 定義とポリシーを main（PR 改変を受けない正典）から読むため checkout する。
+      # skill 定義とポリシーをデフォルトブランチ（PR 改変を受けない正典）から読むため checkout する。
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # workflow_run には PR コンテキストが無い。トリガー元 pipeline の head ブランチから PR を引く。
@@ -95,7 +95,7 @@ jobs:
             --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr edit:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh label list:*),Bash(gh label create:*)"
           prompt: |
             あなたはこのリポジトリの CI 上で動く advisory エージェントです。
-            対象は PR #${{ steps.pr.outputs.number }}（base: main）。
+            対象は PR #${{ steps.pr.outputs.number }}（base: ${{ github.event.repository.default_branch }}）。
             マージ・承認・クローズ・ブランチ削除・PR 本文の変更は絶対に行わないこと。以下のタスクを実行する。
 
             ## 使えるツール（厳守・無駄な試行でトークンと時間を浪費しないため）

@@ -16,11 +16,13 @@ Issue番号: $ARGUMENTS
 
 ### 1. 本文を書く
 
-材料は Issue とこのブランチのコミットだけにする。
+材料は Issue とこのブランチのコミットだけにする。コミットの範囲は、PR の作成先と同じデフォルトブランチ（GitHub のリポジトリ設定）からの差分にする。
+
+デフォルトブランチ名は `gh` で GitHub から引く（`origin/HEAD` は clone した時点の値のまま残り、無いリポジトリもあるため使わない）。シェル変数は Bash ツールの呼び出しをまたいで残らないので、1回で実行する。
 
 ```bash
 gh issue view $ARGUMENTS --json title,body
-git log --format='%s%n%n%b' origin/main..HEAD
+base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && git log --format='%s%n%n%b' "origin/$base..HEAD"
 ```
 
 本文には次を書く。
