@@ -8,16 +8,17 @@
 //   この表に1行足す。hook は1本あたり node の起動コスト（実測で約44ms）が全 Bash 実行に乗るが、
 //   表を伸ばしても判定コストはほぼ増えない（policy-driven-development-policy の
 //   「ターン末ゲートは1本に統合する」と同じ理屈）。
-// - `git branch -D` は main 以外のブランチも一律に禁止する。ブランチ削除はそのブランチ専用の reflog
-//   （.git/logs/refs/heads/<branch>）を一緒に消し、未マージの作業の復元手段が残らないため。禁止を main
-//   だけに絞ると、守る対象（ローカル main）より失う対象（未マージのブランチ）の方が大きい。
+// - `git branch -D` はデフォルトブランチ以外のブランチも一律に禁止する。ブランチ削除はそのブランチ専用の
+//   reflog（.git/logs/refs/heads/<branch>）を一緒に消し、未マージの作業の復元手段が残らないため。禁止を
+//   デフォルトブランチだけに絞ると、守る対象（ローカルのデフォルトブランチ）より失う対象（未マージの
+//   ブランチ）の方が大きい。
 //   掃除は scripts/prune-branches.mjs が `-d` だけで行う。
 // - 判定はコマンドの語頭に立つトークンだけを見る。引用符の中とヒアドキュメントの中身は実行されない
 //   文字列なので、shellSplit.mjs の段階で判定対象から外れる（Issue #396）。
 // - シェルの厳密なパースはしない。判定できない入力は通す（fail-open）。完全な安全機構ではなく、
 //   AI が取り返しのつかない操作を「うっかり」実行するのを止めるガードレールである。
-// - 外部状態は持たない。プロジェクトルート（削除先がプロジェクト外かの判定に要る）だけは
-//   引数で受け取る。
+// - 外部状態は持たない。プロジェクトルート（削除先がプロジェクト外かの判定に要る）と、デフォルト
+//   ブランチ名を引く関数（ブランチ削除のときだけ呼ぶ）は、引数で受け取る。
 
 import { detectEmptyGhBodyOverwrite } from './emptyGhBodyOverwriteMatcher.mjs'
 import {
@@ -172,10 +173,10 @@ const RULE_GROUPS = [
         advice: '取り込み済みブランチの掃除は人間が npm run prune-branches で行う'
       },
       {
-        label: 'main を含む git branch の削除',
+        label: 'デフォルトブランチ・main・master を含む git branch の削除',
         prefix: ['git', 'branch'],
-        detect: isBranchDeleteOfMain,
-        why: 'main は作業の基準点で、消すと作り直すまで基準が無くなる'
+        detect: isBranchDeleteOfProtectedBranch,
+        why: 'デフォルトブランチは作業の基準点で、消すと作り直すまで基準が無くなる'
       },
       { label: 'git tag -d', prefix: ['git', 'tag'], anyFlag: ['-d', '--delete'] },
       { label: 'git stash drop', prefix: ['git', 'stash', 'drop'] },
@@ -281,12 +282,24 @@ function isForceBranchDelete(tokens) {
   return deletes && forces
 }
 
-// 削除のフラグ（-d・-D・--delete）があり、ブランチ名（tokens[2] 以降）に main が並ぶ場合
-function isBranchDeleteOfMain(tokens) {
+// デフォルトブランチ名を引けたかどうかに関わらず守る名前。多くのリポジトリのデフォルトはどちらかである
+const ALWAYS_PROTECTED_BRANCHES = ['main', 'master']
+
+// 削除のフラグ（-d・-D・--delete）があり、ブランチ名（tokens[2] 以降）に守る名前が並ぶ場合。
+// デフォルトブランチ名を引くのは削除のときだけで、それ以外の `git branch` は引かない
+function isBranchDeleteOfProtectedBranch(tokens, { readDefaultBranchName }) {
   const letters = shortFlagLetters(tokens)
   const deletes = tokens.includes('--delete') || letters.includes('d') || letters.includes('D')
   if (!deletes) return false
-  return tokens.slice(2).some((token) => ['main', 'refs/heads/main'].includes(stripQuotes(token)))
+
+  const protectedNames = new Set(ALWAYS_PROTECTED_BRANCHES)
+  const defaultBranchName = readDefaultBranchName?.()
+  if (defaultBranchName) protectedNames.add(defaultBranchName)
+
+  return tokens.slice(2).some((token) => {
+    const name = stripQuotes(token).replace(/^refs\/heads\//, '')
+    return protectedNames.has(name)
+  })
 }
 
 // 危険なのは猶予期間を無視する指定だけ。既定の猶予（`--prune=2.weeks.ago` など）は通常の運用値である
@@ -494,9 +507,9 @@ function describeViolation(rule, detail) {
 }
 
 /** コマンド1段分を全ルールに掛け、最初に該当したルールの説明を返す。該当しなければ null。 */
-function detectInStage(stage, projectDir) {
+function detectInStage(stage, { projectDir, readDefaultBranchName }) {
   const tokens = normalizeCommandStart(tokenize(stage))
-  const context = { stage, projectDir }
+  const context = { stage, projectDir, readDefaultBranchName }
 
   for (const rule of FORBIDDEN_COMMANDS) {
     if (rule.detectWholeCommand) continue
@@ -509,11 +522,16 @@ function detectInStage(stage, projectDir) {
  * bashコマンド文字列を検査し、禁止コマンドに該当すればその説明文字列を返す。該当しなければ null。
  *
  * @param {string} command bashコマンド文字列
- * @param {{ projectDir?: string }} [options] `projectDir` はプロジェクトルートの絶対パス
- *   （削除先がプロジェクト外かの判定に使う。既定は実行時の作業ディレクトリ）
+ * @param {{ projectDir?: string, readDefaultBranchName?: () => string | undefined }} [options]
+ *   `projectDir` はプロジェクトルートの絶対パス（削除先がプロジェクト外かの判定に使う。既定は実行時の作業ディレクトリ）。
+ *   `readDefaultBranchName` はデフォルトブランチ名を返す関数で、ブランチ削除のときだけ呼ぶ。
+ *   省略したとき・undefined を返すときは、`main`・`master` だけを守る
  * @returns {string | null} 該当したルールの説明。該当しなければ null
  */
-export function detectForbiddenCommand(command, { projectDir = process.cwd() } = {}) {
+export function detectForbiddenCommand(
+  command,
+  { projectDir = process.cwd(), readDefaultBranchName } = {}
+) {
   if (typeof command !== 'string' || command.trim() === '') return null
 
   for (const rule of FORBIDDEN_COMMANDS) {
@@ -525,7 +543,7 @@ export function detectForbiddenCommand(command, { projectDir = process.cwd() } =
   const stages = splitStatements(commandText).flatMap(splitPipeStages)
 
   for (const stage of stages) {
-    const violation = detectInStage(stage, projectDir)
+    const violation = detectInStage(stage, { projectDir, readDefaultBranchName })
     if (violation) return violation
   }
 
