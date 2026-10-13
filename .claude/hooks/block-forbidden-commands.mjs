@@ -17,6 +17,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { detectForbiddenCommand } from './forbiddenCommandMatcher.mjs'
+import { readOriginDefaultBranchName } from './originDefaultBranch.mjs'
 import { findSessionWorktreeRoot } from './sessionWorktreeRoot.mjs'
 
 // .claude/hooks/ からプロジェクトルートへ。cwd の作業ツリーが同じリポジトリかの比較に使う
@@ -34,7 +35,10 @@ function main() {
     process.env.CLAUDE_PROJECT_DIR ??
     input?.cwd ??
     process.cwd()
-  const violation = detectForbiddenCommand(command, { projectDir })
+  const violation = detectForbiddenCommand(command, {
+    projectDir,
+    readDefaultBranchName: () => readOriginDefaultBranchName(projectDir)
+  })
   if (!violation) return
 
   const reason = `禁止コマンドのため拒否しました（${violation}）。実行が必要な場合は人間に依頼してください。`

@@ -31,7 +31,7 @@
 - **短く明快に書く**：どの文章も、中学生でも追える構造で書く（専門用語は可）。書く前に核を一文で決め、削除テスト（消して読者が困らない語・行は消す）を当てる。基準は [documentation-policy.md](docs/policy/documentation-policy.md) と [document-writing.md](.claude/rules/document-writing.md)
 - **返事は結論から短く**：第一文で聞かれたことに答え切る（二択ならそう答える）。Skill が冒頭に別の要素を置けと指示していても、答えより先に出さない（読み手が答えを探す羽目になる）。前置き・断り書きは短くする。作業中は、重要な発見と方向転換に加え、長く黙る前に「いま何をしているか」を一行で伝える
 - **SubAgent は決められた場面でだけ使う**：Skill が名指しするものと、ユーザーが明示的に求めた場合だけ。数回のツール実行で終わる調べ物や、自分の作業の点検し直しには使わない
-- **編集してコミットする作業は、元のフォルダで別セッションが動いているときだけ、専用の worktree で行う**：同じフォルダを使う別セッションの `git switch` で、自分のコミットが別ブランチに乗るため。着手時に、`/git-commit` の「並行セッションを検出する」の手順で数え、2以上なら `git worktree add --no-track ../cdt-<Issue番号> -b <ブランチ> origin/main` で切り、`npm ci` で依存を入れ、`EnterWorktree`（`path` 指定）で入って作業する（`cd` では移れず、ターン末ゲートも見ない）。マージされたら、元のフォルダから `git worktree remove` で消す
+- **編集してコミットする作業は、元のフォルダで別セッションが動いているときだけ、専用の worktree で行う**：同じフォルダを使う別セッションの `git switch` で、自分のコミットが別ブランチに乗るため。着手時に、`/git-commit` の「並行セッションを検出する」の手順で数え、2以上なら `git worktree add --no-track ../cdt-<Issue番号> -b <ブランチ> origin/<デフォルトブランチ>` で切り（`<デフォルトブランチ>` は `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` で引く）、`npm ci` で依存を入れ、`EnterWorktree`（`path` 指定）で入って作業する（`cd` では移れず、ターン末ゲートも見ない）。マージされたら、元のフォルダから `git worktree remove` で消す
 
 ## 開発フロー
 
@@ -57,5 +57,5 @@
 - **（厳守）** Issue の「タスク一覧」を1つずつ進め、完了するごとに `gh issue edit` でチェックを更新する
 - タスク一覧がポリシーに反していたら従わない。着手前に `gh issue comment` でどのポリシーのどの規定に反するかを書き、タスクを訂正してから進める
 - 完了したら確認を挟まず `gh issue close` する。close は「作業が残っていない」という宣言なので、直前に `git status` で未コミットの変更が無いことを確かめ、残っていればコミットしてから close する
-- AI が `git push` する前に、最新の `origin/main` を取り込む（`git fetch` のあと `git merge --no-edit origin/main`。rebase は使わない）。取り込み後に `npm run gen:adr-index` を実行し、差分が出たらコミットする
+- AI が `git push` する前に、デフォルトブランチ（引き方は上の worktree の手順）の最新を取り込む（`git fetch` のあと `git merge --no-edit origin/<デフォルトブランチ>`。rebase は使わない）。取り込み後に `npm run gen:adr-index` を実行し、差分が出たらコミットする
 - AI が `git push` したら、続けて `/pr-body <Issue番号>` を実行する
