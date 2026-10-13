@@ -13,10 +13,11 @@ Issue 1件を実装し、**push と PR 本文の差し替えまで**を人間へ
 
 ## 前提
 
-- **作業ツリーは AI 専用の clone で、人間の作業ツリーとは別物。** 起動側がこの clone を `origin/main` の状態へ戻し、トピックブランチを作り、ボードの Status を「着手中」へ動かしたうえで起動する。**このスキルはブランチを作らない・切り替えない・Status を動かさない**（どれも起動側が済ませている）。
+- **作業ツリーは AI 専用の clone で、人間の作業ツリーとは別物。** 起動側がこの clone をデフォルトブランチ（GitHub のリポジトリ設定）の最新の状態へ戻し、トピックブランチを作り、ボードの Status を「着手中」へ動かしたうえで起動する。**このスキルはブランチを作らない・切り替えない・Status を動かさない**（どれも起動側が済ませている）。
 - **人間はこの実行を見ていない。** 確認を待たずに最後まで進める。進めないと分かったら「離脱手順」で痕跡を残して終了する。
 - **1 Issue = 1 ブランチ = 1 PR。Issue は閉じない。** PR 本文の `Closes` がマージ時に閉じる。CLAUDE.md の「完了したら `gh issue close` する」は、PR を経由しない作業への規定なので、このスキルには適用しない。ただしリポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は PR を経由しない作業に当たるので、このスキルが閉じる（「差分が無いとき」）。
 - **PR 本文は `/pr-body` が書く。** ラベル付与・マージ可否の判定・auto-merge は `pipeline.yml` → `pr-ai-triage.yml` が行う。
+- **push 前の取り込みは Phase 4 の手順で行う。** CLAUDE.md の「`git push` する前に、最新の `origin/main` を取り込む」は、このスキルでは Phase 4 で置き換える。PR はデフォルトブランチ宛てに作られるので、取り込む先もデフォルトブランチにする。
 
 ## 処理フロー
 
@@ -69,11 +70,12 @@ gh issue close $ARGUMENTS --comment "<何をしたか>"
 
 ### Phase 4: コミットする
 
-**先に、最新の `origin/main` を取り込む。** ステージする前に行う（ステージ済みの変更があると、git が取り込みを断る）。取り込みから push までを短くし、その間に main が進んで再び衝突するのを減らすため、最後のコミットの直前に置く。取り込みの後のコミットで、pre-commit hook が `npm run gen:adr-index` の生成物を作り直す。
+**先に、最新のデフォルトブランチを取り込む。** ステージする前に行う（ステージ済みの変更があると、git が取り込みを断る）。取り込みから push までを短くし、その間にデフォルトブランチが進んで再び衝突するのを減らすため、最後のコミットの直前に置く。取り込みの後のコミットで、pre-commit hook が `npm run gen:adr-index` の生成物を作り直す。
+
+デフォルトブランチ名は `gh` で GitHub から引く（`origin/HEAD` は clone した時点の値のまま残り、使い回す clone では古くなるため使わない）。シェル変数は Bash ツールの呼び出しをまたいで残らないので、1回で実行する。
 
 ```bash
-git fetch origin main
-git merge --no-edit origin/main
+base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && git merge --no-edit "origin/$base"
 ```
 
 - 衝突したら、衝突したファイルを解く。生成物は中身を手で直さず、`npm run gen:adr-index` で作り直して `git add` する。解けなければ離脱手順へ進む
@@ -115,7 +117,7 @@ gh issue edit $ARGUMENTS --add-label "issue:needs-clean-session"
 
 このラベルは「着手したうえで、このやり方では直しきれないと分かった印」で、`/sweep` と同じ意味で使う。付けた Issue は `/sweep` の対象からも外れ、人間が専用のセッションで1件だけ対応する。
 
-**押し戻しはしない。** 未コミットの変更・作ったコミット・push 済みのブランチは、どれも消さずに残してよい。次の `npm run auto-programmer` が clone を `origin/main` の状態まで戻す。ボードの Status は「着手中」のままなので、同じ Issue が次の実行で拾われることはない。
+**押し戻しはしない。** 未コミットの変更・作ったコミット・push 済みのブランチは、どれも消さずに残してよい。次の `npm run auto-programmer` が clone をデフォルトブランチの状態まで戻す。ボードの Status は「着手中」のままなので、同じ Issue が次の実行で拾われることはない。
 
 ## エラーハンドリング
 
