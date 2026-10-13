@@ -1,6 +1,7 @@
 // 責務: auto-programmer が外の世界（GitHub・ローカルのファイルシステム）へ繋ぐための設定値を1か所に集める。
 //   別のリポジトリ・別のボードで使うときに直すのはこのファイルだけにする（configuration-policy「環境で変わる
-//   値はコードに直書きしない」）。ID ではなく人間が読める表記を持たせ、ID は実行時に解決する。
+//   値はコードに直書きしない」）。例外は branchPrefix（キーのコメントを見る）。ID ではなく人間が読める表記を持たせ、
+//   ID は実行時に解決する。
 
 import { homedir } from 'node:os'
 import { basename, isAbsolute, resolve } from 'node:path'
@@ -36,6 +37,12 @@ export const config = {
 
   // このラベルが付いた Issue だけを対象にする
   targetIssueLabel: 'ai-fixable',
+
+  // トピックブランチ名の前に付ける接頭辞。'st2' なら st2/feat/issue-123、空なら feat/issue-123 になる。
+  // ライン（main・main2 など）ごとに CI を分けている利用先で使う。設定したら ci.workflowFile のワークフローの
+  // push トリガーにも同じ接頭辞を足す（例 'st2/**'。足さないと CI が走らず PR も作られない）。既存のブランチ名
+  // （main2 など）と同じ名前にはできない。キーが無くても空と同じに動く
+  branchPrefix: '',
 
   // claude セッション1回（Skill 1つぶん）を打ち切るまでの時間。無人で固まったまま止まらない事態を防ぐ
   sessionTimeoutMinutes: 60,
