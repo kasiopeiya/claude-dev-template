@@ -847,7 +847,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="pollicy-driven-dev" id="WDOhX2qiEjTpK7vnDjNq">
-    <mxGraphModel dx="7730" dy="980" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#ffffff, #121212)" math="0" shadow="0">
+    <mxGraphModel dx="1851" dy="1112" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#ffffff, #121212)" math="0" shadow="0">
       <root>
         <mxCell id="8c-Sq3DvPeiB70MnOpqc-0" />
         <mxCell id="8c-Sq3DvPeiB70MnOpqc-1" parent="8c-Sq3DvPeiB70MnOpqc-0" />
@@ -863,101 +863,89 @@
         <mxCell id="8c-Sq3DvPeiB70MnOpqc-5" parent="8c-Sq3DvPeiB70MnOpqc-3" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
           <mxGeometry height="90" width="5.979617047560223" y="5" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-policy" parent="pdd-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=left;verticalAlign=top;spacingLeft=30;spacingTop=18;fillColor=#F0EEEA;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;b&gt;📜 Policy ＋ Rule — 判断の基準を文書にする&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size: 20px; color: #4d4d4d;&quot;&gt;「良い〇〇とは何か」を先に決め、イメージ通りの出力に寄せる&lt;/span&gt;" vertex="1">
+        <mxCell id="pdd-policy" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=left;verticalAlign=top;spacingLeft=30;spacingTop=18;fillColor=#F0EEEA;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;b&gt;📜 Policy ＋ Rule — 判断の基準を文書にする&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size: 20px; color: #4d4d4d;&quot;&gt;「良い〇〇とは何か」を先に決め、イメージ通りの出力に寄せる&lt;/span&gt;" vertex="1">
           <mxGeometry height="130" width="1000" x="400" y="225" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-pre" parent="pdd-1" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=22;fontStyle=1;" value="事前" vertex="1">
+        <mxCell id="pdd-pre" parent="8c-Sq3DvPeiB70MnOpqc-1" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=22;fontStyle=1;" value="事前" vertex="1">
           <mxGeometry height="30" width="80" x="1300" y="240" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-s0" parent="pdd-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="📄 要件" vertex="1">
+        <mxCell id="pdd-s0" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="📄 要件" vertex="1">
           <mxGeometry height="80" width="170" x="400" y="480" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-d0" edge="1" parent="pdd-1" source="pdd-policy" target="pdd-s0" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.085;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-d0" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-policy" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.085;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="pdd-s0">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-g0" edge="1" parent="pdd-1" source="pdd-s0" target="pdd-s1" style="html=1;strokeWidth=3;strokeColor=#B5B3AC;endArrow=block;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-g0" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-s0" style="html=1;strokeWidth=3;strokeColor=#B5B3AC;endArrow=block;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="pdd-s1">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-s1" parent="pdd-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="📝 Plan" vertex="1">
+        <mxCell id="pdd-s1" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="📝 Plan" vertex="1">
           <mxGeometry height="80" width="170" x="605" y="480" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-d1" edge="1" parent="pdd-1" source="pdd-policy" target="pdd-s1" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.290;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-d1" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-policy" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.290;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="pdd-s1">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-g1" edge="1" parent="pdd-1" source="pdd-s1" target="pdd-s2" style="html=1;strokeWidth=3;strokeColor=#B5B3AC;endArrow=block;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-g1" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-s1" style="html=1;strokeWidth=3;strokeColor=#B5B3AC;endArrow=block;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="pdd-s2">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-s2" parent="pdd-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="🎫 Issue" vertex="1">
+        <mxCell id="pdd-s2" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="🎫 Issue" vertex="1">
           <mxGeometry height="80" width="170" x="810" y="480" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-d2" edge="1" parent="pdd-1" source="pdd-policy" target="pdd-s2" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.495;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-d2" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-policy" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.495;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="pdd-s2">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-g2" edge="1" parent="pdd-1" source="pdd-s2" target="pdd-s3" style="html=1;strokeWidth=3;strokeColor=#B5B3AC;endArrow=block;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-g2" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-s2" style="html=1;strokeWidth=3;strokeColor=#B5B3AC;endArrow=block;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="pdd-s3">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-s3" parent="pdd-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="📐 設計書" vertex="1">
+        <mxCell id="pdd-s3" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="📐 設計書" vertex="1">
           <mxGeometry height="80" width="170" x="1015" y="480" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-d3" edge="1" parent="pdd-1" source="pdd-policy" target="pdd-s3" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.700;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-d3" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-policy" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.700;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="pdd-s3">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-g3" edge="1" parent="pdd-1" source="pdd-s3" target="pdd-s4" style="html=1;strokeWidth=3;strokeColor=#B5B3AC;endArrow=block;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-g3" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-s3" style="html=1;strokeWidth=3;strokeColor=#B5B3AC;endArrow=block;endFill=1;endSize=8;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="pdd-s4">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-s4" parent="pdd-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="💻 実装" vertex="1">
+        <mxCell id="pdd-s4" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=20;whiteSpace=wrap;html=1;strokeColor=#B5B3AC;strokeWidth=2;fillColor=#FFFFFF;fontSize=26;fontStyle=1;" value="💻 実装" vertex="1">
           <mxGeometry height="80" width="170" x="1230" y="480" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-d4" edge="1" parent="pdd-1" source="pdd-policy" target="pdd-s4" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.915;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-d4" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-policy" style="html=1;dashed=1;dashPattern=8 8;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.915;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="pdd-s4">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-hint" parent="pdd-1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;labelBackgroundColor=#ffffff;" value="迷ったら基準を読み、AIが自分で決める" vertex="1">
+        <mxCell id="pdd-hint" parent="8c-Sq3DvPeiB70MnOpqc-1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;labelBackgroundColor=#ffffff;" value="迷ったら基準を読み、AIが自分で決める" vertex="1">
           <mxGeometry height="36" width="420" x="700" y="400" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-sdd" parent="pdd-1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=20;fontColor=#4d4d4d;" value="仕様駆動開発：何を作るかを文書で先に固め、工程まるごとをAIが自律実行する" vertex="1">
+        <mxCell id="pdd-sdd" parent="8c-Sq3DvPeiB70MnOpqc-1" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=20;fontColor=#4d4d4d;" value="仕様駆動開発：何を作るかを文書で先に固め、工程まるごとをAIが自律実行する" vertex="1">
           <mxGeometry height="36" width="900" x="400" y="580" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-guard" parent="pdd-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=left;verticalAlign=top;spacingLeft=30;spacingTop=18;fillColor=#C9C7BE;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;b&gt;🚧 ガードレール — 機械的な判定はCIに任せる&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size: 20px; color: #4d4d4d;&quot;&gt;静的解析・メトリクス・アーキ規約・テストが機械的に合否を出す&lt;/span&gt;" vertex="1">
+        <mxCell id="pdd-guard" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=left;verticalAlign=top;spacingLeft=30;spacingTop=18;fillColor=#C9C7BE;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;b&gt;🚧 ガードレール — 機械的な判定はCIに任せる&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;span style=&quot;font-size: 20px; color: #4d4d4d;&quot;&gt;静的解析・メトリクス・アーキ規約・テストが機械的に合否を出す&lt;/span&gt;" vertex="1">
           <mxGeometry height="130" width="790" x="400" y="700" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-post" parent="pdd-1" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=22;fontStyle=1;" value="事後" vertex="1">
+        <mxCell id="pdd-post" parent="8c-Sq3DvPeiB70MnOpqc-1" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=top;fontSize=22;fontStyle=1;" value="事後" vertex="1">
           <mxGeometry height="30" width="80" x="1090" y="715" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-merge" parent="pdd-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;fillColor=#C9C7BE;align=center;verticalAlign=middle;" value="&lt;span style=&quot;font-size: 28px;&quot;&gt;&lt;b&gt;✅ マージ&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size: 18px; color: #4d4d4d;&quot;&gt;全部通ればここへ&lt;/span&gt;" vertex="1">
+        <mxCell id="pdd-merge" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;fillColor=#C9C7BE;align=center;verticalAlign=middle;" value="&lt;span style=&quot;font-size: 28px;&quot;&gt;&lt;b&gt;✅ マージ&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size: 18px; color: #4d4d4d;&quot;&gt;全部通ればここへ&lt;/span&gt;" vertex="1">
           <mxGeometry height="130" width="170" x="1230" y="700" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-impl2guard" edge="1" parent="pdd-1" source="pdd-s4" target="pdd-guard" style="html=1;curved=1;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.95;entryY=0;entryDx=0;entryDy=0;">
+        <mxCell id="pdd-impl2guard" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-s4" style="html=1;curved=1;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.95;entryY=0;entryDx=0;entryDy=0;" target="pdd-guard">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="1315" y="650" />
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="pdd-guard2merge" edge="1" parent="pdd-1" source="pdd-guard" target="pdd-merge" style="html=1;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-guard2merge" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-guard" style="html=1;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="pdd-merge">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-human" parent="pdd-1" style="rounded=1;arcSize=16;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;dashed=1;dashPattern=2 4;fillColor=#F0EEEA;align=center;verticalAlign=middle;" value="&lt;span style=&quot;font-size: 28px;&quot;&gt;&lt;b&gt;🧑 人間&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size: 18px; color: #4d4d4d;&quot;&gt;レールを設計し&lt;br&gt;育てる側に回る&lt;/span&gt;" vertex="1">
+        <mxCell id="pdd-human" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=16;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;dashed=1;dashPattern=2 4;fillColor=#F0EEEA;align=center;verticalAlign=middle;" value="&lt;span style=&quot;font-size: 28px;&quot;&gt;&lt;b&gt;🧑 人間&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size: 18px; color: #4d4d4d;&quot;&gt;レールを設計し&lt;br&gt;育てる側に回る&lt;/span&gt;" vertex="1">
           <mxGeometry height="120" width="210" x="110" y="460" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-h2p" edge="1" parent="pdd-1" source="pdd-human" target="pdd-policy" style="html=1;dashed=1;dashPattern=1 4;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-h2p" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-human" style="html=1;dashed=1;dashPattern=1 4;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=1;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=1;entryDx=0;entryDy=0;" target="pdd-policy">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-h2g" edge="1" parent="pdd-1" source="pdd-human" target="pdd-guard" style="html=1;dashed=1;dashPattern=1 4;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;">
-          <mxGeometry relative="1" as="geometry">
-          </mxGeometry>
+        <mxCell id="pdd-h2g" edge="1" parent="8c-Sq3DvPeiB70MnOpqc-1" source="pdd-human" style="html=1;dashed=1;dashPattern=1 4;strokeWidth=3;strokeColor=#000000;endArrow=block;endFill=1;endSize=10;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" target="pdd-guard">
+          <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="pdd-summary" parent="pdd-1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#F0EEEA;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;spacingLeft=20;spacingRight=20;" value="真ん中の開発サイクル＝仕様駆動開発。それを挟む2本は、どちらもスピードを犠牲にせず品質を担保する仕組み——判断の基準はPolicyに、機械的に判断できることはCIに置く＝ポリシー駆動開発" vertex="1">
+        <mxCell id="pdd-summary" parent="8c-Sq3DvPeiB70MnOpqc-1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#F0EEEA;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;spacingLeft=20;spacingRight=20;" value="真ん中の開発サイクル＝仕様駆動開発。それを挟む2本は、どちらもスピードを犠牲にせず品質を担保する仕組み——判断の基準はPolicyに、機械的に判断できることはCIに置く＝ポリシー駆動開発" vertex="1">
           <mxGeometry height="110" width="1383" x="37" y="920" as="geometry" />
         </mxCell>
       </root>
