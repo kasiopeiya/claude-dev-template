@@ -12,7 +12,7 @@
 | --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | 1   | `gh` の認証と `claude` の有無の確認・AI 専用 clone の作成                                                                                                                                                                               | preflight                                 |
 | 2   | 閉じ損ねた Issue を閉じ、Ready・`ai-fixable`・自分が担当者の open Issue から着手できる1件を選ぶ                                                                                                                                         | このツール                                |
-| 3   | 未コミットの変更を stash へ退避して clone を `origin/main` へ戻し、トピックブランチを作り、依存を揃える                                                                                                                                 | このツール                                |
+| 3   | 未コミットの変更を stash へ退避して clone をデフォルトブランチの最新へ戻し、トピックブランチを作り、依存を揃える                                                                                                                        | このツール                                |
 | 4   | 選んだ Issue のカードを「In progress」へ動かす                                                                                                                                                                                          | このツール                                |
 | 5   | Issue が open な sub-issue を持てば、子を Ready に載せて 14 へ飛ぶ。持たず `issue:checked` も無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する                                                                       | このツール・`.claude/skills/issue-check/` |
 | 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す。1つの PR に収まらず割れる Issue は、`/issue-split` で sub-issue に割る。初回の検査で、本文に新しい技術要素があれば、外部依存の制約も調べる | `/issue-check`                            |
@@ -95,7 +95,6 @@ npm run auto-programmer
 | キー                          | 意味                                                                                   | 調べ方                                                                                        |
 | ----------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `repository`                  | Issue と PR の相手（`owner/repo`）                                                     | `gh repo view --json nameWithOwner`                                                           |
-| `baseBranch`                  | PR のマージ先。トピックブランチもここから切る                                          | `gh repo view --json defaultBranchRef`                                                        |
 | `board.owner`・`board.number` | GitHub Projects の持ち主と番号                                                         | `gh project list --owner <owner>`                                                             |
 | `board.statusFieldName`       | 進捗を持つフィールドの表記                                                             | `gh project field-list <番号> --owner <owner>`                                                |
 | `board.todoStatusName`        | 積まれただけで、まだ着手待ちにしていないことを表す選択肢の表記                         | 同上                                                                                          |
@@ -112,6 +111,8 @@ npm run auto-programmer
 | `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                   | 使い切っても落ちていれば人間へ回す                                                            |
 
 フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。
+
+トピックブランチを切る元も設定に持たせない。GitHub に設定されたデフォルトブランチを、このツールと `/auto-dev`・`/auto-fix-ci`・`/pr-body` がその場で引く。PR の作成先は `pipeline.yml` がデフォルトブランチに決めるので、設定で別の値を持てると、切る元と PR の作成先が食い違うためである。
 
 `sessionTimeoutMinutes` は壁時計（wall-clock）で数える。OS がアイドルスリープすると、寝ていた時間もここに数えられ、無人セッションが実際より早く打ち切られる。`index.mjs` は起動直後にこれを防ぐコマンド（macOS は `caffeinate`、Windows は同梱の `sleepGuard.ps1`）を起動し続けるが、ノートPCの蓋を閉じたことによるスリープ（クラムシェルスリープ）までは止められない。実行中は蓋を閉じないか、外部ディスプレイに繋いでおくこと。Linux は `CLOCK_MONOTONIC` がサスペンド中に止まるため、この問題自体が起きず、何もしない。
 
@@ -167,7 +168,7 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 
 直すのは次の3か所だけ。
 
-- **`config.mjs`**：上の表の値をその環境のものへ書き換える。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）
+- **`config.mjs`**：上の表の値をその環境のものへ書き換える。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい
 - **`package.json`**：`auto-programmer` と `test:scripts` のスクリプトを写す
 - **`.claude/skills/auto-dev/`・`.claude/skills/auto-fix-ci/`・`.claude/skills/issue-check/`**：そのリポジトリの `.claude/skills/` へ写す（`/auto-dev`・`/auto-fix-ci` が無いと手順が無い。`/issue-check` は `.claude/agents/issue-auditor-agent/` と、割るときに使う `.claude/skills/issue-split/` も要る。`/issue-split` は正典として `.claude/skills/to-issues/`・`.claude/skills/quick-issue/` を参照するので、これも写す。初回の検査で外部依存の制約を調べるために `.claude/agents/premise-checker-agent/` も要る。これは一次資料の定義を `.claude/skills/origin-search/` から読むので、これも写す。`issue-auditor-agent` は過去の決定を引く手順を `.claude/skills/past-decision-search/` から読むので、これも写す）
 
@@ -195,6 +196,6 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 | Issue が「In progress」のまま残った                                                                | `/auto-dev`・`/auto-fix-ci` が離脱したか、`ci.maxFixAttempts` 回直させても CI が通らなかった（Issue にコメントとラベルが残っている）                                                           | コメントを読み、専用のセッションでその Issue に着手する                                                                                                                                                       |
 | 同上で、Issue にコメントが無い                                                                     | セッションが打ち切られたか、起動後に落ちた                                                                                                                                                     | 記録の `autoDevSignal`・`ciFixSignal`・`error`・`errorStack` を読んで原因を直す                                                                                                                               |
 | 「#… の処理が落ちました: …」                                                                       | 着手中へ動かした後の処理で例外が出た。カードは In progress に残る                                                                                                                              | 続く1行の理由を読む。足りなければ記録の `errorStack` を読む                                                                                                                                                   |
-| 途中まで実装したはずの変更が clone から消えた                                                      | セッションが commit より前に落ち、次の巡回が clone を `origin/main` へ戻す前に未コミットの変更を stash へ退避した                                                                              | clone の中で `git stash list` を開き、`auto-programmer: <ブランチ名> の未コミット変更` を探して、そのトピックブランチの上で `git stash apply stash@{<番号>}` する                                             |
+| 途中まで実装したはずの変更が clone から消えた                                                      | セッションが commit より前に落ち、次の巡回が clone をデフォルトブランチへ戻す前に未コミットの変更を stash へ退避した                                                                           | clone の中で `git stash list` を開き、`auto-programmer: <ブランチ名> の未コミット変更` を探して、そのトピックブランチの上で `git stash apply stash@{<番号>}` する                                             |
 | 「CI: CI の run が … 分以内に終わりませんでした」「CI: CI の run が … で終わったので直させません」 | CI が詰まっているか、run がキャンセルされた。直させずに次へ進んだ。カードは In progress に残る                                                                                                 | 記録の `ciRuns` の URL で run を見て、再実行するか、専用のセッションでその Issue に着手する                                                                                                                   |
 | 「CI: CI が通りました。カードを In Review へ動かせませんでした: …」                                | PR はでき CI も通ったが、ボードの表記が `config.mjs` と食い違っているか `gh` が失敗した。カードは In progress に残る                                                                           | 理由を読んで直し、カードを手で In Review へ動かす                                                                                                                                                             |

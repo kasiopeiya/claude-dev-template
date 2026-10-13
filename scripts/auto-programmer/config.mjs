@@ -20,9 +20,6 @@ export const config = {
   // Issue と PR の相手（owner/repo）。`gh repo clone` の引数にもなる
   repository,
 
-  // PR のマージ先。トピックブランチもここから切る
-  baseBranch: 'main',
-
   board: {
     // GitHub Projects（v2）の持ち主と番号。`gh project list --owner <owner>` で調べる
     owner: 'kasiopeiya',
@@ -68,6 +65,6 @@ export const config = {
   // AI が実装に使う clone。リポジトリ名から導くので、repository を変えれば別の clone になる
   workspaceDir: resolve(autoProgrammerHomeDir, basename(repository)),
 
-  // Issue 1件につき1行を追記する記録。clone の外に置く（clone は毎回 origin/main まで戻されるため）
+  // Issue 1件につき1行を追記する記録。clone の外に置く（clone は毎回デフォルトブランチまで戻されるため）
   runLogPath: resolve(autoProgrammerHomeDir, 'runs.jsonl')
 }

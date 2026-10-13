@@ -1,9 +1,13 @@
-// 責務: AI 専用 clone を「origin/main の姿」に戻し、そこからトピックブランチを作る。
+// 責務: AI 専用 clone をデフォルトブランチ（GitHub のリポジトリ設定）の最新の姿に戻し、そこからトピックブランチを作る。
 //
 // 設計意図（WHY）:
 // - ブランチ作成を決定論的なこちら側で行うことで、AI 側はすでにトピックブランチの上にいる状態で
 //   始められる（README.md）。
-// - 前回の実行が途中で落ちていても、ここで毎回 origin/main まで戻すので、やり残しが次の PR へ
+// - 切る元は設定に持たず、GitHub のデフォルトブランチを毎回引く。PR の作成先は pipeline.yml が
+//   デフォルトブランチに決めるので、設定を持つと切る元と PR の作成先が食い違いうる。
+// - `origin/HEAD` は使わない。clone した時点の値のまま残り、fetch では更新されないので、clone を
+//   使い回すうちにデフォルトブランチを変えると古い値を読み続ける。
+// - 前回の実行が途中で落ちていても、ここで毎回デフォルトブランチまで戻すので、やり残しが次の PR へ
 //   混ざらない。`git clean` に -x を付けないのは、無視対象である node_modules を残すためである。
 // - ただし戻す前に、未コミットの変更（未追跡ファイルを含む）は stash へ退避する。セッションが commit
 //   より前に落ちる（レート制限など）と、実装を終えた変更がここで消えるからだ。stash は新しい
@@ -42,7 +46,7 @@ function stashUncommittedChanges(workingDir) {
 
   const sourceBranchName = runGit(['rev-parse', '--abbrev-ref', 'HEAD']).trim()
   const message = `auto-programmer: ${sourceBranchName} の未コミット変更（${new Date().toISOString()}）`
-  // 衝突を解決する前に落ちると、stash は "needs merge" で失敗し、以後 clone を origin/main へ戻せなく
+  // 衝突を解決する前に落ちると、stash は "needs merge" で失敗し、以後 clone をデフォルトブランチへ戻せなく
   // なる。衝突マーカーごと index に載せてから退避する
   if (runGit(['diff', '--name-only', '--diff-filter=U']).trim() !== '') runGit(['add', '--all'])
   runGit(['stash', 'push', '--include-untracked', '--message', message])
@@ -50,17 +54,42 @@ function stashUncommittedChanges(workingDir) {
 }
 
 /**
- * clone を origin/main の状態へ戻し、そこから指定のトピックブランチを作って切り替える。
+ * config.repository について、GitHub に設定されたデフォルトブランチ名を引く。
  *
- * ローカルに同じ名前のブランチが残っていた場合は作り直す（中身は毎回 origin/main から始まる）。
+ * @returns {string} デフォルトブランチ名
+ * @throws {Error} gh が失敗したとき・デフォルトブランチを引けなかったとき
+ */
+function readDefaultBranchName() {
+  const defaultBranchName = runOrThrow('gh', [
+    'repo',
+    'view',
+    config.repository,
+    '--json',
+    'defaultBranchRef',
+    '--jq',
+    '.defaultBranchRef.name'
+  ]).trim()
+  // コミットの無い空のリポジトリでは defaultBranchRef が null になり、gh は空文字を返す
+  if (defaultBranchName === '') {
+    throw new Error(
+      `${config.repository} のデフォルトブランチを引けませんでした（コミットの無い空のリポジトリではありませんか）`
+    )
+  }
+  return defaultBranchName
+}
+
+/**
+ * clone をデフォルトブランチの最新の状態へ戻し、そこから指定のトピックブランチを作って切り替える。
+ *
+ * ローカルに同じ名前のブランチが残っていた場合は作り直す（中身は毎回デフォルトブランチから始まる）。
  * 前回のセッションが残した未コミットの変更は、消さずに stash へ退避してから戻す。
  *
  * @param {string} branchName 作るトピックブランチ名
  * @returns {void}
- * @throws {Error} 同名ブランチがリモートにあるとき・git の操作が失敗したとき
+ * @throws {Error} 同名ブランチがリモートにあるとき・git や gh の操作が失敗したとき
  */
 export function prepareTopicBranch(branchName) {
-  const { baseBranch } = config
+  const baseBranch = readDefaultBranchName()
 
   runGitInWorkspace(['fetch', 'origin', '--prune'])
   if (runGitInWorkspace(['ls-remote', '--heads', 'origin', branchName]).trim() !== '') {
