@@ -2,7 +2,8 @@
 // 責務: 取り込み済みのローカルブランチと、それを抱える stale worktree を掃除する。人間が手動で実行する。
 //
 // 使い方（先に git fetch で origin/<デフォルトブランチ> を最新にする）:
-//   npm run prune-branches   消したブランチを1件1行で標準出力に返す
+//   npm run prune-branches                消したブランチを1件1行で標準出力に返す
+//   npm run prune-branches -- --dry-run   何も消さず、消す予定のブランチだけを1件1行で返す（`--` は要る）
 //   デフォルトブランチは GitHub のリポジトリ設定から引く（gh が要る）。origin/HEAD は使わない。
 //   clone 後に GitHub 側で変えても追従せず、`git remote add` だけのリポジトリには無いため
 //
@@ -11,6 +12,10 @@
 // - 削除は `-d` に限る。git 自身のマージ済みチェックが安全装置になる。-D は未マージの作業と専用 reflog を消すため使わない
 //   （.claude/hooks/forbiddenCommandMatcher.mjs 冒頭）
 // - worktree は --force なしで外す。未コミットの変更があれば git が拒否し、そのブランチは残す
+// - `--dry-run` は、消す前に対象を確かめるために置く。このスクリプトは動作確認をするだけでも実削除になるため
+// - 消す操作なので、知らない引数は止める。打ち間違い（`--dryrun` など）が、そのまま実削除になるのを防ぐ
+// - `npm run prune-branches --dry-run`（`--` 抜け）では、npm が --dry-run を自分の設定として吸い取り、
+//   引数には残らず環境変数 npm_config_dry_run だけが立つ。確認のつもりが実削除にならないよう、これも dry-run とみなす
 
 import { execFileSync } from 'child_process'
 import { realpathSync } from 'fs'
@@ -104,9 +109,11 @@ function deleteBranch({ branch, worktreePath }) {
  * 取り込み済みのローカルブランチを消す。
  * 消すブランチごとに、抱えている worktree を外してから `-d` で消す。
  *
- * @returns {{ deletedCount: number, skippedCount: number }} 消した件数と、残した（失敗した）件数
+ * @param {{ dryRun: boolean }} options `dryRun` が true なら、何も消さずに消す予定を出力する
+ * @returns {{ deletedCount: number, skippedCount: number, plannedCount: number }}
+ *   消した件数・残した（失敗した）件数・`dryRun` で消す予定だった件数
  */
-function pruneMergedBranches() {
+function pruneMergedBranches({ dryRun }) {
   const defaultBranchName = readDefaultBranchName()
   // 取り込み済みかを判定する基準。ローカルのデフォルトブランチではなく origin 側を見る
   const mergeBase = `origin/${defaultBranchName}`
@@ -132,26 +139,53 @@ function pruneMergedBranches() {
 
   let deletedCount = 0
   let skippedCount = 0
+  let plannedCount = 0
   for (const branch of targetBranches) {
+    const worktreePath = worktreePathByBranch.get(branch)
+    if (dryRun) {
+      console.log(`削除予定: ${branch}${worktreePath ? `（worktree: ${worktreePath}）` : ''}`)
+      plannedCount++
+      continue
+    }
     try {
-      deleteBranch({ branch, worktreePath: worktreePathByBranch.get(branch) })
+      deleteBranch({ branch, worktreePath })
       deletedCount++
     } catch (error) {
       console.error(`残した: ${branch}: ${error.message}`)
       skippedCount++
     }
   }
-  return { deletedCount, skippedCount }
+  return { deletedCount, skippedCount, plannedCount }
+}
+
+const KNOWN_OPTIONS = new Set(['--dry-run'])
+
+/**
+ * コマンドライン引数を読む。
+ *
+ * @param {string[]} args `--dry-run` などの引数（node とスクリプトのパスは含まない）
+ * @param {Record<string, string | undefined>} env 環境変数
+ * @returns {{ dryRun: boolean }} 読み取った指定
+ * @throws {Error} 知らない引数があるとき
+ */
+function parseCliOptions(args, env) {
+  const unknownOptions = args.filter((arg) => !KNOWN_OPTIONS.has(arg))
+  if (unknownOptions.length > 0) {
+    throw new Error(`知らない引数です: ${unknownOptions.join(' ')}（使えるのは --dry-run だけ）`)
+  }
+  return { dryRun: args.includes('--dry-run') || env.npm_config_dry_run === 'true' }
 }
 
 /**
- * CLI として実行したときの本体。消したブランチと残したブランチを出力し、残したものがあれば異常終了する。
+ * CLI として実行したときの本体。消したブランチと残したブランチ（`--dry-run` なら消す予定のブランチ）を出力し、
+ * 残したものがあれば異常終了する。
  *
  * @returns {void}
  */
 function runCli() {
-  const { deletedCount, skippedCount } = pruneMergedBranches()
-  if (deletedCount === 0 && skippedCount === 0) {
+  const { dryRun } = parseCliOptions(process.argv.slice(2), process.env)
+  const { deletedCount, skippedCount, plannedCount } = pruneMergedBranches({ dryRun })
+  if (deletedCount === 0 && skippedCount === 0 && plannedCount === 0) {
     console.log('消すブランチはありません')
   }
   if (skippedCount > 0) process.exitCode = 1
