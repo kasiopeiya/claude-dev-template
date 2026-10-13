@@ -18,19 +18,20 @@ stateDiagram-v2
     state "実装可（ai-fixable）" as Fixable
     state "決定済み（ai-fixable ＋ issue:decided）" as Decided
 
-    [*] --> Pending: /quick-issue が起票（名指し例外に当たる）
+    [*] --> Pending: /quick-issue が起票（名指し例外に当たり、人間が会話で決めていない）
+    [*] --> Decided: /quick-issue が起票（当たる名指し例外をすべて人間が会話で決めている）
     [*] --> Fixable: /quick-issue が起票（例外に当たらない）
     Pending --> Decided: /issue-decide で人間が方針を決めた
     Pending --> Pending: /issue-decide で保留
     Pending --> [*]: /issue-decide で「対応しない」を選んだ
     Fixable --> Pending: /issue-check が名指し例外に当たると判定
     Decided --> Fixable: /issue-check が方針差し替えと判定（issue:decided を外す）
-    Decided --> Pending: /issue-check が判定不能と判定
+    Decided --> Pending: /issue-check が判定不能と判定、または「人間が決めた名指し例外」の行に無い例外に当たると判定
     Decided --> [*]: /sweep が実装して close
     Fixable --> [*]: /sweep が実装して close
 ```
 
-「決定済み」が名指し例外では押し戻されないのが要点である。人間が例外を承知で決めた方針を、同じ例外で戻さない。
+「決定済み」が、人間の決めた名指し例外では押し戻されないのが要点である。人間が例外を承知で決めた方針を、同じ例外で戻さない。
 
 ## 前提
 

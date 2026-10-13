@@ -88,6 +88,8 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 ラベルは `ai-fixable` / `issue:needs-human-decision` のどちらか一方を必ず付ける（判定は `/quick-issue` が正典）。`boy-scout` は付けない。`issue:needs-human-decision` を付けた子では、上から2番目の節が「対応方針」ではなく「人間に決めてほしいこと」になる。
 
+親が `issue:decided` 付きなら、`ai-fixable` にした子にも `issue:decided` を付け、親の「対応方針」にある「人間が決めた名指し例外」の行のうち、その子に当たるものを書き写す。子は親で人間が決めた中身を分けたもので、新しい中身を足さないからである。印が無いと、`/issue-check` が子を同じ例外で差し戻す。
+
 タスク一覧と完了条件は、起票前にポリシー（`docs/policy-hub.md`）・rules（`.claude/rules/`）と照合する。ポリシーに反する作業を親から引き継いだままにしない。
 
 ## Phase 5: sub-issue として紐付ける
