@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 // 責務: 取り込み済みのローカルブランチと、それを抱える stale worktree を掃除する。人間が手動で実行する。
 //
-// 使い方（先に git fetch で origin/main を最新にする）:
+// 使い方（先に git fetch で origin/<デフォルトブランチ> を最新にする）:
 //   npm run prune-branches   消したブランチを1件1行で標準出力に返す
+//   デフォルトブランチは GitHub のリポジトリ設定から引く（gh が要る）。origin/HEAD は使わない。
+//   clone 後に GitHub 側で変えても追従せず、`git remote add` だけのリポジトリには無いため
 //
 // 設計意図（WHY）:
-// - 対象は `--merged origin/main`。引数なしの --merged は HEAD 基準になり、トピックブランチ上では未 push の作業を巻き込む
+// - 対象は `--merged origin/<デフォルトブランチ>`。引数なしの --merged は HEAD 基準になり、トピックブランチ上では未 push の作業を巻き込む
 // - 削除は `-d` に限る。git 自身のマージ済みチェックが安全装置になる。-D は未マージの作業と専用 reflog を消すため使わない
 //   （.claude/hooks/forbiddenCommandMatcher.mjs 冒頭）
 // - worktree は --force なしで外す。未コミットの変更があれば git が拒否し、そのブランチは残す
@@ -14,26 +16,53 @@ import { execFileSync } from 'child_process'
 import { realpathSync } from 'fs'
 import { fileURLToPath } from 'url'
 
-// 取り込み済みかを判定する基準。ローカルの main ではなく origin/main を見る
-const MERGE_BASE = 'origin/main'
-const PROTECTED_BRANCH = 'main'
-
 /**
- * git を1回実行し、標準出力の末尾の改行を落として返す。
+ * コマンドを1回実行し、標準出力の末尾の改行を落として返す。
  *
- * @param {string[]} args git に渡す引数
+ * @param {string} command 実行するコマンド
+ * @param {string[]} args コマンドに渡す引数
  * @returns {string} 標準出力
- * @throws {Error} git が失敗したとき。メッセージは git の標準エラー
+ * @throws {Error} コマンドが失敗したとき。メッセージはその標準エラー
  */
-function git(args) {
+function runCommand(command, args) {
   try {
-    return execFileSync('git', args, {
+    return execFileSync(command, args, {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe']
     }).trimEnd()
   } catch (error) {
     throw new Error(String(error.stderr ?? error.message).trim(), { cause: error })
   }
+}
+
+function git(args) {
+  return runCommand('git', args)
+}
+
+/**
+ * origin に対応する GitHub のリポジトリについて、設定されたデフォルトブランチ名を引く。
+ * 取り込み済みの基準は `origin/<名前>` なので、gh の既定（`upstream` や `GH_REPO`）ではなく origin を明示して引く。
+ *
+ * @returns {string} デフォルトブランチ名
+ * @throws {Error} origin が無い・gh が失敗したとき・デフォルトブランチを引けなかったとき
+ */
+function readDefaultBranchName() {
+  const defaultBranchName = runCommand('gh', [
+    'repo',
+    'view',
+    git(['remote', 'get-url', 'origin']),
+    '--json',
+    'defaultBranchRef',
+    '--jq',
+    '.defaultBranchRef.name'
+  ])
+  // コミットの無い空のリポジトリでは defaultBranchRef が null になり、gh は空文字を返す
+  if (defaultBranchName === '') {
+    throw new Error(
+      'デフォルトブランチを引けませんでした（コミットの無い空のリポジトリではありませんか）'
+    )
+  }
+  return defaultBranchName
 }
 
 function gitLines(args) {
@@ -78,12 +107,15 @@ function deleteBranch({ branch, worktreePath }) {
  * @returns {{ deletedCount: number, skippedCount: number }} 消した件数と、残した（失敗した）件数
  */
 function pruneMergedBranches() {
+  const defaultBranchName = readDefaultBranchName()
+  // 取り込み済みかを判定する基準。ローカルのデフォルトブランチではなく origin 側を見る
+  const mergeBase = `origin/${defaultBranchName}`
   const [mainWorktree, ...linkedWorktrees] = git(['worktree', 'list', '--porcelain'])
     .split('\n\n')
     .map(parseWorktreeBlock)
   const currentBranch = git(['branch', '--show-current'])
   const keptBranches = new Set(
-    [PROTECTED_BRANCH, currentBranch, mainWorktree.branch].filter(Boolean)
+    [defaultBranchName, currentBranch, mainWorktree.branch].filter(Boolean)
   )
   const worktreePathByBranch = new Map(
     linkedWorktrees
@@ -94,7 +126,7 @@ function pruneMergedBranches() {
   const targetBranches = gitLines([
     'branch',
     '--merged',
-    MERGE_BASE,
+    mergeBase,
     '--format=%(refname:short)'
   ]).filter((branch) => !keptBranches.has(branch))
 
