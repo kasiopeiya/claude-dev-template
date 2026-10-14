@@ -56,6 +56,10 @@ const user = await loadUser()
 - 変数名・関数名は「何をするか／何を表すか」が名前から読み取れるようにする
 - 略語は避け、意味が明確な名前を使う（`usr` → `user`、`btn` → `button`）
 - 短さより具体性を優先する。多少長くなっても「何の値か」が伝わる名前にする（略語回避とは別の軸——省略していなくても曖昧なら不十分）。文脈を名前に織り込む（`filePath` → `targetFilePath`、`relPath` → `targetRelativePath`、`list` → `policyList`）
+- `value`・`data`・`item` のような、それ自体では何も指さない名前は使わない（禁止語の正は `eslint.config.mjs`。CI ゲート：`id-denylist`）
+  - 落ちたら「何の値か」を名前に入れて直す（❌ `constructor(value: string)` → ✅ `constructor(rawEmailAddress: string)`）
+  - 許すのは、外部の仕様（DOM・ESLint の API など）が決めた名前と、人間が Issue で残すと決めた名前だけ。理由（Issue 番号を含む）を書いた `eslint-disable` を付ける
+  - 値オブジェクトの `#value`・`get value()` は設計ポリシーが定める形なので、`domain/` 配下は設定が許している
 - 真偽値は `is` / `has` / `should` / `can` などのプレフィックスで意図を明示する
 - 関数名は動詞で始める（`getUser`、`validateInput`、`createSession`）
 - クラス名は目的（担う一つの責務）が分かる狭い名前にする。`Money`・`Manager`・`Util` のような広い名前は、あらゆる処理を招き入れて神クラス化する。設計上の根拠と判断基準は [application-design-policy](../../docs/policy/application-design-policy.md) が定める（神クラスアンチパターン）
