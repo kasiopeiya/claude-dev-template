@@ -1,4 +1,4 @@
-# 責務: 開発フロー解説 HTML（docs/guide/ai-driven-dev-flow.html）を GitHub Pages へ公開する。
+# 責務: 開発フロー解説 HTML（docs/guide/policy-driven-dev.html）を GitHub Pages へ公開する。
 # なぜこの構成なのかは samples/docs/design/cicd-design.md を参照する。
 
 name: publish-dev-flow-guide
@@ -11,7 +11,7 @@ on:
     branches:
       - main
     paths:
-      - 'docs/guide/ai-driven-dev-flow.html'
+      - 'docs/guide/policy-driven-dev.html'
       - '.github/workflows/publish-dev-flow-guide.yml'
   workflow_dispatch:
 
@@ -55,7 +55,7 @@ jobs:
       - name: Stage the guide as the site root
         run: |
           mkdir -p _site
-          cp docs/guide/ai-driven-dev-flow.html _site/index.html
+          cp docs/guide/policy-driven-dev.html _site/index.html
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

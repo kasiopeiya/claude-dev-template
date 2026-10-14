@@ -4,7 +4,7 @@ AI が主体で開発を進めるためのリポジトリテンプレート。�
 
 読むのは、**このテンプレートを自分のプロジェクトの土台にするか判断したい人 / AI が、思想とレールの仕組みを最初に掴みたいとき**。
 
-思想・開発フローの全体像は [AI 駆動開発フローガイド](https://kasiopeiya.github.io/claude-dev-template/) を参照（実体は `docs/guide/ai-driven-dev-flow.html`）。テンプレート特有の機能は `docs/guide/ai-driven-dev-features.html` にまとめてある。
+思想・開発フローの全体像は [AI 駆動開発フローガイド](https://kasiopeiya.github.io/claude-dev-template/) を参照（実体は `docs/guide/policy-driven-dev.html`）。テンプレート特有の機能は `docs/guide/ai-driven-dev-features.html` にまとめてある。
 
 ## 2本のレール
 
