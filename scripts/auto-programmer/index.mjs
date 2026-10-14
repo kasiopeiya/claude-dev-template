@@ -40,7 +40,7 @@ import {
   markAsStarted,
   putOnReadyAssignedToMe
 } from './board.mjs'
-import { buildBranchName } from './branchName.mjs'
+import { buildBranchName, validateBranchPrefix } from './branchName.mjs'
 import { runAutoDevSession, runAutoFixCiSession, runIssueCheckSession } from './claudeSession.mjs'
 import { config } from './config.mjs'
 import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait.mjs'
@@ -405,7 +405,8 @@ async function startFirstStartableIssue() {
     try {
       const branchName = buildBranchName({
         issueNumber: issue.number,
-        labelNames: issue.labelNames
+        labelNames: issue.labelNames,
+        branchPrefix: config.branchPrefix
       })
       showIssueBanner({ issueNumber: issue.number, title: issue.title, branchName })
       return { issue, branchName, existingPullRequestNumbers: startIssue(issue, branchName) }
@@ -494,6 +495,31 @@ function readRemoteHeadSha(branchName) {
     cwd: config.workspaceDir
   })
   return output.trim().split(/\s+/)[0] ?? ''
+}
+
+/**
+ * 接頭辞と同じ名前のブランチがリモートに無いことを確かめる。
+ *
+ * git は refs/heads/<接頭辞> があると refs/heads/<接頭辞>/... を作れない。ライン名（main2 など）をそのまま接頭辞に
+ * 入れると、着手して AI のセッションを使い切ってから push で拒否されるので、起動時に止める。
+ *
+ * @param {string | undefined} branchPrefix config.mjs の `branchPrefix`（検査済み）
+ * @returns {void}
+ * @throws {Error} 接頭辞と同じ名前のブランチがリモートにあるとき・git が失敗したとき
+ */
+function ensureNoBranchNamedAsPrefix(branchPrefix) {
+  if (!branchPrefix) return
+  const sameNameBranch = runOrThrow(
+    'git',
+    ['ls-remote', '--heads', 'origin', `refs/heads/${branchPrefix}`],
+    {
+      cwd: config.workspaceDir
+    }
+  )
+  if (sameNameBranch.trim() === '') return
+  throw new Error(
+    `scripts/auto-programmer/config.mjs の branchPrefix（${branchPrefix}）と同じ名前のブランチが ${config.repository} にあるため、${branchPrefix}/... のブランチを作れません。ライン名と重ならない接頭辞にしてください`
+  )
 }
 
 /**
@@ -828,10 +854,15 @@ async function waitUnlessIdleWaitLimitReached(idlePollCount, idleReason) {
 async function main() {
   // 上限が欠けたまま動かさない。config.mjs はテンプレート同期の対象外で、同期した利用先では欠けうる
   validateMaxConsecutiveIdleWaits(config.maxConsecutiveIdleWaits)
+  // 不正な接頭辞は buildBranchName が Issue ごとに投げ、catch で「飛ばします」になって全 Issue を飛ばし続ける。
+  // Issue を拾う前に止める
+  validateBranchPrefix(config.branchPrefix)
   // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
   // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
   startSleepGuard()
   runPreflight()
+  // リモートを見るので clone ができた後に確かめる
+  ensureNoBranchNamedAsPrefix(config.branchPrefix)
 
   let consecutiveSessionFailureCount = 0
   let idlePollCount = 0
