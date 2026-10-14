@@ -40,15 +40,17 @@ const CMD_UNSAFE_CHARACTER_PATTERN = /["%\r\n]/
  * shell: true の spawnSync は引数をクォートせずに空白でつなぐので、囲まないと
  * `claude -p "/auto-dev 123"` のプロンプトが `/auto-dev` と `123` の2つに割れる。
  *
- * @param {string} arg 引数
+ * @param {string} commandArgument 引数
  * @returns {string} ダブルクォートで囲んだ引数
  * @throws {Error} cmd.exe のクォートで守れない文字を含むとき
  */
-function quoteForCmd(arg) {
-  if (CMD_UNSAFE_CHARACTER_PATTERN.test(arg)) {
-    throw new Error(`cmd.exe 経由では安全に渡せない文字（" % 改行）を含む引数です: ${arg}`)
+function quoteForCmd(commandArgument) {
+  if (CMD_UNSAFE_CHARACTER_PATTERN.test(commandArgument)) {
+    throw new Error(
+      `cmd.exe 経由では安全に渡せない文字（" % 改行）を含む引数です: ${commandArgument}`
+    )
   }
-  return `"${arg}"`
+  return `"${commandArgument}"`
 }
 
 /**
