@@ -169,7 +169,7 @@ const KNOWN_OPTIONS = new Set(['--dry-run'])
  * @throws {Error} 知らない引数があるとき
  */
 function parseCliOptions(args, env) {
-  const unknownOptions = args.filter((arg) => !KNOWN_OPTIONS.has(arg))
+  const unknownOptions = args.filter((cliArgument) => !KNOWN_OPTIONS.has(cliArgument))
   if (unknownOptions.length > 0) {
     throw new Error(`知らない引数です: ${unknownOptions.join(' ')}（使えるのは --dry-run だけ）`)
   }

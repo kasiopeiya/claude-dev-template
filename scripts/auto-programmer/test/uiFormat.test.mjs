@@ -274,6 +274,7 @@ describe('区切りバナー', () => {
   })
 })
 
+/* eslint-disable id-denylist -- { label, value } は「項目名と値の組」で、value が正しい語（#900） */
 describe('項目名の揃え', () => {
   test('全角の項目名は1文字を2桁に数えて、値が同じ桁から始まるようにする', () => {
     const sut = alignLabeledValues
@@ -310,6 +311,7 @@ describe('項目名の揃え', () => {
     assert.deepEqual(lines, ['\u4dff\uff61    x', 'abcd  y'])
   })
 })
+/* eslint-enable id-denylist */
 
 describe('1行への畳み込み', () => {
   test('原因が後ろの行にあっても落とさずつなぐ', () => {

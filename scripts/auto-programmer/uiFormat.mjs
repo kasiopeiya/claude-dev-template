@@ -255,6 +255,7 @@ function measureDisplayWidth(text) {
 export function alignLabeledValues(entries) {
   const labelWidth = Math.max(0, ...entries.map(({ label }) => measureDisplayWidth(label)))
   return entries.map(
+    // eslint-disable-next-line id-denylist -- { label, value } は「項目名と値の組」で、value が正しい語（#900）
     ({ label, value }) => `${label}${' '.repeat(labelWidth - measureDisplayWidth(label))}  ${value}`
   )
 }

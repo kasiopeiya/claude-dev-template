@@ -135,13 +135,13 @@ export function listStartableIssues() {
   resolveStatusOption(board.readyStatusName)
 
   const candidates = listReadyItems()
-    .filter((item) => item.repository?.endsWith(`/${repository}`))
-    .map((item) => ({
-      itemId: item.id,
-      number: item.content.number,
-      title: item.content.title,
-      body: item.content.body,
-      labelNames: item.labels ?? []
+    .filter((readyItem) => readyItem.repository?.endsWith(`/${repository}`))
+    .map((readyItem) => ({
+      itemId: readyItem.id,
+      number: readyItem.content.number,
+      title: readyItem.content.title,
+      body: readyItem.content.body,
+      labelNames: readyItem.labels ?? []
     }))
 
   return selectStartableIssues(candidates, findUnresolvedBlockerNumbers(candidates))
