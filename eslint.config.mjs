@@ -37,6 +37,20 @@ const SIZE_AND_COMPLEXITY_RULES = {
   'max-depth': ['error', 2]
 }
 
+// 「それ自体では何も指さない」プレースホルダ名。禁止語の正はここで、直し方は typescript.md「命名規則」に書く。
+// id-denylist は宣言・代入・オブジェクトのキー・分割代入・クラスのフィールドとメソッドを落とし、メンバの読み取りは落とさない
+const PLACEHOLDER_IDENTIFIER_NAMES = [
+  'value',
+  'val',
+  'data',
+  'item',
+  'obj',
+  'tmp',
+  'temp',
+  'str',
+  'arg'
+]
+
 const JAPANESE_CHARACTER_PATTERN = '/[ぁ-んァ-ヶ一-龥]/'
 const TEST_SUITE_OR_CASE_FUNCTION_NAMES = '/^(it|test|describe)$/'
 const TEST_CASE_FUNCTION_NAMES = '/^(it|test)$/'
@@ -78,6 +92,19 @@ export default tseslint.config(
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
+
+  // プレースホルダ名の禁止（禁止語は PLACEHOLDER_IDENTIFIER_NAMES、直し方は typescript.md「命名規則」）
+  { rules: { 'id-denylist': ['error', ...PLACEHOLDER_IDENTIFIER_NAMES] } },
+  // 値オブジェクトの `#value` とゲッター `value` だけ許す（禁止語から `value` だけを外す。ほかの禁止語は効いたまま）。
+  // application-design-policy「クラスで実装する」がすべての値オブジェクトにこの形を求め、公開プロパティ名は #900、
+  // 中身を `#value` に持たせる形は #910 で決めた。値オブジェクトを置く層のパスで許すのは、新しく書く値オブジェクトも同じ形になるため。
+  // 代わりにこの層では引数名の `value` も通るので、コンストラクタ引数は `rawEmailAddress` のように書く（レビューで見る）
+  {
+    files: ['app/**/domain/**/*.ts', 'samples/app/**/domain/**/*.ts'],
+    rules: {
+      'id-denylist': ['error', ...PLACEHOLDER_IDENTIFIER_NAMES.filter((name) => name !== 'value')]
+    }
+  },
 
   {
     files: ['**/*.ts'],
