@@ -11,10 +11,12 @@ import { spawnWithWindowsShimFallback } from '../shell.mjs'
 /** テスト中だけ process.platform を差し替え、終わったら元に戻す */
 function withPlatform(platform, callback) {
   const original = process.platform
+  // eslint-disable-next-line id-denylist -- Object.defineProperty の記述子のキーは仕様が決めた名前
   Object.defineProperty(process, 'platform', { value: platform })
   try {
     callback()
   } finally {
+    // eslint-disable-next-line id-denylist -- Object.defineProperty の記述子のキーは仕様が決めた名前
     Object.defineProperty(process, 'platform', { value: original })
   }
 }

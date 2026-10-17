@@ -58,6 +58,7 @@ const rule = {
           context.report({
             node,
             messageId: 'useBarrelNamespace',
+            // eslint-disable-next-line id-denylist -- context.report のオプション名は ESLint の仕様が決めた名前
             data: { name: barrelName, local: localName },
             fix(fixer) {
               return fixer.replaceText(

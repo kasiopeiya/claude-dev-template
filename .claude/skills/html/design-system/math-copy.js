@@ -1,6 +1,7 @@
 ;(function () {
   function fallbackCopy(tex) {
     var ta = document.createElement('textarea')
+    // eslint-disable-next-line id-denylist -- textarea の value は DOM の仕様が決めた名前
     ta.value = tex
     ta.style.position = 'fixed'
     ta.style.opacity = '0'
@@ -37,14 +38,14 @@
     return btn
   }
 
-  function attachCopyUi(item) {
-    var root = item.typesetRoot
+  function attachCopyUi(mathItem) {
+    var root = mathItem.typesetRoot
     if (!root || !root.parentNode) return
-    var wrap = document.createElement(item.display ? 'div' : 'span')
-    wrap.className = item.display ? 'mb-math-block' : 'mb-math-inline'
+    var wrap = document.createElement(mathItem.display ? 'div' : 'span')
+    wrap.className = mathItem.display ? 'mb-math-block' : 'mb-math-inline'
     root.parentNode.insertBefore(wrap, root)
     wrap.appendChild(root)
-    wrap.appendChild(makeButton(item.math))
+    wrap.appendChild(makeButton(mathItem.math))
   }
 
   window.MathJax = {
@@ -55,8 +56,8 @@
     startup: {
       pageReady: function () {
         return MathJax.startup.defaultPageReady().then(function () {
-          for (var item of MathJax.startup.document.math) {
-            attachCopyUi(item)
+          for (var mathItem of MathJax.startup.document.math) {
+            attachCopyUi(mathItem)
           }
         })
       }

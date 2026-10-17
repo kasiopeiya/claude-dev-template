@@ -221,7 +221,9 @@ function toSubIssue({ number, url, state, repository, assignees, labels, project
  */
 function listSubIssues(issueNumber) {
   const [repositoryOwner, repositoryName] = config.repository.split('/')
-  const { data } = runJson('gh', [
+  const {
+    data: { repository, viewer }
+  } = runJson('gh', [
     'api',
     'graphql',
     '-f',
@@ -235,13 +237,13 @@ function listSubIssues(issueNumber) {
     '-f',
     `statusFieldName=${config.board.statusFieldName}`
   ])
-  const { totalCount, nodes } = data.repository.issue.subIssues
+  const { totalCount, nodes } = repository.issue.subIssues
   if (totalCount > nodes.length) {
     throw new Error(
       `#${issueNumber} の sub-issue ${totalCount} 件のうち ${nodes.length} 件しか読めていません。読み落とした子を載せ損ねるため止めます`
     )
   }
-  return { viewerLogin: data.viewer.login, subIssues: nodes.map(toSubIssue) }
+  return { viewerLogin: viewer.login, subIssues: nodes.map(toSubIssue) }
 }
 
 /**
@@ -344,6 +346,7 @@ function showRunSummary(record, isAllSessionsSucceeded) {
   else showSuccess(headline)
 
   // 値が同じ桁から始まるよう、項目名の幅を揃えてから行ごとのレベルで出す
+  /* eslint-disable id-denylist -- { label, value } は「項目名と値の組」で、value が正しい語（#900） */
   const details = []
   if (record.ciOutcome) {
     details.push({
@@ -362,6 +365,7 @@ function showRunSummary(record, isAllSessionsSucceeded) {
     })
   }
   details.push({ label: '記録', value: config.runLogPath, show: showInfo })
+  /* eslint-enable id-denylist */
   const lines = alignLabeledValues(details)
   details.forEach(({ show }, index) => show(lines[index]))
 }
