@@ -1,6 +1,6 @@
 ---
 name: issue-decide
-description: issue:needs-human-decision が付いた boy-scout Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable に変換する。/sweep の前処理として人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
+description: issue:needs-human-decision が付いた Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable に変換する。boy-scout の有無を問わない。人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
@@ -8,9 +8,9 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 # /issue-decide
 
-`issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。**`/sweep` の前処理**として、人間が対話しながら打つ。
+`issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。人間が対話しながら打つ。
 
-`/quick-issue` は[名指し例外](../quick-issue/SKILL.md#どちらを付けるか)に当たる Issue に `issue:needs-human-decision` を貼る。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、`/sweep` は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
+Issue を起票・監査する Skill は、[名指し例外](../quick-issue/SKILL.md#どちらを付けるか)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、`/sweep` は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
 
 ```mermaid
 stateDiagram-v2
@@ -18,17 +18,17 @@ stateDiagram-v2
     state "実装可（ai-fixable）" as Fixable
     state "決定済み（ai-fixable ＋ issue:decided）" as Decided
 
-    [*] --> Pending: /quick-issue が起票（名指し例外に当たり、人間が会話で決めていない）
-    [*] --> Decided: /quick-issue が起票（当たる名指し例外をすべて人間が会話で決めている）
-    [*] --> Fixable: /quick-issue が起票（例外に当たらない）
+    [*] --> Pending: 起票（名指し例外に当たり、人間が会話で決めていない）
+    [*] --> Decided: 起票（当たる名指し例外をすべて人間が会話で決めている）
+    [*] --> Fixable: 起票（例外に当たらない）
     Pending --> Decided: /issue-decide で人間が方針を決めた
     Pending --> Pending: /issue-decide で保留
     Pending --> [*]: /issue-decide で「対応しない」を選んだ
     Fixable --> Pending: /issue-check が名指し例外に当たると判定
     Decided --> Fixable: /issue-check が方針差し替えと判定（issue:decided を外す）
     Decided --> Pending: /issue-check が判定不能と判定、または「人間が決めた名指し例外」の行に無い例外に当たると判定
-    Decided --> [*]: /sweep が実装して close
-    Fixable --> [*]: /sweep が実装して close
+    Decided --> [*]: /sweep か開発フロー Skill が実装して close
+    Fixable --> [*]: /sweep か開発フロー Skill が実装して close
 ```
 
 「決定済み」が、人間の決めた名指し例外では押し戻されないのが要点である。人間が例外を承知で決めた方針を、同じ例外で戻さない。
@@ -36,14 +36,14 @@ stateDiagram-v2
 ## 前提
 
 - **始めるタイミングは人間が握る。** 人間の応答を待ちながら進むので、いつ走らせるかは人間が決める。
-- **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・コメント・close）だけである。実装は `/sweep` の仕事である。
+- **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・コメント・close）だけである。実装は別の Skill の仕事である（渡し先は Phase 3）。
 - **人間は Issue を読んでいない前提で書く。** 判断に要る材料は、こちらが本文から取り出して示す。
 - **方針の監査はしない。** ラベルが名指し例外に本当に当たるか、対応方針がポリシーに合うかは `/issue-check` の責務である。ここで重ねると判定が2箇所に散る。
 
 ## Phase 1: 対象の決定
 
 ```bash
-gh issue list --state open --limit 100 --search 'label:boy-scout label:"issue:needs-human-decision"' \
+gh issue list --state open --limit 100 --search 'label:"issue:needs-human-decision"' \
   --json number,title --jq 'sort_by(.number) | .[] | "\(.number)\t\(.title)"'
 ```
 
@@ -111,7 +111,7 @@ gh issue view <番号> --json body --jq .body > <スクラッチパッド>/issue
 
 3つ以上の具体的な選択肢に絞れる問いは `AskUserQuestion` を使う。絞れないなら会話文で1問だけ聞く。
 
-決着したら、**決めた内容を1文にして人間に見せてから** 2-5 へ進む。取り違えたまま本文を書き換えると、誤りがそのまま `/sweep` の実装まで通る。
+決着したら、**決めた内容を1文にして人間に見せてから** 2-5 へ進む。取り違えたまま本文を書き換えると、誤りがそのまま実装まで通る。
 
 ### 2-5. 決定を Issue へ反映する
 
@@ -138,7 +138,7 @@ gh issue view <番号> --json body --jq .body | diff - <スクラッチパッド
 
 1. **「人間に決めてほしいこと」を削除し、同じ位置に「対応方針」を書く。** `/quick-issue` はこの2セクションを排他と定めている（[quick-issue のテンプレート](../quick-issue/SKILL.md)）。書式もそこに従う（[対応方針の全項目](../quick-issue/SKILL.md#対応方針)）。
 2. 根拠に **「人間が決定（YYYY-MM-DD）」** を明記し、選ばれなかった案を「却下した案」へ移す。決めた内容が `docs/policy/adr-policy.md` の判定で ADR 対象になるなら、「実装フロー（使用するSkill）」に `/create-adr` を加える（却下した案は Issue に残したまま、`/create-adr` が ADR を書くときの材料にする）。
-3. **タスク一覧から「案を人間が決める」タスクを消し、決まった案に沿って書き直す。** 残すと `/sweep` が何を直すか決められず、離脱する。
+3. **タスク一覧から「案を人間が決める」タスクを消し、決まった案に沿って書き直す。** 残すと実装する側が何を直すか決められず、止まる。
 4. 完了条件が案に依存していれば直す。
 
 ```bash
@@ -165,7 +165,7 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 
 ### 2-6. 反映できたか確かめる
 
-次を全部満たしてから次の Issue へ移る。1つでも欠けると、**人間が決めたのに `/sweep` が動かない Issue** が残る。
+次を全部満たしてから次の Issue へ移る。1つでも欠けると、**人間が決めたのに実装へ進めない Issue** が残る。
 
 - [ ] 決めた内容の1文を人間に見せた
 - [ ] 「人間に決めてほしいこと」が消え、「対応方針」に[quick-issue テンプレートの全項目](../quick-issue/SKILL.md#対応方針)が入っている
@@ -183,7 +183,10 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 | #280  | …        | 対応しない                            | close                          |
 | #281  | …        | 保留                                  | なし                           |
 
-末尾に **`/sweep` へ渡せる Issue 番号の一覧**を出す。人間はこれを見て `/sweep` を打つ。
+末尾に、決めた Issue の番号を**渡し先ごとに**出す。
+
+- **`boy-scout` 付き**：`/sweep` へ渡す
+- **`boy-scout` 無し**：本文の「実装フロー（使用するSkill）」に書かれた Skill で個別に着手する。`/sweep` の一覧は `boy-scout` で絞っており、正式フローの Issue を一斉対応に混ぜないため
 
 ## エラーハンドリング
 
