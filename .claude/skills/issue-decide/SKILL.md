@@ -10,7 +10,7 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 `issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。人間が対話しながら打つ。
 
-Issue を起票・監査する Skill は、[名指し例外](../quick-issue/SKILL.md#どちらを付けるか)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、`/sweep` は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
+Issue を起票・監査する Skill は、[名指し例外](../../../docs/policy/issue-label-status-policy.md)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、`/sweep` は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
 
 ```mermaid
 stateDiagram-v2
@@ -153,7 +153,7 @@ gh issue edit <番号> --add-label ai-fixable,issue:decided --remove-label issue
 
 Issue 番号を直接指定して処理し、`issue:needs-human-decision` が付いていなかったときは `--remove-label` を省く。
 
-`issue:decided` は「**人間が名指し例外を承知のうえで方針を決めた**」印である。これが無いと、`issue-auditor-agent` が同じ名指し例外を再判定し、`issue:needs-human-decision` へ押し戻す。名指し例外の多くは作業そのものの性質（不可逆である・新設である）で、方針が決まっても消えないからである。
+`issue:decided` は「**人間が名指し例外を承知のうえで方針を決めた**」印である。これが無いと、`issue-auditor-agent` が同じ名指し例外を再判定し、`issue:needs-human-decision` へ押し戻す。名指し例外の多くは作業そのものの性質（不可逆である・新設である）で、方針が決まっても消えないからである。付ける条件は issue-label-status-policy の「人間が決めた例外は `issue:decided` で通す」が定める。
 
 #### 決定をコメントで残す
 

@@ -83,12 +83,12 @@ gh issue view <番号> --json state,url --jq '{state,url}'
 - **同じ関心事の孤児が2件以上ある**：その関心事の親Issueを新しく作り、まとめてぶら下げる
 - **1件だけ**：移さない（離脱条件）。1件のために親を立てると子1つだけの入れ物になる
 
-新しい親は umbrella（子への入口）として立てます。本文は「この親が何の塊か」を1文と、ぶら下げる子の一覧だけにします。タイトルに段番号は付けません（親に付ける子の段の範囲は、実行後の `/issue-deps` が計算します）。ラベルは `boy-scout`・`ai-fixable`・`issue:needs-human-decision` のどれも付けません（親は着手単位ではなく、`/sweep`・`/issue-check` が毎回拾って空回りします）。
+新しい親は umbrella（子への入口）として立てます。本文は「この親が何の塊か」を1文と、ぶら下げる子の一覧と、完了条件「すべての sub-issue が close されていること」だけにします。タイトルに段番号は付けません（親に付ける子の段の範囲は、実行後の `/issue-deps` が計算します）。ラベルは `ai-fixable` を付けます（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「3択の例外は、専用のラベルで扱いが決まっている Issue に限る」）。子が open な間は `/sweep`・`/issue-check` が飛ばし、子が全部 close されたら完了条件を見て閉じるので、空回りしません。`boy-scout`・`issue:needs-human-decision` は付けません。
 
 **新しい親は、移す子の元の親と同じ親（元の親の親）にぶら下げます。** そうしないとフェーズまで辿れなくなり、`/issue-deps` のグループ分けから外れます。
 
 ```bash
-gh issue create --title "<関心事の名前>" --body "<何の塊かを1文>"
+gh issue create --title "<関心事の名前>" --label ai-fixable --body "<何の塊かを1文、子の一覧、完了条件>"
 ```
 
 ## Phase 3: 離脱条件を確かめる

@@ -95,7 +95,7 @@ gh issue view <番号> --json number,title,body,labels,state,comments
   - `docs/policy-hub.md`：常に。Issue の主題から該当ポリシーを引き当てるための索引
   - **ハブで引き当てたポリシー**：常に。**引き当てたものだけ**を開く
   - `docs/policy/refined-engineer-judgment-principles.md`：常に。他ポリシーで裁定できない判断の北極星
-  - **`.claude/skills/quick-issue/SKILL.md` の「どちらを付けるか」**：ラベルの当否を判定するとき。名指し例外の正典
+  - **`docs/policy/issue-label-status-policy.md` の「名指し例外は、人間が決めるべき Issue の条件である」「人間が決めた例外は `issue:decided` で通す」**：ラベルの当否を判定するとき。名指し例外の正典
   - **`.claude/rules/` 配下**：Issue が実装コードの書き方に触れているとき
   - **`.claude/skills/past-decision-search/SKILL.md`**：常に。Read し、その「手順」を Issue の対象箇所と対応方針が触れる仕組み・パス・キーワードについて Bash で実行して、過去の決定を引く（このエージェントは Skill ツールを持たない）。結果は観点「過去の決定との整合」で使う
 - **分割検討**：
