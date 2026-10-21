@@ -65,7 +65,7 @@ ultrathink
 ### 照合して提案する
 
 1. **草案を保存する。** 草案の表（項目・選定・区分）を `tmp/decide-tech-stack/<YYYYMMDD-HHMMSS>.md` に Write で保存する（無ければディレクトリを作る）。`/premise-check` に渡すパスになる。
-2. **新しい技術要素を照合する。** 草案の表に名前が出た外部の製品・サービス・ツール（その機能名を含む）を取り出し、名前ごとに次を実行する。
+2. **新しい技術要素を照合する。** 草案の表に名前が出た外部の製品・サービス・ツールを取り出し、名前ごとに次を実行する。すでに使っている製品の機能・変数・コマンド・設定項目の名前（例：`github.ref_name`）は取り出さない。
 
    ```bash
    grep -rIiF -- "<名前>" docs/adr docs/design $(git ls-files '*package.json') $(git ls-files README.md .claude)
