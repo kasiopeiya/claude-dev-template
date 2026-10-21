@@ -165,3 +165,9 @@
 ### [review-subagent-lens-policy.md](policy/review-subagent-lens-policy.md)
 
 **参照タイミング**: 1体のレビューをレンズに分けるか検討するとき。レビューをレンズに分けて並列起動する Skill・SubAgent を新設・編集する前
+
+---
+
+### [issue-label-status-policy.md](policy/issue-label-status-policy.md)
+
+**参照タイミング**: Issue を起票する前・Issue のラベルを付け替える前・ボードの Status を動かす前
