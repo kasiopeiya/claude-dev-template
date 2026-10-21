@@ -18,7 +18,6 @@ hook:
       '.claude/skills/issue-decide/**/*.md',
       '.claude/skills/issue-regroup/**/*.md',
       '.claude/skills/issue-deps/**/*.md',
-      '.claude/skills/sweep/**/*.md',
       '.claude/skills/doc-consistency/**/*.md',
       '.claude/skills/sre-prr/**/*.md',
       '.claude/skills/auto-dev/**/*.md',
@@ -65,13 +64,13 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 
 | ラベル                                         | 意味                                                                                    | 付ける条件                                                                                                          |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `ai-fixable`                                   | 中身を見ずに AI が直せる。AI が着手する対象を選ぶ印                                     | 名指し例外に当たらないとき（既定）。当たっても人間が決めた例外なら、`issue:decided` を重ねて付ける                  |
+| `ai-fixable`                                   | 中身を見ずに AI が直せる。AI が単独で着手してよい対象を選ぶ印                           | 名指し例外に当たらないとき（既定）。当たっても人間が決めた例外なら、`issue:decided` を重ねて付ける                  |
 | `issue:needs-human-decision`                   | 中身を見ずには直せない。人間が1件ずつ方針を決める対象を選ぶ印                           | 名指し例外のいずれかに当たり、人間がまだ決めていないとき                                                            |
 | `issue:decided`                                | 人間が、当たる名指し例外を承知で方針を決めた                                            | 「人間が決めた例外」の条件を満たすとき。`ai-fixable` にだけ重ねる                                                   |
 | `issue:checked`                                | `/issue-check` が一度監査した。いま妥当である保証ではない                               | `/issue-check` が判定を出した Issue に、判定が何であれ貼る。監査できなかった・飛ばした Issue には貼らない           |
 | `boy-scout`                                    | 正式フロー（`/to-issues` など）を経ずに積んだ課題。後で棚卸しする                       | `/quick-issue` が無条件で付ける。`/to-issues`・`/issue-split` が作る Issue には付けない                             |
 | `policy-gap`                                   | 判定時に該当ポリシー・rules が見つからなかった。ポリシーを足す候補                      | 該当ポリシー・rules を探して見つからなかったとき。`ai-fixable`・`issue:needs-human-decision` のどちらにも重ねてよい |
-| `issue:needs-clean-session`                    | 着手したうえで、このやり方では直しきれないと分かった。専用のセッションで1件だけ対応する | `/sweep`・`/auto-dev`・`/auto-fix-ci` が着手後に離脱するとき。起票時には付けない。`ai-fixable` は外さない           |
+| `issue:needs-clean-session`                    | 着手したうえで、このやり方では直しきれないと分かった。専用のセッションで1件だけ対応する | `/auto-dev`・`/auto-fix-ci` が着手後に離脱するとき。起票時には付けない。`ai-fixable` は外さない                     |
 | `phase`                                        | Issue 階層の最上位。開発フローのフェーズを表す常設 Issue                                | フェーズ Issue にだけ付ける（3択の例外）                                                                            |
 | `requirement`                                  | 要件定義書のレビュー指摘に起因する Issue                                                | `/requirements-review` が起票するとき、ほかのラベルに重ねる                                                         |
 | `doc-consistency-weekly`・`code-policy-weekly` | 週次ワークフローが起票した Issue を見分ける専用の印                                     | 週次スクリプトが `ai-fixable` と一緒に付ける。ラベルの当否は、着手前の `/issue-check` が見る                        |
@@ -81,7 +80,7 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 ## 名指し例外は、人間が決めるべき Issue の条件である
 
-名指し例外は、着手してみないと何をするか決まらない Issue を、外形的な条件で挙げたものである。`ai-fixable` は中身を見ずに AI へ流す対象を選ぶラベルなので、そうした Issue には付けられない。条文の移し元は `/quick-issue`「どちらを付けるか」である（#996）。
+名指し例外は、着手してみないと何をするか決まらない Issue を、外形的な条件で挙げたものである。`ai-fixable` は中身を見ずに AI が着手してよい対象を選ぶラベルなので、そうした Issue には付けられない。条文の移し元は `/quick-issue`「どちらを付けるか」である（#996）。
 
 **既定は `ai-fixable`** である。次の例外に当たるときだけ `issue:needs-human-decision` に切り替える（人間が会話で決めた例外は除く。下の「人間が決めた例外は `issue:decided` で通す」）。どちらも付けない選択肢は無い（3択の例外を除く）。例外に当たるかどうか迷ったら `issue:needs-human-decision` を付ける。ただし「外部依存の制約を受けて…」の例外だけは、確実と言い切れないなら当たらない。
 
@@ -133,7 +132,7 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 ## 3択の例外は、専用のラベルで扱いが決まっている Issue に限る
 
-**3択**とは、`boy-scout`・`ai-fixable`・`issue:needs-human-decision` の3つをいう。起票する Issue には、このうち `ai-fixable` か `issue:needs-human-decision` のどちらか一方を必ず付ける（`/quick-issue` は加えて `boy-scout` を付ける）。どれも付かない Issue は、一斉対応からも個別相談からも漏れて、誰の目にも触れなくなる。
+**3択**とは、`boy-scout`・`ai-fixable`・`issue:needs-human-decision` の3つをいう。起票する Issue には、このうち `ai-fixable` か `issue:needs-human-decision` のどちらか一方を必ず付ける（`/quick-issue` は加えて `boy-scout` を付ける）。どれも付かない Issue は、AI の着手からも個別相談からも漏れて、誰の目にも触れなくなる。
 
 例外は、3つのどれも付けない Issue で、**専用のラベルで扱いが決まっているものだけ**である。
 

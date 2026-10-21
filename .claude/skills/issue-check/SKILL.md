@@ -1,6 +1,6 @@
 ---
 name: issue-check
-description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。1つの PR に収まらず割れる Issue は sub-issue に割る。初回の検査では、本文に新しい技術要素が出た Issue の外部依存の制約も調べる。/sweep で着手する前に人間が打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
+description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。1つの PR に収まらず割れる Issue は sub-issue に割る。初回の検査では、本文に新しい技術要素が出た Issue の外部依存の制約も調べる。着手する前に人間が打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: Task, Skill, Bash, Read, Edit, Write
@@ -8,7 +8,7 @@ allowed-tools: Task, Skill, Bash, Read, Edit, Write
 
 Issue を監査してください。あなたは判定本体を行わず、**Issue×レンズごとに割って並列に走らせ、返ってきた結果を統合して Issue へ反映する**役です。ただし、外部依存の前提だけはレンズが判定を返さないので、Phase 3 の規則で判定を作ります。
 
-`/quick-issue` は確認なしで即起票します。速さのために削れるのは推敲だけのはずですが、実際にはポリシーに反する対応方針や、よく見ると直す必要が無い課題も混ざります。`/sweep` は本文の対応方針どおりに直す設計なので、誤った方針はそのまま実装されます。**着手前にここで潰します。**
+`/quick-issue` は確認なしで即起票します。速さのために削れるのは推敲だけのはずですが、実際にはポリシーに反する対応方針や、よく見ると直す必要が無い課題も混ざります。着手する側（Auto Programmer など）は本文の対応方針どおりに直す設計なので、誤った方針はそのまま実装されます。**着手前にここで潰します。**
 
 ## 前提
 
@@ -25,7 +25,7 @@ gh issue list --state open --limit 100 --search 'label:boy-scout' \
   --json number,title,labels --jq 'sort_by(.number) | .[] | "\(.number)\t\([.labels[].name]|join(","))\t\(.title)"'
 ```
 
-`ai-fixable` で絞りません。`issue:needs-human-decision` の Issue も、名指し例外（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「名指し例外は、人間が決めるべき Issue の条件である」）に本当に当たるかを検査する対象です。`issue:needs-clean-session` も含めます——読むだけの判定なので、一括で直せるかどうかとは無関係です。
+`ai-fixable` で絞りません。`issue:needs-human-decision` の Issue も、名指し例外（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「名指し例外は、人間が決めるべき Issue の条件である」）に本当に当たるかを検査する対象です。`issue:needs-clean-session` も含めます——読むだけの判定なので、直しきれるかどうかとは無関係です。
 
 **`issue:checked` が付いた Issue も除外しません。** 判定のうち「前提が現物と食い違う」は、リポジトリが動けば真偽が変わります。前回の判定を貼った時点で凍結できないので、毎回すべて見直します。`issue:checked` を検索条件に使わないことで、Issue 番号を直接指定した経路との食い違いも起きません。
 
@@ -62,7 +62,7 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 観点「外部依存の前提」は、`issue-auditor-agent` のレンズではなく `premise-checker-agent` が担当します。**`issue:checked` が無い Issue（初回の検査）のうち、本文に新しい技術要素があるものにだけ**、その Issue のレンズと同じメッセージで Task 起動します。それ以外の Issue では起動せず、この観点は非該当とします（コメントも残しません）。
 
 - **`issue:checked` の有無**：Phase 1 で取った時点のラベルで決めます。Phase 3 で貼るラベルは、この実行の判定に使いません。`#` 付きで指定した Issue は一覧に載るとは限らないので、`gh issue view <番号> --json labels` で引きます
-- **新しい技術要素**：Issue 本文に名前が出た外部の製品・サービス・ツール（その機能名を含む）のうち、`docs/adr/`・`docs/design/`・各 `package.json`・`README.md`・`.claude/` 配下（追跡されたファイル）のどこにも同じ名前が出てこないもの。npm などのライブラリと社内システムの名前は取り出さない
+- **新しい技術要素**：Issue 本文に名前が出た外部の製品・サービス・ツールのうち、`docs/adr/`・`docs/design/`・各 `package.json`・`README.md`・`.claude/` 配下（追跡されたファイル）のどこにも同じ名前が出てこないもの。npm などのライブラリと社内システムの名前は取り出さない。すでに使っている製品の機能・変数・コマンド・設定項目の名前（例：`github.ref_name`）も取り出さない
 
 名前の取り出しと照合は、`premise-checker-agent` を起動する前に、**この Skill 本体が行います。** 取り出しは AI が行い、新しいかどうかは次の照合だけで決めます。文脈から「重要そうか」を判断しません。判断を挟むと、人間のいない Auto Programmer の中で見落としが検知されないからです。
 
@@ -200,7 +200,7 @@ gh issue close <番号> --comment "<なぜ不要と判定したかを、引用�
 
 「飛ばした」は Phase 1 で外した Issue です。判定を出していないので、`issue:checked` も貼りません。
 
-末尾に **GO と判定した Issue 番号の一覧**を出します。人間はこれを見て `/sweep` を打ちます。
+末尾に **GO と判定した Issue 番号の一覧**を出します。人間はこれを見て、Issue 番号を渡して着手します。
 
 まだ監査していない Issue は、後からこれで引けます。
 

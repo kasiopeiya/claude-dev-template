@@ -18,14 +18,14 @@ set -euo pipefail
 
 # 「名前|色(# なし)|説明」。色と説明は、テンプレートのリポジトリの現行値に合わせる。
 readonly LABELS=(
-  # Issue: /quick-issue・/sweep・/issue-check などが付ける
+  # Issue: /quick-issue・/issue-check などが付ける
   'boy-scout|C2E0C6|正式フローを経ずアドホックに起票した課題。後でまとめて棚卸しする'
   'ai-fixable|0E8A16|問題と対応方針が一意に定まり、AIが単独で対応できるIssue'
   'issue:needs-human-decision|0052cc|対応方針に人間の判断が必要なIssue'
   'issue:decided|1D76DB|人間が名指し例外を承知で方針を決めた Issue。名指し例外による差し戻しをしない'
   'policy-gap|FBCA04|判定時に該当ポリシー・rules が見つからなかった。ポリシー改善の候補'
   'issue:checked|BFD4F2|/issue-check が一度監査した Issue。いま妥当である保証ではない'
-  'issue:needs-clean-session|5319E7|/sweep が着手後に離脱条件を観測したIssue。専用セッションで1件だけ対応する'
+  'issue:needs-clean-session|5319E7|着手後に離脱条件を観測したIssue。専用セッションで1件だけ対応する'
   'phase|0E4B99|Issue階層の最上位。開発フローのフェーズを表す常設Issue'
   'requirement|1D76DB|要件定義書のレビュー指摘に起因するIssue'
   # PR: docs/policy/pr-review-policy.md の「PRラベルと変更の種類」表と /pr-label が付ける
