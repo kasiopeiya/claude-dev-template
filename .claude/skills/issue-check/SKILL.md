@@ -62,7 +62,7 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 観点「外部依存の前提」は、`issue-auditor-agent` のレンズではなく `premise-checker-agent` が担当します。**`issue:checked` が無い Issue（初回の検査）のうち、本文に新しい技術要素があるものにだけ**、その Issue のレンズと同じメッセージで Task 起動します。それ以外の Issue では起動せず、この観点は非該当とします（コメントも残しません）。
 
 - **`issue:checked` の有無**：Phase 1 で取った時点のラベルで決めます。Phase 3 で貼るラベルは、この実行の判定に使いません。`#` 付きで指定した Issue は一覧に載るとは限らないので、`gh issue view <番号> --json labels` で引きます
-- **新しい技術要素**：Issue 本文に名前が出た外部の製品・サービス・ツール（その機能名を含む）のうち、`docs/adr/`・`docs/design/`・各 `package.json`・`README.md`・`.claude/` 配下（追跡されたファイル）のどこにも同じ名前が出てこないもの。npm などのライブラリと社内システムの名前は取り出さない
+- **新しい技術要素**：Issue 本文に名前が出た外部の製品・サービス・ツールのうち、`docs/adr/`・`docs/design/`・各 `package.json`・`README.md`・`.claude/` 配下（追跡されたファイル）のどこにも同じ名前が出てこないもの。npm などのライブラリと社内システムの名前は取り出さない。すでに使っている製品の機能・変数・コマンド・設定項目の名前（例：`github.ref_name`）も取り出さない
 
 名前の取り出しと照合は、`premise-checker-agent` を起動する前に、**この Skill 本体が行います。** 取り出しは AI が行い、新しいかどうかは次の照合だけで決めます。文脈から「重要そうか」を判断しません。判断を挟むと、人間のいない Auto Programmer の中で見落としが検知されないからです。
 
