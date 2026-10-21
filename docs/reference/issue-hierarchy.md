@@ -31,7 +31,7 @@ Issue は GitHub のネイティブ sub-issue で階層にする。sub-issue の
 - **設計・実装**：開発系のタスク全般。単体テストも含む
 - **結合テスト**：結合テスト・E2Eテスト。テストケース作成とテスト用の環境整備も含む
 
-フェーズIssueは close しない。`boy-scout`・`ai-fixable`・`issue:needs-human-decision` は付けない（付けると `/sweep`・`/issue-check` が毎回拾って空回りする）。まだ無いリポジトリでは、起票を始める前に上のフェーズをすべて作る。
+フェーズIssueは close しない。`boy-scout`・`ai-fixable`・`issue:needs-human-decision` は付けない（付けると `/issue-check` が毎回拾って空回りする）。まだ無いリポジトリでは、起票を始める前に上のフェーズをすべて作る。
 
 ```bash
 gh label create phase --description "Issue階層の最上位。開発フローのフェーズを表す常設Issue" --color "0E4B99"
