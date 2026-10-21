@@ -10,7 +10,7 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 `issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。人間が対話しながら打つ。
 
-Issue を起票・監査する Skill は、[名指し例外](../quick-issue/SKILL.md#どちらを付けるか)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、`/sweep` は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
+Issue を起票・監査する Skill は、[名指し例外](../quick-issue/SKILL.md#どちらを付けるか)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、Auto Programmer は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
 
 ```mermaid
 stateDiagram-v2
@@ -27,8 +27,8 @@ stateDiagram-v2
     Fixable --> Pending: /issue-check が名指し例外に当たると判定
     Decided --> Fixable: /issue-check が方針差し替えと判定（issue:decided を外す）
     Decided --> Pending: /issue-check が判定不能と判定、または「人間が決めた名指し例外」の行に無い例外に当たると判定
-    Decided --> [*]: /sweep か開発フロー Skill が実装して close
-    Fixable --> [*]: /sweep か開発フロー Skill が実装して close
+    Decided --> [*]: Auto Programmer か開発フロー Skill が実装して close
+    Fixable --> [*]: Auto Programmer か開発フロー Skill が実装して close
 ```
 
 「決定済み」が、人間の決めた名指し例外では押し戻されないのが要点である。人間が例外を承知で決めた方針を、同じ例外で戻さない。
@@ -36,7 +36,7 @@ stateDiagram-v2
 ## 前提
 
 - **始めるタイミングは人間が握る。** 人間の応答を待ちながら進むので、いつ走らせるかは人間が決める。
-- **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・コメント・close）だけである。実装は別の Skill の仕事である（渡し先は Phase 3）。
+- **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・コメント・close）だけである。実装は別の Skill の仕事である。
 - **人間は Issue を読んでいない前提で書く。** 判断に要る材料は、こちらが本文から取り出して示す。
 - **方針の監査はしない。** ラベルが名指し例外に本当に当たるか、対応方針がポリシーに合うかは `/issue-check` の責務である。ここで重ねると判定が2箇所に散る。
 
@@ -183,10 +183,7 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 | #280  | …        | 対応しない                            | close                          |
 | #281  | …        | 保留                                  | なし                           |
 
-末尾に、決めた Issue の番号を**渡し先ごとに**出す。
-
-- **`boy-scout` 付き**：`/sweep` へ渡す
-- **`boy-scout` 無し**：本文の「実装フロー（使用するSkill）」に書かれた Skill で個別に着手する。`/sweep` の一覧は `boy-scout` で絞っており、正式フローの Issue を一斉対応に混ぜないため
+末尾に、決めた Issue の番号を出す。着手は、本文の「実装フロー（使用するSkill）」に書かれた Skill か Auto Programmer が行う。
 
 ## エラーハンドリング
 
