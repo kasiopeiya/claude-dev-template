@@ -149,7 +149,6 @@ flowchart LR
 flowchart LR
     Merged([🎯 main へマージ]) --> PathCheck{変わったのは?}
     PathCheck -->|app/ または infra/| Deploy
-    PathCheck -->|開発フロー解説 HTML| Pages(["🌐 GitHub Pages へ公開"])
     PathCheck -->|それ以外| Skip([⏭️ 何もしない])
 
     subgraph Serial["🔒 直列化グループ cdk-deploy-dev（dev は1環境）"]
@@ -167,7 +166,7 @@ flowchart LR
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
     classDef hollow fill:#FFE4B5,stroke:#DC143C,stroke-width:2px,stroke-dasharray: 5 5,color:black
 
-    class Merged,Skip,Done,Pages startEnd
+    class Merged,Skip,Done startEnd
     class Issue process
     class PathCheck decision
     class Deploy,IT hollow
