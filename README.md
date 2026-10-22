@@ -88,9 +88,13 @@ npm run format       # フォーマット
 4. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
 5. 実装は `app/`・`infra/` に書く。どちらも空なので、[`samples/`](samples/README.md) の参照実装を手本にして写す（`samples/` 自体は書き換えない）
 6. Issue 系の Skill が使うラベルを作る。`gh auth login` 済みの状態で `./scripts/setup-labels.sh` を1回流す（無いラベルだけ作り、何度流しても安全）。ラベルが無いと、Issue を起票する Skill が途中で失敗する
-7. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
-8. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
-9. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
+7. ボード（GitHub Projects）で進み具合を追うなら、次の3つを済ませる。どれかが抜けていると、AI が着手時に打つ `npm run move-issue-card` は警告だけ出して何もしない（作業は止まらない）
+   - `gh auth refresh -s project` で、トークンに `project` スコープ（ボードを読み書きする権限）を足す
+   - `scripts/auto-programmer/config.mjs` の `repository` と `board` を、自分のリポジトリとボードに向ける
+   - ボードの Workflows 画面で、組み込みワークフロー「Pull request linked to issue」の移し先を `In Review` にする（既定は `In progress`）
+8. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
+9. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
+10. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
 
 ## 変更してはならないパス
 

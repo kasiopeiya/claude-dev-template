@@ -61,7 +61,7 @@ AI の提案が違うと思ったら、「`/grill-me` で始めて」「直接�
 
 ## 1つのIssueは0〜12の順で回す
 
-0. **起点Issue起票（人間/AI）**：要望・課題の起点となるIssueをGitHub Issuesに起票する。その場で直接指示する小さな作業も、指示の内容を `/quick-issue` でIssueにしてから着手する
+0. **起点Issue起票（人間/AI）**：要望・課題の起点となるIssueをGitHub Issuesに起票する。その場で直接指示する小さな作業も、指示の内容を `/quick-issue` でIssueにしてから着手する。AI は着手の直前に `npm run move-issue-card -- <Issue番号>` でボードのカードを In progress へ動かす（CLAUDE.md「Issue 作業の共通ルール」が定める）
 1. **仕様の相談（人間＋AI）**：`/grill-me` — 対話で仕様・設計を詰める（始めるかどうかは「最初にどのパターンで始めるか」で決める）。最初に「どうなったら終わりか」を一文で合意し、その一文の外側は聞かず「やらないこと」として残す。`/grill-me --small` を付けると、合意する一文が最初に通す薄い一本道（曳光弾）に限定される
 2. **Plan作成＋チェック（人間＋AI）**：Planモードでの事前調査、または `/grill-me` の議論を `/to-plan` でPlanファイル化。`/to-plan` は、このリポジトリでまだ使っていない外部の技術要素が Plan に入るときだけ、`/check-plan` の前に `/premise-check`（外部の制約を一次資料で調べる）の実行を提案する。人間が「実行する」と答えると AI が `/premise-check` を実行し、見直す制約を選んだ後に `/check-plan` が走る。提案が無い・見送ったときは、続けて `/check-plan` を自動実行し、必須セクションの充足とコードベース・ドキュメントの影響範囲の網羅を早期にチェックする（シフトレフト）。`/check-plan` は単体でも実行できる。
    - 必須：「設計書への影響」セクション（更新不要なら「更新不要・理由：〇〇」と明記）
@@ -105,8 +105,8 @@ Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積�
 1. **カードを Ready へ動かし、担当者を付ける（人間）**：対象は `ai-fixable` が付いた open な Issue。拾うのは担当者のマシンの auto-programmer だけなので、担当者の無い Issue は誰にも拾われない。本文の「ブロッカー」に並ぶ Issue が全部 closed になるまでは拾われない。open な sub-issue を持つ親は、親のカードだけ動かせばよい。スクリプトは親を実装せず、子を Ready に載せて自分を担当者にする
 2. **起動する（人間）**：`npm run auto-programmer` を打つ。1件終えると次の1件へ進み、着手できる Issue が無い状態が一定の回数続くと止まる。AI のセッションからは起動できない
 3. **実装して push する（AI）**：スクリプトが AI 専用 clone にブランチを切る。`issue:checked` の無い Issue は、先に `/issue-check` で監査する。見込み 400 行以上で割れる Issue は、ここで `/issue-split` が sub-issue に割る。それ以外は `/auto-dev <Issue番号>` を起動する。`/auto-dev` は Issue の「実装フロー（使用するSkill）」に並ぶ Skill で実装し、検証・コミット・push と、`/pr-body` による PR 本文の差し替えまで確認なしで進める。リポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は、PR を作らずに `/auto-dev` が閉じる
-4. **CI が通るまで直す（AI）**：スクリプトが push 後の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。CI が通ればカードを In Review へ動かす。CI の結果が出てから次の1件へ進む
-5. **PR 以降は 10〜11 と同じ**：In Review のカードの PR をレビューする。自動マージされた PR の Issue は、スクリプトが次の Issue を選ぶ前に閉じる。スクリプトを止めているときは `npm run close-issues` を打って閉じる
+4. **CI が通るまで直す（AI）**：スクリプトが push 後の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。CI の結果が出てから次の1件へ進む
+5. **PR 以降は 10〜11 と同じ**：PR が Issue に紐づくとカードは In Review へ動くので、その列の PR をレビューする。自動マージされた PR の Issue は、スクリプトが次の Issue を選ぶ前に閉じる。スクリプトを止めているときは `npm run close-issues` を打って閉じる
 
 無人実行が途中で止まった Issue には、`needs-human-check` が付く。止まった Issue は次のように扱う。
 
