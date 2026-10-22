@@ -45,7 +45,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - `boy-scout`：無条件で付ける
 - `ai-fixable` / `issue:needs-human-decision`：**必ずどちらか一方だけ**を付ける。判定はポリシーの「人間が決めるべき Issue の条件」に従う
 - `issue:decided`：`ai-fixable` にだけ重ねる。条件はポリシーの「人間が方針を決めたら `issue:decided` を付ける」に従う
-- `policy-gap`：該当するポリシー・rules を探して見つからなかったときに重ねる。判定をする前に、`docs/policy-hub.md` と `.claude/rules/` を必ず探す
+- `harness`：ポリシーの「`harness` を付ける条件」に当たるときに重ねる。`ai-fixable` / `issue:needs-human-decision` のどちらを付けたかとは別に決める
 - `issue:needs-clean-session`：起票時には付けない
 
 ### 人間が決めたことの書き方
@@ -222,9 +222,10 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - [ ] 「実装フロー（使用するSkill）」が埋まっている
 - [ ] 「ブロッカー」に、先に終わっている必要がある Issue を番号で書いた（無ければ「なし（すぐ着手できる）」と書いた）
 - [ ] 既存 Issue と重複しないか `gh issue list --state all --search "<タイトルの主要語>"` で確認した（`--state all` を外すと open だけを見ることになり、**却下済み（NOT_PLANNED）の同じ提案を再起票する**）
-- [ ] 該当するポリシー・rules を探した（見つからなければ `policy-gap` を付けた）
+- [ ] 該当するポリシー・rules を `docs/policy-hub.md` と `.claude/rules/` から探した
 - [ ] 見つかったポリシー・rules と「タスク一覧」「完了条件」を照合し、反する作業を指示していない（反していたらタスク側を直した）
 - [ ] `ai-fixable` / `issue:needs-human-decision` のどちらか一方を決めた
+- [ ] ポリシーの「`harness` を付ける条件」に当たるかを決めた（当たれば `harness` を付けた）
 - [ ] 人間が決めるべき条件に当たるのに `ai-fixable` を付けたなら、ポリシーの「人間が方針を決めたら `issue:decided` を付ける」の条件を満たし、`issue:decided` と「人間が決めたこと」の行を付けた
 - [ ] `issue:needs-human-decision` を付けたなら、ポリシーの「人間が決めるべき Issue の条件」のどれに当たるかを言えて、「人間に決めてほしいこと」に論点と選択肢を書いた
 - [ ] `ai-fixable` を付けたなら「対応方針」に採る案・「いま→変えた後」の対比・根拠・却下案を書き、対比には実際の文言（またはふるまい）を引用した
@@ -239,7 +240,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 gh issue create \
   --title "<タイトル>" \
   --assignee @me \
-  --label boy-scout,<ai-fixable|issue:needs-human-decision>[,issue:decided][,policy-gap] \
+  --label boy-scout,<ai-fixable|issue:needs-human-decision>[,issue:decided][,harness] \
   --body "$(cat <<'EOF'
 （テンプレートの全セクションを埋めた本文）
 EOF

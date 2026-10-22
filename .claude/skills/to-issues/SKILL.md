@@ -75,6 +75,8 @@ Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転�
 
 各 Issue には `ai-fixable` / `issue:needs-human-decision` のどちらか一方を必ず付ける（`boy-scout` は付けない。正式フローを経ずに見つけた課題を後で棚卸しするためのラベルであり、`/to-issues` 産の Issue には当たらない）。どちらを付けるかの判定は issue-label-status-policy の「人間が決めるべき Issue の条件」に従う。
 
+同ポリシーの「`harness` を付ける条件」に当たる Issue には、`harness` も重ねる。
+
 「タスク一覧」「完了条件」は、登録前に該当するポリシー・rules（`docs/policy-hub.md`・`.claude/rules/`）と照合する。ポリシーに反する作業を指示していたら、タスク側を直してから登録する。実装時はポリシーが優先されるため、反したまま登録すると手戻りになる。
 
 環境依存の識別子（アカウント名・プロジェクト番号・リソース ID・URL・エンドポイント）を本文に書くなら、[configuration-policy](../../../docs/policy/configuration-policy.md) を読み、値そのものではなく置き場所（どの設定ファイルに集約するか）をタスクに書く。
