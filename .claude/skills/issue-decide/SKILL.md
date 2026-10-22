@@ -1,6 +1,6 @@
 ---
 name: issue-decide
-description: issue:needs-human-decision が付いた Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable に変換する。boy-scout の有無を問わない。人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
+description: issue:needs-human-decision が付いた Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable か ready-for-human に変換する。boy-scout の有無を問わない。人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
@@ -8,35 +8,44 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 # /issue-decide
 
-`issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。人間が対話しながら打つ。
+`issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` か `ready-for-human` に変換する。人間が対話しながら打つ。
 
 Issue を起票・監査する Skill は、[人間が決めるべき条件](../../../docs/policy/issue-label-status-policy.md)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、Auto Programmer は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
 
 ```mermaid
 stateDiagram-v2
     state "人間判断待ち（issue:needs-human-decision）" as Pending
-    state "実装可（ai-fixable）" as Fixable
-    state "決定済み（ai-fixable ＋ issue:decided）" as Decided
+    state "人間の作業（ready-for-human。人間が決めたなら ＋ issue:decided）" as Human
+    state "AI が着手できる" as AIWork {
+        state "実装可（ai-fixable）" as Fixable
+        state "決定済み（ai-fixable ＋ issue:decided）" as Decided
+        Decided --> Fixable: /issue-check が方針差し替えと判定（issue:decided を外す）
+    }
 
     [*] --> Pending: 起票（人間が決めるべき条件に当たり、人間が会話で決めていない）
     [*] --> Decided: 起票（当たる条件をすべて人間が会話で決めている）
     [*] --> Fixable: 起票（どの条件にも当たらない）
+    [*] --> Human: 起票（方針が決まっていて、残る作業がすべて人間しかできない）
     Pending --> Decided: /issue-decide で人間が方針を決めた
+    Pending --> Fixable: /issue-check がどの条件にも当たらないと判定
+    Pending --> Human: 方針が決まり（/issue-decide）、またはどの条件にも当たらず（/issue-check）、残る作業がすべて人間しかできない
     Pending --> Pending: /issue-decide で保留
     Pending --> [*]: /issue-decide で「対応しない」を選んだ
     Fixable --> Pending: /issue-check が人間が決めるべき条件に当たると判定
-    Decided --> Fixable: /issue-check が方針差し替えと判定（issue:decided を外す）
     Decided --> Pending: /issue-check が判定不能と判定、または「人間が決めたこと」の行に無い条件に当たると判定
-    Decided --> [*]: Auto Programmer か開発フロー Skill が実装して close
-    Fixable --> [*]: Auto Programmer か開発フロー Skill が実装して close
+    AIWork --> Human: /issue-check が残る作業はすべて人間しかできないと判定
+    Human --> AIWork: /issue-check が AI に実行手段のある作業が残ると判定
+    Human --> Pending: /issue-check が「人間が決めたこと」の行に無い、人間が決めるべき条件に当たると判定
+    AIWork --> [*]: Auto Programmer か開発フロー Skill が実装して close
+    Human --> [*]: 人間が作業して close
 ```
 
-「決定済み」が、人間が決めた条件では押し戻されないのが要点である。人間が決めた方針を、同じ条件で戻さない。
+「決定済み」と、`issue:decided` 付きの「人間の作業」が、人間が決めた条件では押し戻されないのが要点である。人間が決めた方針を、同じ条件で戻さない。
 
 ## 前提
 
 - **始めるタイミングは人間が握る。** 人間の応答を待ちながら進むので、いつ走らせるかは人間が決める。
-- **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・コメント・close）だけである。実装は別の Skill の仕事である。
+- **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・コメント・close と、人間の作業を切り出した Issue の起票）だけである。実装は別の Skill の仕事である。
 - **人間は Issue を読んでいない前提で書く。** 判断に要る材料は、こちらが本文から取り出して示す。
 - **方針の監査はしない。** Issue が人間が決めるべき条件に本当に当たるか、対応方針がポリシーに合うかは `/issue-check` の責務である。ここで重ねると判定が2箇所に散る。
 
@@ -136,7 +145,7 @@ gh issue view <番号> --json body --jq .body | diff - <スクラッチパッド
 
 書き出したファイルを Read し、Edit で該当セクションだけを差し替える。本文全体を書き直してはならない。
 
-1. **「人間に決めてほしいこと」を削除し、同じ位置に「対応方針」を書く。** `/quick-issue` はこの2セクションを排他と定めている（[quick-issue のテンプレート](../quick-issue/SKILL.md)）。書式もそこに従う（[対応方針の全項目](../quick-issue/SKILL.md#対応方針)）。
+1. **「人間に決めてほしいこと」を削除し、同じ位置に「対応方針」を書く。** `ready-for-human` にするなら、タスク一覧の人間がするタスクの頭に「（人間）」と書く。 `/quick-issue` はこの2セクションを排他と定めている（[quick-issue のテンプレート](../quick-issue/SKILL.md)）。書式もそこに従う（[対応方針の全項目](../quick-issue/SKILL.md#対応方針)）。
 2. 根拠に **「人間が決定（YYYY-MM-DD）」** を明記し、選ばれなかった案を「却下した案」へ移す。決めた内容が `docs/policy/adr-policy.md` の判定で ADR 対象になるなら、「実装フロー（使用するSkill）」に `/create-adr` を加える（却下した案は Issue に残したまま、`/create-adr` が ADR を書くときの材料にする）。
 3. **タスク一覧から「案を人間が決める」タスクを消し、決まった案に沿って書き直す。** 残すと実装する側が何を直すか決められず、止まる。
 4. 完了条件が案に依存していれば直す。
@@ -147,8 +156,10 @@ gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
 
 #### ラベルを貼り替える
 
+決めた方針で残る作業が、すべて issue-label-status-policy の「人間しかできない作業の条件」に当たるなら `ready-for-human`、それ以外は `ai-fixable` を付ける。AI の作業と人間しかできない作業が混ざるなら、人間の作業を `/quick-issue` の「人間の作業を別 Issue に切り出す」に従って別 Issue に起票し、この Issue は AI の作業だけを残して `ai-fixable` にする。
+
 ```bash
-gh issue edit <番号> --add-label ai-fixable,issue:decided --remove-label issue:needs-human-decision
+gh issue edit <番号> --add-label <ai-fixable|ready-for-human>,issue:decided --remove-label issue:needs-human-decision
 ```
 
 Issue 番号を直接指定して処理し、`issue:needs-human-decision` が付いていなかったときは `--remove-label` を省く。
@@ -170,7 +181,8 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 - [ ] 決めた内容の1文を人間に見せた
 - [ ] 「人間に決めてほしいこと」が消え、「対応方針」に[quick-issue テンプレートの全項目](../quick-issue/SKILL.md#対応方針)が入っている
 - [ ] タスク一覧から「案を人間が決める」タスクが消えている
-- [ ] ラベルが `ai-fixable` ＋ `issue:decided` になっている
+- [ ] ラベルが `ai-fixable` か `ready-for-human` と、`issue:decided` になっている
+- [ ] AI の作業と人間しかできない作業が1件に混ざっていない（混ざっていたら人間の作業を別 Issue に切り出した）
 - [ ] 決定のコメントを残した
 
 ## Phase 3: 報告
@@ -183,13 +195,14 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 | #280  | …        | 対応しない                            | close                          |
 | #281  | …        | 保留                                  | なし                           |
 
-末尾に、決めた Issue の番号を出す。着手は、本文の「実装フロー（使用するSkill）」に書かれた Skill か Auto Programmer が行う。
+末尾に、決めた Issue の番号を出す。
 
 ## エラーハンドリング
 
 - **本文に「人間に決めてほしいこと」が無い**：本文から論点を組み立てて示す。案が無ければ2案作り、「AI が作った案」と明記する
 - **対象箇所が実在しない**：第一選択肢を「対応しない（close する）」にする
 - **`issue:decided` が未作成で `gh` が失敗する**：`gh label create "issue:decided" --description "人間が方針を決めた Issue。決めた条件を理由に人間判断へ戻さない"` を実行して再実行する
+- **`ready-for-human` が未作成で `gh` が失敗する**：`gh label create "ready-for-human" --description "方針は決まっているが、残る作業を AI が実行する手段を持たない Issue"` を実行して再実行する
 - **別セッションの更新が入っている**：上書きせず中断し、その事実を報告する
 - **問いを2巡しても決着しない**：そこで初めて保留の可否を聞き、保留なら次へ移る。何が分かれば決まるかをコメントで残す
 - **人間が応答を打ち切った**：そこまでの反映は残る。残りの Issue を報告して終了する

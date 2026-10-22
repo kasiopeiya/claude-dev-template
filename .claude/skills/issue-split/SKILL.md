@@ -86,9 +86,11 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 親に「確定済みの決定」節が無く「grill-me で確定した仕様」節がある場合（`/to-issues` が起票した Issue）も、扱いは同じである。
 
-ラベルは `ai-fixable` / `issue:needs-human-decision` のどちらか一方を必ず付ける（判定は issue-label-status-policy が正典）。`boy-scout` は付けない。`issue:needs-human-decision` を付けた子では、上から2番目の節が「対応方針」ではなく「人間に決めてほしいこと」になる。
+ラベルは `ai-fixable` / `issue:needs-human-decision` / `ready-for-human` のどれか1つだけを必ず付ける（判定は issue-label-status-policy が正典）。`boy-scout` は付けない。`issue:needs-human-decision` を付けた子では、上から2番目の節が「対応方針」ではなく「人間に決めてほしいこと」になる。
 
-親が `issue:decided` 付きなら、`ai-fixable` にした子にも `issue:decided` を付け、親の「対応方針」にある「人間が決めたこと」の行のうち、その子に当たるものを書き写す。子は親で人間が決めた中身を分けたもので、新しい中身を足さないからである。印が無いと、`/issue-check` が子を同じ条件で差し戻す。
+親のタスクに、同ポリシーの「人間しかできない作業の条件」に当たる作業があれば、その作業だけの子に切り出して `ready-for-human` を付け、AI の作業の子に混ぜない。切り出し方は `/quick-issue` の「人間の作業を別 Issue に切り出す」に従う。
+
+親が `issue:decided` 付きなら、`ai-fixable` か `ready-for-human` にした子にも `issue:decided` を付け、親の「対応方針」にある「人間が決めたこと」の行のうち、その子に当たるものを書き写す。子は親で人間が決めた中身を分けたもので、新しい中身を足さないからである。印が無いと、`/issue-check` が子を同じ条件で差し戻す。
 
 タスク一覧と完了条件は、起票前にポリシー（`docs/policy-hub.md`）・rules（`.claude/rules/`）と照合する。ポリシーに反する作業を親から引き継いだままにしない。
 
