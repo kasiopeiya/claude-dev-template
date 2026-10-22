@@ -25,8 +25,8 @@
 // - PR を作った後は、CI の結果が出るまで次の Issue へ進まない。落ちていれば `/auto-fix-ci` を
 //   別プロセスで起こして直させ、上限まで直させても落ちていれば人間へ回す。待たずに次へ進むと、落ちた PR が
 //   誰にも直されずに残る。CI が落ちたこと自体はセッションの失敗に数えない（claude が壊れている兆候ではない）。
-// - CI が通ったときだけカードを「レビュー待ち」へ動かす。人間がレビュー待ちの列だけを見ればよい状態を保つ。
-//   動かせなくても例外にせず記録に残す。PR はできているので、ボードの不調で次の Issue を止める理由が無い。
+// - カードを「レビュー待ち」へは動かさない。PR が Issue に紐づいた時点で、ボードの組み込みワークフロー
+//   「Pull request linked to issue」が動かす（Issue #995）。CI の通過を待って動かすと、同じ移動が二重になる。
 // - 毎周、Issue を選ぶ前に、自動マージされた PR が閉じ損ねた Issue を閉じる（Issue #744）。起動時の1回だけだと、
 //   回っている間にマージされた PR の Issue が閉じず、それを「ブロッカー」に持つ Issue がいつまでも拾われない。
 //   閉じられなくても次の Issue は選べるので、失敗しても周回は止めない。
@@ -37,12 +37,7 @@
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
 import { closeIssuesOfMergedPullRequests } from '../close-issues.mjs'
-import {
-  listStartableIssues,
-  markAsInReview,
-  markAsStarted,
-  putOnReadyAssignedToMe
-} from './board.mjs'
+import { listStartableIssues, markCardAsStarted, putOnReadyAssignedToMe } from './board.mjs'
 import { buildBranchName, validateBranchPrefix } from './branchName.mjs'
 import { runAutoDevSession, runAutoFixCiSession, runIssueCheckSession } from './claudeSession.mjs'
 import { config } from './config.mjs'
@@ -379,7 +374,7 @@ function startIssue(issue, branchName) {
   const existingPullRequestNumbers = new Set(
     listPullRequests(branchName).map(({ number }) => number)
   )
-  markAsStarted(issue.itemId)
+  markCardAsStarted(issue.itemId)
   return existingPullRequestNumbers
 }
 
@@ -651,32 +646,16 @@ function findDecisionNotToWaitForCi({ state, labelNames, headSha, previousHeadSh
 }
 
 /**
- * CI が通った Issue のカードをレビュー待ちへ動かし、記録に残す結果を返す。動かせなくても例外にしない。
+ * 直させずに終える run について、記録に残す結果を決める。上限まで直させても落ちていれば人間へ回す。
  *
- * @param {string} itemId ボードのカード ID
- * @returns {string} 記録に残す CI の結果
- */
-function handOverForReview(itemId) {
-  const statusName = config.board.inReviewStatusName
-  try {
-    markAsInReview(itemId)
-    return `CI が通りました。カードを ${statusName} へ動かしました`
-  } catch (error) {
-    return `CI が通りました。カードを ${statusName} へ動かせませんでした: ${formatError(error)}`
-  }
-}
-
-/**
- * 直させずに終える run について、記録に残す結果を決める。通っていればレビュー待ちへ、上限まで直させても落ちていれば人間へ回す。
- *
- * @param {{ issue: { number: number, itemId: string }, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null } }} params 対象 Issue・decideAfterCiRun の結果・待ち終えた run の状態
+ * @param {{ issue: { number: number }, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null } }} params 対象 Issue・decideAfterCiRun の結果・待ち終えた run の状態
  * @returns {string} 記録に残す CI の結果
  * @throws {Error} 人間へ回すときに gh が失敗したとき
  */
 function concludeCiWatch({ issue, nextStep, runState }) {
   switch (nextStep) {
     case 'finish-passed':
-      return handOverForReview(issue.itemId)
+      return 'CI が通りました'
     case 'stop-timed-out':
       return `CI の run が ${config.ci.runWaitLimitMinutes} 分以内に終わりませんでした（run が見つからない場合を含む）`
     case 'stop-unfixable':
@@ -691,7 +670,7 @@ function concludeCiWatch({ issue, nextStep, runState }) {
  * push した commit の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。通るか、直させるのをやめるまで戻らない。
  * 結果は record へ書き足す。
  *
- * @param {{ number: number, itemId: string }} issue 対象 Issue
+ * @param {{ number: number }} issue 対象 Issue
  * @param {string} branchName トピックブランチ名
  * @param {Record<string, unknown>} record 書き足す先の記録
  * @returns {Promise<boolean>} `/auto-fix-ci` を走らせなかったか、すべて正常終了したら true

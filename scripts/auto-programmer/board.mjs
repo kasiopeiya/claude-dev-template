@@ -175,17 +175,13 @@ function moveCardToStatus(itemId, statusName) {
 }
 
 /**
- * Issue をこのツールが拾える形で着手待ちに置く。カードをボードに載せて Status を着手待ちへ動かし、担当者に自分を足す。
- *
- * 担当者を足さないと、着手待ちにあっても候補の検索（`assignee:@me`）に掛からず拾われない。
- * 既にカードがあれば、そのカードを動かす。
+ * Issue のカードをボードに載せ、カード ID を返す。既に載っていれば、そのカードの ID を返す。
  *
  * @param {string} issueUrl Issue の URL
- * @returns {void}
- * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
+ * @returns {string} ボードのカード ID
+ * @throws {Error} gh が失敗したとき
  */
-export function putOnReadyAssignedToMe(issueUrl) {
-  // item-add は、既に載っている Issue にはカードを作り足さず、既存のカードを返す
+function addCard(issueUrl) {
   const { id: itemId } = runJson('gh', [
     'project',
     'item-add',
@@ -194,7 +190,37 @@ export function putOnReadyAssignedToMe(issueUrl) {
     issueUrl
   ])
   if (!itemId) throw new Error('gh project item-add の出力にカードの ID がありません')
-  moveCardToStatus(itemId, board.readyStatusName)
+  return itemId
+}
+
+/**
+ * Issue のカードをボードに載せ、Status を表記で指定した選択肢へ動かす。
+ *
+ * @param {string} issueUrl Issue の URL
+ * @param {string} statusName 動かす先の選択肢の表記（config.mjs が持つ値）
+ * @returns {string} 動かした先の選択肢の表記
+ * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
+ */
+function addCardWithStatus(issueUrl, statusName) {
+  // 表記が食い違うボードに「Status の無いカード」を増やさないため、載せる前に選択肢の実在を確かめる
+  resolveStatusOption(statusName)
+  // 載せた直後の書き換えが、組み込みワークフロー（載せたカードの Status を決める自動化）に上書きされないことは
+  // 確かめていない。カードが Status を変えずに残る回が出たら、載せた後に読み直して書き直す処理が要る
+  moveCardToStatus(addCard(issueUrl), statusName)
+  return statusName
+}
+
+/**
+ * Issue をこのツールが拾える形で着手待ちに置く。カードをボードに載せて Status を着手待ちへ動かし、担当者に自分を足す。
+ *
+ * 担当者を足さないと、着手待ちにあっても候補の検索（`assignee:@me`）に掛からず拾われない。
+ *
+ * @param {string} issueUrl Issue の URL
+ * @returns {void}
+ * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
+ */
+export function putOnReadyAssignedToMe(issueUrl) {
+  addCardWithStatus(issueUrl, board.readyStatusName)
   runOrThrow('gh', ['issue', 'edit', issueUrl, '--add-assignee', '@me'])
 }
 
@@ -205,17 +231,20 @@ export function putOnReadyAssignedToMe(issueUrl) {
  * @returns {void}
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
-export function markAsStarted(itemId) {
+export function markCardAsStarted(itemId) {
   moveCardToStatus(itemId, board.inProgressStatusName)
 }
 
 /**
- * カードの Status を「レビュー待ち」を表す選択肢へ動かす。
+ * Issue のカードをボードに載せ、Status を「着手中」を表す選択肢へ動かし、その表記を返す。
  *
- * @param {string} itemId ボードのカード ID
- * @returns {void}
+ * Issue の URL しか持たない呼び出し元（`scripts/move-issue-card.mjs`）のための入口である。
+ * 動かした先を返すので、呼び出し元は動かした先の表記を自分で持たなくてよい。
+ *
+ * @param {string} issueUrl Issue の URL
+ * @returns {string} 動かした先の選択肢の表記
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
-export function markAsInReview(itemId) {
-  moveCardToStatus(itemId, board.inReviewStatusName)
+export function markIssueAsStarted(issueUrl) {
+  return addCardWithStatus(issueUrl, board.inProgressStatusName)
 }
