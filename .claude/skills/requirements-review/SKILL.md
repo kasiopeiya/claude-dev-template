@@ -48,7 +48,7 @@ allowed-tools: Task, Bash, Read
 
 **ゲート判定**：合否は [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい例外以外の Critical が0件）で決めます。対象の全指摘を通じた Critical の合計から、Phase 2 の「修正案が食い違ったら裁定する」で `needs-human-decision` として起票した（または既存の Issue 番号のまま扱った）食い違いに含まれる Critical 指摘の件数を引き、残りが0件なら ✅ 凍結可、1件以上なら 🚫 要修正、と判定します。根拠を1〜2文で書き、起票・照合した Issue 番号があればそこに書きます。未判定の観点が残っている場合も、その事実を判定の根拠に併記します。
 
-レビュー結果を出力したら、続けて `gh issue create` で GitHub Issue を起票してください。**ユーザーへの確認は行いません**（CLAUDE.md の boy-scout ルール）。
+レビュー結果を出力したら、続けて `gh issue create` で GitHub Issue を起票してください。**ユーザーへの確認は行いません**（CLAUDE.md の broken-window ルール）。
 
 **起票の対象は、原文の引用が付いた指摘だけです。** 引用の無い指摘は裏が取れていないので、Issue にしません。引用付きの指摘が1件も無ければ起票しません。
 
@@ -59,7 +59,7 @@ allowed-tools: Task, Bash, Read
 
 タイトルの先頭ラベルは省略しないでください——Issue 一覧を眺めただけで、凍結を止める指摘かどうかが分かる必要があります。タイトルの先頭には段番号を付けてください（例：`1. [Critical] …`）。振り方は Issueの階層ガイド（`docs/reference/issue-hierarchy.md`）の「段番号（着手順）」に従います。
 
-本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-label-status-policy.md` が正典です。Read して従ってください。ラベルはポリシーの定めに加えて `requirement`（説明：要件定義書のレビュー指摘に起因するIssue）を必ず付けます——要件定義の指摘だけを後から一括で追うためです。
+本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-label-status-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。ラベルはポリシーの定めに加えて `requirement`（説明：要件定義書のレビュー指摘に起因するIssue）を必ず付けます——要件定義の指摘だけを後から一括で追うためです。
 
 Issue 本文の「現状」には、レビュー結果の**引用・理由・修正案**を書き写してください（レビュー結果を読み返さずに着手できるように）。
 

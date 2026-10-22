@@ -1,6 +1,6 @@
 ---
 name: issue-check
-description: boy-scout ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。1つの PR に収まらず割れる Issue は sub-issue に割る。初回の検査では、本文に新しい技術要素が出た Issue の外部依存の制約も調べる。着手する前に人間が打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
+description: broken-window ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。1つの PR に収まらず割れる Issue は sub-issue に割る。初回の検査では、本文に新しい技術要素が出た Issue の外部依存の制約も調べる。着手する前に人間が打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: Task, Skill, Bash, Read, Edit, Write
@@ -21,7 +21,7 @@ Issue を監査してください。あなたは判定本体を行わず、**Iss
 ## Phase 1: 対象の決定
 
 ```bash
-gh issue list --state open --limit 100 --search 'label:boy-scout' \
+gh issue list --state open --limit 100 --search 'label:broken-window' \
   --json number,title,labels --jq 'sort_by(.number) | .[] | "\(.number)\t\([.labels[].name]|join(","))\t\(.title)"'
 ```
 
@@ -53,7 +53,7 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 
 `issue-auditor-agent` を、**Issue 1件につきレンズごとに1回ずつ、1メッセージ内でまとめて** Task 起動します。逐次に投げると、割った意味（速さ）が消えます。1波は Issue 5件までとし、超える分は次の波へ回します。次の「外部依存の前提を調べる」で起動する `premise-checker-agent` は、その Issue の起動に数え、波の Issue の上限（5件）は変えません。
 
-**分割検討レンズは、`boy-scout` ラベルが無い Issue にだけ起動します。** boy-scout は小さく直す前提だからです。
+**分割検討レンズは、`broken-window` ラベルが無い Issue にだけ起動します。** `broken-window` は小さく直す前提だからです。
 
 起動の前に `.claude/agents/issue-auditor-agent/issue-auditor-agent.md` の「レンズ一覧と担当観点（正典）」を Read し、そこにあるレンズ名をそのまま使います。各起動に渡すのは **レンズ名と Issue 番号だけ**です。本文もポリシーもエージェント自身が読みます。**この SKILL.md に書いた指示は Task 起動されたエージェントには届かない**ので、判定に要る情報をここから渡そうとしないでください。
 
@@ -203,7 +203,7 @@ gh issue close <番号> --comment "<なぜ不要と判定したかを、引用�
 まだ監査していない Issue は、後からこれで引けます。
 
 ```bash
-gh issue list --state open --search 'label:boy-scout -label:"issue:checked"' \
+gh issue list --state open --search 'label:broken-window -label:"issue:checked"' \
   --json number,title --jq 'sort_by(.number) | .[] | "\(.number)\t\(.title)"'
 ```
 
@@ -217,7 +217,7 @@ gh issue list --state open --search 'label:boy-scout -label:"issue:checked"' \
 ## 使用方法
 
 ```
-/issue-check            # boy-scout の open Issue を全件
+/issue-check            # broken-window の open Issue を全件
 /issue-check 3          # 古い順に3件だけ
 /issue-check #123 #124  # 指定した Issue だけ
 ```
