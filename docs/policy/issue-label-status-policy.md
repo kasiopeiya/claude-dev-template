@@ -45,6 +45,7 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 > - **Issue ラベルの意味・付ける条件・移し先と、ボード Status の意味は、このポリシーだけが持つ。** Skill・SubAgent・Policy は条件の文を書き写さず、条件の名前（例：「不可逆・外部に出る」）とこのポリシーの節名で参照する
 > - **既定は `ai-fixable`。「人間が決めるべき Issue の条件」に当たるときだけ `issue:needs-human-decision` にする。** どちらか一方を必ず付ける。ただし、専用のラベルで扱いが決まっている Issue だけは、「3択の例外」として付けない
 > - **人間が方針を決めたら、`ai-fixable` に `issue:decided` を重ねる。**
+> - **無人実行が予定した終わり方以外で止まったら、`needs-human-check` を重ねる。** 人間が確かめたら外す
 > - **手順・書式・状態図はこのポリシーに置かない。** 選んだ後の How は各 Skill が持つ（ADR-014）
 
 ## このポリシーが決めること
@@ -67,7 +68,8 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 | `issue:checked`                                | `/issue-check` が一度監査した。いま妥当である保証ではない                               | `/issue-check` が判定を出した Issue に、判定が何であれ貼る。監査できなかった・飛ばした Issue には貼らない               |
 | `boy-scout`                                    | 正式フロー（`/to-issues` など）を経ずに積んだ課題。後で棚卸しする                       | `/quick-issue` が無条件で付ける。`/to-issues`・`/issue-split` が作る Issue には付けない                                 |
 | `policy-gap`                                   | 判定時に該当ポリシー・rules が見つからなかった。ポリシーを足す候補                      | 該当ポリシー・rules を探して見つからなかったとき。`ai-fixable`・`issue:needs-human-decision` のどちらにも重ねてよい     |
-| `issue:needs-clean-session`                    | 着手したうえで、このやり方では直しきれないと分かった。専用のセッションで1件だけ対応する | `/auto-dev`・`/auto-fix-ci` が着手後に離脱するとき。起票時には付けない。`ai-fixable` は外さない                         |
+| `issue:needs-clean-session`                    | 着手したうえで、このやり方では直しきれないと分かった。専用のセッションで1件だけ対応する | いまは付ける処理が無い。起票時には付けない                                                                              |
+| `needs-human-check`                            | 無人実行が問題で止まった。人間に確かめてほしい                                          | 下の「無人実行が止まったら `needs-human-check` を付ける」の条件に当たるとき                                             |
 | `phase`                                        | Issue 階層の最上位。開発フローのフェーズを表す常設 Issue                                | フェーズ Issue にだけ付ける（3択の例外）                                                                                |
 | `requirement`                                  | 要件定義書のレビュー指摘に起因する Issue                                                | `/requirements-review` が起票するとき、ほかのラベルに重ねる                                                             |
 | `doc-consistency-weekly`・`code-policy-weekly` | 週次ワークフローが起票した Issue を見分ける専用の印                                     | 週次スクリプトが `ai-fixable` と一緒に付ける。ラベルの当否は、着手前の `/issue-check` が見る                            |
@@ -120,14 +122,29 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 人間が決めた条件は、「対応方針」に「人間が決めたこと」として1条件1行で書く（行の形は `/quick-issue`）。`issue:needs-human-decision` に戻されずに済むのは、この行に書いた条件だけである。`/issue-check` がどの条件を差し戻しの理由から外すかの細部は、`/issue-check` の監査基準が持つ。
 
+## 無人実行が止まったら `needs-human-check` を付ける
+
+無人実行（`/auto-dev`・`/auto-fix-ci`・Auto-Programmer）が予定した終わり方以外で止まったら、Issue に `needs-human-check` を付ける。止まった Issue を、人間がこのラベル1つで引けるようにするためである。止まり方ごとに印を変えたり、ボードの列で示したりすると、引き漏れる（#1000）。
+
+予定した終わり方は次の4つだけで、どれか1つに当たれば付けず、ほかはすべて付ける。ただし処理中の例外とセッションの失敗は、4つのどれかに当たっていても付ける。付ける例：`/auto-dev`・`/auto-fix-ci` の離脱、上限まで直させても CI が通らない、CI の時間切れ・キャンセル、`/issue-check` の判定が書き戻されない。
+
+- CI が通った
+- 差分が出ない Issue を、`/auto-dev` が閉じた
+- `/issue-check` の判定（人間判断・close）で止めた。人間への渡し方は `issue:needs-human-decision` と close が担う
+- 子を1件以上、着手待ちに載せて引き継いだ
+
+対話セッションでは付けない。人間がその場に居るので、止まったことを知らせる印が要らない。3択は外さずに重ねる。止まっても、方針と作業の担い手は変わらないからである。外す場面は「ラベルの移し先」にある。
+
 ## ラベルの移し先
 
-| 場面                                                                                                                                                                | 移し先                                                                        |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| `/issue-decide` で、人間が方針を決めた                                                                                                                              | `issue:needs-human-decision` を外し、`ai-fixable` と `issue:decided` を付ける |
-| `/issue-check` が、`ai-fixable` の Issue は人間が決めるべき条件に当たると判定した（`issue:decided` 付きなら、「人間が決めたこと」の行に無い条件に当たると判定した） | `issue:needs-human-decision` に貼り替える。`issue:decided` が付いていれば外す |
-| `/issue-check` が、`issue:needs-human-decision` の Issue はどの条件にも当たらないと判定した                                                                         | `ai-fixable` に貼り替える                                                     |
-| `/issue-check` が、`issue:decided` の Issue を「方針差し替え」または判定不能と判定した                                                                              | `issue:decided` を外す。判定不能なら `issue:needs-human-decision` に移す      |
+| 場面                                                                                                                                                                | 移し先                                                                                                       |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `/issue-decide` で、人間が方針を決めた                                                                                                                              | `issue:needs-human-decision` を外し、`ai-fixable` と `issue:decided` を付ける                                |
+| `/issue-check` が、`ai-fixable` の Issue は人間が決めるべき条件に当たると判定した（`issue:decided` 付きなら、「人間が決めたこと」の行に無い条件に当たると判定した） | `issue:needs-human-decision` に貼り替える。`issue:decided` が付いていれば外す                                |
+| `/issue-check` が、`issue:needs-human-decision` の Issue はどの条件にも当たらないと判定した                                                                         | `ai-fixable` に貼り替える                                                                                    |
+| `/issue-check` が、`issue:decided` の Issue を「方針差し替え」または判定不能と判定した                                                                              | `issue:decided` を外す。判定不能なら `issue:needs-human-decision` に移す                                     |
+| 人間が、`needs-human-check` の Issue を確かめた                                                                                                                     | `needs-human-check` を外す                                                                                   |
+| Auto-Programmer が、同じ Issue をもう一度 `/auto-dev` に回す                                                                                                        | 回す直前に `needs-human-check` を外す。前回の印を消しておけば、CI を待つ前に付いている印を今回の離脱と読める |
 
 ## 3択の例外は、専用のラベルで扱いが決まっている Issue に限る
 

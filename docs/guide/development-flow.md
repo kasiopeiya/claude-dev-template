@@ -108,7 +108,11 @@ Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積�
 4. **CI が通るまで直す（AI）**：スクリプトが push 後の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。CI が通ればカードを In Review へ動かす。CI の結果が出てから次の1件へ進む
 5. **PR 以降は 10〜11 と同じ**：In Review のカードの PR をレビューする。自動マージされた PR の Issue は、スクリプトが次の Issue を選ぶ前に閉じる。スクリプトを止めているときは `npm run close-issues` を打って閉じる
 
-`/auto-dev`・`/auto-fix-ci` が進めないと判断した Issue と、上限まで直させても CI が通らなかった Issue は、カードが In progress のまま残り、コメントと `issue:needs-clean-session` ラベルが付く。コメントを読み、専用のセッションでその Issue に着手する。
+無人実行が途中で止まった Issue には、`needs-human-check` が付く。止まった Issue は次のように扱う。
+
+- `gh issue list --label needs-human-check` で引く
+- コメントと記録を読み、専用のセッションで着手する
+- 確かめたらラベルを外す
 
 AI は AI 専用 clone の中だけで作業するので、人間が作業中でも走らせておける。設定と、止まったときの対処は [scripts/auto-programmer/README.md](../../scripts/auto-programmer/README.md) にある。
 
