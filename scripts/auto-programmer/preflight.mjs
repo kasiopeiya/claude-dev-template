@@ -4,6 +4,8 @@
 // - clone・依存のインストール・`gh` 認証の確認はすべて機械で実行できる。runbook-policy が
 //   「自動化できるものに手順書は要らない」と定めるため、手順書ではなくこのコードが手順そのものになる。
 // - ただし `gh auth login` と `claude` の導入は人間の操作が要るので自動化できない。ここでは促して止まる。
+// - 対象リポジトリのラベルも、確かめるだけで作らない。作るのはリポジトリの設定を変える操作で、利用先が色や説明を
+//   決めて作る（scripts/setup-labels.sh）。無ければ作り方を示して止まる。
 // - どの検査も、カードを「着手中」へ動かす前に済ませる。動かした後に落ちると、人間が手でカードを戻す
 //   ことになるからである。
 
@@ -11,7 +13,8 @@ import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
 import { config } from './config.mjs'
-import { runCapture, runOrThrow, runStreaming } from './shell.mjs'
+import { NEEDS_HUMAN_CHECK_LABEL } from './needsHumanCheck.mjs'
+import { runCapture, runJson, runOrThrow, runStreaming } from './shell.mjs'
 import { relayChildProcessOutput, showInfo, showSuccess } from './ui.mjs'
 import { formatElapsedTime } from './uiFormat.mjs'
 
@@ -58,6 +61,41 @@ function ensureHumanPrerequisites() {
     throw new Error(
       'claude コマンドを起動できません。Claude Code を入れてから、もう一度打ってください',
       { cause: error }
+    )
+  }
+}
+
+/**
+ * 対象リポジトリに `needs-human-check` ラベルがあるかを確かめる。
+ *
+ * 無いと、`/auto-dev` の前に前回の印を外す `gh issue edit --remove-label` が Issue ごとに落ち、止まった印も付けられない。
+ * Issue を拾う前に止め、作り方を示す。
+ *
+ * @returns {void}
+ * @throws {Error} ラベルが無いとき・gh が失敗したとき
+ */
+function ensureNeedsHumanCheckLabel() {
+  const labels = runJson('gh', [
+    'label',
+    'list',
+    '--repo',
+    config.repository,
+    '--search',
+    NEEDS_HUMAN_CHECK_LABEL,
+    '--limit',
+    '100',
+    '--json',
+    'name'
+  ])
+  // GitHub のラベル名は大文字小文字を区別しない
+  const hasLabel = labels.some(
+    ({ name }) => name.toLowerCase() === NEEDS_HUMAN_CHECK_LABEL.toLowerCase()
+  )
+  if (!hasLabel) {
+    throw new Error(
+      `${config.repository} に ${NEEDS_HUMAN_CHECK_LABEL} ラベルがありません。` +
+        `${config.workspaceDir} で ./scripts/setup-labels.sh を流すか、` +
+        `gh label create ${NEEDS_HUMAN_CHECK_LABEL} --repo ${config.repository} を打ってから、もう一度打ってください`
     )
   }
 }
@@ -171,9 +209,10 @@ export function ensureDependencies() {
  * 判定できないため、ここには含めず ensureDependencies で別に行う。
  *
  * @returns {void}
- * @throws {Error} 人間が済ませるべき準備が無いとき・clone に失敗したとき・既存 clone の origin が config.repository と違うとき
+ * @throws {Error} 人間が済ませるべき準備が無いとき・clone に失敗したとき・既存 clone の origin が config.repository と違うとき・対象リポジトリに needs-human-check ラベルが無いとき
  */
 export function runPreflight() {
   ensureHumanPrerequisites()
   ensureWorkspaceClone()
+  ensureNeedsHumanCheckLabel()
 }

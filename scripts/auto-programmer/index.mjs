@@ -30,6 +30,9 @@
 // - 毎周、Issue を選ぶ前に、自動マージされた PR が閉じ損ねた Issue を閉じる（Issue #744）。起動時の1回だけだと、
 //   回っている間にマージされた PR の Issue が閉じず、それを「ブロッカー」に持つ Issue がいつまでも拾われない。
 //   閉じられなくても次の Issue は選べるので、失敗しても周回は止めない。
+// - 予定した終わり方以外で終えた Issue には、記録を残す前に `needs-human-check` を付ける（どれを予定とするかは
+//   needsHumanCheck.mjs）。カードの列だけでは止まった Issue を引けない（Issue #1000）。このツールが付けるのは記録の直前と、
+//   シグナルで終わる直前（finally に届かない）の2か所だけにする。止まり方ごとに付けると、例外で落ちた経路が付け漏れる。
 
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
@@ -45,11 +48,16 @@ import { runAutoDevSession, runAutoFixCiSession, runIssueCheckSession } from './
 import { config } from './config.mjs'
 import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait.mjs'
 import {
-  findReasonToSkipImplementation,
+  findSkipImplementationDecision,
   ISSUE_CHECKED_LABEL,
   NEEDS_HUMAN_DECISION_LABEL
 } from './issueCheckVerdict.mjs'
 import { decideAfterCiRun, readCiRunState } from './ciRun.mjs'
+import {
+  isSubIssueHandoverEmpty,
+  NEEDS_HUMAN_CHECK_LABEL,
+  shouldMarkAsNeedsHumanCheck
+} from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { recordRun } from './runLog.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
@@ -82,9 +90,6 @@ const CI_RUN_WAIT_LIMIT_MS = config.ci.runWaitLimitMinutes * MILLISECONDS_PER_MI
 // 非TTY で CI 待ちの経過を追記する間隔。CI_POLL_INTERVAL_MS のまま追記すると、
 // 上限（runWaitLimitMinutes）いっぱい待つ実行で数十行に膨らむ
 const CI_WAIT_PROGRESS_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
-
-// /auto-dev・/auto-fix-ci が離脱するときに貼るラベル。両 Skill の SKILL.md（離脱手順）の表記と一字一句合わせる
-const NEEDS_CLEAN_SESSION_LABEL = 'issue:needs-clean-session'
 
 // GraphQL が1つの接続（sub-issue・ラベル・カード）から一度に返せる件数の上限。sub-issue は超えていたら読み落としとして止める
 const GRAPHQL_CONNECTION_FETCH_LIMIT = 100
@@ -129,9 +134,13 @@ const stopController = new AbortController()
 process.on('SIGINT', () => stopController.abort('SIGINT'))
 // 端末の切断（SIGHUP）・SIGTERM・Ctrl+\（SIGQUIT）は、claude セッションへ送ってから、既定どおりこのプロセスも終わる。
 // once にするのは、送り直した同じシグナルでリスナが再び呼ばれず、既定の終了に至るようにするため
+// 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると runSessionAndRecord の finally に届かないので、
+// 止まった印はリスナが付ける
+let inFlightIssueNumber = null
 for (const signal of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
   process.once(signal, () => {
     stopController.abort(signal)
+    if (inFlightIssueNumber !== null) tryMarkAsNeedsHumanCheck(inFlightIssueNumber, {})
     process.kill(process.pid, signal)
   })
 }
@@ -278,18 +287,6 @@ function handOverToSubIssuesIfAny(issueNumber, record) {
 }
 
 /**
- * 子へ引き継ごうとして、1件も着手待ちに載せられなかったか。
- *
- * 親は着手中に残るので、子も進んでいなければ、人間が見るまで誰も進めない。
- *
- * @param {{ subIssueHandover?: { putOnReadySubIssueNumbers: number[] } }} record 記録した内容
- * @returns {boolean} 子へ引き継いだうえで、載せた子が0件なら true
- */
-function isSubIssueHandoverEmpty(record) {
-  return record.subIssueHandover?.putOnReadySubIssueNumbers.length === 0
-}
-
-/**
  * claude プロセスが正常終了したか。
  *
  * @param {{ exitCode: number, signal: string | null }} status 終了状態
@@ -327,7 +324,7 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
  * 締めの記号は、例外の有無だけでなく「人間の手当てが要るか」で決める。実装が失敗しても例外は出ない
  * （セッションが 0 以外で終わるだけ）ので、例外だけで決めると失敗した実行に ✓ が出て、異常が埋もれる。
  *
- * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, skippedReason?: string | null, subIssueHandover?: { reason: string, putOnReadySubIssueNumbers: number[] }, error?: string }} record 記録した内容
+ * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, isClosedWithoutChanges?: boolean, skippedReason?: string | null, isSkippedByIssueCheckVerdict?: boolean, subIssueHandover?: { reason: string, putOnReadySubIssueNumbers: number[] }, error?: string }} record 記録した内容
  * @param {boolean} isAllSessionsSucceeded 走らせた claude セッションがすべて正常終了したか
  * @returns {void}
  */
@@ -336,11 +333,9 @@ function showRunSummary(record, isAllSessionsSucceeded) {
     Date.parse(record.finishedAt) - Date.parse(record.sessionStartedAt)
   )
   const headline = `#${record.issueNumber} を終えました（${elapsedTime}）`
+  // /issue-check の判定で止めた Issue は予定した終わり方だが、人間判断・close を見てほしいので警告で出す
   const needsHumanAttention =
-    Boolean(record.skippedReason) ||
-    isSubIssueHandoverEmpty(record) ||
-    !isAllSessionsSucceeded ||
-    record.isCiPassed === false
+    Boolean(record.skippedReason) || shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)
   if (record.error) showError(headline)
   else if (needsHumanAttention) showWarning(headline)
   else showSuccess(headline)
@@ -352,7 +347,7 @@ function showRunSummary(record, isAllSessionsSucceeded) {
     details.push({
       label: 'CI',
       value: record.ciOutcome,
-      show: record.isCiPassed ? showInfo : showWarning
+      show: record.isCiPassed || record.isClosedWithoutChanges ? showInfo : showWarning
     })
   }
   if (record.pullRequestUrl === null) {
@@ -454,10 +449,12 @@ async function handOverOrImplement(issueNumber, record) {
     handOverToSubIssuesIfAny(issueNumber, record)
   }
 
-  record.skippedReason = findReasonToSkipImplementation(readIssueStatus(issueNumber))
+  const skipDecision = findSkipImplementationDecision(readIssueStatus(issueNumber))
+  record.skippedReason = skipDecision?.reason ?? null
+  if (skipDecision) record.isSkippedByIssueCheckVerdict = skipDecision.isVerdict
   if (record.skippedReason || record.subIssueHandover) return true
 
-  // 前の実行が残した離脱の印を外し、CI を待つ前に付いていれば今回の離脱と読めるようにする
+  // 前の実行が止まって残した印を外し、CI を待つ前に付いていれば今回の離脱と読めるようにする
   runOrThrow('gh', [
     'issue',
     'edit',
@@ -465,7 +462,7 @@ async function handOverOrImplement(issueNumber, record) {
     '--repo',
     config.repository,
     '--remove-label',
-    NEEDS_CLEAN_SESSION_LABEL
+    NEEDS_HUMAN_CHECK_LABEL
   ])
   const autoDevStatus = await runAutoDevSession(issueNumber, stopController.signal)
   record.autoDevExitCode = autoDevStatus.exitCode
@@ -597,7 +594,8 @@ async function waitForCiRun(headSha) {
 }
 
 /**
- * 上限まで直させても CI が落ちている Issue を、`/auto-dev` の離脱と同じ形で人間へ回す。
+ * 上限まで直させても CI が落ちている Issue に、`/auto-dev` の離脱と同じく、人間へ回す理由をコメントする。
+ * `needs-human-check` は、記録を残す前に runSessionAndRecord が付ける。
  *
  * @param {number} issueNumber 対象 Issue の番号
  * @param {{ url: string | null }} lastRun 最後に落ちた run
@@ -615,31 +613,37 @@ function handOverToHuman(issueNumber, lastRun) {
     '--body',
     body
   ])
-  runOrThrow('gh', [
-    'issue',
-    'edit',
-    String(issueNumber),
-    '--repo',
-    config.repository,
-    '--add-label',
-    NEEDS_CLEAN_SESSION_LABEL
-  ])
 }
 
 /**
  * CI を待つ前に、待っても意味が無い理由を探す。
  *
- * @param {{ issueNumber: number, headSha: string, previousHeadSha: string | null }} params 対象 Issue の番号・リモートのブランチの SHA（push されていなければ空文字）・前回待った SHA
- * @returns {string | null} 待たない理由（待ってよければ null）
- * @throws {Error} gh が失敗したとき
+ * @param {{ state: string, labelNames: string[], headSha: string, previousHeadSha: string | null }} params 対象 Issue の state（'OPEN' / 'CLOSED'）とラベル名・リモートのブランチの SHA（push されていなければ空文字）・前回待った SHA
+ * @returns {{ reason: string, isClosedWithoutChanges: boolean } | null} 待たない理由と、それが差分の出ない Issue を /auto-dev が閉じた（予定した終わり方）ためか。待ってよければ null
  */
-function findReasonNotToWaitForCi({ issueNumber, headSha, previousHeadSha }) {
+function findDecisionNotToWaitForCi({ state, labelNames, headSha, previousHeadSha }) {
   // /auto-dev の起動前に外しているので、付いていれば今回の /auto-dev・/auto-fix-ci が離脱した印
-  if (readIssueStatus(issueNumber).labelNames.includes(NEEDS_CLEAN_SESSION_LABEL)) {
-    return `${NEEDS_CLEAN_SESSION_LABEL} が付いているので CI を待ちません`
+  if (labelNames.includes(NEEDS_HUMAN_CHECK_LABEL)) {
+    return {
+      reason: `${NEEDS_HUMAN_CHECK_LABEL} が付いているので CI を待ちません`,
+      isClosedWithoutChanges: false
+    }
   }
-  if (!headSha) return 'ブランチが push されていないので CI を待ちません'
-  if (headSha === previousHeadSha) return '/auto-fix-ci が push しませんでした'
+  if (!headSha && state !== 'OPEN') {
+    return {
+      reason: '差分が出ないので /auto-dev が Issue を閉じました',
+      isClosedWithoutChanges: true
+    }
+  }
+  if (!headSha) {
+    return {
+      reason: 'ブランチが push されていないので CI を待ちません',
+      isClosedWithoutChanges: false
+    }
+  }
+  if (headSha === previousHeadSha) {
+    return { reason: '/auto-fix-ci が push しませんでした', isClosedWithoutChanges: false }
+  }
   return null
 }
 
@@ -692,19 +696,23 @@ function concludeCiWatch({ issue, nextStep, runState }) {
  */
 async function watchCiAndFix(issue, branchName, record) {
   record.ciRuns = []
-  // CI が通ったときだけ true にする。通らずに戻る経路（離脱・未 push・打ち切り）はどれも人間の手当てが要る
+  // CI が通ったときだけ true にする。通らずに戻る経路（離脱・未 push・打ち切り）は、差分が出ずに閉じた場合を除いて
+  // 人間の手当てが要る
   record.isCiPassed = false
   let fixAttemptCount = 0
   let previousHeadSha = null
   for (;;) {
     const headSha = readRemoteHeadSha(branchName)
-    const reasonNotToWait = findReasonNotToWaitForCi({
-      issueNumber: issue.number,
+    const { state, labelNames } = readIssueStatus(issue.number)
+    const decisionNotToWait = findDecisionNotToWaitForCi({
+      state,
+      labelNames,
       headSha,
       previousHeadSha
     })
-    if (reasonNotToWait) {
-      record.ciOutcome = reasonNotToWait
+    if (decisionNotToWait) {
+      record.ciOutcome = decisionNotToWait.reason
+      record.isClosedWithoutChanges = decisionNotToWait.isClosedWithoutChanges
       return true
     }
     previousHeadSha = headSha
@@ -778,7 +786,38 @@ function showSubIssueHandover(record) {
 }
 
 /**
- * 着手中へ動かした Issue 1件を監査し、止める理由が無ければ実装させ、CI が通るまで直させる。途中で落ちても結果を記録する。
+ * Issue に `needs-human-check` を付け、付けられたかを record へ書き足す。付けられなくても投げない。
+ *
+ * runSessionAndRecord の finally から呼ぶので、投げるとその1件の記録が残らない。
+ *
+ * @param {number} issueNumber 対象 Issue の番号
+ * @param {Record<string, unknown>} record 書き足す先の記録
+ * @returns {void}
+ */
+function tryMarkAsNeedsHumanCheck(issueNumber, record) {
+  try {
+    runOrThrow('gh', [
+      'issue',
+      'edit',
+      String(issueNumber),
+      '--repo',
+      config.repository,
+      '--add-label',
+      NEEDS_HUMAN_CHECK_LABEL
+    ])
+    record.isMarkedAsNeedsHumanCheck = true
+  } catch (error) {
+    record.isMarkedAsNeedsHumanCheck = false
+    record.needsHumanCheckLabelError = formatError(error)
+    showWarning(
+      `#${issueNumber} に ${NEEDS_HUMAN_CHECK_LABEL} を付けられませんでした: ${collapseToSingleLine(record.needsHumanCheckLabelError)}`
+    )
+  }
+}
+
+/**
+ * 着手中へ動かした Issue 1件を監査し、止める理由が無ければ実装させ、CI が通るまで直させる。途中で落ちても結果を記録し、
+ * 予定した終わり方以外で終えたら、記録の前に `needs-human-check` を付ける（付けられなくても投げない）。
  *
  * @param {{ issue: { itemId: string, number: number, title: string }, branchName: string, existingPullRequestNumbers: Set<number> }} startedIssue startFirstStartableIssue の結果
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true（起動できなかった・打ち切られた・0 以外で終わった・途中で例外が出たら false）
@@ -787,6 +826,7 @@ function showSubIssueHandover(record) {
 async function runSessionAndRecord({ issue, branchName, existingPullRequestNumbers }) {
   const record = { issueNumber: issue.number, issueTitle: issue.title, branchName }
   record.sessionStartedAt = new Date().toISOString()
+  inFlightIssueNumber = issue.number
   let isAllSessionsSucceeded = false
   try {
     // 途中で例外が出たら false のまま残すため、最後にまとめて代入する
@@ -805,7 +845,11 @@ async function runSessionAndRecord({ issue, branchName, existingPullRequestNumbe
   } finally {
     record.pullRequestUrl = findCreatedPullRequestUrl(branchName, existingPullRequestNumbers)
     record.finishedAt = new Date().toISOString()
+    if (shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)) {
+      tryMarkAsNeedsHumanCheck(issue.number, record)
+    }
     recordRun(record)
+    inFlightIssueNumber = null
     showRunSummary(record, isAllSessionsSucceeded)
   }
   return isAllSessionsSucceeded
