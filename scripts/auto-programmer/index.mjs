@@ -50,7 +50,7 @@ import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait
 import {
   findSkipImplementationDecision,
   ISSUE_CHECKED_LABEL,
-  NEEDS_HUMAN_DECISION_LABEL
+  HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { decideAfterCiRun, readCiRunState } from './ciRun.mjs'
 import {
@@ -274,7 +274,7 @@ function handOverToSubIssuesIfAny(issueNumber, record) {
     repository: config.repository,
     viewerLogin,
     targetIssueLabel: config.targetIssueLabel,
-    needsHumanDecisionLabel: NEEDS_HUMAN_DECISION_LABEL,
+    humanOnlyLabels: HUMAN_ONLY_LABELS,
     notStartedStatusNames: [config.board.todoStatusName, config.board.readyStatusName]
   })
   for (const subIssue of subIssuesToPutOnReady) {
@@ -449,7 +449,10 @@ async function handOverOrImplement(issueNumber, record) {
     handOverToSubIssuesIfAny(issueNumber, record)
   }
 
-  const skipDecision = findSkipImplementationDecision(readIssueStatus(issueNumber))
+  const skipDecision = findSkipImplementationDecision(
+    readIssueStatus(issueNumber),
+    config.targetIssueLabel
+  )
   record.skippedReason = skipDecision?.reason ?? null
   if (skipDecision) record.isSkippedByIssueCheckVerdict = skipDecision.isVerdict
   if (record.skippedReason || record.subIssueHandover) return true
