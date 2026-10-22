@@ -1,7 +1,7 @@
 // 責務: open な sub-issue を持つ Issue を子へ引き継ぐかと、着手待ちに載せる子の選び方を検証する。
 //
 // ここが壊れると、umbrella になった親が子と二重に実装されるか、子が誰にも拾われずに放置される。
-// 他人が担当する子・判断待ちの子・着手済みの子を着手待ちに載せ、取り合いや二重の実装も起きる。
+// 他人が担当する子・判断待ちや人間の作業の子・着手済みの子を着手待ちに載せ、取り合いや二重の実装も起きる。
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
@@ -42,7 +42,7 @@ describe('着手待ちに載せる子の選び方', () => {
     repository: 'owner/repo',
     viewerLogin: 'me',
     targetIssueLabel: 'ai-fixable',
-    needsHumanDecisionLabel: 'issue:needs-human-decision',
+    humanOnlyLabels: ['issue:needs-human-decision', 'ready-for-human'],
     notStartedStatusNames: ['Todo', 'Ready']
   }
 
@@ -98,6 +98,15 @@ describe('着手待ちに載せる子の選び方', () => {
   test('人間の判断を待つ子は載せない', () => {
     const sut = selectSubIssuesToPutOnReady
     const subIssue = createSubIssue({ labelNames: ['ai-fixable', 'issue:needs-human-decision'] })
+
+    const selected = sut([subIssue], criteria)
+
+    assert.deepEqual(selected, [])
+  })
+
+  test('人間しかできない作業の子は、対象ラベルが一緒に付いていても載せない', () => {
+    const sut = selectSubIssuesToPutOnReady
+    const subIssue = createSubIssue({ labelNames: ['ai-fixable', 'ready-for-human'] })
 
     const selected = sut([subIssue], criteria)
 
