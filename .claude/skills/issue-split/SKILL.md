@@ -86,7 +86,7 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 親に「確定済みの決定」節が無く「grill-me で確定した仕様」節がある場合（`/to-issues` が起票した Issue）も、扱いは同じである。
 
-ラベルは `ai-fixable` / `issue:needs-human-decision` のどちらか一方を必ず付ける（判定は issue-label-status-policy が正典）。`boy-scout` は付けない。`issue:needs-human-decision` を付けた子では、上から2番目の節が「対応方針」ではなく「人間に決めてほしいこと」になる。
+ラベルは `ai-fixable` / `needs-human-decision` のどちらか一方を必ず付ける（判定は issue-label-status-policy が正典）。`boy-scout` は付けない。`needs-human-decision` を付けた子では、上から2番目の節が「対応方針」ではなく「人間に決めてほしいこと」になる。
 
 親が `issue:decided` 付きなら、`ai-fixable` にした子にも `issue:decided` を付け、親の「対応方針」にある「人間が決めたこと」の行のうち、その子に当たるものを書き写す。子は親で人間が決めた中身を分けたもので、新しい中身を足さないからである。印が無いと、`/issue-check` が子を同じ条件で差し戻す。
 

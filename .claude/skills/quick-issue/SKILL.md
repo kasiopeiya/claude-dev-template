@@ -43,7 +43,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 ラベルの意味と付ける条件は [issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md) が定める。**起票の前にこのポリシーを Read する。**
 
 - `boy-scout`：無条件で付ける
-- `ai-fixable` / `issue:needs-human-decision`：**必ずどちらか一方だけ**を付ける。判定はポリシーの「人間が決めるべき Issue の条件」に従う
+- `ai-fixable` / `needs-human-decision`：**必ずどちらか一方だけ**を付ける。判定はポリシーの「人間が決めるべき Issue の条件」に従う
 - `issue:decided`：`ai-fixable` にだけ重ねる。条件はポリシーの「人間が方針を決めたら `issue:decided` を付ける」に従う
 - `policy-gap`：該当するポリシー・rules を探して見つからなかったときに重ねる。判定をする前に、`docs/policy-hub.md` と `.claude/rules/` を必ず探す
 - `issue:needs-clean-session`：起票時には付けない
@@ -80,7 +80,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - **既存の設計書の記述が間違っている、または明確に欠けている**：その設計書
 - **ADR 判定が「作らない」だった決定**：いまの理由はその仕組みの本文（`.claude/skills/*/SKILL.md`・README・設計書・ファイル冒頭の責務コメント）、経緯はコミットの決定記録（`/git-commit` の書式）。README や設計書が無い仕組みでも、ADR にも README の新設にも逃がさない。却下案と経緯は Issue 本文にも残す
 - **コード・設定の修正だけで完結する（文書に残す決定を含まない）**：文書への書き先は不要。`ai-fixable` の判定へ進む
-- **上のどれにも当てはまらない**：**書き先はまだ無い**。`issue:needs-human-decision` を付ける
+- **上のどれにも当てはまらない**：**書き先はまだ無い**。`needs-human-decision` を付ける
 
 既存の設計書を選ぶのは「既存だから」ではない。**そのファイルが間違っている・欠けているから書く**のであって、書こうとしている内容がそのファイルの扱う範囲の外なら、その行には当たらず「書き先はまだ無い」へ落ちる。
 
@@ -124,7 +124,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 
 ## 対応方針
 
-`ai-fixable` を付けたときだけ書く（`issue:needs-human-decision` のときはセクションごと省き、「人間に決めてほしいこと」に書く）。別セッションが方針を決め直さず、そのまま着手できる状態を目指す。
+`ai-fixable` を付けたときだけ書く（`needs-human-decision` のときはセクションごと省き、「人間に決めてほしいこと」に書く）。別セッションが方針を決め直さず、そのまま着手できる状態を目指す。
 
 **採る案**：何をするかを1文で書く。
 **書き先**：「書き先を決める」のどの行に当たるかと、選んだファイルを書く。既存ファイルを選んだなら、**そのファイルの目的・対象範囲を1行引用して並べる**。
@@ -141,7 +141,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 
 ## 人間に決めてほしいこと
 
-`issue:needs-human-decision` を付けたときだけ書く（`ai-fixable` のときはセクションごと省く）。人間が Issue を開いた瞬間に「何を決めればよいか」が分かる状態を目指す。
+`needs-human-decision` を付けたときだけ書く（`ai-fixable` のときはセクションごと省く）。人間が Issue を開いた瞬間に「何を決めればよいか」が分かる状態を目指す。
 
 **当たる条件**：ポリシーの「人間が決めるべき Issue の条件」のどれに当たるかを書く（例：不可逆・外部に出る）。
 **論点**：人間に何を決めてほしいのかを1文で書く（例：使わなくなった `docs/old/` を消すか残すか）。
@@ -224,9 +224,9 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - [ ] 既存 Issue と重複しないか `gh issue list --state all --search "<タイトルの主要語>"` で確認した（`--state all` を外すと open だけを見ることになり、**却下済み（NOT_PLANNED）の同じ提案を再起票する**）
 - [ ] 該当するポリシー・rules を探した（見つからなければ `policy-gap` を付けた）
 - [ ] 見つかったポリシー・rules と「タスク一覧」「完了条件」を照合し、反する作業を指示していない（反していたらタスク側を直した）
-- [ ] `ai-fixable` / `issue:needs-human-decision` のどちらか一方を決めた
+- [ ] `ai-fixable` / `needs-human-decision` のどちらか一方を決めた
 - [ ] 人間が決めるべき条件に当たるのに `ai-fixable` を付けたなら、ポリシーの「人間が方針を決めたら `issue:decided` を付ける」の条件を満たし、`issue:decided` と「人間が決めたこと」の行を付けた
-- [ ] `issue:needs-human-decision` を付けたなら、ポリシーの「人間が決めるべき Issue の条件」のどれに当たるかを言えて、「人間に決めてほしいこと」に論点と選択肢を書いた
+- [ ] `needs-human-decision` を付けたなら、ポリシーの「人間が決めるべき Issue の条件」のどれに当たるかを言えて、「人間に決めてほしいこと」に論点と選択肢を書いた
 - [ ] `ai-fixable` を付けたなら「対応方針」に採る案・「いま→変えた後」の対比・根拠・却下案を書き、対比には実際の文言（またはふるまい）を引用した
 - [ ] Issueの階層ガイドの「主に触るもの」表のどの行に当たるかを言えて、親にするフェーズ（または「親を付けない」）を決めた
 - [ ] タイトルの先頭に段番号を付けた（「ブロッカー」節と、決めた親のグループから数えた）
@@ -239,7 +239,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 gh issue create \
   --title "<タイトル>" \
   --assignee @me \
-  --label boy-scout,<ai-fixable|issue:needs-human-decision>[,issue:decided][,policy-gap] \
+  --label boy-scout,<ai-fixable|needs-human-decision>[,issue:decided][,policy-gap] \
   --body "$(cat <<'EOF'
 （テンプレートの全セクションを埋めた本文）
 EOF

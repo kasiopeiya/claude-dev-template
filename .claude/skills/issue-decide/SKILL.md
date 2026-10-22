@@ -1,6 +1,6 @@
 ---
 name: issue-decide
-description: issue:needs-human-decision が付いた Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable に変換する。boy-scout の有無を問わない。人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
+description: needs-human-decision が付いた Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable に変換する。boy-scout の有無を問わない。人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
@@ -8,13 +8,13 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 # /issue-decide
 
-`issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。人間が対話しながら打つ。
+`needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。人間が対話しながら打つ。
 
-Issue を起票・監査する Skill は、[人間が決めるべき条件](../../../docs/policy/issue-label-status-policy.md)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、Auto Programmer は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
+Issue を起票・監査する Skill は、[人間が決めるべき条件](../../../docs/policy/issue-label-status-policy.md)に当たる Issue に `needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、Auto Programmer は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
 
 ```mermaid
 stateDiagram-v2
-    state "人間判断待ち（issue:needs-human-decision）" as Pending
+    state "人間判断待ち（needs-human-decision）" as Pending
     state "実装可（ai-fixable）" as Fixable
     state "決定済み（ai-fixable ＋ issue:decided）" as Decided
 
@@ -43,7 +43,7 @@ stateDiagram-v2
 ## Phase 1: 対象の決定
 
 ```bash
-gh issue list --state open --limit 100 --search 'label:"issue:needs-human-decision"' \
+gh issue list --state open --limit 100 --search 'label:"needs-human-decision"' \
   --json number,title --jq 'sort_by(.number) | .[] | "\(.number)\t\(.title)"'
 ```
 
@@ -148,12 +148,12 @@ gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
 #### ラベルを貼り替える
 
 ```bash
-gh issue edit <番号> --add-label ai-fixable,issue:decided --remove-label issue:needs-human-decision
+gh issue edit <番号> --add-label ai-fixable,issue:decided --remove-label needs-human-decision
 ```
 
-Issue 番号を直接指定して処理し、`issue:needs-human-decision` が付いていなかったときは `--remove-label` を省く。
+Issue 番号を直接指定して処理し、`needs-human-decision` が付いていなかったときは `--remove-label` を省く。
 
-`issue:decided` は「**人間が決めるべき Issue について、人間が方針を決めた**」印である。これが無いと、`issue-auditor-agent` が同じ条件で再判定し、`issue:needs-human-decision` へ押し戻す。条件の多くは作業そのものの性質（不可逆である・新設である）で、方針が決まっても消えないからである。付ける条件は issue-label-status-policy の「人間が方針を決めたら `issue:decided` を付ける」が定める。
+`issue:decided` は「**人間が決めるべき Issue について、人間が方針を決めた**」印である。これが無いと、`issue-auditor-agent` が同じ条件で再判定し、`needs-human-decision` へ押し戻す。条件の多くは作業そのものの性質（不可逆である・新設である）で、方針が決まっても消えないからである。付ける条件は issue-label-status-policy の「人間が方針を決めたら `issue:decided` を付ける」が定める。
 
 #### 決定をコメントで残す
 
@@ -197,7 +197,7 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 ## 使用方法
 
 ```
-/issue-decide            # issue:needs-human-decision の open Issue を全件
+/issue-decide            # needs-human-decision の open Issue を全件
 /issue-decide 3          # 古い順に3件だけ
 /issue-decide #271 #280  # 指定した Issue だけ
 ```
