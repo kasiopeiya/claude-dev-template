@@ -28,10 +28,10 @@ describe('実装へ進まない', () => {
     const sut = findReasonToSkipImplementation
 
     const reason = sut(
-      createCheckedIssue({ labelNames: ['issue:checked', 'issue:needs-human-decision'] })
+      createCheckedIssue({ labelNames: ['issue:checked', 'needs-human-decision'] })
     )
 
-    assert.match(reason, /issue:needs-human-decision/)
+    assert.match(reason, /needs-human-decision/)
   })
 
   test('判定が書き戻されていない Issue は止める', () => {
