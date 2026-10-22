@@ -21,7 +21,8 @@ readonly LABELS=(
   # Issue: /quick-issue・/issue-check などが付ける
   'boy-scout|C2E0C6|正式フローを経ずアドホックに起票した課題。後でまとめて棚卸しする'
   'ai-fixable|0E8A16|問題と対応方針が一意に定まり、AIが単独で対応できるIssue'
-  'issue:needs-human-decision|0052cc|対応方針に人間の判断が必要なIssue'
+  'needs-human-decision|0052cc|中身を見ずには直せない。人間が1件ずつ方針を決める対象を選ぶ印'
+  'ready-for-human|FBCA04|方針は決まっているが、残る作業を AI が実行する手段を持たない Issue'
   'issue:decided|1D76DB|人間が方針を決めた Issue。決めた条件を理由に人間判断へ戻さない'
   'harness|BFDADC|ハーネス（Policy・Rule・Skill・SubAgent・hooks）を変えるIssue'
   'issue:checked|BFD4F2|/issue-check が一度監査した Issue。いま妥当である保証ではない'
