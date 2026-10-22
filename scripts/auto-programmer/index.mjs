@@ -47,7 +47,7 @@ import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait
 import {
   findReasonToSkipImplementation,
   ISSUE_CHECKED_LABEL,
-  NEEDS_HUMAN_DECISION_LABEL
+  HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { decideAfterCiRun, readCiRunState } from './ciRun.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
@@ -265,7 +265,7 @@ function handOverToSubIssuesIfAny(issueNumber, record) {
     repository: config.repository,
     viewerLogin,
     targetIssueLabel: config.targetIssueLabel,
-    needsHumanDecisionLabel: NEEDS_HUMAN_DECISION_LABEL,
+    humanOnlyLabels: HUMAN_ONLY_LABELS,
     notStartedStatusNames: [config.board.todoStatusName, config.board.readyStatusName]
   })
   for (const subIssue of subIssuesToPutOnReady) {
@@ -454,7 +454,10 @@ async function handOverOrImplement(issueNumber, record) {
     handOverToSubIssuesIfAny(issueNumber, record)
   }
 
-  record.skippedReason = findReasonToSkipImplementation(readIssueStatus(issueNumber))
+  record.skippedReason = findReasonToSkipImplementation(
+    readIssueStatus(issueNumber),
+    config.targetIssueLabel
+  )
   if (record.skippedReason || record.subIssueHandover) return true
 
   // 前の実行が残した離脱の印を外し、CI を待つ前に付いていれば今回の離脱と読めるようにする
