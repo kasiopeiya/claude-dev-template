@@ -5,7 +5,7 @@
 //   子と作業が二重になる。代わりに子を着手待ちに載せ、自分を担当者にして拾わせる。
 // - 担当者は「無い」だけでなく「自分だけ」の子も載せる。`/to-issues` などが起票と同時に自分を担当者にするので、
 //   「無い」に絞ると子が1件も載らない。自分以外の担当者がいる子は、取り合わないよう外す（Issue #683）。
-// - 判断待ちの子は、「着手してよい」を意味する着手待ちに置かない。カードを動かすのは、ボードに無いか、着手前の
+// - 判断待ち・人間の作業の子は、「着手してよい」を意味する着手待ちに置かない。カードを動かすのは、ボードに無いか、着手前の
 //   Status にある子だけにする。着手した後（着手中・レビュー待ち・完了）の子を着手待ちへ戻すと、同じ Issue を
 //   もう一度拾う。着手前の Status を並べるのは、ボードに Status が増えても既定で動かさない側に倒すため。
 // - 対象リポジトリの外の子は載せない。候補は対象リポジトリの Issue に限るので、載せても拾われない。
@@ -28,13 +28,13 @@ export function findReasonToSkipForOpenSubIssues(subIssues) {
  *
  * @template {{ repository: string, state: string, labelNames: string[], assigneeLogins: string[], boardStatusName: string | null }} SubIssue
  * @param {SubIssue[]} subIssues Issue の sub-issue（state は gh の表記で 'OPEN' / 'CLOSED'。boardStatusName はボードに無ければ null）
- * @param {{ repository: string, viewerLogin: string, targetIssueLabel: string, needsHumanDecisionLabel: string, notStartedStatusNames: string[] }} criteria
- *   対象リポジトリ（owner/repo）・自分のログイン名・対象ラベル・人間判断待ちのラベル・着手前を表す Status の表記
- * @returns {SubIssue[]} 対象リポジトリにあり、担当者が無いか自分だけで、対象ラベル付き・人間判断待ちでなく、ボードに無いか着手前の Status にある open な子
+ * @param {{ repository: string, viewerLogin: string, targetIssueLabel: string, humanOnlyLabels: string[], notStartedStatusNames: string[] }} criteria
+ *   対象リポジトリ（owner/repo）・自分のログイン名・対象ラベル・人間向けのラベル（判断待ち・人間の作業）・着手前を表す Status の表記
+ * @returns {SubIssue[]} 対象リポジトリにあり、担当者が無いか自分だけで、対象ラベル付き・人間向けのラベル無しで、ボードに無いか着手前の Status にある open な子
  */
 export function selectSubIssuesToPutOnReady(
   subIssues,
-  { repository, viewerLogin, targetIssueLabel, needsHumanDecisionLabel, notStartedStatusNames }
+  { repository, viewerLogin, targetIssueLabel, humanOnlyLabels, notStartedStatusNames }
 ) {
   return subIssues.filter(
     (subIssue) =>
@@ -42,7 +42,7 @@ export function selectSubIssuesToPutOnReady(
       subIssue.repository === repository &&
       subIssue.assigneeLogins.every((login) => login === viewerLogin) &&
       subIssue.labelNames.includes(targetIssueLabel) &&
-      !subIssue.labelNames.includes(needsHumanDecisionLabel) &&
+      !subIssue.labelNames.some((labelName) => humanOnlyLabels.includes(labelName)) &&
       (subIssue.boardStatusName === null ||
         notStartedStatusNames.includes(subIssue.boardStatusName))
   )

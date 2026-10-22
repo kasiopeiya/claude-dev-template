@@ -36,7 +36,7 @@
 載せるのは、次のどれにも当たらない子だけである。
 
 - **自分以外の担当者がいる**：他人の担当を取り合わない
-- **`ai-fixable` が無い・`needs-human-decision` が付いた**：判断待ちの子を「着手してよい」Ready に置かない
+- **`ai-fixable` が無い・`needs-human-decision` か `ready-for-human` が付いた**：判断待ちや人間の作業の子を「着手してよい」Ready に置かない
 - **カードが Todo・Ready 以外の列にある**：着手した後（In progress・In Review・Done）の子を Ready へ戻すと、同じ Issue をもう一度拾う。ボードに無い子は載せる
 - **対象リポジトリ（`repository`）の外にある**：2 は対象リポジトリの Issue しか拾わないので、載せても拾われない
 
@@ -44,7 +44,13 @@
 
 6 で外部依存の制約を調べるのは、`issue:checked` が無く、本文に出た外部の製品・サービス・ツールの名前が `docs/adr/`・`docs/design/`・各 `package.json` のどこにも無い Issue だけである。Plan を通らない Issue の前提の誤りを、実装の前に拾うためである。人間にまだ示していない制約のうち、対応方針を確実に実行できなくするものが見つかれば、判定は人間判断になり、7 で止まる。そうでない制約は、本文へ追記して監査を続ける。調べられなかったときは、Issue にコメントを残して監査を続ける。
 
-7 で実装へ進まないのは、open な sub-issue ができたとき・`issue:checked` が貼られていない（判定が書き戻されていない）とき・`needs-human-decision` が付いたとき・close されたときだけである。`/issue-check` が「方針差し替え」に倒した Issue は、差し替わった本文のまま 8 へ進む。
+7 で実装へ進まないのは、次のときだけである。`/issue-check` が「方針差し替え」に倒した Issue は、差し替わった本文のまま 8 へ進む。
+
+- open な sub-issue ができた
+- `issue:checked` が貼られていない（判定が書き戻されていない）
+- `needs-human-decision` か `ready-for-human` が付いた
+- `ai-fixable` が外れた
+- close された
 
 11 で直させるのは `ci.maxFixAttempts` 回までで、使い切っても落ちていれば Issue にコメントと `issue:needs-clean-session` を残して次へ進む。キャンセルされた run・`ci.runWaitLimitMinutes` 分待っても終わらない run は、差分を直しても通らないので直させない。9 で `/auto-dev` が離脱したときは 10 へ進まない。
 
@@ -196,6 +202,8 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 | 「…という選択肢がありません」                                                                      | ボードの表記と `config.mjs` の表記が食い違っている                                                                                                                                             | `gh project field-list` の表示に合わせる                                                                                                                                       |
 | 「claude コマンドが見つかりません」                                                                | Claude Code が入っていない                                                                                                                                                                     | Claude Code を入れる                                                                                                                                                           |
 | 「実装へ進みません: /issue-check が人間の判断を要すると判定しました」「… close しました」          | `/issue-check` が人間の判断を要すると判定したか、不要として close した。カードは In progress に残る                                                                                            | Issue のコメントを読む。人間判断なら `/issue-decide` で決めてからカードを Ready へ戻す                                                                                         |
+| 「実装へ進みません: /issue-check が人間しかできない作業だと判定しました」                          | `/issue-check` が、残る作業はすべて人間しかできないと判定し、`ready-for-human` に貼り替えた。カードは In progress に残る                                                                       | Issue のコメントを読み、人間が作業する                                                                                                                                         |
+| 「実装へ進みません: /issue-check が ai-fixable を外しました」                                      | `/issue-check` が `ai-fixable` を外したが、`needs-human-decision`・`ready-for-human` のどちらも付けなかった。カードは In progress に残る                                                       | Issue のコメントとラベルを読み、正しいラベルを付け直す。`ai-fixable` に戻したらカードを Ready へ戻す                                                                           |
 | 同上（人間判断）で、Issue のコメントが分割の失敗を伝えている                                       | `/issue-check` が割ろうとしたが、子の紐付けか親の作り替えに失敗したので、親を人間判断にした。カードは In progress に残る                                                                       | コメントに並ぶ子を手で紐付け直すか閉じ、`needs-human-decision` を外して `ai-fixable` に戻してから、カードを Ready へ戻す。`/issue-decide` は紐付けの修復を担わないので使わない |
 | 「実装へ進みません: /issue-check が判定を書き戻しませんでした」                                    | 監査は終わったが `issue:checked` が貼られていない（判定を読めなかった・`gh` が失敗したなど）                                                                                                   | Issue のコメントを読み、必要なら人間が `/issue-check #<番号>` を打ってからカードを Ready へ戻す                                                                                |
 | 「実装せず子へ引き継ぎます: open な sub-issue を … 件持ちます。Ready に載せた子は 0 件です」       | 親を実装せずに止めたが、載せられる子が無かった（open な子がどれも、載せない条件に当たった）。親のカードは In progress に残る                                                                   | 子の担当者・ラベル・カードの Status を見て、載せなかった理由が正しいかを確かめる                                                                                               |

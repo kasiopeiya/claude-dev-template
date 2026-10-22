@@ -6,25 +6,38 @@
 // - `issue:checked` は判定が何であれ貼られるので、判定の中身の分岐には使わない。使うのは「今回の判定が
 //   書き戻されたか」の印としてだけで、呼び出し側はこのラベルが無い Issue にだけ監査を走らせる。
 //   終了コード 0 は書き戻しを保証しない（/issue-check は判定を読めないとき、何も書き戻さずに終わる）。
-// - 判定の中身で止めるのは「人間判断」と「不要（close）」だけで、「方針差し替え」は本文が直って
-//   ai-fixable のまま残るので止めない。
+// - 判定の中身で止めるのは「人間判断」「人間しかできない作業」「不要（close）」だけで、「方針差し替え」は
+//   本文が直って ai-fixable のまま残るので止めない。
+// - 対象ラベル（ai-fixable）が外れた Issue も止める。/issue-check がラベルを付け替えると対象ラベルが外れるので、
+//   止める理由のラベルを1つずつ並べるだけでは、ラベルが増えたときに取りこぼす。
 // - ラベル名は `.claude/skills/issue-check/SKILL.md` が貼る表記が正。
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
 
 export const ISSUE_CHECKED_LABEL = 'issue:checked'
-export const NEEDS_HUMAN_DECISION_LABEL = 'needs-human-decision'
+const NEEDS_HUMAN_DECISION_LABEL = 'needs-human-decision'
+const READY_FOR_HUMAN_LABEL = 'ready-for-human'
+// 人間が方針を決める・人間が作業する Issue に付くラベル。子を着手待ちに載せるかの判定もこれを使い、
+// 人間向けのラベルが増えたときに片方だけ直る食い違いを防ぐ
+export const HUMAN_ONLY_LABELS = [NEEDS_HUMAN_DECISION_LABEL, READY_FOR_HUMAN_LABEL]
 
 /**
  * 監査後の Issue を実装へ進めてはいけない理由を返す。
  *
  * @param {{ state: string, labelNames: string[] }} issue 監査後（監査済みで飛ばしたときはその時点）に引き直した Issue（state は gh の表記で 'OPEN' / 'CLOSED'）
+ * @param {string} targetIssueLabel 実装へ進めてよい Issue に付く対象ラベル（config.mjs の targetIssueLabel）
  * @returns {string | null} 止める理由（実装へ進めてよければ null）
  */
-export function findReasonToSkipImplementation({ state, labelNames }) {
+export function findReasonToSkipImplementation({ state, labelNames }, targetIssueLabel) {
   if (state !== 'OPEN') return '/issue-check が不要と判定して close しました'
   if (!labelNames.includes(ISSUE_CHECKED_LABEL)) return '/issue-check が判定を書き戻しませんでした'
   if (labelNames.includes(NEEDS_HUMAN_DECISION_LABEL)) {
     return `/issue-check が人間の判断を要すると判定しました（${NEEDS_HUMAN_DECISION_LABEL}）`
+  }
+  if (labelNames.includes(READY_FOR_HUMAN_LABEL)) {
+    return `/issue-check が人間しかできない作業だと判定しました（${READY_FOR_HUMAN_LABEL}）`
+  }
+  if (!labelNames.includes(targetIssueLabel)) {
+    return `/issue-check が ${targetIssueLabel} を外しました`
   }
   return null
 }
