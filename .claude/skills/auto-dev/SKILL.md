@@ -112,10 +112,8 @@ PR の URL・実行した検証・更新したタスクを表示して終了す�
 
 ```bash
 gh issue comment $ARGUMENTS --body "<どこまでやって、何で止まったか>"
-gh issue edit $ARGUMENTS --add-label "issue:needs-clean-session"
+gh issue edit $ARGUMENTS --add-label "needs-human-check"
 ```
-
-このラベルは「着手したうえで、このやり方では直しきれないと分かった印」で、付けた Issue は人間が専用のセッションで1件だけ対応する。
 
 **押し戻しはしない。** 未コミットの変更・作ったコミット・push 済みのブランチは、どれも消さずに残してよい。次の `npm run auto-programmer` が clone をデフォルトブランチの状態まで戻す。ボードの Status は「着手中」のままなので、同じ Issue が次の実行で拾われることはない。
 

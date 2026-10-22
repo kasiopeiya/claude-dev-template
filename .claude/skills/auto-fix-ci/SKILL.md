@@ -93,7 +93,7 @@ pre-push hook の整形検査（`npm run format:check`）で拒否されたら�
 
 ```bash
 gh issue comment <Issue番号> --body "<落ちた run の URL・落ちたジョブ・原因の見立て・どこまでやって何で止まったか>"
-gh issue edit <Issue番号> --add-label "issue:needs-clean-session"
+gh issue edit <Issue番号> --add-label "needs-human-check"
 ```
 
 **押し戻しはしない。** 未コミットの変更・作ったコミットは消さずに残してよい。次の `npm run auto-programmer` が clone をデフォルトブランチの状態まで戻す。
