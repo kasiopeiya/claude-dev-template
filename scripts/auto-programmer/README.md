@@ -111,7 +111,7 @@ npm run auto-programmer
 | `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                                                   | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
 | `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                      | 使い切っても落ちていれば人間へ回す                                                            |
 
-フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。
+フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。各 Status が何を意味するかは [issue-label-status-policy](../../docs/policy/issue-label-status-policy.md)「ボードの Status の意味」が定める。
 
 トピックブランチを切る元も設定に持たせない。GitHub に設定されたデフォルトブランチを、このツールと `/auto-dev`・`/auto-fix-ci`・`/pr-body` がその場で引く。PR の作成先は `pipeline.yml` がデフォルトブランチに決めるので、設定で別の値を持てると、切る元と PR の作成先が食い違うためである。
 

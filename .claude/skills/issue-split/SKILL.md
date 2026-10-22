@@ -17,7 +17,7 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 - **いつ割るかは人間が決める。** 親 Issue の本文を書き換えるため、AI は「割った方がよい」と提案するまでに留める。例外は `--from-issue-check` の起動で、`/issue-check` のレンズが割ると決め切っている。
 - **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・sub-issue 紐付け）だけ。
-- **分割規則と子 Issue の本文テンプレートは書き写さない。** 縦スライスの規則は [`/to-issues`](../to-issues/SKILL.md)、本文テンプレート `<issue-template>` とラベル判定は [`/quick-issue`](../quick-issue/SKILL.md) が正典。2箇所に持つと、片方が古いまま残る。
+- **分割規則と子 Issue の本文テンプレートは書き写さない。** 縦スライスの規則は [`/to-issues`](../to-issues/SKILL.md)、本文テンプレート `<issue-template>` は [`/quick-issue`](../quick-issue/SKILL.md)、ラベルの判定は [issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md) が正典。2箇所に持つと、片方が古いまま残る。
 - **親はクローズしない。** すべての sub-issue が close されるまで親は open のまま置く（`/issue-check` の「sub-issue が open な親は閉じない」ガードと揃える）。例外は [`/issue-regroup`](../issue-regroup/SKILL.md) だけである。親の open な子が全部ブロッカー待ちになったときに限り、子を他の親へ移してこの親を close する。
 
 ## Phase 1: 対象を読む
@@ -86,9 +86,9 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 親に「確定済みの決定」節が無く「grill-me で確定した仕様」節がある場合（`/to-issues` が起票した Issue）も、扱いは同じである。
 
-ラベルは `ai-fixable` / `issue:needs-human-decision` のどちらか一方を必ず付ける（判定は `/quick-issue` が正典）。`boy-scout` は付けない。`issue:needs-human-decision` を付けた子では、上から2番目の節が「対応方針」ではなく「人間に決めてほしいこと」になる。
+ラベルは `ai-fixable` / `issue:needs-human-decision` のどちらか一方を必ず付ける（判定は issue-label-status-policy が正典）。`boy-scout` は付けない。`issue:needs-human-decision` を付けた子では、上から2番目の節が「対応方針」ではなく「人間に決めてほしいこと」になる。
 
-親が `issue:decided` 付きなら、`ai-fixable` にした子にも `issue:decided` を付け、親の「対応方針」にある「人間が決めた名指し例外」の行のうち、その子に当たるものを書き写す。子は親で人間が決めた中身を分けたもので、新しい中身を足さないからである。印が無いと、`/issue-check` が子を同じ例外で差し戻す。
+親が `issue:decided` 付きなら、`ai-fixable` にした子にも `issue:decided` を付け、親の「対応方針」にある「人間が決めたこと」の行のうち、その子に当たるものを書き写す。子は親で人間が決めた中身を分けたもので、新しい中身を足さないからである。印が無いと、`/issue-check` が子を同じ条件で差し戻す。
 
 タスク一覧と完了条件は、起票前にポリシー（`docs/policy-hub.md`）・rules（`.claude/rules/`）と照合する。ポリシーに反する作業を親から引き継いだままにしない。
 

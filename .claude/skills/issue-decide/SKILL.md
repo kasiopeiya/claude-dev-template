@@ -10,7 +10,7 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 `issue:needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` に変換する。人間が対話しながら打つ。
 
-Issue を起票・監査する Skill は、[名指し例外](../quick-issue/SKILL.md#どちらを付けるか)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、Auto Programmer は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
+Issue を起票・監査する Skill は、[人間が決めるべき条件](../../../docs/policy/issue-label-status-policy.md)に当たる Issue に `issue:needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、Auto Programmer は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
 
 ```mermaid
 stateDiagram-v2
@@ -18,27 +18,27 @@ stateDiagram-v2
     state "実装可（ai-fixable）" as Fixable
     state "決定済み（ai-fixable ＋ issue:decided）" as Decided
 
-    [*] --> Pending: 起票（名指し例外に当たり、人間が会話で決めていない）
-    [*] --> Decided: 起票（当たる名指し例外をすべて人間が会話で決めている）
-    [*] --> Fixable: 起票（例外に当たらない）
+    [*] --> Pending: 起票（人間が決めるべき条件に当たり、人間が会話で決めていない）
+    [*] --> Decided: 起票（当たる条件をすべて人間が会話で決めている）
+    [*] --> Fixable: 起票（どの条件にも当たらない）
     Pending --> Decided: /issue-decide で人間が方針を決めた
     Pending --> Pending: /issue-decide で保留
     Pending --> [*]: /issue-decide で「対応しない」を選んだ
-    Fixable --> Pending: /issue-check が名指し例外に当たると判定
+    Fixable --> Pending: /issue-check が人間が決めるべき条件に当たると判定
     Decided --> Fixable: /issue-check が方針差し替えと判定（issue:decided を外す）
-    Decided --> Pending: /issue-check が判定不能と判定、または「人間が決めた名指し例外」の行に無い例外に当たると判定
+    Decided --> Pending: /issue-check が判定不能と判定、または「人間が決めたこと」の行に無い条件に当たると判定
     Decided --> [*]: Auto Programmer か開発フロー Skill が実装して close
     Fixable --> [*]: Auto Programmer か開発フロー Skill が実装して close
 ```
 
-「決定済み」が、人間の決めた名指し例外では押し戻されないのが要点である。人間が例外を承知で決めた方針を、同じ例外で戻さない。
+「決定済み」が、人間が決めた条件では押し戻されないのが要点である。人間が決めた方針を、同じ条件で戻さない。
 
 ## 前提
 
 - **始めるタイミングは人間が握る。** 人間の応答を待ちながら進むので、いつ走らせるかは人間が決める。
 - **リポジトリのファイルは変更しない。** 触るのは GitHub Issue（本文・ラベル・コメント・close）だけである。実装は別の Skill の仕事である。
 - **人間は Issue を読んでいない前提で書く。** 判断に要る材料は、こちらが本文から取り出して示す。
-- **方針の監査はしない。** ラベルが名指し例外に本当に当たるか、対応方針がポリシーに合うかは `/issue-check` の責務である。ここで重ねると判定が2箇所に散る。
+- **方針の監査はしない。** Issue が人間が決めるべき条件に本当に当たるか、対応方針がポリシーに合うかは `/issue-check` の責務である。ここで重ねると判定が2箇所に散る。
 
 ## Phase 1: 対象の決定
 
@@ -80,7 +80,7 @@ gh issue view <番号> --json body --jq .body > <スクラッチパッド>/issue
 **本文の貼り付けにしてはならない。** 人間は Issue を読んでいないので、決めるのに要る分だけに畳む。箇条書き・表とも1項目1行で、全体15行以内。
 
 - **一言でいうと**：何が困っているかを1文
-- **なぜ人間に来たか**：該当する名指し例外を1文
+- **なぜ人間に来たか**：当たる条件を1文
 - **論点**：何を決めるかを1文
 - **案**：表（案／利点／欠点／AI の見立て）
 - **裏取り**：対象箇所が実在するか、本文と現物がずれていないか
@@ -153,7 +153,7 @@ gh issue edit <番号> --add-label ai-fixable,issue:decided --remove-label issue
 
 Issue 番号を直接指定して処理し、`issue:needs-human-decision` が付いていなかったときは `--remove-label` を省く。
 
-`issue:decided` は「**人間が名指し例外を承知のうえで方針を決めた**」印である。これが無いと、`issue-auditor-agent` が同じ名指し例外を再判定し、`issue:needs-human-decision` へ押し戻す。名指し例外の多くは作業そのものの性質（不可逆である・新設である）で、方針が決まっても消えないからである。
+`issue:decided` は「**人間が決めるべき Issue について、人間が方針を決めた**」印である。これが無いと、`issue-auditor-agent` が同じ条件で再判定し、`issue:needs-human-decision` へ押し戻す。条件の多くは作業そのものの性質（不可逆である・新設である）で、方針が決まっても消えないからである。付ける条件は issue-label-status-policy の「人間が方針を決めたら `issue:decided` を付ける」が定める。
 
 #### 決定をコメントで残す
 
@@ -189,7 +189,7 @@ gh issue comment <番号> --body "<何を決めたか・なぜか・却下した
 
 - **本文に「人間に決めてほしいこと」が無い**：本文から論点を組み立てて示す。案が無ければ2案作り、「AI が作った案」と明記する
 - **対象箇所が実在しない**：第一選択肢を「対応しない（close する）」にする
-- **`issue:decided` が未作成で `gh` が失敗する**：`gh label create "issue:decided" --description "人間が名指し例外を承知で方針を決めた Issue。名指し例外による差し戻しをしない"` を実行して再実行する
+- **`issue:decided` が未作成で `gh` が失敗する**：`gh label create "issue:decided" --description "人間が方針を決めた Issue。決めた条件を理由に人間判断へ戻さない"` を実行して再実行する
 - **別セッションの更新が入っている**：上書きせず中断し、その事実を報告する
 - **問いを2巡しても決着しない**：そこで初めて保留の可否を聞き、保留なら次へ移る。何が分かれば決まるかをコメントで残す
 - **人間が応答を打ち切った**：そこまでの反映は残る。残りの Issue を報告して終了する
