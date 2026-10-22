@@ -69,7 +69,7 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 | `issue:decided`                                | 人間が決めるべき Issue について、人間が方針を決めた                                      | 下の「人間が方針を決めたら `issue:decided` を付ける」の条件を満たすとき。`ai-fixable` か `ready-for-human` にだけ重ねる                          |
 | `issue:checked`                                | `/issue-check` が一度監査した。いま妥当である保証ではない                                | `/issue-check` が判定を出した Issue に、判定が何であれ貼る。監査できなかった・飛ばした Issue には貼らない                                        |
 | `boy-scout`                                    | 正式フロー（`/to-issues` など）を経ずに積んだ課題。後で棚卸しする                        | `/quick-issue` が無条件で付ける。`/to-issues`・`/issue-split` が作る Issue には付けない                                                          |
-| `policy-gap`                                   | 判定時に該当ポリシー・rules が見つからなかった。ポリシーを足す候補                       | 該当ポリシー・rules を探して見つからなかったとき。3択のどれにも重ねてよい                                                                        |
+| `harness`                                      | ハーネスを変える Issue。ハーネスの手直しをプロダクト開発と分けて一覧する印               | 下の「`harness` を付ける条件」に当たるとき。起票する Skill が付ける                                                                              |
 | `issue:needs-clean-session`                    | 着手したうえで、このやり方では直しきれないと分かった。専用のセッションで1件だけ対応する  | `/auto-dev`・`/auto-fix-ci` が着手後に離脱するとき。起票時には付けない。`ai-fixable` は外さない                                                  |
 | `phase`                                        | Issue 階層の最上位。開発フローのフェーズを表す常設 Issue                                 | フェーズ Issue にだけ付ける（3択の例外）                                                                                                         |
 | `requirement`                                  | 要件定義書のレビュー指摘に起因する Issue                                                 | `/requirements-review` が起票するとき、ほかのラベルに重ねる                                                                                      |
@@ -77,6 +77,20 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 | `dev-deploy-failure`                           | dev への deploy が失敗した通知の Issue                                                   | `deploy-dev.yml` が起票するとき（3択の例外）                                                                                                     |
 
 PR に付く `needs-human-review` などのラベルの意味は `pr-review-policy.md` が持つ。このポリシーが扱うのは、そのラベルを付けて起票される通知の Issue（下の「3択の例外」）だけである。
+
+## `harness` を付ける条件
+
+次のどれかを変える Issue に `harness` を付ける。
+
+- Policy（`docs/policy/`）
+- Rule（`.claude/rules/`）
+- Skill（`.claude/skills/`）
+- SubAgent（`.claude/agents/`）
+- hooks（`.claude/hooks/`）
+
+[policy-driven-development-policy](policy-driven-development-policy.md) はハーネスの部品に CLAUDE.md とガードレール（静的解析設定・CI の検査）も数えるが、それらだけを変える Issue には付けない。人間が上の5つに絞った（#999）。
+
+3択が「誰が何をするか」を表すのに対し、`harness` は「何を変えるか」を表す。軸が違うので、3択のどれにも重ねる。
 
 ## 人間が決めるべき Issue の条件
 
@@ -182,4 +196,4 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 - **判断軸は「既定値＋反転条件」で与える**：既定を `ai-fixable` に置き、外れる条件を「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」として列挙する。原則集が NG/OK の例に挙げる「必ずいずれかのラベルを付ける。どれも付いていない状態を許さない」を、3択として定めている
 - **割れ窓を放置しない**：`boy-scout` は、本筋外の課題を現在の作業に混ぜず、失わないよう別に捕捉するための印である
-- **振り分け順**（[policy-driven-development-policy](policy-driven-development-policy.md)「Policy と Rule を分ける線」）：人間が決めるべき Issue の条件は、機械が合否を出せない判断で、「どれを選ぶか」の立場なので Policy に置く。選んだ後の手順・書式は Skill に置く
+- **振り分け順**（policy-driven-development-policy「Policy と Rule を分ける線」）：人間が決めるべき Issue の条件は、機械が合否を出せない判断で、「どれを選ぶか」の立場なので Policy に置く。選んだ後の手順・書式は Skill に置く
