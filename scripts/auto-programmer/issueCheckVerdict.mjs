@@ -25,19 +25,29 @@ export const HUMAN_ONLY_LABELS = [NEEDS_HUMAN_DECISION_LABEL, READY_FOR_HUMAN_LA
  *
  * @param {{ state: string, labelNames: string[] }} issue 監査後（監査済みで飛ばしたときはその時点）に引き直した Issue（state は gh の表記で 'OPEN' / 'CLOSED'）
  * @param {string} targetIssueLabel 実装へ進めてよい Issue に付く対象ラベル（config.mjs の targetIssueLabel）
- * @returns {string | null} 止める理由（実装へ進めてよければ null）
+ * @returns {{ reason: string, isVerdict: boolean } | null} 止める理由と、それが /issue-check の判定そのものか（判定が書き戻されていなければ false）。実装へ進めてよければ null
  */
-export function findReasonToSkipImplementation({ state, labelNames }, targetIssueLabel) {
-  if (state !== 'OPEN') return '/issue-check が不要と判定して close しました'
-  if (!labelNames.includes(ISSUE_CHECKED_LABEL)) return '/issue-check が判定を書き戻しませんでした'
+export function findSkipImplementationDecision({ state, labelNames }, targetIssueLabel) {
+  if (state !== 'OPEN') {
+    return { reason: '/issue-check が不要と判定して close しました', isVerdict: true }
+  }
+  if (!labelNames.includes(ISSUE_CHECKED_LABEL)) {
+    return { reason: '/issue-check が判定を書き戻しませんでした', isVerdict: false }
+  }
   if (labelNames.includes(NEEDS_HUMAN_DECISION_LABEL)) {
-    return `/issue-check が人間の判断を要すると判定しました（${NEEDS_HUMAN_DECISION_LABEL}）`
+    return {
+      reason: `/issue-check が人間の判断を要すると判定しました（${NEEDS_HUMAN_DECISION_LABEL}）`,
+      isVerdict: true
+    }
   }
   if (labelNames.includes(READY_FOR_HUMAN_LABEL)) {
-    return `/issue-check が人間しかできない作業だと判定しました（${READY_FOR_HUMAN_LABEL}）`
+    return {
+      reason: `/issue-check が人間しかできない作業だと判定しました（${READY_FOR_HUMAN_LABEL}）`,
+      isVerdict: true
+    }
   }
   if (!labelNames.includes(targetIssueLabel)) {
-    return `/issue-check が ${targetIssueLabel} を外しました`
+    return { reason: `/issue-check が ${targetIssueLabel} を外しました`, isVerdict: true }
   }
   return null
 }

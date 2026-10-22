@@ -6,7 +6,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { findReasonToSkipImplementation } from '../issueCheckVerdict.mjs'
+import { findSkipImplementationDecision } from '../issueCheckVerdict.mjs'
 
 const TARGET_ISSUE_LABEL = 'ai-fixable'
 
@@ -17,71 +17,76 @@ function createCheckedIssue(overrides = {}) {
 
 describe('実装へ進む', () => {
   test('監査を通過した open な Issue は止めない', () => {
-    const sut = findReasonToSkipImplementation
+    const sut = findSkipImplementationDecision
     const issue = createCheckedIssue()
 
-    const reason = sut(issue, TARGET_ISSUE_LABEL)
+    const skipDecision = sut(issue, TARGET_ISSUE_LABEL)
 
-    assert.equal(reason, null)
+    assert.equal(skipDecision, null)
   })
 })
 
 describe('実装へ進まない', () => {
-  test('人間判断のラベルが付いた Issue は止める', () => {
-    const sut = findReasonToSkipImplementation
+  test('人間判断のラベルが付いた Issue は、判定として止める', () => {
+    const sut = findSkipImplementationDecision
     const issue = createCheckedIssue({
       labelNames: ['issue:checked', 'needs-human-decision']
     })
 
-    const reason = sut(issue, TARGET_ISSUE_LABEL)
+    const skipDecision = sut(issue, TARGET_ISSUE_LABEL)
 
-    assert.match(reason, /needs-human-decision/)
+    assert.match(skipDecision.reason, /needs-human-decision/)
+    assert.equal(skipDecision.isVerdict, true)
   })
 
-  test('人間しかできない作業のラベルが付いた Issue は止める', () => {
-    const sut = findReasonToSkipImplementation
+  test('人間しかできない作業のラベルが付いた Issue は、判定として止める', () => {
+    const sut = findSkipImplementationDecision
     const issue = createCheckedIssue({ labelNames: ['issue:checked', 'ready-for-human'] })
 
-    const reason = sut(issue, TARGET_ISSUE_LABEL)
+    const skipDecision = sut(issue, TARGET_ISSUE_LABEL)
 
-    assert.match(reason, /ready-for-human/)
+    assert.match(skipDecision.reason, /ready-for-human/)
+    assert.equal(skipDecision.isVerdict, true)
   })
 
   test('人間しかできない作業のラベルが対象ラベルと一緒に付いた Issue も止める', () => {
-    const sut = findReasonToSkipImplementation
+    const sut = findSkipImplementationDecision
     const issue = createCheckedIssue({
       labelNames: ['ai-fixable', 'issue:checked', 'ready-for-human']
     })
 
-    const reason = sut(issue, TARGET_ISSUE_LABEL)
+    const skipDecision = sut(issue, TARGET_ISSUE_LABEL)
 
-    assert.match(reason, /ready-for-human/)
+    assert.match(skipDecision.reason, /ready-for-human/)
   })
 
-  test('対象ラベルが外れた Issue は止める', () => {
-    const sut = findReasonToSkipImplementation
+  test('対象ラベルが外れた Issue は、判定として止める', () => {
+    const sut = findSkipImplementationDecision
     const issue = createCheckedIssue({ labelNames: ['issue:checked'] })
 
-    const reason = sut(issue, TARGET_ISSUE_LABEL)
+    const skipDecision = sut(issue, TARGET_ISSUE_LABEL)
 
-    assert.match(reason, /ai-fixable を外しました/)
+    assert.match(skipDecision.reason, /ai-fixable を外しました/)
+    assert.equal(skipDecision.isVerdict, true)
   })
 
-  test('判定が書き戻されていない Issue は止める', () => {
-    const sut = findReasonToSkipImplementation
+  test('判定が書き戻されていない Issue は、判定ではない理由で止める', () => {
+    const sut = findSkipImplementationDecision
     const issue = createCheckedIssue({ labelNames: ['ai-fixable'] })
 
-    const reason = sut(issue, TARGET_ISSUE_LABEL)
+    const skipDecision = sut(issue, TARGET_ISSUE_LABEL)
 
-    assert.match(reason, /書き戻しませんでした/)
+    assert.match(skipDecision.reason, /書き戻しませんでした/)
+    assert.equal(skipDecision.isVerdict, false)
   })
 
-  test('close された Issue は止める', () => {
-    const sut = findReasonToSkipImplementation
+  test('close された Issue は、判定として止める', () => {
+    const sut = findSkipImplementationDecision
     const issue = createCheckedIssue({ state: 'CLOSED' })
 
-    const reason = sut(issue, TARGET_ISSUE_LABEL)
+    const skipDecision = sut(issue, TARGET_ISSUE_LABEL)
 
-    assert.match(reason, /close/)
+    assert.match(skipDecision.reason, /close/)
+    assert.equal(skipDecision.isVerdict, true)
   })
 })
