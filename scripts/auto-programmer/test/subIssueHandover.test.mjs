@@ -42,7 +42,7 @@ describe('着手待ちに載せる子の選び方', () => {
     repository: 'owner/repo',
     viewerLogin: 'me',
     targetIssueLabel: 'ai-fixable',
-    humanOnlyLabels: ['issue:needs-human-decision', 'ready-for-human'],
+    humanOnlyLabels: ['needs-human-decision', 'ready-for-human'],
     notStartedStatusNames: ['Todo', 'Ready']
   }
 
@@ -97,7 +97,7 @@ describe('着手待ちに載せる子の選び方', () => {
 
   test('人間の判断を待つ子は載せない', () => {
     const sut = selectSubIssuesToPutOnReady
-    const subIssue = createSubIssue({ labelNames: ['ai-fixable', 'issue:needs-human-decision'] })
+    const subIssue = createSubIssue({ labelNames: ['ai-fixable', 'needs-human-decision'] })
 
     const selected = sut([subIssue], criteria)
 

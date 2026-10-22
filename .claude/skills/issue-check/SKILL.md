@@ -25,7 +25,7 @@ gh issue list --state open --limit 100 --search 'label:boy-scout' \
   --json number,title,labels --jq 'sort_by(.number) | .[] | "\(.number)\t\([.labels[].name]|join(","))\t\(.title)"'
 ```
 
-`ai-fixable` で絞りません。`issue:needs-human-decision` の Issue も、人間が決めるべき条件（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「人間が決めるべき Issue の条件」）に本当に当たるかを検査する対象です。`ready-for-human` の Issue も、同ポリシーの「人間しかできない作業の条件」に本当に当たるかを検査する対象です。`issue:needs-clean-session` も含めます——読むだけの判定なので、直しきれるかどうかとは無関係です。
+`ai-fixable` で絞りません。`needs-human-decision` の Issue も、人間が決めるべき条件（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「人間が決めるべき Issue の条件」）に本当に当たるかを検査する対象です。`ready-for-human` の Issue も、同ポリシーの「人間しかできない作業の条件」に本当に当たるかを検査する対象です。`issue:needs-clean-session` も含めます——読むだけの判定なので、直しきれるかどうかとは無関係です。
 
 **`issue:checked` が付いた Issue も除外しません。** 判定のうち「前提が現物と食い違う」は、リポジトリが動けば真偽が変わります。前回の判定を貼った時点で凍結できないので、毎回すべて見直します。`issue:checked` を検索条件に使わないことで、Issue 番号を直接指定した経路との食い違いも起きません。
 
@@ -133,9 +133,9 @@ Issue ごとに、各レンズが返した「判定」を並べ、観点一覧�
 
 - **GO**：レポートに「未確認」または本文と現物の食い違いが挙がっていれば、その内容をコメントで残す。「外部依存の前提」の注記（規則3〜5）があれば、同じコメントに含める。無ければ何もしない（`issue:checked` は下記のとおり全件に貼る）
 - **方針差し替え**：本文の該当セクションを差し替え、何を・なぜ変えたかをコメントで残す
-- **ラベル訂正**：3択（`ai-fixable`・`issue:needs-human-decision`・`ready-for-human`）の間でラベルを貼り替え、人間が決めるべき条件と人間しかできない作業の条件のどれに当たる／当たらないかをコメントで残す（移し先は同ポリシーの「ラベルの移し先」が定める）。`issue:needs-human-decision` へ訂正するときは `issue:decided` も外す（人間が決めていない条件が残っており、決定済みではないため）
+- **ラベル訂正**：3択（`ai-fixable`・`needs-human-decision`・`ready-for-human`）の間でラベルを貼り替え、人間が決めるべき条件と人間しかできない作業の条件のどれに当たる／当たらないかをコメントで残す（移し先は同ポリシーの「ラベルの移し先」が定める）。`needs-human-decision` へ訂正するときは `issue:decided` も外す（人間が決めていない条件が残っており、決定済みではないため）
 - **不要**：close する
-- **人間判断**：`issue:needs-human-decision` を足して `ai-fixable`・`ready-for-human`・`issue:decided` を外し、本文に「人間に決めてほしいこと」を足して、論点をコメントで残す
+- **人間判断**：`needs-human-decision` を足して `ai-fixable`・`ready-for-human`・`issue:decided` を外し、本文に「人間に決めてほしいこと」を足して、論点をコメントで残す
 - **分割**：`/issue-split <番号> --from-issue-check` を Skill ツールで実行し、分割検討レンズの「見積もり」の表と、当たった「割る」の条件をコメントで残す。`/issue-split` が「紐付けに失敗した子」または「親の作り替えの失敗」を報告したら、続けて上の「人間判断」と同じ操作をする。論点は「紐付けに失敗した子（番号を列挙）を紐付け直すか閉じるか」とする
 - **外部依存の前提の追記**：規則3で阻む制約が無かった Issue だけ、上の反映をすべて終えてから行う。示し済みでない制約の記載を、本文の「対応方針」（無ければ「人間に決めてほしいこと」）の直後に `<details>` で追記する。手順は下の「本文を差し替える」と同じ。不要で close する Issue と、分割した Issue には追記しない（件数のコメントは残す）。監査不能の Issue には、追記もコメントもしない
 
@@ -171,7 +171,7 @@ gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
 gh issue edit <番号> --title "<新しいタイトル>"
 ```
 
-ラベルを `ai-fixable` か `ready-for-human` へ訂正したときは「対応方針」が、`issue:needs-human-decision` へ訂正したときは「人間に決めてほしいこと」が本文に要ります。`/quick-issue` はこの2セクションを排他と定めているので、**片方を足したらもう片方を消します。**
+ラベルを `ai-fixable` か `ready-for-human` へ訂正したときは「対応方針」が、`needs-human-decision` へ訂正したときは「人間に決めてほしいこと」が本文に要ります。`/quick-issue` はこの2セクションを排他と定めているので、**片方を足したらもう片方を消します。**
 
 #### close する
 

@@ -30,12 +30,12 @@ describe('実装へ進まない', () => {
   test('人間判断のラベルが付いた Issue は止める', () => {
     const sut = findReasonToSkipImplementation
     const issue = createCheckedIssue({
-      labelNames: ['issue:checked', 'issue:needs-human-decision']
+      labelNames: ['issue:checked', 'needs-human-decision']
     })
 
     const reason = sut(issue, TARGET_ISSUE_LABEL)
 
-    assert.match(reason, /issue:needs-human-decision/)
+    assert.match(reason, /needs-human-decision/)
   })
 
   test('人間しかできない作業のラベルが付いた Issue は止める', () => {

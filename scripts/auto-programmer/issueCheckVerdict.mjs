@@ -14,7 +14,7 @@
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
 
 export const ISSUE_CHECKED_LABEL = 'issue:checked'
-const NEEDS_HUMAN_DECISION_LABEL = 'issue:needs-human-decision'
+const NEEDS_HUMAN_DECISION_LABEL = 'needs-human-decision'
 const READY_FOR_HUMAN_LABEL = 'ready-for-human'
 // 人間が方針を決める・人間が作業する Issue に付くラベル。子を着手待ちに載せるかの判定もこれを使い、
 // 人間向けのラベルが増えたときに片方だけ直る食い違いを防ぐ

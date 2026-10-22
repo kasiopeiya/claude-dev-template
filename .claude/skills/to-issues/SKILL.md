@@ -77,7 +77,7 @@ Plan を**曳光弾**の Issue に分ける。各 Issue は、すべての統合
 
 Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転記する**（そのスライスが実際に触れる種別の Skill だけに絞る）。これは「issue NNN 対応して」だけで開発フローを自動追従させるための情報なので、issue 化で**落とさない**こと。Plan に同セクションが無ければ、変更種別から CLAUDE.md「開発フロー」の一覧で補って記載する。
 
-各 Issue には `ai-fixable` / `issue:needs-human-decision` / `ready-for-human` のどれか1つだけを必ず付ける（`boy-scout` は付けない。正式フローを経ずに見つけた課題を後で棚卸しするためのラベルであり、`/to-issues` 産の Issue には当たらない）。どれを付けるかの判定は issue-label-status-policy の「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う。`ready-for-human` の Issue では、人間がするタスクの頭に「（人間）」と書く。
+各 Issue には `ai-fixable` / `needs-human-decision` / `ready-for-human` のどれか1つだけを必ず付ける（`boy-scout` は付けない。正式フローを経ずに見つけた課題を後で棚卸しするためのラベルであり、`/to-issues` 産の Issue には当たらない）。どれを付けるかの判定は issue-label-status-policy の「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う。`ready-for-human` の Issue では、人間がするタスクの頭に「（人間）」と書く。
 
 「タスク一覧」「完了条件」は、登録前に該当するポリシー・rules（`docs/policy-hub.md`・`.claude/rules/`）と照合する。ポリシーに反する作業を指示していたら、タスク側を直してから登録する。実装時はポリシーが優先されるため、反したまま登録すると手戻りになる。
 
@@ -142,7 +142,7 @@ gh api graphql -f query='mutation($parent:ID!,$childUrl:String!){addSubIssue(inp
 
 ## 対応方針
 
-`ai-fixable` か `ready-for-human` を付けたときだけ書く（`issue:needs-human-decision` のときはセクションごと省き、「人間に決めてほしいこと」に書く）。別セッションが方針を決め直さず、そのまま着手できる状態を目指す。
+`ai-fixable` か `ready-for-human` を付けたときだけ書く（`needs-human-decision` のときはセクションごと省き、「人間に決めてほしいこと」に書く）。別セッションが方針を決め直さず、そのまま着手できる状態を目指す。
 
 **採る案**：このスライスがエンドツーエンドで何を届けるかを1文で書く。
 
@@ -158,7 +158,7 @@ gh api graphql -f query='mutation($parent:ID!,$childUrl:String!){addSubIssue(inp
 
 ## 人間に決めてほしいこと
 
-`issue:needs-human-decision` を付けたときだけ書く（`ai-fixable`・`ready-for-human` のときはセクションごと省く）。人間が Issue を開いた瞬間に「何を決めればよいか」が分かる状態を目指す。
+`needs-human-decision` を付けたときだけ書く（`ai-fixable`・`ready-for-human` のときはセクションごと省く）。人間が Issue を開いた瞬間に「何を決めればよいか」が分かる状態を目指す。
 
 **論点**：人間に何を決めてほしいのかを1文で書く。
 

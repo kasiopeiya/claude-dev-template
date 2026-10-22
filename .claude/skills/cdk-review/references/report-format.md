@@ -31,7 +31,7 @@
 
 - **判定**: <🚫 要修正 / ✅ 合格>
 - **Critical残数**: <手順7の計算による件数>
-- **Issue にして残す Critical**: <issue:needs-human-decision として起票した Issue 番号と概要。無ければ「なし」>
+- **Issue にして残す Critical**: <needs-human-decision として起票した Issue 番号と概要。無ければ「なし」>
 
 ---
 
