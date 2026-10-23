@@ -119,7 +119,7 @@ stateDiagram-v2
 
 スタブ追跡Issueは残っているスタブの一覧だけを持ち、本物に置き換える作業そのものは対応する機能Issueのタスクにする（同じ作業を2箇所で管理しないため）。
 
-**`needs-human-decision` を付ける。** `ai-fixable` は中身を見ずにAIが直せるという意味であり、仕様を詰めるところから始まる起点Issueは当たらない（[issue-label-status-policy](../policy/issue-label-status-policy.md) の「人間が決めるべき Issue の条件」のうち「着手前に仕様を詰める対話が要る」）。
+**`needs-human-decision` を付ける。** `ai-fixable` は中身を見ずにAIが直せるという意味であり、仕様を詰めるところから始まる起点Issueは当たらない（[issue-policy](../policy/issue-policy.md) の「人間が決めるべき Issue の条件」のうち「着手前に仕様を詰める対話が要る」）。
 
 作った起点Issueは、Issueの階層ガイドの「親の決め方」に従って上表のフェーズIssueにぶら下げ、以降は開発フローガイドに沿って**各Issue単位**で回す。
 
