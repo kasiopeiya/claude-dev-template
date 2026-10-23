@@ -1,7 +1,7 @@
 ---
 name: pr-body
 description: 今のブランチの PR のタイトルと本文を差し替え、何を・なぜ変えたかと、マージで Issue を閉じる `Closes` 行を書く。push した後に使う。「pr-body」「PR本文を書いて」と指示されたとき。
-argument-hint: '<Issue番号>'
+argument-hint: '<Issue番号> [<Issue番号>...]'
 ---
 
 # /pr-body
@@ -9,6 +9,8 @@ argument-hint: '<Issue番号>'
 Issue番号: $ARGUMENTS
 
 今のブランチの PR のタイトルと本文を差し替える。PR は push を受けて `pipeline.yml` が作り、本文はコミットメッセージから生成される。このスキルはその PR が現れるのを待って差し替える。**`gh pr create` は使わない**（`.claude/hooks/` が拒否する）。
+
+Issue 番号は空白区切りで複数渡せる。このブランチで片付けた Issue は全部渡す。GitHub も `scripts/close-issues.mjs`（自動マージで閉じ損ねた Issue を閉じるスクリプト）も、PR 本文の `Closes` しか読まない。本文に載らない Issue は、マージ後も open のまま残る。1件目をこの PR の主 Issue とする。
 
 引数が無ければ、何もせず Issue 番号が要ることを表示して終了する。
 
@@ -21,7 +23,7 @@ Issue番号: $ARGUMENTS
 デフォルトブランチ名は `gh` で GitHub から引く（`origin/HEAD` は clone した時点の値のまま残り、無いリポジトリもあるため使わない）。シェル変数は Bash ツールの呼び出しをまたいで残らないので、1回で実行する。
 
 ```bash
-gh issue view $ARGUMENTS --json title,body
+for n in $ARGUMENTS; do gh issue view "$n" --json number,title,body; done
 base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && git log --format='%s%n%n%b' "origin/$base..HEAD"
 ```
 
@@ -29,7 +31,7 @@ base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) && git 
 
 - 何を変えたか
 - なぜ変えたか（差分の機械的な要約ではなく、Issue の「この変更が必要な理由」を自分の言葉で）
-- 末尾に `Closes #$ARGUMENTS`（マージ時に Issue が閉じる）
+- 末尾に、渡した番号ごとに `Closes #<番号>` を1行ずつ
 
 「なぜ」は動機が読み取れる形で書く。
 
@@ -48,7 +50,7 @@ for i in $(seq 20); do gh pr view --json number,url && break; sleep 15; done
 
 ### 3. タイトルと本文を差し替える
 
-コミットが複数あると、`pipeline.yml` はブランチ名をタイトルにする。タイトルは、コミットが1件ならその件名にする。複数なら、変更全体を表す件名をコミットの件名と同じ形（`type: 説明 (#$ARGUMENTS)`）で書く。どれか1件の件名を流用すると、そのコミットの分だけを表すタイトルになる。
+コミットが複数あると、`pipeline.yml` はブランチ名をタイトルにする。タイトルは、コミットが1件ならその件名にする。複数なら、変更全体を表す件名をコミットの件名と同じ形（`type: 説明 (#<1件目の番号>)`）で書く。どれか1件の件名を流用すると、そのコミットの分だけを表すタイトルになる。
 
 ```bash
 gh pr edit --title "<タイトル>" --body-file <本文ファイル>
