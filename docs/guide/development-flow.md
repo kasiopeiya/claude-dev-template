@@ -61,7 +61,7 @@ AI の提案が違うと思ったら、「`/grill-me` で始めて」「直接�
 
 ## 1つのIssueは0〜12の順で回す
 
-0. **起点Issue起票（人間/AI）**：要望・課題の起点となるIssueをGitHub Issuesに起票する。その場で直接指示する小さな作業も、指示の内容を `/quick-issue` でIssueにしてから着手する。AI は着手の直前に `npm run move-issue-card -- <Issue番号>` でボードのカードを In progress へ動かす（CLAUDE.md「Issue 作業の共通ルール」が定める）
+0. **起点Issue起票（人間/AI）**：要望・課題の起点となるIssueをGitHub Issuesに起票する。その場で直接指示する小さな作業も、指示の内容を `/quick-issue` でIssueにしてから着手する。AI は着手の直前に `npm run close-issues` で自動マージの閉じ損ねを閉じ、`npm run move-issue-card -- <Issue番号>` でボードのカードを In progress へ動かす（CLAUDE.md「Issue 作業の共通ルール」が定める）
 1. **仕様の相談（人間＋AI）**：`/grill-me` — 対話で仕様・設計を詰める（始めるかどうかは「最初にどのパターンで始めるか」で決める）。最初に「どうなったら終わりか」を一文で合意し、その一文の外側は聞かず「やらないこと」として残す。`/grill-me --small` を付けると、合意する一文が最初に通す薄い一本道（曳光弾）に限定される
 2. **Plan作成＋チェック（人間＋AI）**：Planモードでの事前調査、または `/grill-me` の議論を `/to-plan` でPlanファイル化。`/to-plan` は、このリポジトリでまだ使っていない外部の技術要素が Plan に入るときだけ、`/check-plan` の前に `/premise-check`（外部の制約を一次資料で調べる）の実行を提案する。人間が「実行する」と答えると AI が `/premise-check` を実行し、見直す制約を選んだ後に `/check-plan` が走る。提案が無い・見送ったときは、続けて `/check-plan` を自動実行し、必須セクションの充足とコードベース・ドキュメントの影響範囲の網羅を早期にチェックする（シフトレフト）。`/check-plan` は単体でも実行できる。
    - 必須：「設計書への影響」セクション（更新不要なら「更新不要・理由：〇〇」と明記）
@@ -72,7 +72,7 @@ AI の提案が違うと思ったら、「`/grill-me` で始めて」「直接�
 6. **CDK実装（AI）**：`/cdk-dev <Issue番号>` — 実装→レビュー→静的解析/snapshotテスト/cdk synth までを自律実行（※CDKはTDD対象外）
 7. **コードレビュー（人間/AI）**：開発エディタ上で実装差分（アプリ・CDK）を確認
 8. **コミット（人間/AI）**：`/git-commit` でコミット
-9. **push・CI（人間/AI→CI自動）**：リモートブランチに push すると CI が検査を回し、PR を自動生成する。AI の範囲はトピックブランチの作成と push までで、`gh pr create` は使わない（hook が拒否する）。AI が push したときは、続けて `/pr-body <Issue番号>` で PR のタイトルと本文を差し替える。人間が push したときは、マージで Issue を閉じたいときなど本文が要るときだけでよい。dev への cdk deploy と結合テストは main へマージした後に自動実行される
+9. **push・CI（人間/AI→CI自動）**：リモートブランチに push すると CI が検査を回し、PR を自動生成する。AI の範囲はトピックブランチの作成と push までで、`gh pr create` は使わない（hook が拒否する）。AI が push したときは、続けて `/pr-body <Issue番号>` で PR のタイトルと本文を差し替える。Issue はマージで閉じ、AI は push の後に閉じない。人間が push したときは、マージで Issue を閉じたいときなど本文が要るときだけでよい。dev への cdk deploy と結合テストは main へマージした後に自動実行される
 10. **Pull Requestのチェック（AI）**：`/pr-label` で変更種別と人間レビュー要否のラベルを付け、`/pr-check` でレビューを受け付けてよい前提条件（サイズ）を満たすか判定する（結果を PR にコメント）
 11. **Pull Requestのレビュー（人間）**：10 でレビューが必要と判定された場合のみ、PR の実装差分を確認する
 12. **PRR（AI＋人間）**：`/sre-prr [対象]` で本番投入レディネスを SRE 観点で審査し、**go / 条件付きgo / no-go** を助言する。実行は任意（本番リリース直前など条件による）
@@ -106,7 +106,7 @@ Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積�
 2. **起動する（人間）**：`npm run auto-programmer` を打つ。1件終えると次の1件へ進み、着手できる Issue が無い状態が一定の回数続くと止まる。AI のセッションからは起動できない
 3. **実装して push する（AI）**：スクリプトが AI 専用 clone にブランチを切る。`issue:checked` の無い Issue は、先に `/issue-check` で監査する。見込み 400 行以上で割れる Issue は、ここで `/issue-split` が sub-issue に割る。それ以外は `/auto-dev <Issue番号>` を起動する。`/auto-dev` は Issue の「実装フロー（使用するSkill）」に並ぶ Skill で実装し、検証・コミット・push と、`/pr-body` による PR 本文の差し替えまで確認なしで進める。リポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は、PR を作らずに `/auto-dev` が閉じる
 4. **CI が通るまで直す（AI）**：スクリプトが push 後の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。CI の結果が出てから次の1件へ進む
-5. **PR 以降は 10〜11 と同じ**：PR が Issue に紐づくとカードは In Review へ動くので、その列の PR をレビューする。自動マージされた PR の Issue は、スクリプトが次の Issue を選ぶ前に閉じる。スクリプトを止めているときは `npm run close-issues` を打って閉じる
+5. **PR 以降は 10〜11 と同じ**：PR が Issue に紐づくとカードは In Review へ動くので、その列の PR をレビューする。自動マージされた PR の Issue は、スクリプトが次の Issue を選ぶ前に閉じる。スクリプトを止めているときも、対話の作業で AI が着手の直前に打つ `npm run close-issues` が閉じる
 
 無人実行が途中で止まった Issue には、`needs-human-check` が付く。止まった Issue は次のように扱う。
 
