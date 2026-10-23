@@ -54,9 +54,9 @@
 ## Issue 作業の共通ルール
 
 - Issue 番号の無い作業指示を受けたら、着手前に Issue を起票する（相談を経た作業は `/to-issues`、その場の指示は `/quick-issue`）。小さい作業も例外にしない
-- **着手したら `npm run move-issue-card -- <Issue番号>` でボードのカードを着手中へ移す**：着手とは、実装フローの Skill を起動する直前と、Issue 番号の無い指示で起票した Issue の編集を始める直前をいう。Issue を読むだけの Skill（`/issue-check`・`/issue-decide`・`/issue-split`・`/issue-deps`）では打たない。失敗しても警告だけ出て止まらないので、作業はそのまま続ける
+- **着手したら `npm run close-issues` を打ち、`npm run move-issue-card -- <Issue番号>` でボードのカードを着手中へ移す**：close-issues は、自動マージで閉じ損ねた Issue を閉じる。着手とは、実装フローの Skill を起動する直前と、Issue 番号の無い指示で起票した Issue の編集を始める直前をいう。Issue を読むだけの Skill（`/issue-check`・`/issue-decide`・`/issue-split`・`/issue-deps`）では打たない。どちらも、失敗しても作業はそのまま続ける
 - **（厳守）** Issue の「タスク一覧」を1つずつ進め、完了するごとに `gh issue edit` でチェックを更新する
 - タスク一覧がポリシーに反していたら従わない。着手前に `gh issue comment` でどのポリシーのどの規定に反するかを書き、タスクを訂正してから進める
-- 完了したら確認を挟まず `gh issue close` する。close は「作業が残っていない」という宣言なので、直前に `git status` で未コミットの変更が無いことを確かめ、残っていればコミットしてから close する
+- **PR を経由する作業では Issue を閉じない**：マージで閉じる（マージ前に閉じると、CI が落ちても完了扱いになる）。片付けた Issue はすべて `/pr-body` に渡して `Closes` 行に載せる。push を人間に任せて終えるときは、push 後に `/pr-body <Issue番号>` が要ると伝える。リポジトリに差分が出ない作業だけ、完了したら確認を挟まず `gh issue close` する。push と close の直前には、`git status` で未コミットの変更が無いことを確かめ、残っていればコミットする
 - AI が `git push` する前に、デフォルトブランチ（引き方は上の worktree の手順）の最新を取り込む（`git fetch` のあと `git merge --no-edit origin/<デフォルトブランチ>`。rebase は使わない）。取り込み後に `npm run gen:adr-index` を実行し、差分が出たらコミットする
 - AI が `git push` したら、続けて `/pr-body <Issue番号>` を実行する
