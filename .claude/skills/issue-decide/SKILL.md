@@ -1,6 +1,6 @@
 ---
 name: issue-decide
-description: needs-human-decision が付いた Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable か ready-for-human に変換する。boy-scout の有無を問わない。人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
+description: needs-human-decision が付いた Issue の論点を1件ずつ人間に示し、決まった方針を本文へ書き戻して ai-fixable か ready-for-human に変換する。broken-window の有無を問わない。人間が打つ。「issue-decide」「人間判断待ちのissueを片付けて」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 disable-model-invocation: true
 allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
@@ -10,7 +10,7 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 `needs-human-decision` が付いた open Issue を古い順に1件ずつ取り上げ、論点を人間に示して方針を決め、決まった方針を本文へ書き戻して `ai-fixable` か `ready-for-human` に変換する。人間が対話しながら打つ。
 
-Issue を起票・監査する Skill は、[人間が決めるべき条件](../../../docs/policy/issue-label-status-policy.md)に当たる Issue に `needs-human-decision` を貼る。`boy-scout` とは直交するラベルで、`boy-scout` を付けない正式フロー（`/to-issues` など）の Issue にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、Auto Programmer は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
+Issue を起票・監査する Skill は、[人間が決めるべき条件](../../../docs/policy/issue-label-status-policy.md)に当たる Issue に `needs-human-decision` を貼る。`broken-window` とは直交するラベルで、`broken-window` が付かない Issue（人間が依頼した要望や `/to-issues` 産）にも付く。だがこのラベルが付いた Issue を前へ進める担当がいない——`/issue-check` は方針がポリシーに合うかを監査し、Auto Programmer は `ai-fixable` を実装する。どちらも人間判断待ちの Issue を素通りする。**本スキルがその担当である。**
 
 ```mermaid
 stateDiagram-v2

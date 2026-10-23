@@ -19,14 +19,13 @@ set -euo pipefail
 # 「名前|色(# なし)|説明」。色と説明は、テンプレートのリポジトリの現行値に合わせる。
 readonly LABELS=(
   # Issue: /quick-issue・/issue-check・/auto-dev・Auto-Programmer などが付ける
-  'boy-scout|C2E0C6|正式フローを経ずアドホックに起票した課題。後でまとめて棚卸しする'
+  'broken-window|C2E0C6|AI が作業中に見つけ、その場で直さずに起票した問題'
   'ai-fixable|0E8A16|問題と対応方針が一意に定まり、AIが単独で対応できるIssue'
   'needs-human-decision|0052cc|中身を見ずには直せない。人間が1件ずつ方針を決める対象を選ぶ印'
   'ready-for-human|FBCA04|方針は決まっているが、残る作業を AI が実行する手段を持たない Issue'
   'issue:decided|1D76DB|人間が方針を決めた Issue。決めた条件を理由に人間判断へ戻さない'
   'harness|BFDADC|ハーネス（Policy・Rule・Skill・SubAgent・hooks）を変えるIssue'
   'issue:checked|BFD4F2|/issue-check が一度監査した Issue。いま妥当である保証ではない'
-  'issue:needs-clean-session|5319E7|着手後に離脱条件を観測したIssue。専用セッションで1件だけ対応する'
   'needs-human-check|F9D0C4|無人実行が問題で止まったIssue。人間が確かめたら外す'
   'phase|0E4B99|Issue階層の最上位。開発フローのフェーズを表す常設Issue'
   'requirement|1D76DB|要件定義書のレビュー指摘に起因するIssue'

@@ -42,11 +42,10 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 
 ラベルの意味と付ける条件は [issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md) が定める。**起票の前にこのポリシーを Read する。**
 
-- `boy-scout`：無条件で付ける
+- `broken-window`：AI が作業中に見つけ、その場で直さずに起票した問題にだけ付ける。条件はポリシーの「Issue に付けるラベル」表に従う
 - `ai-fixable` / `needs-human-decision` / `ready-for-human`：**必ずどれか1つだけ**を付ける。判定はポリシーの「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う
 - `issue:decided`：`ai-fixable` か `ready-for-human` にだけ重ねる。条件はポリシーの「人間が方針を決めたら `issue:decided` を付ける」に従う
 - `harness`：ポリシーの「`harness` を付ける条件」に当たるときに重ねる。3択のどれを付けたかとは別に決める
-- `issue:needs-clean-session`：起票時には付けない
 
 ### 人間の作業を別 Issue に切り出す
 
@@ -233,6 +232,7 @@ AI の作業と、ポリシーの「人間しかできない作業の条件」�
 - [ ] 該当するポリシー・rules を `docs/policy-hub.md` と `.claude/rules/` から探した
 - [ ] 見つかったポリシー・rules と「タスク一覧」「完了条件」を照合し、反する作業を指示していない（反していたらタスク側を直した）
 - [ ] `ai-fixable` / `needs-human-decision` / `ready-for-human` のどれか1つだけを決めた
+- [ ] ポリシーの「Issue に付けるラベル」表で `broken-window` を付けるかを決めた（当たれば `broken-window` を付けた）
 - [ ] ポリシーの「`harness` を付ける条件」に当たるかを決めた（当たれば `harness` を付けた）
 - [ ] AI の作業と、ポリシーの「人間しかできない作業の条件」に当たる作業が1件に混ざっていない（混ざっていたら「人間の作業を別 Issue に切り出す」に従って2件に分けた）
 - [ ] `ready-for-human` を付けたなら、残るタスクがすべてポリシーの「人間しかできない作業の条件」のどれに当たるかを言えて、人間がするタスクの頭に「（人間）」と書いた
@@ -250,7 +250,7 @@ AI の作業と、ポリシーの「人間しかできない作業の条件」�
 gh issue create \
   --title "<タイトル>" \
   --assignee @me \
-  --label boy-scout,<ai-fixable|needs-human-decision|ready-for-human>[,issue:decided][,harness] \
+  --label <ai-fixable|needs-human-decision|ready-for-human>[,broken-window][,issue:decided][,harness] \
   --body "$(cat <<'EOF'
 （テンプレートの全セクションを埋めた本文）
 EOF
