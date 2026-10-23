@@ -14,16 +14,15 @@
 | 2   | 閉じ損ねた Issue を閉じ、Ready・`ai-fixable`・自分が担当者の open Issue から着手できる1件を選ぶ                                                                                                                                         | このツール                                |
 | 3   | 未コミットの変更を stash へ退避して clone をデフォルトブランチの最新へ戻し、トピックブランチを作り、依存を揃える                                                                                                                        | このツール                                |
 | 4   | 選んだ Issue のカードを「In progress」へ動かす                                                                                                                                                                                          | このツール                                |
-| 5   | Issue が open な sub-issue を持てば、子を Ready に載せて 14 へ飛ぶ。持たず `issue:checked` も無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する                                                                       | このツール・`.claude/skills/issue-check/` |
+| 5   | Issue が open な sub-issue を持てば、子を Ready に載せて 13 へ飛ぶ。持たず `issue:checked` も無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する                                                                       | このツール・`.claude/skills/issue-check/` |
 | 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す。1つの PR に収まらず割れる Issue は、`/issue-split` で sub-issue に割る。初回の検査で、本文に新しい技術要素があれば、外部依存の制約も調べる | `/issue-check`                            |
-| 7   | 6 で open な sub-issue ができていれば、子を Ready に載せる。続けて Issue のラベルと state を読み、子を載せたか止める理由があれば 14 へ飛ぶ                                                                                              | このツール                                |
+| 7   | 6 で open な sub-issue ができていれば、子を Ready に載せる。続けて Issue のラベルと state を読み、子を載せたか止める理由があれば 13 へ飛ぶ                                                                                              | このツール                                |
 | 8   | Issue から前回の `needs-human-check` を外し、clone の中で `claude -p "/auto-dev <番号>"` を起動する                                                                                                                                     | `.claude/skills/auto-dev/`                |
 | 9   | 実装・検証・コミット・push・PR 本文の差し替え                                                                                                                                                                                           | `/auto-dev`                               |
 | 10  | push した commit の CI（`ci.workflowFile`）が終わるまで待つ                                                                                                                                                                             | このツール                                |
 | 11  | CI が落ちていれば、clone の中で `claude -p "/auto-fix-ci <番号> <run ID>"` を起動し、10 へ戻る                                                                                                                                          | `.claude/skills/auto-fix-ci/`             |
 | 12  | 落ちた原因を直し、コミット・push する                                                                                                                                                                                                   | `/auto-fix-ci`                            |
-| 13  | CI が通っていれば、カードを「In Review」へ動かす                                                                                                                                                                                        | このツール                                |
-| 14  | 予定した終わり方以外で終えていれば Issue に `needs-human-check` を付け、PR の URL・終了コード・CI の結果を記録ファイルへ1行追記する                                                                                                     | このツール                                |
+| 13  | 予定した終わり方以外で終えていれば Issue に `needs-human-check` を付け、PR の URL・終了コード・CI の結果を記録ファイルへ1行追記する                                                                                                     | このツール                                |
 
 2 で「自分」とは、`gh` にログインしているアカウントを指す。複数人が同時に動かしても、担当者が1人なら同じ Issue を拾う台は1台だけになる。担当者の無い Issue は誰にも拾われないので、カードを Ready へ動かすときに実行する人を担当者にする。1つのアカウントで2台を動かすと、今までどおり同じ Issue を取り合う。
 
@@ -52,7 +51,7 @@
 - `ai-fixable` が外れた
 - close された
 
-11 で直させるのは `ci.maxFixAttempts` 回までで、使い切っても落ちていれば Issue にコメントを残し、14 で `needs-human-check` を付けて次へ進む。キャンセルされた run・`ci.runWaitLimitMinutes` 分待っても終わらない run は、差分を直しても通らないので直させない。9 で `/auto-dev` が離脱したときは 10 へ進まない。
+11 で直させるのは `ci.maxFixAttempts` 回までで、使い切っても落ちていれば Issue にコメントを残し、13 で `needs-human-check` を付けて次へ進む。キャンセルされた run・`ci.runWaitLimitMinutes` 分待っても終わらない run は、差分を直しても通らないので直させない。9 で `/auto-dev` が離脱したときは 10 へ進まない。
 
 AI が触るのは **AI 専用 clone の中だけ**で、人間の作業ツリーには一切触れない。実行をローカルにしているのは、hook・Policy・SubAgent を含むこのリポジトリのハーネスがそのまま動き、実行時間の上限も無いためである。Projects の読み書きも、ローカルの `gh auth` をそのまま使えるため追加の認証情報を要しない。
 
@@ -80,13 +79,16 @@ AI が触るのは **AI 専用 clone の中だけ**で、人間の作業ツリ�
 
 ## 使う前に済ませておくこと
 
-GitHub CLI のログインと Claude Code の導入は、人の操作が要るので自動化できない。
+GitHub CLI のログインと Claude Code の導入は、人の操作が要るので自動化できない。ボードを読み書きするトークンには `project` スコープが要るので、ログインの後に足す。
 
 ```bash
 gh auth login
+gh auth refresh -s project
 ```
 
 対象リポジトリに Issue 用のラベルが無ければ、`./scripts/setup-labels.sh` で作る。
+
+ボードの Workflows 画面で、組み込みワークフロー「Pull request linked to issue」の移し先を `In Review` にする（既定は `In progress`）。PR が Issue に紐づいた時点でカードがレビュー待ちへ動くのは、この設定によるもので、このツールは動かさない。公開 API に組み込みワークフローの設定を変える手段が無いため、画面で1回やる。
 
 これ以外の準備（clone・依存のインストール）は自動で行う。初回の実行だけ、そのぶん時間がかかる。
 
@@ -108,7 +110,6 @@ npm run auto-programmer
 | `board.todoStatusName`        | 積まれただけで、まだ着手待ちにしていないことを表す選択肢の表記                            | 同上                                                                                          |
 | `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                                                        | 同上                                                                                          |
 | `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                                              | 同上                                                                                          |
-| `board.inReviewStatusName`    | 「CI が通り、レビューしてよい」を表す選択肢の表記                                         | 同上                                                                                          |
 | `targetIssueLabel`            | 対象にする Issue のラベル                                                                 | `gh label list`                                                                               |
 | `branchPrefix`                | トピックブランチ名の前に付ける接頭辞（`'st2'` なら `st2/feat/issue-123`。空なら付けない） | ライン（`main`・`main2` など）ごとに CI を分けているときだけ設定する。前提は表の下に書く      |
 | `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数                                 | 長いほうの実装に掛かる時間の上限として決める                                                  |
@@ -120,6 +121,8 @@ npm run auto-programmer
 | `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                      | 使い切っても落ちていれば人間へ回す                                                            |
 
 フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。各 Status が何を意味するかは [issue-label-status-policy](../../docs/policy/issue-label-status-policy.md)「ボードの Status の意味」が定める。
+
+この設定は `scripts/move-issue-card.mjs`（`npm run move-issue-card -- <Issue番号>`）も共有する。AI が着手の直前に打ってカードを着手中へ動かすスクリプトで、ボードの設定を2か所に持たないためである。`repository` が今いるリポジトリと違えばボード未設定とみなし、警告だけ出して終了コード 0 で終わる。
 
 トピックブランチを切る元も設定に持たせない。GitHub に設定されたデフォルトブランチを、このツールと `/auto-dev`・`/auto-fix-ci`・`/pr-body` がその場で引く。PR の作成先は `pipeline.yml` がデフォルトブランチに決めるので、設定で別の値を持てると、切る元と PR の作成先が食い違うためである。
 
@@ -183,8 +186,8 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 
 直すのは次のものだけ。
 
-- **`config.mjs`**：上の表の値をその環境のものへ書き換える。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい
-- **`package.json`**：`auto-programmer` と `test:scripts` のスクリプトを写す
+- **`config.mjs`**：上の表の値をその環境のものへ書き換える。書き換えないと `npm run move-issue-card` はボード未設定とみなして何もしない。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい
+- **`package.json`**：`auto-programmer`・`move-issue-card`・`test:scripts` のスクリプトを写す
 - **`ci.workflowFile` のワークフロー**：`branchPrefix` を設定したときだけ、push トリガー（`on.push.branches`）に同じ接頭辞を足す（例：`'st2/**'`）。足さないと CI が走らず、PR も作られない。接頭辞は既存のブランチ（`main2` など）と同じ名前にできない（git がその下にブランチを作れないので、起動時に止まる）
 - **`.claude/skills/auto-dev/`・`.claude/skills/auto-fix-ci/`・`.claude/skills/issue-check/`**：そのリポジトリの `.claude/skills/` へ写す（`/auto-dev`・`/auto-fix-ci` が無いと手順が無い。`/issue-check` は `.claude/agents/issue-auditor-agent/` と、割るときに使う `.claude/skills/issue-split/` も要る。`/issue-split` は正典として `.claude/skills/to-issues/`・`.claude/skills/quick-issue/` を参照するので、これも写す。初回の検査で外部依存の制約を調べるために `.claude/agents/premise-checker-agent/` も要る。これは一次資料の定義を `.claude/skills/origin-search/` から読むので、これも写す。`issue-auditor-agent` は過去の決定を引く手順を `.claude/skills/past-decision-search/` から読むので、これも写す）
 
@@ -219,4 +222,3 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 | 「#… の処理が落ちました: …」                                                                       | 着手中へ動かした後の処理で例外が出た。カードは In progress に残る                                                                                                                              | 続く1行の理由を読む。足りなければ記録の `errorStack` を読む                                                                                                                    |
 | 途中まで実装したはずの変更が clone から消えた                                                      | セッションが commit より前に落ち、次の巡回が clone をデフォルトブランチへ戻す前に未コミットの変更を stash へ退避した                                                                           | clone の中で `git stash list` を開き、`auto-programmer: <ブランチ名> の未コミット変更` を探して、そのトピックブランチの上で `git stash apply stash@{<番号>}` する              |
 | 「CI: CI の run が … 分以内に終わりませんでした」「CI: CI の run が … で終わったので直させません」 | CI が詰まっているか、run がキャンセルされた。直させずに次へ進んだ。カードは In progress に残る                                                                                                 | 記録の `ciRuns` の URL で run を見て、再実行するか、専用のセッションでその Issue に着手する                                                                                    |
-| 「CI: CI が通りました。カードを In Review へ動かせませんでした: …」                                | PR はでき CI も通ったが、ボードの表記が `config.mjs` と食い違っているか `gh` が失敗した。カードは In progress に残る                                                                           | 理由を読んで直し、カードを手で In Review へ動かす                                                                                                                              |

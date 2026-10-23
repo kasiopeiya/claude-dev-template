@@ -4,6 +4,7 @@ hook:
     [
       'scripts/setup-labels.sh',
       'scripts/auto-programmer/**/*.mjs',
+      'scripts/move-issue-card.mjs',
       'scripts/auto-programmer/README.md',
       'scripts/doc-consistency-weekly-issue.mjs',
       'scripts/code-policy-weekly-issue.mjs',
@@ -192,13 +193,15 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 ## ボードの Status の意味
 
-| Status        | 意味                                                         |
-| ------------- | ------------------------------------------------------------ |
-| `Todo`        | ボードに積まれただけで、まだ着手待ちにしていない             |
-| `Ready`       | 着手してよい。Auto-Programmer はこの Status のカードから拾う |
-| `In progress` | 着手中                                                       |
-| `In Review`   | CI が通り、人間がレビューしてよい                            |
-| `Done`        | 完了した                                                     |
+| Status        | 意味                                                         | 誰が動かすか                                                    |
+| ------------- | ------------------------------------------------------------ | --------------------------------------------------------------- |
+| `Todo`        | ボードに積まれただけで、まだ着手待ちにしていない             | 組み込みワークフロー「Item added to project」                   |
+| `Ready`       | 着手してよい。Auto-Programmer はこの Status のカードから拾う | 人間。親から子へ引き継ぐときは Auto-Programmer                  |
+| `In progress` | AI か人間が着手した                                          | Auto-Programmer と、AI が着手時に打つ `npm run move-issue-card` |
+| `In Review`   | PR が出た（Issue に紐づいた）                                | 組み込みワークフロー「Pull request linked to issue」            |
+| `Done`        | 完了した                                                     | 組み込みワークフロー「Item closed」                             |
+
+`In Review` の意味は「CI が通った」ではない。CI の結果でカードを動かす手は2つしかなく、どちらも割に合わないためである（#995）。1つは GitHub Actions に classic の個人アクセストークンを持たせる手、もう1つは AI が CI の終わりまでセッションを続ける手である。CI が通らなかった Issue は、列ではなく `needs-human-check` で引く（#1000）。
 
 ## 適用範囲
 

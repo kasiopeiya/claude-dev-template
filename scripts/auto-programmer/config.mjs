@@ -30,9 +30,8 @@ export const config = {
     // 積まれただけで、まだ着手待ちにしていないことを表す選択肢
     todoStatusName: 'Todo',
     readyStatusName: 'Ready',
-    inProgressStatusName: 'In progress',
-    // CI が通り、人間がレビューしてよくなった Issue のカードを動かす先
-    inReviewStatusName: 'In Review'
+    inProgressStatusName: 'In progress'
+    // レビュー待ちの選択肢は持たない。カードをそこへ動かすのはボードの組み込みワークフローで、このツールは触らない
   },
 
   // このラベルが付いた Issue だけを対象にする
