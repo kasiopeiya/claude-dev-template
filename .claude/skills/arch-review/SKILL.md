@@ -87,7 +87,7 @@ git ls-files --others --exclude-standard
 | [Critical]     | 1件ごとに1 Issue    | `[Critical] アーキテクチャ: <問題の概要>`         | 差し替え時に広く壊れる急所は、境界の引き直しごとに着手・クローズされる。束ねると一部だけ直った状態が残る |
 | High ＋ Medium | 全件まとめて1 Issue | `[High・Medium] アーキテクチャレビュー指摘まとめ` | 1件ずつ判断するほど重くない。件数分に割ると Critical の Issue が埋もれる                                 |
 
-タイトルの先頭ラベルは省略しないでください——本文を開かないと指摘の重さが分からない状態を避けるためです。タイトルの先頭には段番号を付けてください（例：`1. [Critical] …`）。振り方は Issueの階層ガイド（`docs/reference/issue-hierarchy.md`）の「段番号（着手順）」に従います。
+タイトルの先頭ラベルは省略しないでください——本文を開かないと指摘の重さが分からない状態を避けるためです。タイトルの先頭には段番号を付けてください（例：`1. [Critical] …`）。振り方は [`/quick-issue`](../quick-issue/SKILL.md) の「段番号の振り方」に従います。
 
 本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。
 

@@ -170,4 +170,4 @@
 
 ### [issue-policy.md](policy/issue-policy.md)
 
-**参照タイミング**: Issue を起票する前・Issue のラベルを付け替える前・ボードの Status を動かす前
+**参照タイミング**: Issue を起票する前・Issue のラベルを付け替える前・ボードの Status を動かす前・Issue の親を決める前
