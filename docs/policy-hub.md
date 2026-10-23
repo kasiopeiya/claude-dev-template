@@ -168,6 +168,6 @@
 
 ---
 
-### [issue-label-status-policy.md](policy/issue-label-status-policy.md)
+### [issue-policy.md](policy/issue-policy.md)
 
 **参照タイミング**: Issue を起票する前・Issue のラベルを付け替える前・ボードの Status を動かす前

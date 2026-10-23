@@ -40,7 +40,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 
 ## 付与するラベル
 
-ラベルの意味と付ける条件は [issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md) が定める。**起票の前にこのポリシーを Read する。**
+ラベルの意味と付ける条件は [issue-policy](../../../docs/policy/issue-policy.md) が定める。**起票の前にこのポリシーを Read する。**
 
 - `broken-window`：AI が作業中に見つけ、その場で直さずに起票した問題にだけ付ける。条件はポリシーの「Issue に付けるラベル」表に従う
 - `ai-fixable` / `needs-human-decision` / `ready-for-human`：**必ずどれか1つだけ**を付ける。判定はポリシーの「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う
