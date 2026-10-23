@@ -32,7 +32,7 @@ describe('ブランチ名の種類', () => {
   test('種類ラベル以外のラベルは種類に影響しない', () => {
     const sut = buildBranchNameFor
 
-    const branchName = sut(['ai-fixable', 'boy-scout', 'docs'])
+    const branchName = sut(['ai-fixable', 'broken-window', 'docs'])
 
     assert.equal(branchName, 'docs/issue-1')
   })

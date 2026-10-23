@@ -77,7 +77,7 @@ Plan を**曳光弾**の Issue に分ける。各 Issue は、すべての統合
 
 Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転記する**（そのスライスが実際に触れる種別の Skill だけに絞る）。これは「issue NNN 対応して」だけで開発フローを自動追従させるための情報なので、issue 化で**落とさない**こと。Plan に同セクションが無ければ、変更種別から CLAUDE.md「開発フロー」の一覧で補って記載する。
 
-各 Issue には `ai-fixable` / `needs-human-decision` / `ready-for-human` のどれか1つだけを必ず付ける（`boy-scout` は付けない。正式フローを経ずに見つけた課題を後で棚卸しするためのラベルであり、`/to-issues` 産の Issue には当たらない）。どれを付けるかの判定は issue-label-status-policy の「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う。`ready-for-human` の Issue では、人間がするタスクの頭に「（人間）」と書く。
+各 Issue には `ai-fixable` / `needs-human-decision` / `ready-for-human` のどれか1つだけを必ず付ける（`broken-window` は付けない。AI が作業中に見つけ、その場で直さずに起票した問題に付けるラベルであり、`/to-issues` 産の Issue には当たらない）。どれを付けるかの判定は issue-label-status-policy の「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う。`ready-for-human` の Issue では、人間がするタスクの頭に「（人間）」と書く。
 
 同ポリシーの「`harness` を付ける条件」に当たる Issue には、`harness` も重ねる。
 

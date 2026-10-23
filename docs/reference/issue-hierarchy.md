@@ -31,7 +31,7 @@ Issue は GitHub のネイティブ sub-issue で階層にする。sub-issue の
 - **設計・実装**：開発系のタスク全般。単体テストも含む
 - **結合テスト**：結合テスト・E2Eテスト。テストケース作成とテスト用の環境整備も含む
 
-フェーズIssueは close しない。`boy-scout`・`ai-fixable`・`needs-human-decision` は付けない（[issue-label-status-policy](../policy/issue-label-status-policy.md)「3択の例外は、専用のラベルで扱いが決まっている Issue に限る」）。まだ無いリポジトリでは、起票を始める前に上のフェーズをすべて作る。
+フェーズIssueは close しない。`broken-window`・`ai-fixable`・`needs-human-decision` は付けない（[issue-label-status-policy](../policy/issue-label-status-policy.md)「3択の例外は、専用のラベルで扱いが決まっている Issue に限る」）。まだ無いリポジトリでは、起票を始める前に上のフェーズをすべて作る。
 
 ```bash
 gh label create phase --description "Issue階層の最上位。開発フローのフェーズを表す常設Issue" --color "0E4B99"
@@ -54,7 +54,7 @@ gh issue create --title "<フェーズ名>" --label phase --body "<上に挙げ�
 
 判定を**触るパス**で書くのは、書いてあるか書いていないかで決まり、重要度の評価を挟まないからである。「関係がありそう」で選ばせると、AIの判定は必ず甘くなる。
 
-いちばん多いのは最終行である。ハーネス・ポリシー・設計書の手直しは開発フローのどのフェーズの作業でもないので、親を付けずに起票し、`boy-scout` ラベルで一覧する。
+いちばん多いのは最終行である。ハーネス・ポリシー・設計書の手直しは開発フローのどのフェーズの作業でもないので、親を付けずに起票する。一覧するときは、ハーネスの手直しを `harness` で、AI が見つけた問題を `broken-window` で引く。人間が依頼した設計書・ガイドの手直しはどちらにも入らないが、依頼した人間が把握しており、ボードには全 Issue が自動で載る。
 
 ## 段番号（着手順）
 

@@ -80,7 +80,7 @@ git ls-files --others --exclude-standard
 
 ## レビュー結果の起票
 
-統合後のレポートを出力したら、続けて `gh issue create` で GitHub Issue を起票してください。**ユーザーへの確認は行いません**（CLAUDE.md の boy-scout ルール）。指摘が1件も無ければ起票しません。Phase 3 手順4で `needs-human-decision` として既に起票した指摘は、ここで重ねて起票しない。
+統合後のレポートを出力したら、続けて `gh issue create` で GitHub Issue を起票してください。**ユーザーへの確認は行いません**（CLAUDE.md の broken-window ルール）。指摘が1件も無ければ起票しません。Phase 3 手順4で `needs-human-decision` として既に起票した指摘は、ここで重ねて起票しない。
 
 | 起票対象       | 粒度                | タイトル                                          | なぜ                                                                                                     |
 | -------------- | ------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
@@ -89,7 +89,7 @@ git ls-files --others --exclude-standard
 
 タイトルの先頭ラベルは省略しないでください——本文を開かないと指摘の重さが分からない状態を避けるためです。タイトルの先頭には段番号を付けてください（例：`1. [Critical] …`）。振り方は Issueの階層ガイド（`docs/reference/issue-hierarchy.md`）の「段番号（着手順）」に従います。
 
-本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-label-status-policy.md` が正典です。Read して従ってください。
+本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-label-status-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。
 
 Issue 本文の「現状」には、レビュー結果の**箇所・理由・改善案**を書き写してください（レビュー結果を読み返さずに着手できるように）。
 
