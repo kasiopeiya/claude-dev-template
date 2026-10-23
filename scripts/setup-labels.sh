@@ -7,7 +7,7 @@
 #   何度流しても同じ結果になる。
 #
 #   ラベルを足す・変えるときは、下の LABELS を直す（定義はここ1か所）。ラベルの意味と付ける条件は
-#   docs/policy/issue-label-status-policy.md が正で、LABELS の説明はその要約である。Skill と workflow が
+#   docs/policy/issue-policy.md が正で、LABELS の説明はその要約である。Skill と workflow が
 #   失敗時や実行時に個別に作る処理（`/quick-issue` など）は、このスクリプトを流していない
 #   利用先への保険として残してある。
 #

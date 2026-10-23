@@ -120,7 +120,7 @@ npm run auto-programmer
 | `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                                                   | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
 | `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                      | 使い切っても落ちていれば人間へ回す                                                            |
 
-フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。各 Status が何を意味するかは [issue-label-status-policy](../../docs/policy/issue-label-status-policy.md)「ボードの Status の意味」が定める。
+フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。各 Status が何を意味するかは [issue-policy](../../docs/policy/issue-policy.md)「ボードの Status の意味」が定める。
 
 この設定は `scripts/move-issue-card.mjs`（`npm run move-issue-card -- <Issue番号>`）も共有する。AI が着手の直前に打ってカードを着手中へ動かすスクリプトで、ボードの設定を2か所に持たないためである。`repository` が今いるリポジトリと違えばボード未設定とみなし、警告だけ出して終了コード 0 で終わる。
 
@@ -195,7 +195,7 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 
 ## 止まったとき
 
-予定した終わり方以外で終えた Issue には、`needs-human-check` が付く（どれを予定とするかは issue-label-status-policy が定め、`needsHumanCheck.mjs` が判定する）。止まった Issue は `gh issue list --label needs-human-check` で引ける。下の表で直したら、ラベルを外す。付けられなかったときは、記録の `needsHumanCheckLabelError` に理由が残る。
+予定した終わり方以外で終えた Issue には、`needs-human-check` が付く（どれを予定とするかは issue-policy が定め、`needsHumanCheck.mjs` が判定する）。止まった Issue は `gh issue list --label needs-human-check` で引ける。下の表で直したら、ラベルを外す。付けられなかったときは、記録の `needsHumanCheckLabelError` に理由が残る。
 
 | 症状                                                                                               | 意味                                                                                                                                                                                           | 直し方                                                                                                                                                                         |
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
