@@ -187,7 +187,7 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 直すのは次のものだけ。
 
 - **`config.mjs`**：上の表の値をその環境のものへ書き換える。書き換えないと `npm run move-issue-card` はボード未設定とみなして何もしない。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい
-- **`package.json`**：`auto-programmer`・`move-issue-card`・`test:scripts` のスクリプトを写す
+- **`package.json`**：`auto-programmer`・`move-issue-card`・`close-issues`・`test:scripts` のスクリプトを写す
 - **`ci.workflowFile` のワークフロー**：`branchPrefix` を設定したときだけ、push トリガー（`on.push.branches`）に同じ接頭辞を足す（例：`'st2/**'`）。足さないと CI が走らず、PR も作られない。接頭辞は既存のブランチ（`main2` など）と同じ名前にできない（git がその下にブランチを作れないので、起動時に止まる）
 - **`.claude/skills/auto-dev/`・`.claude/skills/auto-fix-ci/`・`.claude/skills/issue-check/`**：そのリポジトリの `.claude/skills/` へ写す（`/auto-dev`・`/auto-fix-ci` が無いと手順が無い。`/issue-check` は `.claude/agents/issue-auditor-agent/` と、割るときに使う `.claude/skills/issue-split/` も要る。`/issue-split` は正典として `.claude/skills/to-issues/`・`.claude/skills/quick-issue/` を参照するので、これも写す。初回の検査で外部依存の制約を調べるために `.claude/agents/premise-checker-agent/` も要る。これは一次資料の定義を `.claude/skills/origin-search/` から読むので、これも写す。`issue-auditor-agent` は過去の決定を引く手順を `.claude/skills/past-decision-search/` から読むので、これも写す）
 
