@@ -45,7 +45,7 @@ PRR はコード・ドキュメント・CI/GitHub 状態を**静的に**読み�
 
 タイトルの先頭ラベルは省略しないでください——本文を開かないと指摘の重さが分からない状態を避けるためです。タイトルの先頭には段番号を付けてください（例：`1. [fail] …`）。振り方は Issueの階層ガイド（`docs/reference/issue-hierarchy.md`）の「段番号（着手順）」に従います。
 
-本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-label-status-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。
+本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。
 
 Issue 本文の「現状」には、レポートの**審査領域・判断理由・解消すべき点**を書き写してください（レポートを読み返さずに着手できるように）。ライブ AWS 環境を照会していない限界も併記してください。
 

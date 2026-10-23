@@ -21,7 +21,7 @@ agent: doc-consistency-reviewer-agent
 
 タイトルの先頭ラベルは省略しないでください——本文を開かないと指摘の重さが分からない状態を避けるためです。タイトルの先頭には段番号を付けてください（例：`1. [矛盾] …`）。振り方は Issueの階層ガイド（`docs/reference/issue-hierarchy.md`）の「段番号（着手順）」に従います。
 
-本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-label-status-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。重複確認（`gh issue list --state all` で既存 Issue を検索する）もこのセルフチェックに従います。
+本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。重複確認（`gh issue list --state all` で既存 Issue を検索する）もこのセルフチェックに従います。
 
 Issue 本文の「現状」には、レビュー結果の**出典（ファイルパスと行番号）・食い違いの中身・推奨**を書き写してください（レビュー結果を読み返さずに着手できるように）。
 

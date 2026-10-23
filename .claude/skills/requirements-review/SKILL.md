@@ -36,7 +36,7 @@ allowed-tools: Task, Bash, Read
 - **同じ箇所への重複指摘は1件にまとめる。** 引用が重なっていれば同じ指摘とみなす
 - **引用の無い指摘は、統合の時点で落とす**
 - severity（Critical / High / Medium）はレンズの判定を尊重し、統合側で下げない
-- **修正案が食い違ったら裁定する**：同じ箇所に別々のレンズが逆向きの修正案を出したら、ポリシーの条文（該当が無ければ `docs/policy/refined-engineer-judgment-principles.md`）を引用して一方を採り、捨てた修正案と根拠を添える。迷ったら AI が決める。ただし、どちらを採っても人間が決めるべき条件「要件／プロダクト方針が変わる」に当たるとき、またはどちらかを採ると人間が決めるべき条件「不可逆・外部に出る」に当たるときだけは裁定せず（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「人間が決めるべき Issue の条件」。ほかの条件には広げない）、Phase 3 でその食い違い1件をラベル `needs-human-decision` で起票する。本文には、食い違った各指摘の観点名と引用を書き写す。同じワークフローの前回のレビューでこの手順により起票した Issue と同じ指摘なら、起票せず、既存の Issue 番号のまま起票済みとして扱う。同じ指摘かどうかは ai-review-gate-policy の「再レビューで同じ指摘が出たら、既存の Issue 番号で数える」で決める
+- **修正案が食い違ったら裁定する**：同じ箇所に別々のレンズが逆向きの修正案を出したら、ポリシーの条文（該当が無ければ `docs/policy/refined-engineer-judgment-principles.md`）を引用して一方を採り、捨てた修正案と根拠を添える。迷ったら AI が決める。ただし、どちらを採っても人間が決めるべき条件「要件／プロダクト方針が変わる」に当たるとき、またはどちらかを採ると人間が決めるべき条件「不可逆・外部に出る」に当たるときだけは裁定せず（[issue-policy](../../../docs/policy/issue-policy.md)「人間が決めるべき Issue の条件」。ほかの条件には広げない）、Phase 3 でその食い違い1件をラベル `needs-human-decision` で起票する。本文には、食い違った各指摘の観点名と引用を書き写す。同じワークフローの前回のレビューでこの手順により起票した Issue と同じ指摘なら、起票せず、既存の Issue 番号のまま起票済みとして扱う。同じ指摘かどうかは ai-review-gate-policy の「再レビューで同じ指摘が出たら、既存の Issue 番号で数える」で決める
 
 ### カバレッジを検証する
 
@@ -59,7 +59,7 @@ allowed-tools: Task, Bash, Read
 
 タイトルの先頭ラベルは省略しないでください——Issue 一覧を眺めただけで、凍結を止める指摘かどうかが分かる必要があります。タイトルの先頭には段番号を付けてください（例：`1. [Critical] …`）。振り方は Issueの階層ガイド（`docs/reference/issue-hierarchy.md`）の「段番号（着手順）」に従います。
 
-本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-label-status-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。ラベルはポリシーの定めに加えて `requirement`（説明：要件定義書のレビュー指摘に起因するIssue）を必ず付けます——要件定義の指摘だけを後から一括で追うためです。
+本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。ラベルはポリシーの定めに加えて `requirement`（説明：要件定義書のレビュー指摘に起因するIssue）を必ず付けます——要件定義の指摘だけを後から一括で追うためです。
 
 Issue 本文の「現状」には、レビュー結果の**引用・理由・修正案**を書き写してください（レビュー結果を読み返さずに着手できるように）。
 

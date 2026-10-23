@@ -25,7 +25,7 @@ gh issue list --state open --limit 100 --search 'label:broken-window' \
   --json number,title,labels --jq 'sort_by(.number) | .[] | "\(.number)\t\([.labels[].name]|join(","))\t\(.title)"'
 ```
 
-`ai-fixable` で絞りません。`needs-human-decision` の Issue も、人間が決めるべき条件（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「人間が決めるべき Issue の条件」）に本当に当たるかを検査する対象です。`ready-for-human` の Issue も、同ポリシーの「人間しかできない作業の条件」に本当に当たるかを検査する対象です。
+`ai-fixable` で絞りません。`needs-human-decision` の Issue も、人間が決めるべき条件（[issue-policy](../../../docs/policy/issue-policy.md)「人間が決めるべき Issue の条件」）に本当に当たるかを検査する対象です。`ready-for-human` の Issue も、同ポリシーの「人間しかできない作業の条件」に本当に当たるかを検査する対象です。
 
 **`issue:checked` が付いた Issue も除外しません。** 判定のうち「前提が現物と食い違う」は、リポジトリが動けば真偽が変わります。前回の判定を貼った時点で凍結できないので、毎回すべて見直します。`issue:checked` を検索条件に使わないことで、Issue 番号を直接指定した経路との食い違いも起きません。
 
@@ -138,7 +138,7 @@ Issue ごとに、各レンズが返した「判定」を並べ、観点一覧�
 - **人間判断**：`needs-human-decision` を足して `ai-fixable`・`ready-for-human`・`issue:decided` を外し、本文に「人間に決めてほしいこと」を足して、論点をコメントで残す
 - **分割**：どのレンズが「分割」を返したかで手順を分ける
   - **分割検討レンズが返した**：`/issue-split <番号> --from-issue-check` を Skill ツールで実行し、分割検討レンズの「見積もり」の表と、当たった「割る」の条件をコメントで残す。混ざった人間の作業は、`/issue-split` の Phase 4 が子に切り出す。`/issue-split` が「紐付けに失敗した子」または「親の作り替えの失敗」を報告したら、続けて上の「人間判断」と同じ操作をする。論点は「紐付けに失敗した子（番号を列挙）を紐付け直すか閉じるか」とする
-  - **規約照合レンズだけが返した**（観点「人間の作業の混在」）：`/issue-split` は呼ばない。親を umbrella に作り替えて AI の作業を子へ移すので、issue-label-status-policy の「元の Issue には AI の作業だけを残して `ai-fixable` を付ける」に反するためである。次の順に行う
+  - **規約照合レンズだけが返した**（観点「人間の作業の混在」）：`/issue-split` は呼ばない。親を umbrella に作り替えて AI の作業を子へ移すので、issue-policy の「元の Issue には AI の作業だけを残して `ai-fixable` を付ける」に反するためである。次の順に行う
     1. `/quick-issue` の「人間の作業を別 Issue に切り出す」に従い、レンズが返した人間の作業だけの Issue を `ready-for-human` で起票する。ブロッカーも同じ節に従い、先にやる側は元のタスク一覧の並びで決める。起票に失敗したら 2. に進まず（元の Issue から人間の作業が消えるため）、上の「人間判断」と同じ操作をする。論点は「切り出せなかった人間の作業を別 Issue に起票するか」とする
     2. 元の Issue の「タスク一覧」「完了条件」を、レンズが返した全文に差し替える（手順は下の「本文を差し替える」と同じ）。元の Issue が後にやる側なら、「ブロッカー」に切り出した Issue の番号を足す。`ready-for-human` が付いていれば外し、`ai-fixable` にする
     3. 切り出した Issue の番号と、当たった「人間しかできない作業の条件」をコメントで残す
