@@ -77,7 +77,7 @@ AI の提案が違うと思ったら、「`/grill-me` で始めて」「直接�
 11. **Pull Requestのレビュー（人間）**：10 でレビューが必要と判定された場合のみ、PR の実装差分を確認する
 12. **PRR（AI＋人間）**：`/sre-prr [対象]` で本番投入レディネスを SRE 観点で審査し、**go / 条件付きgo / no-go** を助言する。実行は任意（本番リリース直前など条件による）
 
-このフローで Issue を起票したら、[Issueの階層ガイド](../reference/issue-hierarchy.md)に従って親の sub-issue にする。
+このフローで Issue を起票したら、[issue-policy](../policy/issue-policy.md)の「親の決め方」に従って親の sub-issue にする。
 
 ## 週次の docs 整合性チェック Issue が届く
 
