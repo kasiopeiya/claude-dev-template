@@ -26,7 +26,6 @@ readonly LABELS=(
   'issue:decided|1D76DB|人間が方針を決めた Issue。決めた条件を理由に人間判断へ戻さない'
   'harness|BFDADC|ハーネス（Policy・Rule・Skill・SubAgent・hooks）を変えるIssue'
   'issue:checked|BFD4F2|/issue-check が一度監査した Issue。いま妥当である保証ではない'
-  'issue:needs-clean-session|5319E7|着手後に離脱条件を観測したIssue。専用セッションで1件だけ対応する'
   'needs-human-check|F9D0C4|無人実行が問題で止まったIssue。人間が確かめたら外す'
   'phase|0E4B99|Issue階層の最上位。開発フローのフェーズを表す常設Issue'
   'requirement|1D76DB|要件定義書のレビュー指摘に起因するIssue'

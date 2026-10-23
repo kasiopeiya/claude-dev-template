@@ -25,7 +25,7 @@ gh issue list --state open --limit 100 --search 'label:boy-scout' \
   --json number,title,labels --jq 'sort_by(.number) | .[] | "\(.number)\t\([.labels[].name]|join(","))\t\(.title)"'
 ```
 
-`ai-fixable` で絞りません。`needs-human-decision` の Issue も、人間が決めるべき条件（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「人間が決めるべき Issue の条件」）に本当に当たるかを検査する対象です。`ready-for-human` の Issue も、同ポリシーの「人間しかできない作業の条件」に本当に当たるかを検査する対象です。`issue:needs-clean-session` も含めます——読むだけの判定なので、直しきれるかどうかとは無関係です。
+`ai-fixable` で絞りません。`needs-human-decision` の Issue も、人間が決めるべき条件（[issue-label-status-policy](../../../docs/policy/issue-label-status-policy.md)「人間が決めるべき Issue の条件」）に本当に当たるかを検査する対象です。`ready-for-human` の Issue も、同ポリシーの「人間しかできない作業の条件」に本当に当たるかを検査する対象です。
 
 **`issue:checked` が付いた Issue も除外しません。** 判定のうち「前提が現物と食い違う」は、リポジトリが動けば真偽が変わります。前回の判定を貼った時点で凍結できないので、毎回すべて見直します。`issue:checked` を検索条件に使わないことで、Issue 番号を直接指定した経路との食い違いも起きません。
 

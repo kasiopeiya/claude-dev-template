@@ -46,7 +46,6 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - `ai-fixable` / `needs-human-decision` / `ready-for-human`：**必ずどれか1つだけ**を付ける。判定はポリシーの「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う
 - `issue:decided`：`ai-fixable` か `ready-for-human` にだけ重ねる。条件はポリシーの「人間が方針を決めたら `issue:decided` を付ける」に従う
 - `harness`：ポリシーの「`harness` を付ける条件」に当たるときに重ねる。3択のどれを付けたかとは別に決める
-- `issue:needs-clean-session`：起票時には付けない
 
 ### 人間の作業を別 Issue に切り出す
 
