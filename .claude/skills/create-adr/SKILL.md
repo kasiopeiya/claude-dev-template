@@ -47,8 +47,10 @@ ADR も他ドキュメント同様、可視化ファーストで書く（`docs/p
 削除済みの番号を再利用すると、その番号を参照している古い Issue・コミットが別の決定を指すことになるため、**現存するファイルの最大番号ではなく、git 履歴上（削除済みを含む）の最大番号+1** を使う。
 
 ```bash
-git log --all --pretty=format: --name-only | grep -E '^docs/adr/[0-9]{3}-' | sed -E 's#docs/adr/([0-9]{3})-.*#\1#' | sort -n | tail -1 | awk '{printf "%03d\n", $1+1}'
+git log --all --pretty=format: --name-only | grep -E '^docs/adr/[0-9]{3}-' | sed -E 's#docs/adr/([0-9]{3})-.*#\1#' | sort -n | tail -1 | awk '{printf "%03d\n", $NF+1}'
 ```
+
+Skill の本文に `$` と数字を続けて書くと、呼び出し時の引数の語に置き換わって読み込まれるため、このコマンドには `$` と数字を続けて書かない（1列しか無いので `$NF` で受ける）。
 
 出力された番号が次の採番。
 

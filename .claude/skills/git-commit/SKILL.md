@@ -130,12 +130,13 @@ fix: ログイン失敗時のエラーメッセージを修正
 
 #### 並行セッションを検出する
 
-同じ作業ツリーを別の Claude セッションが編集していると、既定スコープは無関係な変更まで巻き込む。巻き込まれた側は自分の作業が別 Issue のコミットに紛れたことに気づけない。そこで、範囲を決めたらまず同じ作業ツリーで動いている claude セッションの数を数える。
+同じ作業ツリーを別の Claude セッションが編集していると、既定スコープは無関係な変更まで巻き込む。巻き込まれた側は自分の作業が別 Issue のコミットに紛れたことに気づけない。そこで、範囲を決めたらまず同じ作業ツリーで動いている claude セッションの数を数える。Skill の本文に `$` と数字を続けて書くと、呼び出し時の引数の語に置き換わって読み込まれるため、このコマンドには `$` と数字を続けて書かない。
 
 ```bash
 top=$(git rev-parse --show-toplevel)
 if command -v lsof >/dev/null 2>&1; then
-  ps -eo pid=,comm= | awk '$2 == "claude" {print $1}' | while read -r pid; do
+  ps -eo pid=,comm= | while read -r pid comm; do
+    [ "$comm" = claude ] || continue
     cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
     [ -n "$cwd" ] && [ "$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" = "$top" ] && echo "$pid"
   done | wc -l
