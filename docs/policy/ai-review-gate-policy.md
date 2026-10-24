@@ -118,7 +118,7 @@ stateDiagram-v2
 
 このポリシーは、frontmatter 冒頭の `hook.applies-to` が指す agent 定義・Skill 定義を編集するときに自動で差し込まれる——具体的な一覧は `hook.applies-to` を見る。**差し込まれることと、このポリシーに従うべきこと（適用対象）は同じではない。** 適用対象は、差し込まれた先から次を除いたものである。
 
-- 重大度と合否の形がこのポリシーと本質的に異なるレビュー：`sre-prr-reviewer-agent` の go／条件付きgo／no-go 判定、`doc-consistency-reviewer-agent` の重複・矛盾検出、`quick-doc-review` の OK/NG チェックリスト
+- 重大度と合否の形がこのポリシーと本質的に異なるレビュー：`sre-prr-reviewer-agent` の go／条件付きgo／no-go 判定、`doc-consistency-reviewer-agent` の重複・矛盾検出、`quick-doc-review`・`quick-code-review` の OK/NG チェックリスト
 
 これらは対象外とし、このポリシーを読んでも表記を変えない。
 
