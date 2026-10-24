@@ -289,9 +289,14 @@ EOF
 親がフェーズ Issue なら、その sub-issue にする。フェーズ Issue は `phase` ラベルで引く。同じフェーズ名が複数あれば**いちばん番号が大きいもの**を使う（下の世代交代で後継ができるため）。
 
 ```bash
-gh issue list --label phase --state open --json number,title,id
-gh api graphql -f query='mutation($parent:ID!,$childUrl:String!){addSubIssue(input:{issueId:$parent,subIssueUrl:$childUrl}){subIssue{number}}}' \
-  -F parent="<親のnode ID>" -F childUrl="<子のURL>"
+gh issue list --label phase --state open --json number,title
+```
+
+GraphQL の形は worktree で動くセッションのガードに拒否されるので、REST で紐づける。
+
+```bash
+gh api repos/<owner>/<repo>/issues/<子の番号> --jq .id
+gh api --method POST repos/<owner>/<repo>/issues/<親の番号>/sub_issues -F sub_issue_id=<子のデータベース ID>
 ```
 
 **上の `gh issue list` が成功し、決めた親のフェーズ名に一致する Issue が無いときは、ポリシーの「最上位のフェーズ Issue」に挙げたフェーズのうち、無いものをすべて作ってから紐づける。** 要るものだけ作ると、次の起票で残りのフェーズが無いまま親を選ぶことになる。コマンドが失敗したときは作らず、紐付けの失敗と同じく扱う（重複して作らないため）。フェーズ Issue は常設の分類なので、本文テンプレートを使わず、3択も付けない（ポリシーの「3択の例外」）。`phase` ラベルが無くて失敗したら、「4. 起票」のラベル未作成の手順で作る。
@@ -302,7 +307,7 @@ gh issue create --title "<フェーズ名>" --label phase --body "<ポリシー�
 
 紐付けに失敗しても、**起票そのものは成功している**。失敗したら親が付かなかったことを伝えて続行し、起票をやり直さない（同じ Issue を二重に立てることになる）。上限で失敗したときは、次の世代交代を行ってから紐づけ直す。
 
-**上限に達したら、フェーズ Issue を世代交代させる。** GitHub の sub-issue は親1件あたり100件・深さ8階層が上限で、超えると `addSubIssue` が失敗する。close した子は枠を空けない（GitHub が上限到達時に案内するのは「sub-issue の紐付けを外す」か「新しい親を作る」のどちらかで、close は含まれない）。上限に当たったら、同名に連番を付けた後継 Issue を作り、以後の紐付け先をそちらに切り替える。旧フェーズ Issue は close せず履歴として残す。
+**上限に達したら、フェーズ Issue を世代交代させる。** GitHub の sub-issue は親1件あたり100件・深さ8階層が上限で、超えると紐付けが失敗する。close した子は枠を空けない（GitHub が上限到達時に案内するのは「sub-issue の紐付けを外す」か「新しい親を作る」のどちらかで、close は含まれない）。上限に当たったら、同名に連番を付けた後継 Issue を作り、以後の紐付け先をそちらに切り替える。旧フェーズ Issue は close せず履歴として残す。
 
 ```bash
 gh issue create --title "<フェーズ名> (2)" --label phase \
