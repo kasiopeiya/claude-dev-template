@@ -45,12 +45,26 @@ function isRuleTarget(normalizedPath) {
   return normalizedPath.startsWith('.claude/rules/') && normalizedPath.endsWith('.md')
 }
 
+/**
+ * 変更パスが workflow（`.github/workflows/*.yml`・`*.yaml`）かを判定する。
+ *
+ * @param {string} normalizedPath スラッシュ区切りに正規化した、プロジェクトルート相対パス
+ * @returns {boolean} workflow 検査ゲートの対象なら true
+ */
+function isWorkflowTarget(normalizedPath) {
+  // git status は、丸ごと追跡外のディレクトリを `?? .github/workflows/` のように畳んで返す
+  if (normalizedPath === '.github/' || normalizedPath === '.github/workflows/') return true
+  if (!normalizedPath.startsWith('.github/workflows/')) return false
+  return normalizedPath.endsWith('.yml') || normalizedPath.endsWith('.yaml')
+}
+
 // ゲートの定義そのものは package.json が持つ。ここが持つのは「どの変更で走らせるか」だけ。
 const GATES = [
   { npmScript: 'check:static', isTarget: isStaticGateTarget },
   { npmScript: 'format:check', isTarget: isStaticGateTarget },
   { npmScript: 'check:claude-md', isTarget: isClaudeMdTarget },
-  { npmScript: 'check:rules', isTarget: isRuleTarget }
+  { npmScript: 'check:rules', isTarget: isRuleTarget },
+  { npmScript: 'check:workflows', isTarget: isWorkflowTarget }
 ]
 
 /**

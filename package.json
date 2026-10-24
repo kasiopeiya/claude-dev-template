@@ -12,6 +12,7 @@
     "check:links": "node scripts/ci/check-markdown-links.mjs",
     "check:claude-md": "node scripts/ci/check-claude-md-size.mjs",
     "check:rules": "node scripts/ci/check-rule-size.mjs",
+    "check:workflows": "node scripts/ci/check-workflow-pins-and-permissions.mjs",
     "check:audit": "node scripts/ci/audit-dependencies.mjs",
     "test:hooks": "node --test .claude/hooks/policyMatcher.test.mjs .claude/hooks/policy-loader.test.mjs",
     "test:scripts": "node --test \"scripts/**/*.test.mjs\"",
