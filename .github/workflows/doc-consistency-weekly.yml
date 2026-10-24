@@ -1,5 +1,5 @@
 # 責務: 週1回、docs/ 横断の重複・矛盾チェック（/doc-consistency）を実行させる週次 Issue を起票する。
-#   判定・ラベル作成・起票は scripts/doc-consistency-weekly-issue.mjs が行い、ここでは呼ぶだけにする。
+#   判定・ラベル作成・起票は scripts/ci/doc-consistency-weekly-issue.mjs が行い、ここでは呼ぶだけにする。
 #   実行そのものはこのワークフローでは行わない（人間か Auto Programmer が処理する）。
 #   なぜこの形なのかは scripts/auto-programmer/README.md「週次スクリプトが Issue を供給する」を参照する。
 
@@ -45,4 +45,4 @@ jobs:
       - name: Decide and file the weekly issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/doc-consistency-weekly-issue.mjs
+        run: node scripts/ci/doc-consistency-weekly-issue.mjs
