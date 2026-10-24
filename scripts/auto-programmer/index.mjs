@@ -47,7 +47,7 @@ import {
   ISSUE_CHECKED_LABEL,
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
-import { decideAfterCiRun, readCiRunState } from './ciRun.mjs'
+import { CI_RUN_STATE_FIELDS, decideAfterCiRun, readCiRunState } from './ciRun.mjs'
 import {
   isSubIssueHandoverEmpty,
   NEEDS_HUMAN_CHECK_LABEL,
@@ -540,7 +540,7 @@ function listCiRuns(headSha) {
     '--commit',
     headSha,
     '--json',
-    'databaseId,status,conclusion,headSha,url'
+    CI_RUN_STATE_FIELDS
   ])
 }
 

@@ -21,6 +21,10 @@ import {
   showWarning
 } from './ui.mjs'
 import { buildSessionProgressText, formatElapsedTime, pickSpinnerFrame } from './uiFormat.mjs'
+import {
+  UNATTENDED_SESSION_ENV_NAME,
+  UNATTENDED_SESSION_ENV_VALUE
+} from './unattendedSessionEnv.mjs'
 
 const MILLISECONDS_PER_MINUTE = 60 * 1000
 
@@ -52,6 +56,8 @@ async function runUnattendedSession(slashCommand, abortSignal) {
     ['-p', slashCommand, '--dangerously-skip-permissions'],
     {
       cwd: config.workspaceDir,
+      // 中で動く hook と Skill が無人だと見分けるため（読み手と理由は unattendedSessionEnv.mjs）
+      extraEnv: { [UNATTENDED_SESSION_ENV_NAME]: UNATTENDED_SESSION_ENV_VALUE },
       timeoutMs,
       abortSignal,
       onTick: (elapsedMs) =>
