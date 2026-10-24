@@ -58,15 +58,15 @@ sequenceDiagram
 
 機械的に判断できることは、AI に任せず CI に判定させる。AI の成果物はすべて関門を通り、**1つでも落ちたらマージ不可**——人間の検品を待たず AI へ差し戻して再挑戦させる。AI が確率論的だからこそ、関門は同じ入力に必ず同じ判定を返す決定論的なチェックで固める。
 
-| 関門                        | 何を止めるか                                                                          | 定義の場所                                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 静的解析（ESLint / 型検査） | 書き方の逸脱（`any`・import 順序・未使用変数・await 忘れ・型エラー など）             | `eslint.config.mjs`・各 `tsconfig.json`                                                             |
-| コードメトリクス            | 複雑さ（循環的/認知的複雑度・関数の行数・引数の数・ネストの深さ）                     | しきい値は `.claude/rules/typescript.md`、適用は `eslint.config.mjs`                                |
-| アーキテクチャテスト        | 構造の腐り（レイヤー依存の向き・循環依存・凝集度）                                    | `samples/app/backend/test/`                                                                         |
-| 不要物・脆弱性              | 増えっぱなし（未使用の export・ファイル・依存、脆弱性のある依存）                     | `knip.jsonc`・`scripts/audit-dependencies.mjs`                                                      |
-| テスト                      | 振る舞いの退行（単体テスト・CDK snapshot ＋ synth・dev 環境での結合テスト）           | 各ワークスペースの `*.test.ts`・`samples/infra/test/`                                               |
-| CLAUDE.md 文字数検査        | 毎セッション消費する文脈の肥大（CLAUDE.md と `@` import 先の合計文字数が上限超過）    | 上限は `docs/policy/policy-driven-development-policy.md`、判定は `scripts/check-claude-md-size.mjs` |
-| Rule 文字数検査             | 対象ファイルを読むたびに消費する文脈の肥大（`.claude/rules/*.md` の文字数が上限超過） | 上限は `docs/policy/policy-driven-development-policy.md`、判定は `scripts/check-rule-size.mjs`      |
+| 関門                        | 何を止めるか                                                                          | 定義の場所                                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 静的解析（ESLint / 型検査） | 書き方の逸脱（`any`・import 順序・未使用変数・await 忘れ・型エラー など）             | `eslint.config.mjs`・各 `tsconfig.json`                                                                |
+| コードメトリクス            | 複雑さ（循環的/認知的複雑度・関数の行数・引数の数・ネストの深さ）                     | しきい値は `.claude/rules/typescript.md`、適用は `eslint.config.mjs`                                   |
+| アーキテクチャテスト        | 構造の腐り（レイヤー依存の向き・循環依存・凝集度）                                    | `samples/app/backend/test/`                                                                            |
+| 不要物・脆弱性              | 増えっぱなし（未使用の export・ファイル・依存、脆弱性のある依存）                     | `knip.jsonc`・`scripts/ci/audit-dependencies.mjs`                                                      |
+| テスト                      | 振る舞いの退行（単体テスト・CDK snapshot ＋ synth・dev 環境での結合テスト）           | 各ワークスペースの `*.test.ts`・`samples/infra/test/`                                                  |
+| CLAUDE.md 文字数検査        | 毎セッション消費する文脈の肥大（CLAUDE.md と `@` import 先の合計文字数が上限超過）    | 上限は `docs/policy/policy-driven-development-policy.md`、判定は `scripts/ci/check-claude-md-size.mjs` |
+| Rule 文字数検査             | 対象ファイルを読むたびに消費する文脈の肥大（`.claude/rules/*.md` の文字数が上限超過） | 上限は `docs/policy/policy-driven-development-policy.md`、判定は `scripts/ci/check-rule-size.mjs`      |
 
 ### コーディング規約・技術ルール
 
@@ -124,9 +124,10 @@ npm run format       # フォーマット
 
 - **`infra/`**：CI（`pipeline.yml` の `ci-cdk`・`cdk-diff`、`deploy-dev.yml`、`dev-destroy.yml`）の変更検知・working-directory、`eslint.config.mjs` のファイル glob、`cdk-design-policy.md` の `applies-to`、cdk-review スキルが直接ハードコード
 - **`app/`, `app/backend/`, `app/frontend/`**：同様に CI（`ci-app`）・eslint に加え `application-design-policy.md`/`application-logging-policy.md`（`app/**`）、`frontend-design-policy.md`（`app/frontend/**`）が `applies-to` でハードコード
-- **`samples/`（＋配下の2ワークスペース）**：`knip.jsonc` の workspace キー、`eslint.config.mjs` の glob、`package.json` の `check:static`、`scripts/audit-dependencies.mjs` の監査対象、`pipeline.yml` の `ci-common`、各 policy の `applies-to` が直接ハードコード
+- **`samples/`（＋配下の2ワークスペース）**：`knip.jsonc` の workspace キー、`eslint.config.mjs` の glob、`package.json` の `check:static`、`scripts/ci/audit-dependencies.mjs` の監査対象、`pipeline.yml` の `ci-common`、各 policy の `applies-to` が直接ハードコード
 - **`eslint-rules/`**：`eslint.config.mjs` が直接 import、`knip.jsonc` の `project` glob が参照
 - **`scripts/`（ディレクトリ＋各ファイル名）**：`package.json` の scripts がファイル名まで直接実行し、CI（`pipeline.yml`）と `.claude/hooks/` がそれを経由・相対 import する。中の個別スクリプトは自由に追加可
+- **`scripts/ci/`（ディレクトリ名）**：CI のワークフローが実行するスクリプトの置き場。`pr-review-policy.md` が `cicd`（人間レビュー対象）の対象パスとして、`pr-ai-triage.yml` がそのラベルを付けるパスとして直接参照する
 
 `infra/`・`app/` は**場所（ディレクトリ名）だけ**固定で、中身は自由に書いてよい。
 

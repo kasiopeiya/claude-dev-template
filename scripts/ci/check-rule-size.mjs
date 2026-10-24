@@ -11,7 +11,7 @@ import { execFileSync } from 'child_process'
 import { dirname, join, relative, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 export const CHARACTER_LIMIT = 6000
 

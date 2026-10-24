@@ -2,7 +2,7 @@
 name: pr-check
 description: PR がレビューを受け付けてよい前提条件（差分サイズ）を満たすかを判定し、結果を PR にコメントする。「pr-check」「PRをチェックして」と指示されたとき。
 argument-hint: '[PR番号]'
-allowed-tools: Bash(node scripts/pr-check.mjs:*)
+allowed-tools: Bash(node scripts/ci/pr-check.mjs:*)
 ---
 
 # PR Check
@@ -10,7 +10,7 @@ allowed-tools: Bash(node scripts/pr-check.mjs:*)
 次のスクリプトを実行する。PR 番号が無ければ現ブランチの PR が対象になる。
 
 ```bash
-node scripts/pr-check.mjs $ARGUMENTS
+node scripts/ci/pr-check.mjs $ARGUMENTS
 ```
 
 判定と PR へのコメントはスクリプトが行う。

@@ -8,7 +8,7 @@
 //   （判定に使うラベルと起票時に付けるラベルを分けて持つと、一致を呼び出し側の約束に頼ることになるため）。
 //
 // 使い方:
-//   node scripts/doc-consistency-weekly-issue.mjs   起票したら、その URL を標準出力に返す。
+//   node scripts/ci/doc-consistency-weekly-issue.mjs   起票したら、その URL を標準出力に返す。
 //                                                     次のどちらかに当たるときは起票せず、その理由を標準出力に返す：
 //                                                     open な週次 Issue がある／前回処理以降に docs/ の変更が無い
 

@@ -86,18 +86,18 @@ auto-merge を外すのは、残っていると、解いた push の CI が通�
 
 2 で拾う `ai-fixable` の Issue の一部は、週次スクリプトが人手を介さず自動起票したものである。Policy・Rule を変えたときに違反になった既存コードは、コードに差分が出ないので通常のレビューに掛からない。それを拾う専用の週次チェックが2本ある。
 
-| スクリプト                                 | 対象                                                               | 起票ラベル               |
-| ------------------------------------------ | ------------------------------------------------------------------ | ------------------------ |
-| `scripts/doc-consistency-weekly-issue.mjs` | `docs/` 全体（`/doc-consistency`）                                 | `doc-consistency-weekly` |
-| `scripts/code-policy-weekly-issue.mjs`     | `app/`（`/code-review` の「決まりどおりか」「設計の形」の2レンズ） | `code-policy-weekly`     |
+| スクリプト                                    | 対象                                                               | 起票ラベル               |
+| --------------------------------------------- | ------------------------------------------------------------------ | ------------------------ |
+| `scripts/ci/doc-consistency-weekly-issue.mjs` | `docs/` 全体（`/doc-consistency`）                                 | `doc-consistency-weekly` |
+| `scripts/ci/code-policy-weekly-issue.mjs`     | `app/`（`/code-review` の「決まりどおりか」「設計の形」の2レンズ） | `code-policy-weekly`     |
 
-`scripts/doc-consistency-weekly-issue.mjs` の設計判断：
+`scripts/ci/doc-consistency-weekly-issue.mjs` の設計判断：
 
 - **起票だけを GitHub Actions（`doc-consistency-weekly.yml`）が行い、実行そのものは人間か Auto Programmer が行う**：このテンプレートは、GitHub Actions で Claude Code を使えないプロジェクトへの配布も前提にしている。実行そのものを Actions に持たせると、そうしたプロジェクトでは仕組みごと動かない。
 - **専用ラベル（`doc-consistency-weekly`）が付いた open な Issue が既にあれば起票しない**：処理待ちの週次 Issue は1件で足りる。起点を前回処理以降の変更に絞れば、処理が1週遅れても次回でその分を追いつけるため、未処理のまま複数積み上げる必要が無い。
 - **起点は、実行結果コメントが付いた直近の週次 Issue の HEAD SHA から今回の HEAD までに変わった `docs/**/*.md` にする**：2文書間の重複・矛盾は、どちらかが変わったときにしか生まれない。最初に1回全体を見て、以後の変更を途切れずに起点へつなげれば、すべての組み合わせを一度は見たことになる。該当する週次 Issue が無い、または SHA を読み取れない場合だけ、これまでどおり `docs/` 全体を対象にする。
 
-`scripts/code-policy-weekly-issue.mjs` の設計判断：
+`scripts/ci/code-policy-weekly-issue.mjs` の設計判断：
 
 - **docs 用の週次 Issue とは別の Issue・別ラベルにする**：1つの Issue に両方載せると、どちらかが未処理のまま残ったとき「open なら起票しない」という決まり（両スクリプト共通）で両方のチェックが止まる。ラベルと Issue を分ければ、一方の遅延がもう一方を妨げない。
 - **起点を計算せず、毎週 `app/` 全体を対象にする**：docs 用は前回処理以降の差分に絞るが、これは差分計算の実装コスト（処理済み Issue の探索・HEAD SHA 記録・読み戻し）と引き換えに、文書数が増えても1回あたりのチェック量を抑える対策である。コード側の対象は当面小規模で、差分計算を持たなくても週1回全体を見るコストが見合う。実測の所要時間が閾値を超えたら、差分計算への切り替えを検討する。
