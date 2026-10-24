@@ -78,7 +78,7 @@ gh issue close $ARGUMENTS --comment "<何をしたか>"
 base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && git merge --no-edit "origin/$base"
 ```
 
-- 衝突したら、衝突したファイルを解く。生成物は中身を手で直さず、`npm run gen:adr-index` で作り直して `git add` する。解けなければ離脱手順へ進む
+- 衝突したら、衝突したファイルを解く。生成物は中身を手で直さず、`npm run gen:adr-index` で作り直して `git add` する。解いたファイルを `git add <パス>` し、`git commit --no-edit` で merge を閉じる（`/git-commit` はパスを指定するので、merge の途中では使えない）。解けなければ離脱手順へ進む
 - 「Your local changes ... would be overwritten」で止まったら、取り込みが未コミットの変更と重なっている。先に下の手順でコミットし、そのあとで取り込む。自動で完了する merge コミットでは pre-commit hook が走らないので、取り込んだ後に `npm run gen:adr-index` を実行し、差分が出たら `git add` して `/git-commit stage` でコミットする
 
 その Issue で編集したファイルだけを `git add <パス>` でステージし、`/git-commit stage` を実行する。ワーキングツリー全体を対象にしてはならない。
