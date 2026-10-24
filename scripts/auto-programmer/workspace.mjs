@@ -22,12 +22,15 @@ import { showInfo } from './ui.mjs'
 /**
  * AI 専用 clone の中で git を実行する。
  *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @param {string[]} args git の引数
  * @returns {string} 標準出力
- * @throws {Error} git が失敗したとき
+ * @throws {Error} clone が渡されなかったとき・git が失敗したとき
  */
-function runGitInWorkspace(args) {
-  return runOrThrow('git', args, { cwd: config.workspaceDir })
+function runGitInWorkspace(workspaceDir, args) {
+  // cwd を省くと、起動した人間の作業ツリーで reset --hard・clean が走る。渡し忘れはここで止める
+  if (!workspaceDir) throw new Error('AI 専用 clone のパスが渡されていません')
+  return runOrThrow('git', args, { cwd: workspaceDir })
 }
 
 /**
@@ -36,12 +39,12 @@ function runGitInWorkspace(args) {
  * stash のメッセージには退避元のブランチ名と日時を入れ、`git stash list` で見つけられるようにする。
  * 無視対象のファイル（node_modules など）は退避しない。未解決の衝突は、衝突マーカーを含んだ内容で退避する。
  *
- * @param {string} workingDir 退避する git リポジトリのディレクトリ
+ * @param {string} workspaceDir 退避する AI 専用 clone
  * @returns {void}
- * @throws {Error} git の操作が失敗したとき
+ * @throws {Error} clone が渡されなかったとき・git の操作が失敗したとき
  */
-function stashUncommittedChanges(workingDir) {
-  const runGit = (args) => runOrThrow('git', args, { cwd: workingDir })
+function stashUncommittedChanges(workspaceDir) {
+  const runGit = (args) => runGitInWorkspace(workspaceDir, args)
   if (runGit(['status', '--porcelain']).trim() === '') return
 
   const sourceBranchName = runGit(['rev-parse', '--abbrev-ref', 'HEAD']).trim()
@@ -84,23 +87,25 @@ function readDefaultBranchName() {
  * ローカルに同じ名前のブランチが残っていた場合は作り直す（中身は毎回デフォルトブランチから始まる）。
  * 前回のセッションが残した未コミットの変更は、消さずに stash へ退避してから戻す。
  *
- * @param {string} branchName 作るトピックブランチ名
+ * @param {{ workspaceDir: string, branchName: string }} params このプロセスが使う AI 専用 clone と、作るトピックブランチ名
  * @returns {void}
  * @throws {Error} 同名ブランチがリモートにあるとき・git や gh の操作が失敗したとき
  */
-export function prepareTopicBranch(branchName) {
+export function prepareTopicBranch({ workspaceDir, branchName }) {
   const baseBranch = readDefaultBranchName()
 
-  runGitInWorkspace(['fetch', 'origin', '--prune'])
-  if (runGitInWorkspace(['ls-remote', '--heads', 'origin', branchName]).trim() !== '') {
+  runGitInWorkspace(workspaceDir, ['fetch', 'origin', '--prune'])
+  if (
+    runGitInWorkspace(workspaceDir, ['ls-remote', '--heads', 'origin', branchName]).trim() !== ''
+  ) {
     throw new Error(
       `リモートに ${branchName} が残っています。前回の PR を閉じてこのブランチを消せば、次の巡回で拾われます`
     )
   }
 
-  stashUncommittedChanges(config.workspaceDir)
-  runGitInWorkspace(['checkout', '--force', baseBranch])
-  runGitInWorkspace(['reset', '--hard', `origin/${baseBranch}`])
-  runGitInWorkspace(['clean', '-fd'])
-  runGitInWorkspace(['checkout', '-B', branchName, `origin/${baseBranch}`])
+  stashUncommittedChanges(workspaceDir)
+  runGitInWorkspace(workspaceDir, ['checkout', '--force', baseBranch])
+  runGitInWorkspace(workspaceDir, ['reset', '--hard', `origin/${baseBranch}`])
+  runGitInWorkspace(workspaceDir, ['clean', '-fd'])
+  runGitInWorkspace(workspaceDir, ['checkout', '-B', branchName, `origin/${baseBranch}`])
 }

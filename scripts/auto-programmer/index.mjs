@@ -33,7 +33,11 @@
 // - 予定した終わり方以外で終えた Issue には、記録を残す前に `needs-human-check` を付ける（どれを予定とするかは
 //   needsHumanCheck.mjs）。カードの列だけでは止まった Issue を引けない（Issue #1000）。このツールが付けるのは記録の直前と、
 //   シグナルで終わる直前（finally に届かない）の2か所だけにする。止まり方ごとに付けると、例外で落ちた経路が付け漏れる。
+// - 同じマシンで何本も動かせるよう、起動時に一番小さい空き番号の AI 専用 clone をロックで取り、終わるまでその clone だけを使う。
+//   1つの clone を共有すると、一方の作業中にもう一方が stash・reset --hard・clean を走らせる。clone ごと分ければ
+//   workspace.mjs の巻き戻しの手順を変えずに済む。番号を自動で取るのは、人間に番号を選ばせず、clone の数を同時に動かした数の最大値で止めるため。
 
+import { basename, dirname, join } from 'node:path'
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
 import { closeIssuesOfMergedPullRequests } from '../close-issues.mjs'
@@ -48,6 +52,7 @@ import {
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { decideAfterCiRun, readCiRunState } from './ciRun.mjs'
+import { acquireLowestFreeNumberedLockFile, releaseLockFile } from './pidLockFile.mjs'
 import {
   isSubIssueHandoverEmpty,
   NEEDS_HUMAN_CHECK_LABEL,
@@ -85,6 +90,14 @@ const CI_RUN_WAIT_LIMIT_MS = config.ci.runWaitLimitMinutes * MILLISECONDS_PER_MI
 // 非TTY で CI 待ちの経過を追記する間隔。CI_POLL_INTERVAL_MS のまま追記すると、
 // 上限（runWaitLimitMinutes）いっぱい待つ実行で数十行に膨らむ
 const CI_WAIT_PROGRESS_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
+
+// AI 専用 clone の番号ロックの置き場。config.mjs はテンプレート同期の対象外で、同期した利用先では古い形のまま動くので、
+// キーを足さずに既存の workspaceDir から導く。置き場は clone の親（AUTO_PROGRAMMER_HOME）の下で、clone の名前ごとに分ける
+const WORKSPACE_LOCK_DIRECTORY = join(
+  dirname(config.workspaceDir),
+  'locks',
+  basename(config.workspaceDir)
+)
 
 // GraphQL が1つの接続（sub-issue・ラベル・カード）から一度に返せる件数の上限。sub-issue は超えていたら読み落としとして止める
 const GRAPHQL_CONNECTION_FETCH_LIMIT = 100
@@ -132,10 +145,14 @@ process.on('SIGINT', () => stopController.abort('SIGINT'))
 // 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると runSessionAndRecord の finally に届かないので、
 // 止まった印はリスナが付ける
 let inFlightIssueNumber = null
+// このプロセスが取った AI 専用 clone の番号ロック（取る前と外した後は null）。シグナルで終わると main の finally に
+// 届かないので、リスナも外す
+let workspaceLock = null
 for (const signal of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
   process.once(signal, () => {
     stopController.abort(signal)
     if (inFlightIssueNumber !== null) tryMarkAsNeedsHumanCheck(inFlightIssueNumber, {})
+    releaseWorkspaceLock()
     process.kill(process.pid, signal)
   })
 }
@@ -363,14 +380,13 @@ function showRunSummary(record, isAllSessionsSucceeded) {
 /**
  * 落ちうるローカルの準備をすべて済ませてから、カードを着手中へ動かす。
  *
- * @param {{ itemId: string, number: number, labelNames: string[] }} issue 対象 Issue
- * @param {string} branchName 作るトピックブランチ名
+ * @param {{ issue: { itemId: string, number: number, labelNames: string[] }, branchName: string, workspaceDir: string }} params 対象 Issue・作るトピックブランチ名・このプロセスが使う AI 専用 clone
  * @returns {Set<number>} 着手前からあった PR の番号
  * @throws {Error} 着手中へ動かすまでの処理が落ちたとき（カードは着手待ちのまま残る）
  */
-function startIssue(issue, branchName) {
-  prepareTopicBranch(branchName)
-  ensureDependencies()
+function startIssue({ issue, branchName, workspaceDir }) {
+  prepareTopicBranch({ workspaceDir, branchName })
+  ensureDependencies(workspaceDir)
   const existingPullRequestNumbers = new Set(
     listPullRequests(branchName).map(({ number }) => number)
   )
@@ -384,10 +400,11 @@ function startIssue(issue, branchName) {
  * 着手前に落ちた Issue は理由を出して飛ばす。着手できる Issue が無いときは何も出さない
  * （呼び出し側がアイドル中のステータス行にまとめて示す）。
  *
- * @returns {Promise<{ issue: { itemId: string, number: number, title: string }, branchName: string, existingPullRequestNumbers: Set<number> } | null>} 着手した Issue（着手できる Issue が無い・全部飛ばした・止められたときは null）
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
+ * @returns {Promise<{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number> } | null>} 着手した Issue（着手できる Issue が無い・全部飛ばした・止められたときは null）
  * @throws {Error} 候補を引けなかったとき
  */
-async function startFirstStartableIssue() {
+async function startFirstStartableIssue(workspaceDir) {
   const issues = listStartableIssues()
   if (issues.length === 0) return null
 
@@ -402,8 +419,13 @@ async function startFirstStartableIssue() {
         labelNames: issue.labelNames,
         branchPrefix: config.branchPrefix
       })
-      showIssueBanner({ issueNumber: issue.number, title: issue.title, branchName })
-      return { issue, branchName, existingPullRequestNumbers: startIssue(issue, branchName) }
+      showIssueBanner({ issueNumber: issue.number, title: issue.title, branchName, workspaceDir })
+      return {
+        issue,
+        branchName,
+        workspaceDir,
+        existingPullRequestNumbers: startIssue({ issue, branchName, workspaceDir })
+      }
     } catch (error) {
       showWarning(`#${issue.number} を飛ばします: ${formatError(error)}`)
     }
@@ -419,11 +441,12 @@ async function startFirstStartableIssue() {
  * record を引数で受けるのは、途中で例外が出ても、そこまでの結果を呼び出し側が記録できるようにするため。
  *
  * @param {number} issueNumber 対象 Issue の番号
+ * @param {string} workspaceDir claude セッションを動かす AI 専用 clone
  * @param {Record<string, unknown>} record 書き足す先の記録
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
  * @throws {Error} claude を起動できなかったとき・Issue のラベルを外せなかった／引き直せなかったとき・sub-issue を引けなかった／子を着手待ちに載せられなかったとき
  */
-async function handOverOrImplement(issueNumber, record) {
+async function handOverOrImplement(issueNumber, workspaceDir, record) {
   handOverToSubIssuesIfAny(issueNumber, record)
   // 監査前の親のラベルは止める理由の判定に通さない。`/to-issues` のまとめ用の親は issue:checked を持たないことがある
   if (record.subIssueHandover) return true
@@ -432,7 +455,11 @@ async function handOverOrImplement(issueNumber, record) {
   if (record.issueCheckSkipped) {
     showInfo(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
   } else {
-    const issueCheckStatus = await runIssueCheckSession(issueNumber, stopController.signal)
+    const issueCheckStatus = await runIssueCheckSession({
+      issueNumber,
+      workspaceDir,
+      abortSignal: stopController.signal
+    })
     record.issueCheckExitCode = issueCheckStatus.exitCode
     record.issueCheckSignal = issueCheckStatus.signal
     if (!hasSessionSucceeded(issueCheckStatus)) {
@@ -462,7 +489,11 @@ async function handOverOrImplement(issueNumber, record) {
     '--remove-label',
     NEEDS_HUMAN_CHECK_LABEL
   ])
-  const autoDevStatus = await runAutoDevSession(issueNumber, stopController.signal)
+  const autoDevStatus = await runAutoDevSession({
+    issueNumber,
+    workspaceDir,
+    abortSignal: stopController.signal
+  })
   record.autoDevExitCode = autoDevStatus.exitCode
   record.autoDevSignal = autoDevStatus.signal
   return hasSessionSucceeded(autoDevStatus)
@@ -485,13 +516,13 @@ async function sleepUnlessStopped(milliseconds) {
 /**
  * リモートのトピックブランチが指している commit の SHA を引く。
  *
- * @param {string} branchName トピックブランチ名
+ * @param {{ workspaceDir: string, branchName: string }} params origin を引く AI 専用 clone と、トピックブランチ名
  * @returns {string} commit の SHA（ブランチが push されていなければ空文字）
  * @throws {Error} git が失敗したとき
  */
-function readRemoteHeadSha(branchName) {
+function readRemoteHeadSha({ workspaceDir, branchName }) {
   const output = runOrThrow('git', ['ls-remote', 'origin', `refs/heads/${branchName}`], {
-    cwd: config.workspaceDir
+    cwd: workspaceDir
   })
   return output.trim().split(/\s+/)[0] ?? ''
 }
@@ -502,17 +533,17 @@ function readRemoteHeadSha(branchName) {
  * git は refs/heads/<接頭辞> があると refs/heads/<接頭辞>/... を作れない。ライン名（main2 など）をそのまま接頭辞に
  * 入れると、着手して AI のセッションを使い切ってから push で拒否されるので、起動時に止める。
  *
- * @param {string | undefined} branchPrefix config.mjs の `branchPrefix`（検査済み）
+ * @param {{ branchPrefix: string | undefined, workspaceDir: string }} params config.mjs の `branchPrefix`（検査済み）と、origin を引く AI 専用 clone
  * @returns {void}
  * @throws {Error} 接頭辞と同じ名前のブランチがリモートにあるとき・git が失敗したとき
  */
-function ensureNoBranchNamedAsPrefix(branchPrefix) {
+function ensureNoBranchNamedAsPrefix({ branchPrefix, workspaceDir }) {
   if (!branchPrefix) return
   const sameNameBranch = runOrThrow(
     'git',
     ['ls-remote', '--heads', 'origin', `refs/heads/${branchPrefix}`],
     {
-      cwd: config.workspaceDir
+      cwd: workspaceDir
     }
   )
   if (sameNameBranch.trim() === '') return
@@ -670,13 +701,12 @@ function concludeCiWatch({ issue, nextStep, runState }) {
  * push した commit の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。通るか、直させるのをやめるまで戻らない。
  * 結果は record へ書き足す。
  *
- * @param {{ number: number }} issue 対象 Issue
- * @param {string} branchName トピックブランチ名
+ * @param {{ issue: { number: number }, branchName: string, workspaceDir: string }} startedIssue 対象 Issue・トピックブランチ名・作業している AI 専用 clone
  * @param {Record<string, unknown>} record 書き足す先の記録
  * @returns {Promise<boolean>} `/auto-fix-ci` を走らせなかったか、すべて正常終了したら true
  * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
  */
-async function watchCiAndFix(issue, branchName, record) {
+async function watchCiAndFix({ issue, branchName, workspaceDir }, record) {
   record.ciRuns = []
   // CI が通ったときだけ true にする。通らずに戻る経路（離脱・未 push・打ち切り）は、差分が出ずに閉じた場合を除いて
   // 人間の手当てが要る
@@ -684,7 +714,7 @@ async function watchCiAndFix(issue, branchName, record) {
   let fixAttemptCount = 0
   let previousHeadSha = null
   for (;;) {
-    const headSha = readRemoteHeadSha(branchName)
+    const headSha = readRemoteHeadSha({ workspaceDir, branchName })
     const { state, labelNames } = readIssueStatus(issue.number)
     const decisionNotToWait = findDecisionNotToWaitForCi({
       state,
@@ -722,6 +752,7 @@ async function watchCiAndFix(issue, branchName, record) {
     record.ciFixAttemptCount = fixAttemptCount
     const hasFixSessionSucceeded = await fixFailedCi({
       issueNumber: issue.number,
+      workspaceDir,
       runState,
       attemptNumber: fixAttemptCount,
       record
@@ -733,17 +764,18 @@ async function watchCiAndFix(issue, branchName, record) {
 /**
  * 落ちた CI を `/auto-fix-ci` に直させる。結果は record へ書き足す。
  *
- * @param {{ issueNumber: number, runState: { runId: number, url: string }, attemptNumber: number, record: Record<string, unknown> }} params 対象 Issue の番号・落ちた CI の run・今回が何回目か・書き足す先の記録
+ * @param {{ issueNumber: number, workspaceDir: string, runState: { runId: number, url: string }, attemptNumber: number, record: Record<string, unknown> }} params 対象 Issue の番号・セッションを動かす AI 専用 clone・落ちた CI の run・今回が何回目か・書き足す先の記録
  * @returns {Promise<boolean>} `/auto-fix-ci` のセッションが正常終了したら true
  * @throws {Error} claude を起動できなかったとき
  */
-async function fixFailedCi({ issueNumber, runState, attemptNumber, record }) {
+async function fixFailedCi({ issueNumber, workspaceDir, runState, attemptNumber, record }) {
   showWarning(
     `CI が落ちました。/auto-fix-ci に直させます（${attemptNumber} 回目）: ${runState.url}`
   )
   const fixStatus = await runAutoFixCiSession({
     issueNumber,
     runId: runState.runId,
+    workspaceDir,
     abortSignal: stopController.signal
   })
   record.ciFixExitCode = fixStatus.exitCode
@@ -801,23 +833,25 @@ function tryMarkAsNeedsHumanCheck(issueNumber, record) {
  * 着手中へ動かした Issue 1件を監査し、止める理由が無ければ実装させ、CI が通るまで直させる。途中で落ちても結果を記録し、
  * 予定した終わり方以外で終えたら、記録の前に `needs-human-check` を付ける（付けられなくても投げない）。
  *
- * @param {{ issue: { itemId: string, number: number, title: string }, branchName: string, existingPullRequestNumbers: Set<number> }} startedIssue startFirstStartableIssue の結果
+ * @param {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number> }} startedIssue startFirstStartableIssue の結果
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true（起動できなかった・打ち切られた・0 以外で終わった・途中で例外が出たら false）
  * @throws {Error} 記録ファイルへ書けなかったとき
  */
-async function runSessionAndRecord({ issue, branchName, existingPullRequestNumbers }) {
-  const record = { issueNumber: issue.number, issueTitle: issue.title, branchName }
+async function runSessionAndRecord(startedIssue) {
+  const { issue, branchName, workspaceDir, existingPullRequestNumbers } = startedIssue
+  // 記録ファイルは全プロセスで共有するので、どの clone で作業したかを載せる。途中で消えた変更の stash を探す先になる
+  const record = { issueNumber: issue.number, issueTitle: issue.title, branchName, workspaceDir }
   record.sessionStartedAt = new Date().toISOString()
   inFlightIssueNumber = issue.number
   let isAllSessionsSucceeded = false
   try {
     // 途中で例外が出たら false のまま残すため、最後にまとめて代入する
-    const isImplemented = await handOverOrImplement(issue.number, record)
+    const isImplemented = await handOverOrImplement(issue.number, workspaceDir, record)
     if (record.subIssueHandover) showSubIssueHandover(record)
     if (record.skippedReason) showWarning(`実装へ進みません: ${record.skippedReason}`)
     const shouldWatchCi = isImplemented && !record.skippedReason && !record.subIssueHandover
     isAllSessionsSucceeded = shouldWatchCi
-      ? await watchCiAndFix(issue, branchName, record)
+      ? await watchCiAndFix(startedIssue, record)
       : isImplemented
   } catch (error) {
     // 無人実行の画面はセッションの出力で流れるため、スタックを出すと原因の1行が埋もれる（Issue #780）
@@ -881,19 +915,51 @@ async function waitUnlessIdleWaitLimitReached(idlePollCount, idleReason) {
   return false
 }
 
-async function main() {
-  // 上限が欠けたまま動かさない。config.mjs はテンプレート同期の対象外で、同期した利用先では欠けうる
-  validateMaxConsecutiveIdleWaits(config.maxConsecutiveIdleWaits)
-  // 不正な接頭辞は buildBranchName が Issue ごとに投げ、catch で「飛ばします」になって全 Issue を飛ばし続ける。
-  // Issue を拾う前に止める
-  validateBranchPrefix(config.branchPrefix)
-  // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
-  // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
-  startSleepGuard()
-  runPreflight()
-  // リモートを見るので clone ができた後に確かめる
-  ensureNoBranchNamedAsPrefix(config.branchPrefix)
+/**
+ * 一番小さい空き番号の AI 専用 clone をロックで取り、その clone のパスを返す。1番は config.workspaceDir をそのまま、
+ * 2番以降はその後ろに `-<番号>` を付けたパスにする。取ったロックは releaseWorkspaceLock で外す。
+ *
+ * @returns {string} このプロセスが使う AI 専用 clone（まだ無ければ preflight が作る）
+ * @throws {Error} ロックファイルを読めなかった・作れなかった・消せなかったとき
+ */
+function acquireWorkspaceDir() {
+  const { lockNumber, lock } = acquireLowestFreeNumberedLockFile({
+    lockDirectory: WORKSPACE_LOCK_DIRECTORY,
+    lockFileNamePrefix: 'workspace'
+  })
+  workspaceLock = lock
+  const workspaceDir =
+    lockNumber === 1 ? config.workspaceDir : `${config.workspaceDir}-${lockNumber}`
+  showInfo(`AI 専用 clone の ${lockNumber} 番を使います: ${workspaceDir}`)
+  return workspaceDir
+}
 
+/**
+ * 取った AI 専用 clone の番号ロックを外す。取っていなければ何もしない。外せなくても投げない。
+ *
+ * シグナルのリスナからも呼ぶので、投げるとシグナルでの終了に至らない。外せずに残ったロックは、PID のプロセスが
+ * いなくなった時点で、次に起動したプロセスが死んだとみなして取り直す。
+ *
+ * @returns {void}
+ */
+function releaseWorkspaceLock() {
+  if (workspaceLock === null) return
+  try {
+    releaseLockFile(workspaceLock)
+  } catch (error) {
+    showWarning(`AI 専用 clone のロックを外せませんでした: ${formatError(error)}`)
+  }
+  workspaceLock = null
+}
+
+/**
+ * Ctrl+C が来るか、着手できない周が上限を超えるまで、Issue を1件ずつ拾って処理する。
+ *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
+ * @returns {Promise<void>}
+ * @throws {Error} claude のセッションが続けて失敗したとき・記録ファイルへ書けなかったとき
+ */
+async function processIssuesUntilStopped(workspaceDir) {
   let consecutiveSessionFailureCount = 0
   let idlePollCount = 0
   let isIdleWaitLimitReached = false
@@ -904,7 +970,7 @@ async function main() {
     // 書き分けないと、gh の失敗などで待ち続けている間も「正常に空振りしている」ように見える
     let idleReason = '着手できる Issue なし'
     try {
-      startedIssue = await startFirstStartableIssue()
+      startedIssue = await startFirstStartableIssue(workspaceDir)
     } catch (error) {
       showError(`候補を引けませんでした: ${formatError(error, { withStack: true })}`)
       idleReason = '候補を引けず、次の見直しで再試行'
@@ -924,6 +990,27 @@ async function main() {
       )
     }
     await yieldToEventLoop()
+  }
+}
+
+async function main() {
+  // 上限が欠けたまま動かさない。config.mjs はテンプレート同期の対象外で、同期した利用先では欠けうる
+  validateMaxConsecutiveIdleWaits(config.maxConsecutiveIdleWaits)
+  // 不正な接頭辞は buildBranchName が Issue ごとに投げ、catch で「飛ばします」になって全 Issue を飛ばし続ける。
+  // Issue を拾う前に止める
+  validateBranchPrefix(config.branchPrefix)
+  // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
+  // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
+  startSleepGuard()
+  // clone を作る preflight より前に取る。後だと、同時に起動した2本が同じ clone を作り始める
+  const workspaceDir = acquireWorkspaceDir()
+  try {
+    runPreflight(workspaceDir)
+    // リモートを見るので clone ができた後に確かめる
+    ensureNoBranchNamedAsPrefix({ branchPrefix: config.branchPrefix, workspaceDir })
+    await processIssuesUntilStopped(workspaceDir)
+  } finally {
+    releaseWorkspaceLock()
   }
   showInfo('止めました')
 }

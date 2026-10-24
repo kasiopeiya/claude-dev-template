@@ -30,12 +30,11 @@ const ELAPSED_TIME_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
 /**
  * スラッシュコマンド1つを無人セッションとして実行する。
  *
- * @param {string} slashCommand 実行するスラッシュコマンド（引数を含む）
- * @param {AbortSignal} abortSignal 中止の合図。中止されると reason のシグナルを claude へ子孫ごと送る
+ * @param {{ slashCommand: string, workspaceDir: string, abortSignal: AbortSignal }} params 実行するスラッシュコマンド（引数を含む）・セッションを動かす AI 専用 clone・中止の合図（中止されると reason のシグナルを claude へ子孫ごと送る）
  * @returns {Promise<{ exitCode: number, signal: string | null }>} claude プロセスの終了状態（打ち切られたときは signal が入る）
  * @throws {Error} claude を起動できなかったとき
  */
-async function runUnattendedSession(slashCommand, abortSignal) {
+async function runUnattendedSession({ slashCommand, workspaceDir, abortSignal }) {
   showInfo(`▶ ${slashCommand} を実行`)
   const timeoutMs = config.sessionTimeoutMinutes * MILLISECONDS_PER_MINUTE
   const showSessionProgress = createThrottledStatusLine({
@@ -51,7 +50,7 @@ async function runUnattendedSession(slashCommand, abortSignal) {
     'claude',
     ['-p', slashCommand, '--dangerously-skip-permissions'],
     {
-      cwd: config.workspaceDir,
+      cwd: workspaceDir,
       timeoutMs,
       abortSignal,
       onTick: (elapsedMs) =>
@@ -91,35 +90,45 @@ function showSessionOutcome(slashCommand, { exitCode, signal }, elapsedMs) {
  * `/issue-check #<Issue番号>` を無人セッションとして実行する。判定を Issue へ書き戻す手順は Skill が持ち、
  * 終了コード 0 は書き戻しが済んだことを保証しない。
  *
- * @param {number} issueNumber 監査させる Issue の番号
- * @param {AbortSignal} abortSignal 中止の合図（runUnattendedSession を参照）
+ * @param {{ issueNumber: number, workspaceDir: string, abortSignal: AbortSignal }} params 監査させる Issue の番号・セッションを動かす AI 専用 clone・中止の合図（runUnattendedSession を参照）
  * @returns {Promise<{ exitCode: number, signal: string | null }>} claude プロセスの終了状態（打ち切られたときは signal が入る）
  * @throws {Error} claude を起動できなかったとき
  */
-export function runIssueCheckSession(issueNumber, abortSignal) {
+export function runIssueCheckSession({ issueNumber, workspaceDir, abortSignal }) {
   // `#` を付ける。素の数字は /issue-check が件数として読む
-  return runUnattendedSession(`/issue-check #${issueNumber}`, abortSignal)
+  return runUnattendedSession({
+    slashCommand: `/issue-check #${issueNumber}`,
+    workspaceDir,
+    abortSignal
+  })
 }
 
 /**
  * `/auto-dev <Issue番号>` を無人セッションとして実行する。
  *
- * @param {number} issueNumber 実装させる Issue の番号
- * @param {AbortSignal} abortSignal 中止の合図（runUnattendedSession を参照）
+ * @param {{ issueNumber: number, workspaceDir: string, abortSignal: AbortSignal }} params 実装させる Issue の番号・セッションを動かす AI 専用 clone・中止の合図（runUnattendedSession を参照）
  * @returns {Promise<{ exitCode: number, signal: string | null }>} claude プロセスの終了状態（打ち切られたときは signal が入る）
  * @throws {Error} claude を起動できなかったとき
  */
-export function runAutoDevSession(issueNumber, abortSignal) {
-  return runUnattendedSession(`/auto-dev ${issueNumber}`, abortSignal)
+export function runAutoDevSession({ issueNumber, workspaceDir, abortSignal }) {
+  return runUnattendedSession({
+    slashCommand: `/auto-dev ${issueNumber}`,
+    workspaceDir,
+    abortSignal
+  })
 }
 
 /**
  * `/auto-fix-ci <Issue番号> <run ID>` を無人セッションとして実行する。
  *
- * @param {{ issueNumber: number, runId: number, abortSignal: AbortSignal }} params 直させる Issue の番号と、落ちた CI の run ID（どちらも数値なので、取り違えないよう名前で渡す）、中止の合図（runUnattendedSession を参照）
+ * @param {{ issueNumber: number, runId: number, workspaceDir: string, abortSignal: AbortSignal }} params 直させる Issue の番号と、落ちた CI の run ID（どちらも数値なので、取り違えないよう名前で渡す）、セッションを動かす AI 専用 clone、中止の合図（runUnattendedSession を参照）
  * @returns {Promise<{ exitCode: number, signal: string | null }>} claude プロセスの終了状態（打ち切られたときは signal が入る）
  * @throws {Error} claude を起動できなかったとき
  */
-export function runAutoFixCiSession({ issueNumber, runId, abortSignal }) {
-  return runUnattendedSession(`/auto-fix-ci ${issueNumber} ${runId}`, abortSignal)
+export function runAutoFixCiSession({ issueNumber, runId, workspaceDir, abortSignal }) {
+  return runUnattendedSession({
+    slashCommand: `/auto-fix-ci ${issueNumber} ${runId}`,
+    workspaceDir,
+    abortSignal
+  })
 }
