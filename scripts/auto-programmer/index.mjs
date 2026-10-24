@@ -78,6 +78,7 @@ import {
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { CI_RUN_STATE_FIELDS, decideAfterCiRun, readCiRunState } from './ciRun.mjs'
+import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
 import {
   acquireLowestFreeNumberedLockFile,
   releaseLockFile,
@@ -226,6 +227,29 @@ function listPullRequests(branchName) {
     '--json',
     'number,url'
   ])
+}
+
+/**
+ * ブランチを head とするマージ済みの PR の番号を引く。
+ *
+ * @param {string} branchName トピックブランチ名
+ * @returns {number | null} マージ済みの PR の番号（無ければ null）
+ * @throws {Error} gh が失敗したとき
+ */
+function findMergedPullRequestNumber(branchName) {
+  const [mergedPullRequest] = runJson('gh', [
+    'pr',
+    'list',
+    '--repo',
+    config.repository,
+    '--head',
+    branchName,
+    '--state',
+    'merged',
+    '--json',
+    'number'
+  ])
+  return mergedPullRequest?.number ?? null
 }
 
 /**
@@ -753,53 +777,6 @@ function handOverToHuman(issueNumber, lastRun) {
 }
 
 /**
- * CI を待つ前に、待っても意味が無い理由を探す。
- *
- * @param {{ state: string, labelNames: string[], headSha: string, localHeadSha: string, previousHeadSha: string | null, lastSessionName: string }} params 対象 Issue の state（'OPEN' / 'CLOSED'）とラベル名・リモートのブランチの SHA（push されていなければ空文字）・clone の HEAD の SHA・push されなかったとみなす SHA（前回 CI を待った SHA。衝突を解かせた直後はセッション前の SHA。新しく作ったブランチの最初の確認では null）・直前に走らせたセッションの名前
- * @returns {{ reason: string, isClosedWithoutChanges: boolean } | null} 待たない理由と、それが差分の出ない Issue を /auto-dev が閉じた（予定した終わり方）ためか。待ってよければ null
- */
-function findDecisionNotToWaitForCi({
-  state,
-  labelNames,
-  headSha,
-  localHeadSha,
-  previousHeadSha,
-  lastSessionName
-}) {
-  // /auto-dev の起動前に外し、付いた Issue の衝突は解かせないので、付いていれば今回のセッションが離脱した印
-  if (labelNames.includes(NEEDS_HUMAN_CHECK_LABEL)) {
-    return {
-      reason: `${NEEDS_HUMAN_CHECK_LABEL} が付いているので CI を待ちません`,
-      isClosedWithoutChanges: false
-    }
-  }
-  if (!headSha && state !== 'OPEN') {
-    return {
-      reason: '差分が出ないので /auto-dev が Issue を閉じました',
-      isClosedWithoutChanges: true
-    }
-  }
-  if (!headSha) {
-    return {
-      reason: 'ブランチが push されていないので CI を待ちません',
-      isClosedWithoutChanges: false
-    }
-  }
-  if (headSha === previousHeadSha) {
-    return { reason: `${lastSessionName} が push しませんでした`, isClosedWithoutChanges: false }
-  }
-  // 待った SHA は記録に残り、衝突を解かせてよいかを決める「このツールの commit」の目印になる。clone の HEAD と違う
-  // リモートの commit は、このツール以外の push なので、待たずに人間へ回す
-  if (headSha !== localHeadSha) {
-    return {
-      reason: 'リモートのブランチに、このツール以外の push があるので CI を待ちません',
-      isClosedWithoutChanges: false
-    }
-  }
-  return null
-}
-
-/**
  * 直させずに終える run について、記録に残す結果を決める。上限まで直させても落ちていれば人間へ回す。
  *
  * @param {{ issueNumber: number, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null } }} params 対象 Issue の番号・decideAfterCiRun の結果・待ち終えた run の状態
@@ -824,7 +801,7 @@ function concludeCiWatch({ issueNumber, nextStep, runState }) {
  * リモートのブランチ・clone の HEAD・Issue を引き、CI を待っても意味が無い理由を探す。
  *
  * @param {{ issueNumber: number, branchName: string, workspaceDir: string, previousHeadSha: string | null, lastSessionName: string }} params 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・push されなかったとみなす SHA と直前に走らせたセッションの名前（findDecisionNotToWaitForCi を参照）
- * @returns {{ headSha: string, decisionNotToWait: ReturnType<typeof findDecisionNotToWaitForCi> }} リモートのブランチの SHA と、待たない理由（待ってよければ null）
+ * @returns {{ headSha: string, decisionNotToWait: ReturnType<typeof findDecisionNotToWaitForCi> }} リモートのブランチの SHA と、記録にそのまま書く待たない理由（待ってよければ null）
  * @throws {Error} git・gh が失敗したとき
  */
 function readHeadShaAndDecisionNotToWait({
@@ -837,6 +814,8 @@ function readHeadShaAndDecisionNotToWait({
   const headSha = readRemoteHeadSha({ workspaceDir, branchName })
   const localHeadSha = runOrThrow('git', ['rev-parse', 'HEAD'], { cwd: workspaceDir }).trim()
   const { state, labelNames } = readIssueStatus(issueNumber)
+  // マージで消えたブランチを、差分が出ずに閉じた Issue と見分けるためだけに引く。ブランチが残っていれば要らない
+  const mergedPullRequestNumber = headSha ? null : findMergedPullRequestNumber(branchName)
   return {
     headSha,
     decisionNotToWait: findDecisionNotToWaitForCi({
@@ -845,7 +824,8 @@ function readHeadShaAndDecisionNotToWait({
       headSha,
       localHeadSha,
       previousHeadSha,
-      lastSessionName
+      lastSessionName,
+      mergedPullRequestNumber
     })
   }
 }
@@ -864,8 +844,8 @@ async function watchCiAndFix(
   record
 ) {
   record.ciRuns = []
-  // CI が通ったときだけ true にする。通らずに戻る経路（離脱・未 push・打ち切り）は、差分が出ずに閉じた場合を除いて
-  // 人間の手当てが要る
+  // CI が通ったとき（PR がマージ済みのときを含む）だけ true にする。通らずに戻る経路（離脱・未 push・打ち切り）は、
+  // 差分が出ずに閉じた場合を除いて人間の手当てが要る
   record.isCiPassed = false
   let fixAttemptCount = 0
   // 衝突を解かせた後は、push されなかった古い SHA の CI（通った後に衝突したもの）を、解けた印と取り違えない
@@ -878,8 +858,7 @@ async function watchCiAndFix(
       ...pushCheck
     })
     if (decisionNotToWait) {
-      record.ciOutcome = decisionNotToWait.reason
-      record.isClosedWithoutChanges = decisionNotToWait.isClosedWithoutChanges
+      Object.assign(record, decisionNotToWait)
       return true
     }
     pushCheck.previousHeadSha = headSha
