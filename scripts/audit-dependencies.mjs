@@ -44,16 +44,6 @@ const ALLOWED_VULNERABILITIES = [
     packageName: 'brace-expansion',
     advisoryUrl: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
     nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/brace-expansion'
-  },
-  // samples/app/backend の braces は archunit → plantuml-parser → fast-glob → micromatch の先にあり、直せない。
-  // 根拠: braces は 3.0.3 以下が脆弱で、最新版も 3.0.3 のまま（2026-10-03 確認）。archunit の最新版 2.5.4 も
-  //   plantuml-parser ^0.4.0 に依存し、plantuml-parser の最新版 0.4.0 も fast-glob 3.x を使う。
-  // 失効条件: 修正版の braces が出たら `npm audit fix` で上げ、このエントリを削除する。
-  {
-    directory: 'samples/app/backend',
-    packageName: 'braces',
-    advisoryUrl: 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',
-    nodePathPrefix: 'node_modules/braces'
   }
 ]
 

@@ -146,7 +146,6 @@ const RULE_GROUPS = [
       { label: 'gh release delete', prefix: ['gh', 'release', 'delete'] },
       { label: 'gh release delete-asset', prefix: ['gh', 'release', 'delete-asset'] },
       { label: 'gh issue delete', prefix: ['gh', 'issue', 'delete'] },
-      { label: 'gh label delete', prefix: ['gh', 'label', 'delete'] },
       { label: 'gh cache delete', prefix: ['gh', 'cache', 'delete'] },
       {
         label: '既存の本文を空で上書きする gh 操作',
