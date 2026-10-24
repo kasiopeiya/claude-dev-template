@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// 責務: PR がマージ済みで取り込み済みのローカルブランチを消し、それを抱える stale worktree もフォルダごと消す。人間が手動で実行する。
+// 責務: PR がマージ済みで取り込み済みのローカルブランチを消し、それを抱える stale worktree もフォルダごと消す。
+//   AI が Issue の着手時に打つ（いつ・なぜ打つかは CLAUDE.md「Issue 作業の共通ルール」）。人間が手で打ってもよい。
 //
 // 使い方:
 //   npm run prune-merged-branches-and-worktrees                消したブランチを1件1行で標準出力に返す
@@ -16,19 +17,42 @@
 //   PR の先端と同じコミットに限らないのは、PR の先端がローカルより先へ進んでいることが多いため（別の clone で直した・取り込んだ）。
 //   マージ直前に含まれるかも見るのは、古いデフォルトブランチから作り直したブランチの先端も、PR の先端の祖先になるため。
 //   PR の無いブランチ・PR がマージされていないブランチは、取り込み済みでも消す対象にしない（出力もしない）
-// - 判定の前に自分で git fetch origin <デフォルトブランチ> を打つ（--dry-run でも打つ）。人間が事前に打つ前提だと、
+// - 判定の前に自分で git fetch origin <デフォルトブランチ> を打つ（--dry-run でも打つ）。呼び出し側が事前に fetch する前提だと、
 //   打ち忘れたときに取り込み済みのブランチを黙って消さずにおく
 // - 削除は `-d` に限る。git 自身のマージ済みチェックが安全装置になる。-D は未マージの作業と専用 reflog を消すため使わない
 //   （.claude/hooks/forbiddenCommandMatcher.mjs 冒頭）
 // - worktree は --force なしで外す。未コミットの変更があれば git が拒否し、そのブランチは残す
+// - 生きている Claude Code セッションが中で作業している worktree は外さない（ブランチも残す）。着手時に AI が打つので、
+//   マージ後も開いたままの別セッションの作業ディレクトリを消しうる。git は、別プロセスが作業ディレクトリにしている
+//   worktree でも外してしまう。セッションの作業ディレクトリは会話ログの最後の cwd で見る。`cd` で移っても、
+//   プロセスの cwd（lsof）と登録ファイルの cwd は起動したフォルダのままで、会話ログの cwd だけが追った（v2.1.310 で確認）。
+//   EnterWorktree で移ったときに会話ログの cwd が追うかは未確認（hook の入力の cwd が追うことは #842 で確認済み）
+//   登録ファイルと会話ログは Claude Code の非公開の内部ファイルなので、読めない・cwd が見つからないときは、
+//   どのセッションがどこに居るか分からないものとして、worktree を抱えるブランチをすべて残す
 // - `--dry-run` は、消す前に対象を確かめるために置く。このスクリプトは動作確認をするだけでも実削除になるため
 // - 消す操作なので、知らない引数は止める。打ち間違い（`--dryrun` など）が、そのまま実削除になるのを防ぐ
 // - `npm run prune-merged-branches-and-worktrees --dry-run`（`--` 抜け）では、npm が --dry-run を自分の設定として吸い取り、
 //   引数には残らず環境変数 npm_config_dry_run だけが立つ。確認のつもりが実削除にならないよう、これも dry-run とみなす
 
 import { execFileSync } from 'child_process'
-import { realpathSync } from 'fs'
+import {
+  closeSync,
+  existsSync,
+  fstatSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+  readSync,
+  realpathSync
+} from 'fs'
+import { homedir } from 'os'
+import { join, sep } from 'path'
 import { fileURLToPath } from 'url'
+
+// Claude Code がセッションごとに書く登録ファイル（<設定ディレクトリ>/sessions/<pid>.json）。pid は名前から取る
+const SESSION_REGISTRATION_FILE_NAME_PATTERN = /^(\d+)\.json$/
+// 会話ログの末尾から読む量。cwd は各行に入っているので、直近の数行が入れば足りる
+const TRANSCRIPT_TAIL_BYTES = 1024 * 1024
 
 /**
  * コマンドを1回実行し、標準出力の末尾の改行を落として返す。
@@ -176,6 +200,112 @@ function parseWorktreeBlock(block) {
 }
 
 /**
+ * プロセスが生きているかを返す。
+ *
+ * @param {number} pid 調べるプロセスの pid
+ * @returns {boolean} 生きていれば true。シグナルを送る権限が無いだけ（EPERM）のときも、存在はするので true
+ */
+function isProcessAlive(pid) {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (error) {
+    return error.code === 'EPERM'
+  }
+}
+
+/**
+ * ファイルの末尾を読む。
+ *
+ * @param {string} path 読むファイル
+ * @param {number} byteCount 末尾から読むバイト数の上限
+ * @returns {string} 読んだ内容。先頭は行の途中から始まりうる
+ */
+function readFileTail(path, byteCount) {
+  const fileDescriptor = openSync(path, 'r')
+  try {
+    const { size } = fstatSync(fileDescriptor)
+    const length = Math.min(size, byteCount)
+    const buffer = Buffer.alloc(length)
+    readSync(fileDescriptor, buffer, 0, length, size - length)
+    return buffer.toString('utf8')
+  } finally {
+    closeSync(fileDescriptor)
+  }
+}
+
+/**
+ * セッションの会話ログから、最後に記録された作業ディレクトリを読む。
+ *
+ * @param {{ projectsDirectory: string, sessionId: string }} params
+ *   projectsDirectory: 会話ログを置く `<設定ディレクトリ>/projects` / sessionId: 調べるセッションの ID
+ * @returns {string | undefined} 作業ディレクトリ。会話ログがまだ無ければ undefined
+ * @throws {Error} 会話ログの末尾に cwd を持つ行が無いとき
+ */
+function readLastTranscriptWorkingDirectory({ projectsDirectory, sessionId }) {
+  const transcriptPath = readdirSync(projectsDirectory)
+    .map((projectName) => join(projectsDirectory, projectName, `${sessionId}.jsonl`))
+    .find((path) => existsSync(path))
+  if (transcriptPath === undefined) return undefined
+  const lines = readFileTail(transcriptPath, TRANSCRIPT_TAIL_BYTES).split('\n').reverse()
+  for (const line of lines) {
+    let entry
+    try {
+      entry = JSON.parse(line)
+    } catch {
+      continue // 途中から読んだ先頭の行と、書きかけの行
+    }
+    if (typeof entry?.cwd === 'string' && entry.cwd !== '') return entry.cwd
+  }
+  throw new Error(`会話ログの末尾に cwd がありません: ${transcriptPath}`)
+}
+
+/**
+ * 生きている Claude Code セッションそれぞれの、いまの作業ディレクトリを集める。
+ *
+ * @returns {string[]} 作業ディレクトリ
+ * @throws {Error} 登録ファイル・会話ログを読めないとき・作業ディレクトリが分からないセッションがあるとき
+ */
+function readLiveSessionWorkingDirectories() {
+  const configDirectory = process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude')
+  const registrationDirectory = join(configDirectory, 'sessions')
+  const projectsDirectory = join(configDirectory, 'projects')
+  return readdirSync(registrationDirectory).flatMap((fileName) => {
+    const pidMatch = SESSION_REGISTRATION_FILE_NAME_PATTERN.exec(fileName)
+    if (pidMatch === null || !isProcessAlive(Number(pidMatch[1]))) return []
+    const { sessionId, cwd } = JSON.parse(
+      readFileSync(join(registrationDirectory, fileName), 'utf8')
+    )
+    if (typeof sessionId !== 'string' || typeof cwd !== 'string') {
+      throw new Error(`登録ファイルに sessionId か cwd がありません: ${fileName}`)
+    }
+    // 会話ログがまだ無いセッションは、起動したフォルダから動いていない
+    return [readLastTranscriptWorkingDirectory({ projectsDirectory, sessionId }) ?? cwd]
+  })
+}
+
+/**
+ * worktree の中で、生きているセッションが作業しているかを返す。
+ *
+ * @param {{ worktreePath: string, sessionWorkingDirectories: string[] | undefined }} params
+ *   worktreePath: 調べる worktree / sessionWorkingDirectories: 生きているセッションの作業ディレクトリ。分からなければ undefined
+ * @returns {boolean} 作業しているか、分からなければ true
+ */
+function isWorktreeUsedBySession({ worktreePath, sessionWorkingDirectories }) {
+  if (sessionWorkingDirectories === undefined) return true
+  let worktreeRealPath
+  try {
+    worktreeRealPath = realpathSync(worktreePath)
+  } catch {
+    worktreeRealPath = worktreePath
+  }
+  return sessionWorkingDirectories.some(
+    (directory) =>
+      directory === worktreeRealPath || directory.startsWith(`${worktreeRealPath}${sep}`)
+  )
+}
+
+/**
  * 1つのブランチを消す。抱えている worktree があれば先に外す。
  *
  * @param {{ branch: string, worktreePath: string | undefined }} target 消すブランチと、そのブランチを抱える worktree の場所
@@ -190,6 +320,52 @@ function deleteBranch({ branch, worktreePath }) {
   }
   git(['branch', '-d', branch])
   console.log(`削除: ${branch}（was ${sha}）`)
+}
+
+/**
+ * マージ済み PR の作業と確かめたブランチを、抱えている worktree ごと消す。
+ * セッションが作業している worktree を抱えるブランチは残す。
+ *
+ * @param {{ coveredBranches: string[], worktreePathByBranch: Map<string, string>,
+ *   sessionWorkingDirectories: string[] | undefined, dryRun: boolean }} params
+ *   coveredBranches: 消すブランチ / worktreePathByBranch: ブランチを抱える worktree の場所 /
+ *   sessionWorkingDirectories: 生きているセッションの作業ディレクトリ。分からなければ undefined /
+ *   dryRun: true なら何も消さずに消す予定を出力する
+ * @returns {{ deletedCount: number, skippedCount: number, plannedCount: number }}
+ *   消した件数・残した件数・`dryRun` で消す予定だった件数
+ */
+function deleteCoveredBranches({
+  coveredBranches,
+  worktreePathByBranch,
+  sessionWorkingDirectories,
+  dryRun
+}) {
+  let deletedCount = 0
+  let skippedCount = 0
+  let plannedCount = 0
+  for (const branch of coveredBranches) {
+    const worktreePath = worktreePathByBranch.get(branch)
+    if (worktreePath && isWorktreeUsedBySession({ worktreePath, sessionWorkingDirectories })) {
+      console.error(
+        `残した: ${branch}: セッションが worktree で作業中か、確かめられません: ${worktreePath}`
+      )
+      skippedCount++
+      continue
+    }
+    if (dryRun) {
+      console.log(`削除予定: ${branch}${worktreePath ? `（worktree: ${worktreePath}）` : ''}`)
+      plannedCount++
+      continue
+    }
+    try {
+      deleteBranch({ branch, worktreePath })
+      deletedCount++
+    } catch (error) {
+      console.error(`残した: ${branch}: ${error.message}`)
+      skippedCount++
+    }
+  }
+  return { deletedCount, skippedCount, plannedCount }
 }
 
 /**
@@ -221,6 +397,16 @@ function pruneMergedBranches({ dryRun }) {
       .map((worktree) => [worktree.branch, worktree.path])
   )
 
+  // 分からないときは undefined にし、worktree を抱えるブランチをすべて残す
+  let sessionWorkingDirectories
+  try {
+    sessionWorkingDirectories = readLiveSessionWorkingDirectories()
+  } catch (error) {
+    console.error(
+      `セッションの作業ディレクトリを確かめられないので、worktree は外さない: ${error.message}`
+    )
+  }
+
   const targetBranches = gitLines([
     'branch',
     '--merged',
@@ -234,25 +420,13 @@ function pruneMergedBranches({ dryRun }) {
     branches: targetBranches
   })
 
-  let deletedCount = 0
-  let skippedCount = uncheckedCount
-  let plannedCount = 0
-  for (const branch of coveredBranches) {
-    const worktreePath = worktreePathByBranch.get(branch)
-    if (dryRun) {
-      console.log(`削除予定: ${branch}${worktreePath ? `（worktree: ${worktreePath}）` : ''}`)
-      plannedCount++
-      continue
-    }
-    try {
-      deleteBranch({ branch, worktreePath })
-      deletedCount++
-    } catch (error) {
-      console.error(`残した: ${branch}: ${error.message}`)
-      skippedCount++
-    }
-  }
-  return { deletedCount, skippedCount, plannedCount }
+  const { deletedCount, skippedCount, plannedCount } = deleteCoveredBranches({
+    coveredBranches,
+    worktreePathByBranch,
+    sessionWorkingDirectories,
+    dryRun
+  })
+  return { deletedCount, skippedCount: skippedCount + uncheckedCount, plannedCount }
 }
 
 const KNOWN_OPTIONS = new Set(['--dry-run'])
