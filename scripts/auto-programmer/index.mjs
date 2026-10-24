@@ -36,12 +36,22 @@
 // - 同じマシンで何本も動かせるよう、起動時に一番小さい空き番号の AI 専用 clone をロックで取り、終わるまでその clone だけを使う。
 //   1つの clone を共有すると、一方の作業中にもう一方が stash・reset --hard・clean を走らせる。clone ごと分ければ
 //   workspace.mjs の巻き戻しの手順を変えずに済む。番号を自動で取るのは、人間に番号を選ばせず、clone の数を同時に動かした数の最大値で止めるため。
+// - 並べたプロセスが同じ Issue を取り合わないよう、候補を選んだ直後、ブランチを準備する前に Issue ごとのロックを取り、CI 待ちと修正まで
+//   含めて1件を終えるまで持つ。カードを先に着手中へ動かす手では、動かすのが一瞬で終わらず、同時に起動した2本が同じ候補を引く。
+//   ロックを取った後にカードの Status を引き直すのは、候補を1周に1回しか引かないためである。他のプロセスが短い経路（子への引き継ぎ・
+//   `/issue-check` での停止）で数十秒で終えてロックを外すと、古い候補一覧で同じ Issue を取り直せてしまう。
+//   ロックはこのマシンの中でしか効かない。別のマシンで同じアカウントを動かすと取り合う。
 
 import { basename, dirname, join } from 'node:path'
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
 import { closeIssuesOfMergedPullRequests } from '../close-issues.mjs'
-import { listStartableIssues, markCardAsStarted, putOnReadyAssignedToMe } from './board.mjs'
+import {
+  listStartableIssues,
+  markCardAsStarted,
+  putOnReadyAssignedToMe,
+  readCardStatusName
+} from './board.mjs'
 import { buildBranchName, validateBranchPrefix } from './branchName.mjs'
 import { runAutoDevSession, runAutoFixCiSession, runIssueCheckSession } from './claudeSession.mjs'
 import { config } from './config.mjs'
@@ -52,7 +62,11 @@ import {
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { CI_RUN_STATE_FIELDS, decideAfterCiRun, readCiRunState } from './ciRun.mjs'
-import { acquireLowestFreeNumberedLockFile, releaseLockFile } from './pidLockFile.mjs'
+import {
+  acquireLowestFreeNumberedLockFile,
+  releaseLockFile,
+  tryAcquireNamedLockFile
+} from './pidLockFile.mjs'
 import {
   isSubIssueHandoverEmpty,
   NEEDS_HUMAN_CHECK_LABEL,
@@ -91,13 +105,12 @@ const CI_RUN_WAIT_LIMIT_MS = config.ci.runWaitLimitMinutes * MILLISECONDS_PER_MI
 // 上限（runWaitLimitMinutes）いっぱい待つ実行で数十行に膨らむ
 const CI_WAIT_PROGRESS_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
 
-// AI 専用 clone の番号ロックの置き場。config.mjs はテンプレート同期の対象外で、同期した利用先では古い形のまま動くので、
-// キーを足さずに既存の workspaceDir から導く。置き場は clone の親（AUTO_PROGRAMMER_HOME）の下で、clone の名前ごとに分ける
-const WORKSPACE_LOCK_DIRECTORY = join(
-  dirname(config.workspaceDir),
-  'locks',
-  basename(config.workspaceDir)
-)
+// AI 専用 clone の番号ロックと、Issue ごとのロックの置き場。config.mjs はテンプレート同期の対象外で、同期した利用先では古い形のまま
+// 動くので、キーを足さずに既存の workspaceDir から導く。置き場は clone の親（AUTO_PROGRAMMER_HOME）の下で、clone の名前ごとに分ける
+const LOCK_DIRECTORY = join(dirname(config.workspaceDir), 'locks', basename(config.workspaceDir))
+
+// 着手できる Issue が無い周に、待機中のステータス行へ出す理由
+const NO_STARTABLE_ISSUE_IDLE_REASON = '着手できる Issue なし'
 
 // GraphQL が1つの接続（sub-issue・ラベル・カード）から一度に返せる件数の上限。sub-issue は超えていたら読み落としとして止める
 const GRAPHQL_CONNECTION_FETCH_LIMIT = 100
@@ -148,10 +161,13 @@ let inFlightIssueNumber = null
 // このプロセスが取った AI 専用 clone の番号ロック（取る前と外した後は null）。シグナルで終わると main の finally に
 // 届かないので、リスナも外す
 let workspaceLock = null
+// このプロセスが着手している Issue のロック（取る前と外した後は null）。外す理由は workspaceLock と同じ
+let issueLock = null
 for (const signal of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
   process.once(signal, () => {
     stopController.abort(signal)
     if (inFlightIssueNumber !== null) tryMarkAsNeedsHumanCheck(inFlightIssueNumber, {})
+    releaseIssueLock()
     releaseWorkspaceLock()
     process.kill(process.pid, signal)
   })
@@ -394,44 +410,100 @@ function startIssue({ issue, branchName, workspaceDir }) {
   return existingPullRequestNumbers
 }
 
+/** @typedef {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number> }} StartedIssue 着手中へ動かした Issue。そのロックは issueLock に残り、1件を終えたら releaseIssueLock で外す */
+
+/**
+ * 他のプロセスと取り合わないよう Issue のロックを取り、カードがまだ着手待ちかを引き直す。
+ *
+ * 着手してよいとき・投げたときは、取ったロックを issueLock に残す。カードがもう着手待ちに無いときは、外してから理由を返す。
+ *
+ * @param {{ itemId: string, number: number }} issue 候補の Issue
+ * @returns {string | null} 着手せずに飛ばす理由（他のプロセスがロックを持っている・カードがもう着手待ちに無い。着手してよければ null）
+ * @throws {Error} ロックファイルを読めなかった・作れなかった・消せなかったとき・カードの Status を引けなかったとき
+ */
+function claimIssue(issue) {
+  const { lock, holderPid } = tryAcquireNamedLockFile({
+    lockDirectory: LOCK_DIRECTORY,
+    lockName: `issue-${issue.number}`
+  })
+  if (lock === null) return `PID ${holderPid ?? '（読めず）'} のプロセスが着手中です`
+  issueLock = lock
+
+  const statusName = readCardStatusName(issue.itemId)
+  if (statusName === config.board.readyStatusName) return null
+  releaseIssueLock()
+  return `カードがもう ${config.board.readyStatusName} にありません（いまは ${statusName ?? 'Status なし'}）`
+}
+
+/**
+ * Issue 1件の着手を試す。他のプロセスが着手している・カードがもう着手待ちに無ければ ℹ で、着手前の準備が落ちれば ⚠ で理由を出して飛ばす。
+ *
+ * 着手したときは、その Issue のロックを issueLock に残す。
+ *
+ * @param {{ itemId: string, number: number, title: string, labelNames: string[] }} issue 候補の Issue
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
+ * @returns {{ outcome: 'started', startedIssue: StartedIssue } | { outcome: 'skipped' } | { outcome: 'failed' }} 着手した（started）・異常ではない理由で飛ばした（skipped）・着手前の準備が落ちて飛ばした（failed）のどれか
+ */
+function tryStartIssue(issue, workspaceDir) {
+  try {
+    const skipReason = claimIssue(issue)
+    if (skipReason) {
+      showInfo(`#${issue.number} を飛ばします: ${skipReason}`)
+      return { outcome: 'skipped' }
+    }
+    const branchName = buildBranchName({
+      issueNumber: issue.number,
+      labelNames: issue.labelNames,
+      branchPrefix: config.branchPrefix
+    })
+    showIssueBanner({ issueNumber: issue.number, title: issue.title, branchName, workspaceDir })
+    const existingPullRequestNumbers = startIssue({ issue, branchName, workspaceDir })
+    return {
+      outcome: 'started',
+      startedIssue: { issue, branchName, workspaceDir, existingPullRequestNumbers }
+    }
+  } catch (error) {
+    // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
+    releaseIssueLock()
+    showWarning(`#${issue.number} を飛ばします: ${formatError(error)}`)
+    return { outcome: 'failed' }
+  }
+}
+
 /**
  * 着手できる Issue を着手順に試し、最初に着手中へ動かせた1件を返す。
  *
- * 着手前に落ちた Issue は理由を出して飛ばす。着手できる Issue が無いときは何も出さない
- * （呼び出し側がアイドル中のステータス行にまとめて示す）。
+ * 他のプロセスが着手している・カードがもう着手待ちに無い Issue と、着手前に落ちた Issue は、理由を出して飛ばす。着手できる Issue が
+ * 無いときは何も出さない（呼び出し側がアイドル中のステータス行にまとめて示す）。前者のせいだけで全件を飛ばしたときは、
+ * 異常ではないので締めの警告を出さない。
+ *
+ * 着手した Issue のロックは issueLock に残す。外すのは呼び出し側で、1件を終えたときに releaseIssueLock を呼ぶ。
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
- * @returns {Promise<{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number> } | null>} 着手した Issue（着手できる Issue が無い・全部飛ばした・止められたときは null）
+ * @returns {Promise<{ startedIssue: StartedIssue | null, idleReason: string | null }>} 着手した Issue（着手できる Issue が無い・全部飛ばした・止められたときは null）と、着手しなかったときに待機中のステータス行へ出す理由（着手したときは null）
  * @throws {Error} 候補を引けなかったとき
  */
 async function startFirstStartableIssue(workspaceDir) {
   const issues = listStartableIssues()
-  if (issues.length === 0) return null
-
+  let failedIssueCount = 0
   for (const issue of issues) {
     // 同期処理の合間にイベントループを回し、Ctrl+C を受け取る
     await yieldToEventLoop()
-    if (stopController.signal.aborted) return null
-
-    try {
-      const branchName = buildBranchName({
-        issueNumber: issue.number,
-        labelNames: issue.labelNames,
-        branchPrefix: config.branchPrefix
-      })
-      showIssueBanner({ issueNumber: issue.number, title: issue.title, branchName, workspaceDir })
-      return {
-        issue,
-        branchName,
-        workspaceDir,
-        existingPullRequestNumbers: startIssue({ issue, branchName, workspaceDir })
-      }
-    } catch (error) {
-      showWarning(`#${issue.number} を飛ばします: ${formatError(error)}`)
+    if (stopController.signal.aborted) {
+      return { startedIssue: null, idleReason: NO_STARTABLE_ISSUE_IDLE_REASON }
     }
+
+    const result = tryStartIssue(issue, workspaceDir)
+    if (result.outcome === 'started') {
+      return { startedIssue: result.startedIssue, idleReason: null }
+    }
+    if (result.outcome === 'failed') failedIssueCount += 1
   }
-  showWarning(`着手できる Issue ${issues.length} 件をすべて飛ばしました`)
-  return null
+
+  const isAllSkippedWithoutFailure = issues.length > 0 && failedIssueCount === 0
+  if (isAllSkippedWithoutFailure) return { startedIssue: null, idleReason: '他のプロセスが着手中' }
+  if (failedIssueCount > 0) showWarning(`着手できる Issue ${issues.length} 件をすべて飛ばしました`)
+  return { startedIssue: null, idleReason: NO_STARTABLE_ISSUE_IDLE_REASON }
 }
 
 /**
@@ -924,7 +996,7 @@ async function waitUnlessIdleWaitLimitReached(idlePollCount, idleReason) {
  */
 function acquireWorkspaceDir() {
   const { lockNumber, lock } = acquireLowestFreeNumberedLockFile({
-    lockDirectory: WORKSPACE_LOCK_DIRECTORY,
+    lockDirectory: LOCK_DIRECTORY,
     lockFileNamePrefix: 'workspace'
   })
   workspaceLock = lock
@@ -935,21 +1007,42 @@ function acquireWorkspaceDir() {
 }
 
 /**
- * 取った AI 専用 clone の番号ロックを外す。取っていなければ何もしない。外せなくても投げない。
+ * ロックを外す。外せなくても投げない。
  *
  * シグナルのリスナからも呼ぶので、投げるとシグナルでの終了に至らない。外せずに残ったロックは、PID のプロセスが
- * いなくなった時点で、次に起動したプロセスが死んだとみなして取り直す。
+ * いなくなった時点で、次に取ろうとしたプロセスが死んだとみなして取り直す。
+ *
+ * @param {Parameters<typeof releaseLockFile>[0]} lock 外すロック
+ * @returns {void}
+ */
+function tryReleaseLockFile(lock) {
+  try {
+    releaseLockFile(lock)
+  } catch (error) {
+    showWarning(`ロック ${lock.lockFilePath} を外せませんでした: ${formatError(error)}`)
+  }
+}
+
+/**
+ * 取った AI 専用 clone の番号ロックを外す。取っていなければ何もしない。外せなくても投げない。
  *
  * @returns {void}
  */
 function releaseWorkspaceLock() {
   if (workspaceLock === null) return
-  try {
-    releaseLockFile(workspaceLock)
-  } catch (error) {
-    showWarning(`AI 専用 clone のロックを外せませんでした: ${formatError(error)}`)
-  }
+  tryReleaseLockFile(workspaceLock)
   workspaceLock = null
+}
+
+/**
+ * 着手している Issue のロックを外す。取っていなければ何もしない。外せなくても投げない。
+ *
+ * @returns {void}
+ */
+function releaseIssueLock() {
+  if (issueLock === null) return
+  tryReleaseLockFile(issueLock)
+  issueLock = null
 }
 
 /**
@@ -965,12 +1058,12 @@ async function processIssuesUntilStopped(workspaceDir) {
   let isIdleWaitLimitReached = false
   while (!stopController.signal.aborted && !isIdleWaitLimitReached) {
     tryCloseIssuesOfMergedPullRequests()
-    let startedIssue
+    let startedIssue = null
     // 候補を引けなかった回は「着手できる Issue が無い」とは別の理由なので、待機行に書き分ける。
     // 書き分けないと、gh の失敗などで待ち続けている間も「正常に空振りしている」ように見える
-    let idleReason = '着手できる Issue なし'
+    let idleReason
     try {
-      startedIssue = await startFirstStartableIssue(workspaceDir)
+      ;({ startedIssue, idleReason } = await startFirstStartableIssue(workspaceDir))
     } catch (error) {
       showError(`候補を引けませんでした: ${formatError(error, { withStack: true })}`)
       idleReason = '候補を引けず、次の見直しで再試行'
@@ -982,7 +1075,12 @@ async function processIssuesUntilStopped(workspaceDir) {
     }
     idlePollCount = 0
 
-    const isAllSessionsSucceeded = await runSessionAndRecord(startedIssue)
+    let isAllSessionsSucceeded
+    try {
+      isAllSessionsSucceeded = await runSessionAndRecord(startedIssue)
+    } finally {
+      releaseIssueLock()
+    }
     consecutiveSessionFailureCount = isAllSessionsSucceeded ? 0 : consecutiveSessionFailureCount + 1
     if (consecutiveSessionFailureCount >= MAX_CONSECUTIVE_SESSION_FAILURES) {
       throw new Error(

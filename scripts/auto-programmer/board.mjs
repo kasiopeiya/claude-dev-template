@@ -10,7 +10,8 @@
 //   Issue 本文ごと数MBを読むことになり、閉じた Issue が着手待ちに残っていても検索が弾いてくれる。
 // - 候補は `gh` にログインしている自分が担当者の Issue に絞る。着手中へ動かすまでに準備で数分掛かり、
 //   その間に別の台が同じ Issue を選ぶ取り合いを、担当者を先に決めておくことで起こさない（Issue #683）。
-//   防げるのは1アカウント1台のときだけで、同じアカウントで2台動かすと取り合う。
+//   同じアカウントのプロセスどうしは、同じマシンなら Issue ごとのロック（index.mjs）で取り合わない。
+//   別のマシンで同じアカウントを動かすと取り合う。
 // - 表記の誤りは「候補0件」と区別がつかないので、着手待ちの表記も選択肢に実在するかを先に確かめる。
 // - ブロッカーの state は毎回 gh で引き直す。候補の本文に書かれた (closed) の印は、人間が
 //   `/issue-deps` を回した時点のものでしかない。引けなかったブロッカーは open と同じに扱う。
@@ -28,6 +29,15 @@ const ghProjectJsonArgs = [String(board.number), '--owner', board.owner, '--form
 
 // 着手待ちの候補として一度に読む枚数。超えていたら読み落としとして止める
 const CANDIDATE_FETCH_LIMIT = 100
+
+// gh project にはカード1枚の Status を引くサブコマンドが無いので、GraphQL で引く
+const CARD_STATUS_QUERY = `query($itemId: ID!, $statusFieldName: String!) {
+  node(id: $itemId) {
+    ... on ProjectV2Item {
+      fieldValueByName(name: $statusFieldName) { ... on ProjectV2ItemFieldSingleSelectValue { name } }
+    }
+  }
+}`
 
 /**
  * Status フィールドと、その選択肢の ID を表記から引く。
@@ -145,6 +155,30 @@ export function listStartableIssues() {
     }))
 
   return selectStartableIssues(candidates, findUnresolvedBlockerNumbers(candidates))
+}
+
+/**
+ * カード1枚の、いまの Status の表記を引く。listStartableIssues の一覧より新しい Status が要るときに使う。
+ *
+ * @param {string} itemId ボードのカード ID
+ * @returns {string | null} Status の表記（Status が空なら null）
+ * @throws {Error} gh が失敗したとき・カードが見つからないとき
+ */
+export function readCardStatusName(itemId) {
+  const {
+    data: { node }
+  } = runJson('gh', [
+    'api',
+    'graphql',
+    '-f',
+    `query=${CARD_STATUS_QUERY}`,
+    '-f',
+    `itemId=${itemId}`,
+    '-f',
+    `statusFieldName=${board.statusFieldName}`
+  ])
+  if (!node) throw new Error(`ボードにカード ${itemId} が見つかりません`)
+  return node.fieldValueByName?.name ?? null
 }
 
 /**

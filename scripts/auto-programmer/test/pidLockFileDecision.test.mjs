@@ -1,7 +1,7 @@
-// 責務: PID 入りのロックファイルについて、死んだロックの見分けと、一番小さい空き番号の選び方を検証する。
+// 責務: PID 入りのロックファイルについて、死んだロックの見分け・持ち主の PID の読み出しと、一番小さい空き番号の選び方を検証する。
 //
-// ここが壊れると、生きているロックを取り直して2つのプロセスが同じ clone で reset --hard し合うか、
-// 死んだロックを取り直せずに clone が増え続ける。
+// ここが壊れると、生きているロックを取り直して2つのプロセスが同じ clone で reset --hard し合う・同じ Issue を実装し合うか、
+// 死んだロックを取り直せずに clone が増え続ける・Issue を拾えなくなる。持ち主の PID を読み違えると、人間が残ったロックを見分けられない。
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
@@ -9,6 +9,7 @@ import assert from 'node:assert/strict'
 import {
   buildLockFileContent,
   isLockDead,
+  readLockHolderPid,
   selectLowestFreeNumber
 } from '../pidLockFileDecision.mjs'
 
@@ -170,4 +171,30 @@ describe('一番小さい空き番号を選ぶ', () => {
 
     assert.equal(freeNumber, 2)
   })
+})
+
+describe('ロックの持ち主の PID を読む', () => {
+  test('作った中身からは、持ち主の PID を読める', () => {
+    const sut = readLockHolderPid
+
+    const holderPid = sut(buildLockFileContentCreatedAt(3600))
+
+    assert.equal(holderPid, HOLDER_PID)
+  })
+
+  for (const { description, lockFileContent } of [
+    { description: 'JSON でない中身', lockFileContent: 'not json' },
+    {
+      description: 'PID が正の整数でない中身',
+      lockFileContent: buildLockFileContent({ pid: -1, createdAt: BOOTED_AT, bootId: null })
+    }
+  ]) {
+    test(`${description}からは、PID を読めない`, () => {
+      const sut = readLockHolderPid
+
+      const holderPid = sut(lockFileContent)
+
+      assert.equal(holderPid, null)
+    })
+  }
 })
