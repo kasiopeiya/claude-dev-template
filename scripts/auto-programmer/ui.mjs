@@ -268,13 +268,13 @@ export function showError(message) {
 /**
  * Issue 1件の始まりを区切りバナーで示す。claude のセッションが流す出力との境目を作るためのもの。
  *
- * @param {{ issueNumber: number, title: string, branchName: string }} issue 対象 Issue の番号・タイトルと、作るトピックブランチ名
+ * @param {{ issueNumber: number, title: string, branchName: string, workspaceDir: string }} issue 対象 Issue の番号・タイトルと、作るトピックブランチ名・作業する AI 専用 clone
  * @returns {void}
  */
-export function showIssueBanner({ issueNumber, title, branchName }) {
+export function showIssueBanner({ issueNumber, title, branchName, workspaceDir }) {
   // 先に消さずに '\n' を書くと、その場更新中のステータス行が改行の上に取り残される
   clearStatusLine()
   closeRelayedOutputLines()
   LINE_STYLES.banner.stream.write('\n')
-  writeLines('banner', buildIssueBannerText({ issueNumber, title, branchName }))
+  writeLines('banner', buildIssueBannerText({ issueNumber, title, branchName, workspaceDir }))
 }

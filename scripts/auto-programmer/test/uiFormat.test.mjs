@@ -262,15 +262,21 @@ describe('ステータス行の組み立て', () => {
 })
 
 describe('区切りバナー', () => {
-  test('二重罫線の行の下に、字下げしたタイトルとブランチ名を置く', () => {
+  test('二重罫線の行の下に、字下げしたタイトル・ブランチ名・clone を置く', () => {
     const sut = buildIssueBannerText
 
-    const banner = sut({ issueNumber: 123, title: '表示層を入れる', branchName: 'feat/issue-123' })
+    const banner = sut({
+      issueNumber: 123,
+      title: '表示層を入れる',
+      branchName: 'feat/issue-123',
+      workspaceDir: '/home/me/dev/auto-programmer/claude-dev-template-2'
+    })
 
-    const [ruleLine, titleLine, branchLine] = banner.split('\n')
+    const [ruleLine, titleLine, branchLine, workspaceLine] = banner.split('\n')
     assert.match(ruleLine, /^══ #123 ═+$/)
     assert.equal(titleLine, '   表示層を入れる')
     assert.equal(branchLine, '   ブランチ: feat/issue-123')
+    assert.equal(workspaceLine, '   clone: /home/me/dev/auto-programmer/claude-dev-template-2')
   })
 })
 

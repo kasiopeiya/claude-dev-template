@@ -71,10 +71,11 @@ function ensureHumanPrerequisites() {
  * 無いと、`/auto-dev` の前に前回の印を外す `gh issue edit --remove-label` が Issue ごとに落ち、止まった印も付けられない。
  * Issue を拾う前に止め、作り方を示す。
  *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone（作り方の案内に出す）
  * @returns {void}
  * @throws {Error} ラベルが無いとき・gh が失敗したとき
  */
-function ensureNeedsHumanCheckLabel() {
+function ensureNeedsHumanCheckLabel(workspaceDir) {
   const labels = runJson('gh', [
     'label',
     'list',
@@ -94,7 +95,7 @@ function ensureNeedsHumanCheckLabel() {
   if (!hasLabel) {
     throw new Error(
       `${config.repository} に ${NEEDS_HUMAN_CHECK_LABEL} ラベルがありません。` +
-        `${config.workspaceDir} で ./scripts/setup-labels.sh を流すか、` +
+        `${workspaceDir} で ./scripts/setup-labels.sh を流すか、` +
         `gh label create ${NEEDS_HUMAN_CHECK_LABEL} --repo ${config.repository} を打ってから、もう一度打ってください`
     )
   }
@@ -118,26 +119,29 @@ function readRepositoryFromRemoteUrl(remoteUrl) {
 /**
  * AI 専用 clone を用意する。すでにあれば、向き先が設定どおりかだけを確かめる。
  *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {void}
  * @throws {Error} clone に失敗したとき・既存 clone の向き先が config.repository と違うとき
  */
-function ensureWorkspaceClone() {
-  if (existsSync(join(config.workspaceDir, '.git'))) {
+function ensureWorkspaceClone(workspaceDir) {
+  if (existsSync(join(workspaceDir, '.git'))) {
     // repository だけを書き換えて古い clone を使い続けると、ボードは新リポジトリ・push は旧リポジトリに割れる
     const originUrl = runOrThrow('git', ['remote', 'get-url', 'origin'], {
-      cwd: config.workspaceDir
+      cwd: workspaceDir
     }).trim()
     if (readRepositoryFromRemoteUrl(originUrl) !== config.repository.toLowerCase()) {
+      // 2番以降の clone は名前の後ろに -<番号> を付けるので、名前が -<数字> で終わる別のリポジトリの clone と重なりうる
       throw new Error(
-        `${config.workspaceDir} の origin（${originUrl}）が ${config.repository} ではありません`
+        `${workspaceDir} の origin（${originUrl}）が ${config.repository} ではありません。` +
+          '名前が -<数字> で終わる別のリポジトリの clone と重なったときは、AUTO_PROGRAMMER_HOME をリポジトリごとに分けてください'
       )
     }
     return
   }
 
-  showInfo(`AI 専用 clone を作成します: ${config.workspaceDir}`)
-  mkdirSync(dirname(config.workspaceDir), { recursive: true })
-  const { exitCode } = runStreaming('gh', ['repo', 'clone', config.repository, config.workspaceDir])
+  showInfo(`AI 専用 clone を作成します: ${workspaceDir}`)
+  mkdirSync(dirname(workspaceDir), { recursive: true })
+  const { exitCode } = runStreaming('gh', ['repo', 'clone', config.repository, workspaceDir])
   if (exitCode !== 0) throw new Error(`clone に失敗しました: ${config.repository}`)
 }
 
@@ -146,14 +150,15 @@ function ensureWorkspaceClone() {
  *
  * 固定リストにしないのは、ロックファイルが増えたときの直し忘れを防ぐためである。
  *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {string[]} clone 直下からの相対パス（直下は `.`）
  * @throws {Error} `git ls-files` に失敗したとき
  */
-function listPackageLockDirectories() {
+function listPackageLockDirectories(workspaceDir) {
   // pathspec の `*` は `/` もまたぐので、入れ子のロックファイルも拾える。
   // -z を付けないと、日本語などを含むパスがクォート付きで出力されて使えない
   const trackedPaths = runOrThrow('git', ['ls-files', '-z', '--', `*${LOCK_FILE_NAME}`], {
-    cwd: config.workspaceDir
+    cwd: workspaceDir
   })
     .split('\0')
     .filter(Boolean)
@@ -178,12 +183,13 @@ function needsDependencyInstall(directory) {
  * AI 専用 clone の依存を、ロックファイルを持つディレクトリごとにロックファイルどおり入れる。
  * 入っていて最新のディレクトリは飛ばす。
  *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {void}
  * @throws {Error} clone 内の `git ls-files` が失敗したとき・`npm` を起動できないとき・`npm ci` が 0 以外で終わったとき
  */
-export function ensureDependencies() {
-  for (const relativeDirectory of listPackageLockDirectories()) {
-    const directory = join(config.workspaceDir, relativeDirectory)
+export function ensureDependencies(workspaceDir) {
+  for (const relativeDirectory of listPackageLockDirectories(workspaceDir)) {
+    const directory = join(workspaceDir, relativeDirectory)
     if (!needsDependencyInstall(directory)) continue
 
     // 取り込むと終わるまで何も出ず止まって見えるので、始まりの行は先に出す
@@ -208,11 +214,12 @@ export function ensureDependencies() {
  * Issue を選ぶ前に済ませられる準備を整える。依存は clone をデフォルトブランチへ戻した後でないと
  * 判定できないため、ここには含めず ensureDependencies で別に行う。
  *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {void}
  * @throws {Error} 人間が済ませるべき準備が無いとき・clone に失敗したとき・既存 clone の origin が config.repository と違うとき・対象リポジトリに needs-human-check ラベルが無いとき
  */
-export function runPreflight() {
+export function runPreflight(workspaceDir) {
   ensureHumanPrerequisites()
-  ensureWorkspaceClone()
-  ensureNeedsHumanCheckLabel()
+  ensureWorkspaceClone(workspaceDir)
+  ensureNeedsHumanCheckLabel(workspaceDir)
 }

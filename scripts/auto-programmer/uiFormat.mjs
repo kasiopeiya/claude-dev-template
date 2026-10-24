@@ -35,7 +35,7 @@ const SPINNER_FRAMES = ['|', '/', '-', '\\']
 // 区切りバナーで Issue 番号の後ろに続ける二重罫線の長さ
 const BANNER_RULE_LENGTH = 30
 
-// 区切りバナーでタイトルとブランチ名を字下げする幅
+// 区切りバナーでタイトル・ブランチ名・clone を字下げする幅
 const BANNER_INDENT = '   '
 
 // 表示幅が2桁になる文字の範囲（East Asian Width が W・F の主なもの）
@@ -214,16 +214,17 @@ export function prefixChunkLines({ chunk, prefix, isAtLineStart }) {
 }
 
 /**
- * Issue 1件の区切りバナーの文字列を作る。二重罫線の行の下に、字下げしたタイトルとブランチ名を置く。
+ * Issue 1件の区切りバナーの文字列を作る。二重罫線の行の下に、字下げしたタイトル・ブランチ名・clone を置く。
  *
- * @param {{ issueNumber: number, title: string, branchName: string }} issue 対象 Issue の番号・タイトルと、作るトピックブランチ名
- * @returns {string} 区切りバナー（3行）
+ * @param {{ issueNumber: number, title: string, branchName: string, workspaceDir: string }} issue 対象 Issue の番号・タイトルと、作るトピックブランチ名・作業する AI 専用 clone
+ * @returns {string} 区切りバナー（4行）
  */
-export function buildIssueBannerText({ issueNumber, title, branchName }) {
+export function buildIssueBannerText({ issueNumber, title, branchName, workspaceDir }) {
   return [
     `══ #${issueNumber} ${'═'.repeat(BANNER_RULE_LENGTH)}`,
     `${BANNER_INDENT}${title}`,
-    `${BANNER_INDENT}ブランチ: ${branchName}`
+    `${BANNER_INDENT}ブランチ: ${branchName}`,
+    `${BANNER_INDENT}clone: ${workspaceDir}`
   ].join('\n')
 }
 
