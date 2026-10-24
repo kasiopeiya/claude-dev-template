@@ -71,7 +71,7 @@ git ls-files --others --exclude-standard
 2. **同じ観点で引用が重なる指摘だけを1件にまとめる**（観点が違う指摘はまとめない）
 3. **severity を変えない**（レンズの判定を尊重する）
 4. **改善案が食い違ったら裁定する**：同じ箇所に別々のレンズが逆向きの改善案を出したら、ポリシーの条文（該当が無ければ `docs/policy/refined-engineer-judgment-principles.md`）を引用して一方を採り、捨てた改善案と根拠を添える。迷ったら AI が決める。例：「差し替えて壊す」が同じ Repository について「境界を足せ」、「投資の較正」が「実装が1つしかない投機的な境界を削れ」と出した場合（`architecture-reviewer-agent`「『差し替えて壊す』と『投資の較正』は対象が逆」を参照すれば通常は起きないが、起きたときの手順として残す）
-   - 例外：どちらを採っても人間が決めるべき条件「要件／プロダクト方針が変わる」に当たるとき、またはどちらかを採ると人間が決めるべき条件「不可逆・外部に出る」に当たるときだけは裁定しない（[issue-policy](../../../docs/policy/issue-policy.md)「人間が決めるべき Issue の条件」。ほかの条件には広げない）。その食い違い1件を、`.claude/skills/quick-issue/SKILL.md` の書式でラベル `needs-human-decision` を付けて `gh issue create` で起票し、ほかの指摘の処理は続ける。本文には、食い違った各指摘の観点名と引用を書き写す。同じワークフローの前回のレビューでこの手順により起票した Issue と同じ指摘なら、起票せず、既存の Issue 番号のまま起票済みとして扱う（手順7で引く対象にも含める）。同じ指摘かどうかは ai-review-gate-policy の「再レビューで同じ指摘が出たら、既存の Issue 番号で数える」で決める
+   - 例外：どちらを採っても人間が決めるべき条件「要件／プロダクト方針が変わる」に当たるとき、またはどちらかを採ると人間が決めるべき条件「不可逆・外部に出る」に当たるときだけは裁定しない（[issue-policy](../../../docs/policy/issue-policy.md)「人間が決めるべき Issue の条件」。ほかの条件には広げない）。その食い違い1件を、`.claude/skills/quick-issue/SKILL.md` の書式でラベル `needs-human-decision` を付けて `gh issue create` で起票し、ほかの指摘の処理は続ける。起票の前後は `.claude/skills/link-root-issue/SKILL.md` を Read して従う。本文には、食い違った各指摘の観点名と引用を書き写す。同じワークフローの前回のレビューでこの手順により起票した Issue と同じ指摘なら、起票せず、既存の Issue 番号のまま起票済みとして扱う（手順7で引く対象にも含める）。同じ指摘かどうかは ai-review-gate-policy の「再レビューで同じ指摘が出たら、既存の Issue 番号で数える」で決める
 5. **「次のステップ」の優先度は severity から機械的に決める**（Critical→高・High→中・Medium→低）
 6. **観点一覧の行名で穴を照合する**：`references/review-criteria.md` の観点一覧の全行を、どれかのレンズの「判定した観点」と突き合わせる。判定済みとみなすのは、各レンズの「判定した観点」に名前が挙がっている観点だけ。無ければ「未判定」として観点名をそのまま報告する（**これはレビュー対象の欠陥ではなく、レンズの割り方の穴**。黙って埋めない）
 7. **合否を判定する**：[ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) の合格条件（残してよい例外以外の Critical が0件）で決める。全観点を通じた Critical の合計から、手順4で `needs-human-decision` として起票した食い違いに含まれる Critical の指摘数を引き（起票した食い違いの件数ではない）、残りが0件なら ✅ 合格、1件以上なら 🚫 要修正とする。起票した Issue 番号は「Issue にして残す Critical」に書く
@@ -87,7 +87,7 @@ git ls-files --others --exclude-standard
 | [Critical]     | 1件ごとに1 Issue    | `[Critical] アーキテクチャ: <問題の概要>`         | 差し替え時に広く壊れる急所は、境界の引き直しごとに着手・クローズされる。束ねると一部だけ直った状態が残る |
 | High ＋ Medium | 全件まとめて1 Issue | `[High・Medium] アーキテクチャレビュー指摘まとめ` | 1件ずつ判断するほど重くない。件数分に割ると Critical の Issue が埋もれる                                 |
 
-タイトルの先頭ラベルは省略しないでください——本文を開かないと指摘の重さが分からない状態を避けるためです。タイトルの先頭には段番号を付けてください（例：`1. [Critical] …`）。振り方は [`/quick-issue`](../quick-issue/SKILL.md) の「段番号の振り方」に従います。
+タイトルの先頭ラベルは省略しないでください——本文を開かないと指摘の重さが分からない状態を避けるためです。タイトルの先頭には段番号を付けてください（例：`1. [Critical] …`）。振り方は [`/quick-issue`](../quick-issue/SKILL.md) の「段番号の振り方」に従います。起票の前後は [`/link-root-issue`](../link-root-issue/SKILL.md) の SKILL.md を Read して従ってください。段番号は、起票前に「ルートを決める」段で決めたグループから数えます。
 
 本文の書き方・起票前セルフチェックは `.claude/skills/quick-issue/SKILL.md`、ラベルは `docs/policy/issue-policy.md` が正典です。Read して従ってください。起票する Issue には `broken-window` を付けます。
 
