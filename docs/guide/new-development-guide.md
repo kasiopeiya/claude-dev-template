@@ -121,7 +121,7 @@ stateDiagram-v2
 
 **`needs-human-decision` を付ける。** `ai-fixable` は中身を見ずにAIが直せるという意味であり、仕様を詰めるところから始まる起点Issueは当たらない（[issue-policy](../policy/issue-policy.md) の「人間が決めるべき Issue の条件」のうち「着手前に仕様を詰める対話が要る」）。
 
-作った起点Issueは、issue-policy の「親の決め方」に従って上表のフェーズIssueにぶら下げ（フェーズIssueの作成・同名が複数あるときの選び方・世代交代は `/quick-issue` の「5. 親に紐づける」）、以降は開発フローガイドに沿って**各Issue単位**で回す。
+作った起点Issueは、`/link-root-issue` の手順に従い、上表のフェーズ名をルート名として渡してぶら下げ（ルート Issue の作成・同名が複数あるときの選び方・世代交代も `/link-root-issue` が持つ）、以降は開発フローガイドに沿って**各Issue単位**で回す。
 
 ## 全体構造設計Issue
 

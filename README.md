@@ -92,9 +92,10 @@ npm run format       # フォーマット
    - `gh auth refresh -s project` で、トークンに `project` スコープ（ボードを読み書きする権限）を足す
    - `scripts/auto-programmer/config.mjs` の `repository` と `board` を、自分のリポジトリとボードに向ける
    - ボードの Workflows 画面で、組み込みワークフロー「Pull request linked to issue」の移し先を `In Review` にする（既定は `In progress`）
-8. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
-9. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
-10. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
+8. `docs/project-context/issue-destinations.md` を自分の起票先に書き換える（分解元の親が無い Issue をどのルート Issue の下に入れるかを決める。テンプレート同期の対象外なので、書き換えても戻らない。既存の利用先には同期で届かないので、自分で作る。新規開発ガイドを使うなら、標準のルート（フェーズ）を使うと書く）
+9. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
+10. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
+11. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
 
 ## 変更してはならないパス
 
@@ -111,12 +112,13 @@ npm run format       # フォーマット
 - **`docs/reference/non-functional-requirement-items.md`**：to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照
 - **`docs/reference/test-terms.md`**：`policy-hub.md` の一覧、`test-strategy-policy.md`・`unit-test-policy.md` がテストダブル定義の SSOT として直接参照
 - **`docs/reference/docs-directory-definitions.md`**：`documentation-policy.md` と doc-review スキルの観点一覧（`references/review-criteria.md`）が、docs/ 配下の置き場所の SSOT として直接参照
-- **`docs/guide/`（ディレクトリ名）**：`documentation-policy-for-humans.md` の `applies-to`、doc-review スキルの種別判定（`references/doc-types.md`）、`issue-policy.md` の「親の決め方」が参照。配下の個別ガイドは、下の3本を除いて自由に追加・改名可
+- **`docs/guide/`（ディレクトリ名）**：`documentation-policy-for-humans.md` の `applies-to`、doc-review スキルの種別判定（`references/doc-types.md`）、`issue-policy.md` の「標準のルート（フェーズ）」の振り分けが参照。配下の個別ガイドは、下の3本を除いて自由に追加・改名可
 - **`docs/guide/development-flow.md`**：CLAUDE.md・to-plan スキルが直接参照
 - **`docs/guide/new-development-guide.md`**：decide-tech-stack・issue-regroup スキルが直接参照
 - **`docs/guide/code-review-guide.md`**：code-review スキルが直接参照
 - **`docs/project-context/project-claude.md`**：CLAUDE.md が `@` import で直接読み込む。ここに書いた内容が毎セッション読まれる
 - **`docs/project-context/glossary.md`**：to-plan・elicit-requirements・quick-issue 等が SSOT として直接参照
+- **`docs/project-context/issue-destinations.md`**：`/link-root-issue` が、分解元の親が無い Issue のルート Issue と振り分け条件を読む。ファイルが無いと紐付けは報告だけで終わる
 - **`docs/project-context/core-parts.md`**：`adr-policy.md` が ADR を作るかの判定の目安として直接参照。ファイルが無くても判定はできる
 - **`docs/requirements.md`**：`requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス
 
