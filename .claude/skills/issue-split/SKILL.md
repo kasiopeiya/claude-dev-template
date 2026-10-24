@@ -9,7 +9,7 @@ allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 
 大きすぎる、または複数の関心事を含む **open な Issue 1件** を sub-issue（縦スライス）に割り、親を umbrella（子への入口）に作り替える。
 
-**Plan を割るのは `/to-issues`、既に Issue になっているものを割るのが本スキルである。** `/to-issues` は「親 Issue はクローズも変更もしてはならない」と定めており、親本文の作り替えを担当できない。その担当が本スキルである。
+**Plan を割るのは `/to-issues`、既に Issue になっているものを割るのが本スキルである。**
 
 人間か `/issue-check` が起動し、AI が Phase 1 以降を実行する。
 
