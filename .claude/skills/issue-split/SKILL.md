@@ -98,16 +98,14 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 ## Phase 5: sub-issue として紐付ける
 
-親と子の node id を取り、`addSubIssue` で紐付ける。
+GraphQL の形は worktree で動くセッションのガードに拒否されるので、子ごとに REST で紐づける。
 
 ```bash
-gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$n){id}}}' \
-  -F o=<owner> -F r=<repo> -F n=<番号>
+gh api repos/<owner>/<repo>/issues/<子の番号> --jq .id
 ```
 
 ```bash
-gh api graphql -f query='mutation($p:ID!,$c:ID!){addSubIssue(input:{issueId:$p,subIssueId:$c}){clientMutationId}}' \
-  -F p=<親のid> -F c=<子のid>
+gh api --method POST repos/<owner>/<repo>/issues/<親の番号>/sub_issues -F sub_issue_id=<子のデータベース ID>
 ```
 
 紐付けに失敗した子があれば、その番号を報告に残す。**成功した分をロールバックしない**——親本文のリンク一覧（Phase 6）があれば、紐付けが無くても親子は辿れる。
@@ -139,7 +137,7 @@ gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
 
 - **対象 Issue が close 済み**：割らずに終了する（close 済みの Issue は着手対象ではない）
 - **対象が既に他の Issue の sub-issue**：割ってよいか `AskUserQuestion` で確認する（入れ子が深くなるため）。`--from-issue-check` なら確認せずに割る
-- **`addSubIssue` が失敗する**：その子の番号を報告に残し、他の子の処理は続ける
+- **紐付けが失敗する**：その子の番号を報告に残し、他の子の処理は続ける
 - **`gh issue edit` が失敗する**：親の作り替えを中断し、起票済みの子の番号を添えて報告する。紐付けにも失敗した子があれば、その子の本文末尾に親 Issue 番号を追記して親子を辿れるようにする
 - **親 Issue に別セッションの更新が入っている**：上書きせず中断し、その事実を報告する
 

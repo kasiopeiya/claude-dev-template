@@ -103,9 +103,11 @@ Issue は依存順（ブロッカーが先）に登録する。そうすれば�
 - **トレース（要件定義書との対応）**：子と同じ書き方で書く
 - **実装フロー（使用するSkill）**：「sub-issue を順に処理する」
 
+GraphQL の形は worktree で動くセッションのガードに拒否されるので、REST で紐づける。
+
 ```bash
-gh api graphql -f query='mutation($parent:ID!,$childUrl:String!){addSubIssue(input:{issueId:$parent,subIssueUrl:$childUrl}){subIssue{number}}}' \
-  -F parent="$(gh issue view <親の番号> --json id --jq .id)" -F childUrl="<子のURL>"
+gh api repos/<owner>/<repo>/issues/<子の番号> --jq .id
+gh api --method POST repos/<owner>/<repo>/issues/<親の番号>/sub_issues -F sub_issue_id=<子のデータベース ID>
 ```
 
 紐付けに失敗しても、**登録そのものは成功している**。失敗したら親が付かなかったことを伝えて続行し、登録をやり直さない（同じ Issue を二重に立てることになる）。
@@ -123,7 +125,18 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 ```
 
 - **親に `phase` ラベルがある**：親のタイトルを引数にして、Skill ツールで `/issue-deps` を起動する（例：`/issue-deps 設計・実装`）
-- **親が無い、または親に `phase` ラベルが無い**：起動しない。`/issue-deps` は引数を `phase` ラベルの Issue のタイトルと照合するので、渡せる引数が無い。引数なしで起動すると、起点 Issue と無関係なグループまで書き換えてしまう。代わりに最後の報告で、起点 Issue とそれをブロッカーに持つ Issue の段番号が古いままだと伝え、`/issue-deps` を打つよう促す
+- **親が無い、または親に `phase` ラベルが無い**：起動しない。`/issue-deps` は引数を `phase` ラベルの Issue のタイトルと照合するので、渡せる引数が無い。引数なしで起動すると、起点 Issue と無関係なグループまで書き換えてしまう。代わりに 8 の報告で、起点 Issue とそれをブロッカーに持つ Issue の段番号が古いままだと伝え、`/issue-deps` を打つよう促す
+
+### 8. 報告して終える
+
+登録した Issue（6 でまとめ用の親を作ったなら親も）の番号と URL を示して終える。7 で `/issue-deps` を起動しなかったときは、7 に書いた段番号の知らせも添える。**実装には入らない。** 4 での承認は「Issue にしてよい」という承認で、実装の許可ではない。相談に使ったモデルのまま実装に流れ込むと、段階ごとのモデル運用（[development-flow](../../../docs/guide/development-flow.md)「フェーズごとにどのモデルで回すか」）が守られない。
+
+報告には次の一手を添える。
+
+- 別セッションを開き、`issue <番号> 対応して` と打つ
+- モデルは同節の段に合わせる。実装フローが `/design` から始まる Issue は最も性能の良いモデル、実装・レビュー・コミット・PR から始まる Issue は Sonnet / high にする
+
+人間が同じセッションでの実装を指示していたときだけ、続けて着手する。
 
 <writing-rules>
 

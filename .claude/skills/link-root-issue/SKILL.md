@@ -47,7 +47,7 @@ argument-hint: '<Issue番号> [ルート名]'
 ルートは、open で `phase` ラベルが付き、タイトルが「ルート名」か、2-4 で作る後継のタイトルの Issue のうち、番号が最大のものを使う。世代交代した後継も見つけるためである。完全一致だけで探すと、後継を見つけられず、呼ぶたびに作り直す。
 
 ```bash
-gh issue list --label phase --state open --json number,title,id
+gh issue list --label phase --state open --json number,title
 ```
 
 #### 2-2. ルートが無ければ作る
@@ -64,21 +64,23 @@ gh issue create --title "<ルート名>" --label phase --body "<ルートの本�
 
 #### 2-3. 紐づける
 
+GraphQL の形は worktree で動くセッションのガードに拒否されるので、REST で紐づける。
+
 ```bash
-gh api graphql -f query='mutation($parent:ID!,$childUrl:String!){addSubIssue(input:{issueId:$parent,subIssueUrl:$childUrl}){subIssue{number}}}' \
-  -F parent="<ルートの node ID>" -F childUrl="<子のURL>"
+gh api repos/<owner>/<repo>/issues/<子の番号> --jq .id
+gh api --method POST repos/<owner>/<repo>/issues/<ルートの番号>/sub_issues -F sub_issue_id=<子のデータベース ID>
 ```
 
 **紐付けに失敗しても、起票そのものは成功している。** 失敗したら親が付かなかったことを伝えて続行し、起票をやり直さない（同じ Issue を二重に立てることになる）。ただし、ルートの sub-issue が上限に達しているときは、2-4 の世代交代を行ってから紐づけ直す。
 
 #### 2-4. 上限に達したら世代交代する
 
-GitHub の sub-issue は親1件あたり100件が上限で、超えると `addSubIssue` が失敗する（`subIssuesSummary.total` は close 済みの子も数える）。**close した子は枠を空けない。** GitHub が上限到達時に案内するのは「sub-issue の紐付けを外す」か「新しい親を作る」のどちらかで、close は含まれない。
+GitHub の sub-issue は親1件あたり100件が上限で、超えると紐付けが失敗する（`sub_issues_summary.total` は close 済みの子も数える）。**close した子は枠を空けない。** GitHub が上限到達時に案内するのは「sub-issue の紐付けを外す」か「新しい親を作る」のどちらかで、close は含まれない。
 
-紐付けに失敗したら、エラー文ではなく件数で上限かどうかを決める。ルートの sub-issue の数を引き、100以上のときだけ世代交代する。100未満なら、2-3 のとおり、親が付かなかったと報告して続ける（権限不足や node ID の誤りで後継を作ると、以後の紐付けがすべて後継へ流れるため）。
+紐付けに失敗したら、エラー文ではなく件数で上限かどうかを決める。ルートの sub-issue の数を引き、100以上のときだけ世代交代する。100未満なら、2-3 のとおり、親が付かなかったと報告して続ける（権限不足や ID の誤りで後継を作ると、以後の紐付けがすべて後継へ流れるため）。
 
 ```bash
-gh api graphql -f query='query($id:ID!){node(id:$id){... on Issue{subIssuesSummary{total}}}}' -F id="<ルートの node ID>"
+gh api repos/<owner>/<repo>/issues/<ルートの番号> --jq .sub_issues_summary.total
 ```
 
 上限に当たったら、「ルート名 (N)」の後継を作り、以後の紐付け先をそちらに切り替える。N は、いま使っているルートのタイトルの番号に1を足した数である（番号の無いタイトルは1とみなすので、最初の後継は (2) になる）。**旧ルートは close せず**、履歴として残す。
