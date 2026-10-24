@@ -62,7 +62,7 @@ jobs:
           # 書くことを義務付けており、同じ内容を人間に2度書かせないため（--fill）。
           # 作成先はデフォルトブランチを明示する。省いても gh は同じ先に作るが、暗黙の既定値に頼ると
           # main と決め打ちされやすい。auto-programmer は切る元（workspace.mjs）も取り込む先
-          # （/auto-dev・/auto-fix-ci）もこの作成先と同じデフォルトブランチにしているので、ここだけ変えると食い違う。
+          # （/auto-dev・/auto-fix-ci・/auto-resolve-conflict）もこの作成先と同じデフォルトブランチにしているので、ここだけ変えると食い違う。
           gh pr create --base "$DEFAULT_BRANCH" --head "$BRANCH" --fill
 
   detect-changes:
