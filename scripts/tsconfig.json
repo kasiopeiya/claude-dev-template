@@ -1,0 +1,11 @@
+{
+  // 責務: scripts/ の .mjs に型情報を付け、eslint.config.mjs の型情報付きルール（浮いた Promise など）を掛けられるようにする。
+  // ESLint の projectService はファイルに最も近い tsconfig.json を読むため、ディレクトリごとに置く。tsc では使わない
+  "compilerOptions": {
+    "allowJs": true,
+    "noEmit": true,
+    "module": "nodenext",
+    "target": "es2024"
+  },
+  "include": ["**/*.mjs"]
+}

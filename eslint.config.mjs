@@ -233,7 +233,8 @@ export default tseslint.config(
   // 型情報が必要なルール(型対応 lint)。app と infra のソースを対象にし、型サービスを有効化する。
   // infra/test は infra/tsconfig の対象外のため、ここでは含めない。
   // samples/ 配下は参照実装の置き場で、同じ規約で検査し続けるため同じ glob を併記する。
-  // app/・infra/ 側は現在ファイルが無いが、実装を置いた瞬間に効くよう残す
+  // app/・infra/ 側は現在ファイルが無いが、実装を置いた瞬間に効くよう残す。
+  // scripts/・.claude/hooks/ の .mjs も非同期が中心なので対象にする。型情報は各ディレクトリの tsconfig.json（allowJs）が付ける
   {
     files: [
       'app/**/*.ts',
@@ -245,7 +246,9 @@ export default tseslint.config(
       'samples/infra/bin/**/*.ts',
       'samples/infra/lib/**/*.ts',
       'samples/infra/stackBuilder.ts',
-      'samples/infra/parameter.ts'
+      'samples/infra/parameter.ts',
+      'scripts/**/*.mjs',
+      '.claude/hooks/**/*.mjs'
     ],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname }
