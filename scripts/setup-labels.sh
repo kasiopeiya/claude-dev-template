@@ -27,7 +27,7 @@ readonly LABELS=(
   'harness|BFDADC|ハーネス（Policy・Rule・Skill・SubAgent・hooks）を変えるIssue'
   'issue:checked|BFD4F2|/issue-check が一度監査した Issue。いま妥当である保証ではない'
   'needs-human-check|F9D0C4|無人実行が問題で止まったIssue。人間が確かめたら外す'
-  'phase|0E4B99|Issue階層の最上位。開発フローのフェーズを表す常設Issue'
+  'phase|0E4B99|Issue階層の最上位の常設Issue（起票先）'
   'requirement|1D76DB|要件定義書のレビュー指摘に起因するIssue'
   # PR: docs/policy/pr-review-policy.md の「PRラベルと変更の種類」表と /pr-label が付ける
   'feature|0075ca|新機能・機能変更（振る舞いの変更を含む）'
