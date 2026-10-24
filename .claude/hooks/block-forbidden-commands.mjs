@@ -3,7 +3,7 @@
 //
 // 設計意図（WHY）:
 // - bypass permissions mode では Bash を止められるのは hook だけであり、取り返しのつかない操作は
-//   実行前に止めるしかない。Bash に掛ける hook はこの1本に統合してある——hook は1本ごとに
+//   実行前に止めるしかない。Bash の実行前に掛ける hook はこの1本に統合してある——hook は1本ごとに
 //   node の起動コストが全 Bash 実行に乗るため、禁止を増やすときは hook ではなくルール表を増やす。
 // - 判定ロジックは forbiddenCommandMatcher.mjs に委ね、ここは stdin/stdout の配線と
 //   permissionDecision の返却だけを担う。
