@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 // 責務: ボードの着手待ちのカードから Issue を1件ずつ拾い、AI 専用 clone で実装させ、CI の通った PR まで到達させる唯一の入口。
+//   衝突して止まった自分の PR も解かせ直す。
 //
 // 設計意図（WHY）:
 // - 拾う・順序を決める・記録するはすべてここで決定論的に行う。AI に任せると、同じ盤面から毎回
-//   違う Issue を拾い、何が起きたかを追えなくなる。AI に渡すのは Issue 1件の監査・実装・CI の修正だけ。
+//   違う Issue を拾い、何が起きたかを追えなくなる。AI に渡すのは Issue 1件の監査・実装・CI の修正・衝突の解消だけ。
 // - 着手できる Issue が無くても、すぐには終了せず、待って見に行く。自分から終了すると、人間が
 //   Issue の数だけ打ち直すことになる（Issue #481）。ただし着手できない周が続いて maxConsecutiveIdleWaits 回
 //   待っても、次の周でまだ着手できなければ止まる。放置したまま見に行き続けると、gh の呼び出しが積み上がって GitHub API の
@@ -41,6 +42,10 @@
 //   ロックを取った後にカードの Status を引き直すのは、候補を1周に1回しか引かないためである。他のプロセスが短い経路（子への引き継ぎ・
 //   `/issue-check` での停止）で数十秒で終えてロックを外すと、古い候補一覧で同じ Issue を取り直せてしまう。
 //   ロックはこのマシンの中でしか効かない。別のマシンで同じアカウントを動かすと取り合う。
+// - 毎周、Issue を選ぶ前に、このツールが作った PR のうち、先にマージされた別の PR と衝突して止まったものを探し、1件ずつ
+//   `/auto-resolve-conflict` に解かせてから CI を待つ（Issue #1076）。CI が通った時点で手放すので、後から衝突しても誰も気づかない。
+//   新しい Issue より先に片付けるのは、止まった PR の Issue をブロッカーに持つ Issue が、それまで拾われないためである。
+//   取り合わないよう、衝突を解かせる間も同じ Issue のロックを持つ。
 
 import { basename, dirname, join } from 'node:path'
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
@@ -53,8 +58,19 @@ import {
   readCardStatusName
 } from './board.mjs'
 import { buildBranchName, validateBranchPrefix } from './branchName.mjs'
-import { runAutoDevSession, runAutoFixCiSession, runIssueCheckSession } from './claudeSession.mjs'
+import {
+  runAutoDevSession,
+  runAutoFixCiSession,
+  runAutoResolveConflictSession,
+  runIssueCheckSession
+} from './claudeSession.mjs'
 import { config } from './config.mjs'
+import {
+  collectOwnPullRequestsByUrl,
+  CONFLICT_CHECK_PULL_REQUEST_FIELDS,
+  findReasonNotToResolveConflict,
+  selectConflictedOwnPullRequests
+} from './conflictedPullRequest.mjs'
 import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait.mjs'
 import {
   findSkipImplementationDecision,
@@ -73,7 +89,7 @@ import {
   shouldMarkAsNeedsHumanCheck
 } from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
-import { recordRun } from './runLog.mjs'
+import { readRunRecords, recordRun } from './runLog.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
 import {
@@ -90,7 +106,7 @@ import {
   showWarning
 } from './ui.mjs'
 import { alignLabeledValues, collapseToSingleLine, formatElapsedTime } from './uiFormat.mjs'
-import { prepareTopicBranch } from './workspace.mjs'
+import { prepareTopicBranch, switchToPullRequestBranch } from './workspace.mjs'
 
 const MILLISECONDS_PER_SECOND = 1000
 const MILLISECONDS_PER_MINUTE = 60 * MILLISECONDS_PER_SECOND
@@ -114,6 +130,9 @@ const NO_STARTABLE_ISSUE_IDLE_REASON = '着手できる Issue なし'
 
 // GraphQL が1つの接続（sub-issue・ラベル・カード）から一度に返せる件数の上限。sub-issue は超えていたら読み落としとして止める
 const GRAPHQL_CONNECTION_FETCH_LIMIT = 100
+
+// 衝突した PR を探すときに引く open な PR の上限。gh pr list の既定の30件では、人間のレビュー待ちが溜まると取りこぼす
+const OPEN_PULL_REQUEST_FETCH_LIMIT = 200
 
 // 1つの Issue に付けられる担当者の上限（GitHub の仕様）。この件数を読めば全員がそろう
 const ISSUE_ASSIGNEE_LIMIT = 10
@@ -155,7 +174,7 @@ const stopController = new AbortController()
 process.on('SIGINT', () => stopController.abort('SIGINT'))
 // 端末の切断（SIGHUP）・SIGTERM・Ctrl+\（SIGQUIT）は、claude セッションへ送ってから、既定どおりこのプロセスも終わる。
 // once にするのは、送り直した同じシグナルでリスナが再び呼ばれず、既定の終了に至るようにするため
-// 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると runSessionAndRecord の finally に届かないので、
+// 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると runWorkAndRecord の finally に届かないので、
 // 止まった印はリスナが付ける
 let inFlightIssueNumber = null
 // このプロセスが取った AI 専用 clone の番号ロック（取る前と外した後は null）。シグナルで終わると main の finally に
@@ -163,6 +182,8 @@ let inFlightIssueNumber = null
 let workspaceLock = null
 // このプロセスが着手している Issue のロック（取る前と外した後は null）。外す理由は workspaceLock と同じ
 let issueLock = null
+// 衝突した PR ごとに、最後に出した飛ばす理由（showConflictSkipReasonOnce が同じ行を毎周出さないためのもの）
+const shownConflictSkipReasonsByPullRequestNumber = new Map()
 for (const signal of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
   process.once(signal, () => {
     stopController.abort(signal)
@@ -413,6 +434,25 @@ function startIssue({ issue, branchName, workspaceDir }) {
 /** @typedef {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number> }} StartedIssue 着手中へ動かした Issue。そのロックは issueLock に残り、1件を終えたら releaseIssueLock で外す */
 
 /**
+ * 他のプロセスと取り合わないよう Issue のロックを取る。取れたら issueLock に残す。
+ *
+ * Issue の実装と衝突の解消は、同じこのロックで互いを締め出す。ロック名を片方だけ変えると、同じ Issue で両方が同時に走る。
+ *
+ * @param {number} issueNumber Issue の番号
+ * @returns {string | null} 取れなかったときの飛ばす理由（取れたら null）
+ * @throws {Error} ロックファイルを読めなかった・作れなかった・消せなかったとき
+ */
+function tryAcquireIssueLock(issueNumber) {
+  const { lock, holderPid } = tryAcquireNamedLockFile({
+    lockDirectory: LOCK_DIRECTORY,
+    lockName: `issue-${issueNumber}`
+  })
+  if (lock === null) return `PID ${holderPid ?? '（読めず）'} のプロセスが着手中です`
+  issueLock = lock
+  return null
+}
+
+/**
  * 他のプロセスと取り合わないよう Issue のロックを取り、カードがまだ着手待ちかを引き直す。
  *
  * 着手してよいとき・投げたときは、取ったロックを issueLock に残す。カードがもう着手待ちに無いときは、外してから理由を返す。
@@ -422,12 +462,8 @@ function startIssue({ issue, branchName, workspaceDir }) {
  * @throws {Error} ロックファイルを読めなかった・作れなかった・消せなかったとき・カードの Status を引けなかったとき
  */
 function claimIssue(issue) {
-  const { lock, holderPid } = tryAcquireNamedLockFile({
-    lockDirectory: LOCK_DIRECTORY,
-    lockName: `issue-${issue.number}`
-  })
-  if (lock === null) return `PID ${holderPid ?? '（読めず）'} のプロセスが着手中です`
-  issueLock = lock
+  const lockSkipReason = tryAcquireIssueLock(issue.number)
+  if (lockSkipReason) return lockSkipReason
 
   const statusName = readCardStatusName(issue.itemId)
   if (statusName === config.board.readyStatusName) return null
@@ -696,7 +732,7 @@ async function waitForCiRun(headSha) {
 
 /**
  * 上限まで直させても CI が落ちている Issue に、`/auto-dev` の離脱と同じく、人間へ回す理由をコメントする。
- * `needs-human-check` は、記録を残す前に runSessionAndRecord が付ける。
+ * `needs-human-check` は、記録を残す前に runWorkAndRecord が付ける。
  *
  * @param {number} issueNumber 対象 Issue の番号
  * @param {{ url: string | null }} lastRun 最後に落ちた run
@@ -719,11 +755,18 @@ function handOverToHuman(issueNumber, lastRun) {
 /**
  * CI を待つ前に、待っても意味が無い理由を探す。
  *
- * @param {{ state: string, labelNames: string[], headSha: string, previousHeadSha: string | null }} params 対象 Issue の state（'OPEN' / 'CLOSED'）とラベル名・リモートのブランチの SHA（push されていなければ空文字）・前回待った SHA
+ * @param {{ state: string, labelNames: string[], headSha: string, localHeadSha: string, previousHeadSha: string | null, lastSessionName: string }} params 対象 Issue の state（'OPEN' / 'CLOSED'）とラベル名・リモートのブランチの SHA（push されていなければ空文字）・clone の HEAD の SHA・push されなかったとみなす SHA（前回 CI を待った SHA。衝突を解かせた直後はセッション前の SHA。新しく作ったブランチの最初の確認では null）・直前に走らせたセッションの名前
  * @returns {{ reason: string, isClosedWithoutChanges: boolean } | null} 待たない理由と、それが差分の出ない Issue を /auto-dev が閉じた（予定した終わり方）ためか。待ってよければ null
  */
-function findDecisionNotToWaitForCi({ state, labelNames, headSha, previousHeadSha }) {
-  // /auto-dev の起動前に外しているので、付いていれば今回の /auto-dev・/auto-fix-ci が離脱した印
+function findDecisionNotToWaitForCi({
+  state,
+  labelNames,
+  headSha,
+  localHeadSha,
+  previousHeadSha,
+  lastSessionName
+}) {
+  // /auto-dev の起動前に外し、付いた Issue の衝突は解かせないので、付いていれば今回のセッションが離脱した印
   if (labelNames.includes(NEEDS_HUMAN_CHECK_LABEL)) {
     return {
       reason: `${NEEDS_HUMAN_CHECK_LABEL} が付いているので CI を待ちません`,
@@ -743,7 +786,15 @@ function findDecisionNotToWaitForCi({ state, labelNames, headSha, previousHeadSh
     }
   }
   if (headSha === previousHeadSha) {
-    return { reason: '/auto-fix-ci が push しませんでした', isClosedWithoutChanges: false }
+    return { reason: `${lastSessionName} が push しませんでした`, isClosedWithoutChanges: false }
+  }
+  // 待った SHA は記録に残り、衝突を解かせてよいかを決める「このツールの commit」の目印になる。clone の HEAD と違う
+  // リモートの commit は、このツール以外の push なので、待たずに人間へ回す
+  if (headSha !== localHeadSha) {
+    return {
+      reason: 'リモートのブランチに、このツール以外の push があるので CI を待ちません',
+      isClosedWithoutChanges: false
+    }
   }
   return null
 }
@@ -751,11 +802,11 @@ function findDecisionNotToWaitForCi({ state, labelNames, headSha, previousHeadSh
 /**
  * 直させずに終える run について、記録に残す結果を決める。上限まで直させても落ちていれば人間へ回す。
  *
- * @param {{ issue: { number: number }, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null } }} params 対象 Issue・decideAfterCiRun の結果・待ち終えた run の状態
+ * @param {{ issueNumber: number, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null } }} params 対象 Issue の番号・decideAfterCiRun の結果・待ち終えた run の状態
  * @returns {string} 記録に残す CI の結果
  * @throws {Error} 人間へ回すときに gh が失敗したとき
  */
-function concludeCiWatch({ issue, nextStep, runState }) {
+function concludeCiWatch({ issueNumber, nextStep, runState }) {
   switch (nextStep) {
     case 'finish-passed':
       return 'CI が通りました'
@@ -764,8 +815,38 @@ function concludeCiWatch({ issue, nextStep, runState }) {
     case 'stop-unfixable':
       return `CI の run が ${runState.conclusion} で終わったので直させません`
     case 'hand-over':
-      handOverToHuman(issue.number, runState)
+      handOverToHuman(issueNumber, runState)
       return `${config.ci.maxFixAttempts} 回直させても CI が通らないので人間へ回しました`
+  }
+}
+
+/**
+ * リモートのブランチ・clone の HEAD・Issue を引き、CI を待っても意味が無い理由を探す。
+ *
+ * @param {{ issueNumber: number, branchName: string, workspaceDir: string, previousHeadSha: string | null, lastSessionName: string }} params 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・push されなかったとみなす SHA と直前に走らせたセッションの名前（findDecisionNotToWaitForCi を参照）
+ * @returns {{ headSha: string, decisionNotToWait: ReturnType<typeof findDecisionNotToWaitForCi> }} リモートのブランチの SHA と、待たない理由（待ってよければ null）
+ * @throws {Error} git・gh が失敗したとき
+ */
+function readHeadShaAndDecisionNotToWait({
+  issueNumber,
+  branchName,
+  workspaceDir,
+  previousHeadSha,
+  lastSessionName
+}) {
+  const headSha = readRemoteHeadSha({ workspaceDir, branchName })
+  const localHeadSha = runOrThrow('git', ['rev-parse', 'HEAD'], { cwd: workspaceDir }).trim()
+  const { state, labelNames } = readIssueStatus(issueNumber)
+  return {
+    headSha,
+    decisionNotToWait: findDecisionNotToWaitForCi({
+      state,
+      labelNames,
+      headSha,
+      localHeadSha,
+      previousHeadSha,
+      lastSessionName
+    })
   }
 }
 
@@ -773,33 +854,35 @@ function concludeCiWatch({ issue, nextStep, runState }) {
  * push した commit の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。通るか、直させるのをやめるまで戻らない。
  * 結果は record へ書き足す。
  *
- * @param {{ issue: { number: number }, branchName: string, workspaceDir: string }} startedIssue 対象 Issue・トピックブランチ名・作業している AI 専用 clone
+ * @param {{ issueNumber: number, branchName: string, workspaceDir: string, headShaBeforeSession: string | null, sessionName: string }} target 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・セッションの前のリモートのブランチの SHA（これと同じなら push されなかったとみなす。新しく作ったブランチなら null）・CI を待つ前に走らせたセッションの名前
  * @param {Record<string, unknown>} record 書き足す先の記録
  * @returns {Promise<boolean>} `/auto-fix-ci` を走らせなかったか、すべて正常終了したら true
  * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
  */
-async function watchCiAndFix({ issue, branchName, workspaceDir }, record) {
+async function watchCiAndFix(
+  { issueNumber, branchName, workspaceDir, headShaBeforeSession, sessionName },
+  record
+) {
   record.ciRuns = []
   // CI が通ったときだけ true にする。通らずに戻る経路（離脱・未 push・打ち切り）は、差分が出ずに閉じた場合を除いて
   // 人間の手当てが要る
   record.isCiPassed = false
   let fixAttemptCount = 0
-  let previousHeadSha = null
+  // 衝突を解かせた後は、push されなかった古い SHA の CI（通った後に衝突したもの）を、解けた印と取り違えない
+  const pushCheck = { previousHeadSha: headShaBeforeSession, lastSessionName: sessionName }
   for (;;) {
-    const headSha = readRemoteHeadSha({ workspaceDir, branchName })
-    const { state, labelNames } = readIssueStatus(issue.number)
-    const decisionNotToWait = findDecisionNotToWaitForCi({
-      state,
-      labelNames,
-      headSha,
-      previousHeadSha
+    const { headSha, decisionNotToWait } = readHeadShaAndDecisionNotToWait({
+      issueNumber,
+      branchName,
+      workspaceDir,
+      ...pushCheck
     })
     if (decisionNotToWait) {
       record.ciOutcome = decisionNotToWait.reason
       record.isClosedWithoutChanges = decisionNotToWait.isClosedWithoutChanges
       return true
     }
-    previousHeadSha = headSha
+    pushCheck.previousHeadSha = headSha
 
     showInfo(`CI を待ちます: ${config.ci.workflowFile} @ ${headSha.slice(0, 7)}`)
     const runState = await waitForCiRun(headSha)
@@ -815,15 +898,15 @@ async function watchCiAndFix({ issue, branchName, workspaceDir }, record) {
       maxFixAttempts: config.ci.maxFixAttempts
     })
     if (nextStep !== 'fix') {
-      record.ciOutcome = concludeCiWatch({ issue, nextStep, runState })
+      record.ciOutcome = concludeCiWatch({ issueNumber, nextStep, runState })
       record.isCiPassed = nextStep === 'finish-passed'
       return true
     }
 
     fixAttemptCount += 1
-    record.ciFixAttemptCount = fixAttemptCount
+    pushCheck.lastSessionName = '/auto-fix-ci'
     const hasFixSessionSucceeded = await fixFailedCi({
-      issueNumber: issue.number,
+      issueNumber,
       workspaceDir,
       runState,
       attemptNumber: fixAttemptCount,
@@ -841,6 +924,7 @@ async function watchCiAndFix({ issue, branchName, workspaceDir }, record) {
  * @throws {Error} claude を起動できなかったとき
  */
 async function fixFailedCi({ issueNumber, workspaceDir, runState, attemptNumber, record }) {
+  record.ciFixAttemptCount = attemptNumber
   showWarning(
     `CI が落ちました。/auto-fix-ci に直させます（${attemptNumber} 回目）: ${runState.url}`
   )
@@ -874,7 +958,7 @@ function showSubIssueHandover(record) {
 /**
  * Issue に `needs-human-check` を付け、付けられたかを record へ書き足す。付けられなくても投げない。
  *
- * runSessionAndRecord の finally から呼ぶので、投げるとその1件の記録が残らない。
+ * runWorkAndRecord の finally から呼ぶので、投げるとその1件の記録が残らない。
  *
  * @param {number} issueNumber 対象 Issue の番号
  * @param {Record<string, unknown>} record 書き足す先の記録
@@ -902,45 +986,301 @@ function tryMarkAsNeedsHumanCheck(issueNumber, record) {
 }
 
 /**
- * 着手中へ動かした Issue 1件を監査し、止める理由が無ければ実装させ、CI が通るまで直させる。途中で落ちても結果を記録し、
- * 予定した終わり方以外で終えたら、記録の前に `needs-human-check` を付ける（付けられなくても投げない）。
+ * Issue 1件ぶんの作業を走らせ、途中で落ちても結果を記録する。予定した終わり方以外で終えたら、記録の前に `needs-human-check` を付ける
+ * （付けられなくても投げない）。
  *
- * @param {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number> }} startedIssue startFirstStartableIssue の結果
+ * @param {{ record: Record<string, unknown> & { issueNumber: number }, runWork: (record: Record<string, unknown>) => Promise<boolean>, readPullRequestUrl: () => string | null }} params 記録の初期値・作業（受け取った記録へ結果を書き足し、走らせた claude セッションがすべて正常終了したら true を返す）・記録に残す PR の URL を引く関数（作業の後に呼ぶ）
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true（起動できなかった・打ち切られた・0 以外で終わった・途中で例外が出たら false）
  * @throws {Error} 記録ファイルへ書けなかったとき
  */
-async function runSessionAndRecord(startedIssue) {
-  const { issue, branchName, workspaceDir, existingPullRequestNumbers } = startedIssue
-  // 記録ファイルは全プロセスで共有するので、どの clone で作業したかを載せる。途中で消えた変更の stash を探す先になる
-  const record = { issueNumber: issue.number, issueTitle: issue.title, branchName, workspaceDir }
+async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
   record.sessionStartedAt = new Date().toISOString()
-  inFlightIssueNumber = issue.number
+  inFlightIssueNumber = record.issueNumber
   let isAllSessionsSucceeded = false
   try {
-    // 途中で例外が出たら false のまま残すため、最後にまとめて代入する
-    const isImplemented = await handOverOrImplement(issue.number, workspaceDir, record)
-    if (record.subIssueHandover) showSubIssueHandover(record)
-    if (record.skippedReason) showWarning(`実装へ進みません: ${record.skippedReason}`)
-    const shouldWatchCi = isImplemented && !record.skippedReason && !record.subIssueHandover
-    isAllSessionsSucceeded = shouldWatchCi
-      ? await watchCiAndFix(startedIssue, record)
-      : isImplemented
+    isAllSessionsSucceeded = await runWork(record)
   } catch (error) {
     // 無人実行の画面はセッションの出力で流れるため、スタックを出すと原因の1行が埋もれる（Issue #780）
     record.error = formatError(error)
     record.errorStack = formatError(error, { withStack: true })
-    showError(`#${issue.number} の処理が落ちました: ${collapseToSingleLine(record.error)}`)
+    showError(`#${record.issueNumber} の処理が落ちました: ${collapseToSingleLine(record.error)}`)
   } finally {
-    record.pullRequestUrl = findCreatedPullRequestUrl(branchName, existingPullRequestNumbers)
+    record.pullRequestUrl = readPullRequestUrl()
     record.finishedAt = new Date().toISOString()
     if (shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)) {
-      tryMarkAsNeedsHumanCheck(issue.number, record)
+      tryMarkAsNeedsHumanCheck(record.issueNumber, record)
     }
     recordRun(record)
     inFlightIssueNumber = null
     showRunSummary(record, isAllSessionsSucceeded)
   }
   return isAllSessionsSucceeded
+}
+
+/**
+ * 着手中へ動かした Issue 1件を監査し、止める理由が無ければ実装させ、CI が通るまで直させる。結果は record へ書き足す。
+ *
+ * @param {StartedIssue} startedIssue startFirstStartableIssue の結果
+ * @param {Record<string, unknown>} record 書き足す先の記録
+ * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
+ * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
+ */
+async function implementAndWatchCi(startedIssue, record) {
+  const { issue, branchName, workspaceDir } = startedIssue
+  const isImplemented = await handOverOrImplement(issue.number, workspaceDir, record)
+  if (record.subIssueHandover) showSubIssueHandover(record)
+  if (record.skippedReason) showWarning(`実装へ進みません: ${record.skippedReason}`)
+  const shouldWatchCi = isImplemented && !record.skippedReason && !record.subIssueHandover
+  if (!shouldWatchCi) return isImplemented
+  // ブランチは着手時にデフォルトブランチから作り直しているので、push されていれば最初の SHA から待ってよい
+  return watchCiAndFix(
+    {
+      issueNumber: issue.number,
+      branchName,
+      workspaceDir,
+      headShaBeforeSession: null,
+      sessionName: '/auto-dev'
+    },
+    record
+  )
+}
+
+/**
+ * 着手中へ動かした Issue 1件を実装させて CI まで見届け、結果を記録する（記録の決まりは runWorkAndRecord）。
+ *
+ * @param {StartedIssue} startedIssue startFirstStartableIssue の結果
+ * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
+ * @throws {Error} 記録ファイルへ書けなかったとき
+ */
+function implementIssueAndRecord(startedIssue) {
+  const { issue, branchName, workspaceDir, existingPullRequestNumbers } = startedIssue
+  return runWorkAndRecord({
+    // 記録ファイルは全プロセスで共有するので、どの clone で作業したかを載せる。途中で消えた変更の stash を探す先になる
+    record: { issueNumber: issue.number, issueTitle: issue.title, branchName, workspaceDir },
+    runWork: (record) => implementAndWatchCi(startedIssue, record),
+    readPullRequestUrl: () => findCreatedPullRequestUrl(branchName, existingPullRequestNumbers)
+  })
+}
+
+/**
+ * このツールが作った open な PR のうち、衝突しているものを引く。
+ *
+ * @returns {ReturnType<typeof selectConflictedOwnPullRequests>} 衝突を解かせる候補（PR 番号の小さい順）
+ * @throws {Error} 記録ファイルを読めなかった・gh が失敗したとき
+ */
+function listConflictedOwnPullRequests() {
+  const ownPullRequestsByUrl = collectOwnPullRequestsByUrl(readRunRecords())
+  // 待機中も毎周ここを通るので、まだ PR を作っていなければ gh を呼ばない
+  if (ownPullRequestsByUrl.size === 0) return []
+  const openPullRequests = runJson('gh', [
+    'pr',
+    'list',
+    '--repo',
+    config.repository,
+    '--state',
+    'open',
+    '--limit',
+    String(OPEN_PULL_REQUEST_FETCH_LIMIT),
+    '--json',
+    CONFLICT_CHECK_PULL_REQUEST_FIELDS
+  ])
+  // gh は新しい PR から返すので、上限で切れると、長く止まっている古い PR から読み落とす
+  if (openPullRequests.length >= OPEN_PULL_REQUEST_FETCH_LIMIT) {
+    showWarning(
+      `open な PR が ${OPEN_PULL_REQUEST_FETCH_LIMIT} 件以上あります。古い PR の衝突を読み落としているかもしれません`
+    )
+  }
+  return selectConflictedOwnPullRequests({ openPullRequests, ownPullRequestsByUrl })
+}
+
+/**
+ * 衝突した PR を引く。引けなくても投げず、理由を出して空にする（Issue の着手へ進む）。
+ *
+ * @returns {ReturnType<typeof listConflictedOwnPullRequests>} 衝突を解かせる候補（引けなければ空）
+ */
+function tryListConflictedOwnPullRequests() {
+  try {
+    return listConflictedOwnPullRequests()
+  } catch (error) {
+    showWarning(`衝突した PR を探せませんでした。Issue の着手へ進みます: ${formatError(error)}`)
+    return []
+  }
+}
+
+/**
+ * PR の state・mergeable・head の SHA と、auto-merge が有効かを引き直す。
+ *
+ * @param {number} pullRequestNumber PR の番号
+ * @returns {{ state: string, mergeable: string, headSha: string, isAutoMergeEnabled: boolean }} state（'OPEN' など）・mergeable（'CONFLICTING' など）・head の SHA・auto-merge が有効か
+ * @throws {Error} gh が失敗したとき
+ */
+function readPullRequestStatus(pullRequestNumber) {
+  const { state, mergeable, headRefOid, autoMergeRequest } = runJson('gh', [
+    'pr',
+    'view',
+    String(pullRequestNumber),
+    '--repo',
+    config.repository,
+    '--json',
+    'state,mergeable,headRefOid,autoMergeRequest'
+  ])
+  return { state, mergeable, headSha: headRefOid, isAutoMergeEnabled: autoMergeRequest !== null }
+}
+
+/**
+ * 衝突した PR を飛ばす理由を ℹ で出す。同じ PR に同じ理由を出したことがあれば出さない。
+ *
+ * `needs-human-check` が付いた・別の push があった PR は、人間が手を入れるまで理由が変わらず、待機中も毎周ここを通る。
+ * 毎周出すと、待機中の出力が同じ行で埋まり、新しく起きた異常を見つけにくくなる。
+ *
+ * @param {{ pullRequestNumber: number, subject: string, reason: string }} params PR の番号・行の頭に出す対象・飛ばす理由
+ * @returns {void}
+ */
+function showConflictSkipReasonOnce({ pullRequestNumber, subject, reason }) {
+  if (shownConflictSkipReasonsByPullRequestNumber.get(pullRequestNumber) === reason) return
+  shownConflictSkipReasonsByPullRequestNumber.set(pullRequestNumber, reason)
+  showInfo(`${subject}を飛ばします: ${reason}`)
+}
+
+/** @typedef {ReturnType<typeof selectConflictedOwnPullRequests>[number] & { headShaBeforeSession: string, isAutoMergeEnabled: boolean }} ClaimedConflictedPullRequest 衝突を解かせると決めた PR。その Issue のロックは issueLock に残り、解き終えたら releaseIssueLock で外す */
+
+/**
+ * 衝突した PR の Issue のロックを取り、PR と Issue を読み直して、まだ解かせてよいかを確かめる。飛ばすときは理由を出す。
+ *
+ * 解かせてよいときは、取ったロックを issueLock に残す。それ以外は外す。
+ *
+ * @param {ReturnType<typeof selectConflictedOwnPullRequests>[number]} candidate 衝突を解かせる候補
+ * @returns {ClaimedConflictedPullRequest | null} 解かせると決めた PR（飛ばしたら null）
+ */
+function tryClaimConflictedPullRequest(candidate) {
+  const { issueNumber, pullRequestNumber, lastWaitedHeadSha } = candidate
+  const subject = `PR #${pullRequestNumber}（#${issueNumber}）の衝突`
+  try {
+    const lockSkipReason = tryAcquireIssueLock(issueNumber)
+    if (lockSkipReason) {
+      showConflictSkipReasonOnce({ pullRequestNumber, subject, reason: lockSkipReason })
+      return null
+    }
+    const pullRequest = readPullRequestStatus(pullRequestNumber)
+    const reason = findReasonNotToResolveConflict({
+      pullRequest,
+      issue: { number: issueNumber, ...readIssueStatus(issueNumber) },
+      lastWaitedHeadSha,
+      needsHumanCheckLabel: NEEDS_HUMAN_CHECK_LABEL
+    })
+    if (reason === null) {
+      const { headSha, isAutoMergeEnabled } = pullRequest
+      return { ...candidate, headShaBeforeSession: headSha, isAutoMergeEnabled }
+    }
+    releaseIssueLock()
+    showConflictSkipReasonOnce({ pullRequestNumber, subject, reason })
+    return null
+  } catch (error) {
+    // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
+    releaseIssueLock()
+    showWarning(`${subject}を飛ばします: ${formatError(error)}`)
+    return null
+  }
+}
+
+/**
+ * 衝突している自分の PR を PR 番号の小さい順に試し、最初に解かせると決めた1件を返す。
+ *
+ * @returns {Promise<ClaimedConflictedPullRequest | null>} 解かせると決めた PR（無い・全部飛ばした・止められたときは null）
+ */
+async function claimFirstConflictedPullRequest() {
+  for (const candidate of tryListConflictedOwnPullRequests()) {
+    // 同期処理の合間にイベントループを回し、Ctrl+C を受け取る
+    await yieldToEventLoop()
+    if (stopController.signal.aborted) return null
+    const conflictedPullRequest = tryClaimConflictedPullRequest(candidate)
+    if (conflictedPullRequest) return conflictedPullRequest
+  }
+  return null
+}
+
+/**
+ * PR の auto-merge を外す。
+ *
+ * @param {number} pullRequestNumber PR の番号
+ * @returns {void}
+ * @throws {Error} gh が失敗したとき
+ */
+function disableAutoMerge(pullRequestNumber) {
+  runOrThrow('gh', [
+    'pr',
+    'merge',
+    String(pullRequestNumber),
+    '--repo',
+    config.repository,
+    '--disable-auto'
+  ])
+  showInfo(
+    `PR #${pullRequestNumber} の auto-merge を外しました。解いた後の CI が通ると、pr-ai-triage が中身を見て付け直します`
+  )
+}
+
+/**
+ * 衝突した PR のブランチへ切り替えて `/auto-resolve-conflict` に解かせ、push されたら CI が通るまで直させる。結果は record へ書き足す。
+ *
+ * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string }} params 解かせると決めた PR と、このプロセスが使う AI 専用 clone
+ * @param {Record<string, unknown>} record 書き足す先の記録
+ * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
+ * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
+ */
+async function resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }, record) {
+  const { issueNumber, pullRequestNumber, branchName, headShaBeforeSession, isAutoMergeEnabled } =
+    conflictedPullRequest
+  // 外さずに解くと、解いた push の CI が通った瞬間、pr-ai-triage が中身を見る前にマージされうる。
+  // 外したことを記録に残す。push されずに終わると pr-ai-triage が走らず、外れたまま残るので、人間が記録から気づけるようにする
+  if (isAutoMergeEnabled) {
+    disableAutoMerge(pullRequestNumber)
+    record.isAutoMergeDisabled = true
+  }
+  // リモートの最新ではなく、確かめた commit へ切り替える。確かめた後に入った push の中身を、無人セッションで走らせない
+  switchToPullRequestBranch({ workspaceDir, branchName, headSha: headShaBeforeSession })
+  ensureDependencies(workspaceDir)
+  const resolveStatus = await runAutoResolveConflictSession({
+    issueNumber,
+    workspaceDir,
+    abortSignal: stopController.signal
+  })
+  record.conflictResolutionExitCode = resolveStatus.exitCode
+  record.conflictResolutionSignal = resolveStatus.signal
+  if (!hasSessionSucceeded(resolveStatus)) return false
+  return watchCiAndFix(
+    {
+      issueNumber,
+      branchName,
+      workspaceDir,
+      headShaBeforeSession,
+      sessionName: '/auto-resolve-conflict'
+    },
+    record
+  )
+}
+
+/**
+ * 衝突した PR 1件を解かせて CI まで見届け、結果を記録する（記録の決まりは runWorkAndRecord）。
+ *
+ * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string }} params 解かせると決めた PR と、このプロセスが使う AI 専用 clone
+ * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
+ * @throws {Error} 記録ファイルへ書けなかったとき
+ */
+function resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }) {
+  const { issueNumber, pullRequestNumber, pullRequestUrl, branchName } = conflictedPullRequest
+  showIssueBanner({
+    issueNumber,
+    title: `PR #${pullRequestNumber} の衝突を解く`,
+    branchName,
+    workspaceDir
+  })
+  return runWorkAndRecord({
+    record: { issueNumber, branchName, workspaceDir, isConflictResolution: true },
+    runWork: (record) => resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }, record),
+    // 解いた後も PR の URL を記録に残し、次に衝突したときもこのツールの PR として見分ける
+    readPullRequestUrl: () => pullRequestUrl
+  })
 }
 
 /**
@@ -1046,7 +1386,37 @@ function releaseIssueLock() {
 }
 
 /**
- * Ctrl+C が来るか、着手できない周が上限を超えるまで、Issue を1件ずつ拾って処理する。
+ * 次にする作業を1つ選び、その Issue のロックを取る。衝突した自分の PR を、新しい Issue より先に選ぶ。
+ *
+ * 選んだ作業の Issue のロックは issueLock に残す。外すのは呼び出し側で、作業を終えたときに releaseIssueLock を呼ぶ。
+ *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
+ * @returns {Promise<{ runWork: (() => Promise<boolean>) | null, idleReason: string | null }>} 作業を走らせて記録する関数（する作業が無いときは null）と、
+ *   作業が無いときに待機中のステータス行へ出す理由（作業があるときは null）
+ */
+async function claimNextWork(workspaceDir) {
+  // 止まった PR を先に片付ける。後回しにすると、その Issue をブロッカーに持つ Issue がいつまでも拾われない
+  const conflictedPullRequest = await claimFirstConflictedPullRequest()
+  if (conflictedPullRequest) {
+    return {
+      runWork: () => resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }),
+      idleReason: null
+    }
+  }
+  try {
+    const { startedIssue, idleReason } = await startFirstStartableIssue(workspaceDir)
+    if (!startedIssue) return { runWork: null, idleReason }
+    return { runWork: () => implementIssueAndRecord(startedIssue), idleReason: null }
+  } catch (error) {
+    // 候補を引けなかった回は「着手できる Issue が無い」とは別の理由なので、待機行に書き分ける。
+    // 書き分けないと、gh の失敗などで待ち続けている間も「正常に空振りしている」ように見える
+    showError(`候補を引けませんでした: ${formatError(error, { withStack: true })}`)
+    return { runWork: null, idleReason: '候補を引けず、次の見直しで再試行' }
+  }
+}
+
+/**
+ * Ctrl+C が来るか、着手できない周が上限を超えるまで、衝突した PR を解かせるか Issue を拾うかを1件ずつ処理する。
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {Promise<void>}
@@ -1058,17 +1428,8 @@ async function processIssuesUntilStopped(workspaceDir) {
   let isIdleWaitLimitReached = false
   while (!stopController.signal.aborted && !isIdleWaitLimitReached) {
     tryCloseIssuesOfMergedPullRequests()
-    let startedIssue = null
-    // 候補を引けなかった回は「着手できる Issue が無い」とは別の理由なので、待機行に書き分ける。
-    // 書き分けないと、gh の失敗などで待ち続けている間も「正常に空振りしている」ように見える
-    let idleReason
-    try {
-      ;({ startedIssue, idleReason } = await startFirstStartableIssue(workspaceDir))
-    } catch (error) {
-      showError(`候補を引けませんでした: ${formatError(error, { withStack: true })}`)
-      idleReason = '候補を引けず、次の見直しで再試行'
-    }
-    if (!startedIssue) {
+    const { runWork, idleReason } = await claimNextWork(workspaceDir)
+    if (!runWork) {
       idlePollCount += 1
       isIdleWaitLimitReached = await waitUnlessIdleWaitLimitReached(idlePollCount, idleReason)
       continue
@@ -1077,14 +1438,14 @@ async function processIssuesUntilStopped(workspaceDir) {
 
     let isAllSessionsSucceeded
     try {
-      isAllSessionsSucceeded = await runSessionAndRecord(startedIssue)
+      isAllSessionsSucceeded = await runWork()
     } finally {
       releaseIssueLock()
     }
     consecutiveSessionFailureCount = isAllSessionsSucceeded ? 0 : consecutiveSessionFailureCount + 1
     if (consecutiveSessionFailureCount >= MAX_CONSECUTIVE_SESSION_FAILURES) {
       throw new Error(
-        `claude のセッションが ${consecutiveSessionFailureCount} 回続けて失敗しました。記録の issueCheckExitCode・issueCheckSignal・autoDevExitCode・autoDevSignal・ciFixExitCode・ciFixSignal・error を読んで原因を直し、もう一度打ってください`
+        `claude のセッションが ${consecutiveSessionFailureCount} 回続けて失敗しました。記録の issueCheckExitCode・issueCheckSignal・autoDevExitCode・autoDevSignal・ciFixExitCode・ciFixSignal・conflictResolutionExitCode・conflictResolutionSignal・error を読んで原因を直し、もう一度打ってください`
       )
     }
     await yieldToEventLoop()

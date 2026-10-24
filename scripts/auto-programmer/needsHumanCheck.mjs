@@ -4,7 +4,7 @@
 // 設計意図（WHY）:
 // - 予定した終わり方だけを並べ、それ以外はすべて付ける。止まり方を1つずつ数えて付けると、止まり方が増えるたびに
 //   付け漏れ、人間がこのラベル1つで止まった Issue を引けなくなる（Issue #1000）。
-// - 予定した終わり方と付ける条件は docs/policy/issue-policy.md が正。ラベル名は /auto-dev・/auto-fix-ci の
+// - 予定した終わり方と付ける条件は docs/policy/issue-policy.md が正。ラベル名は /auto-dev・/auto-fix-ci・/auto-resolve-conflict の
 //   SKILL.md（離脱手順）の表記と一字一句合わせる。
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
 
