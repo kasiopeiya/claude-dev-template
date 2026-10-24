@@ -90,9 +90,9 @@ flowchart LR
     Start([🎯 cicd-gate 成功<br/>＝pipeline 完了])
 
     subgraph Triage["🤖 pr-triage ジョブ（merge 権限なし）"]
-        Det["⓪ パス判定（決定論）<br/>Policy・CLAUDE.md に変更があれば<br/>policy も付与"]
+        Det["⓪ パス判定（決定論）<br/>Policy・CLAUDE.md に変更があれば policy、<br/>.github/・scripts/ci/ なら cicd も付与"]
         Ai["① AI advisory<br/>pr-label"]
-        Chk["② サイズ判定（決定論）<br/>needs-human-review が付いていれば<br/>scripts/pr-check.mjs を実行しコメント"]
+        Chk["② サイズ判定（決定論）<br/>needs-human-review が付いていれば<br/>scripts/ci/pr-check.mjs を実行しコメント"]
         Iss["③ Issue 起票（決定論）<br/>needs-human-review が付いていれば<br/>PR 番号だけの Issue を1件"]
         Det --> Ai --> Chk --> Iss
     end
