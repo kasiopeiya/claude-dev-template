@@ -255,7 +255,15 @@ export default tseslint.config(
     },
     rules: {
       // ⑩ 非同期: await 忘れ(浮いた Promise)と Promise の誤用は実バグにつながるため error
-      '@typescript-eslint/no-floating-promises': 'error',
+      // node:test の test()・describe() は Promise を返すが、ランナーが待つので await しない
+      '@typescript-eslint/no-floating-promises': [
+        'error',
+        {
+          allowForKnownSafeCalls: [
+            { from: 'package', package: 'node:test', name: ['test', 'it', 'describe', 'suite'] }
+          ]
+        }
+      ],
       '@typescript-eslint/no-misused-promises': 'error',
       // await を伴わない async は非同期処理の書き忘れを疑うため error。
       // 非同期ポートを同期処理で満たす実装は async を外して Promise を直接返す
