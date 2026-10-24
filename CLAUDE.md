@@ -45,6 +45,7 @@
 - 設計書：`/quick-doc-review`／`/design`
 - アプリ実装：`/code-review`／`/code-dev`
 - CDK：`/cdk-review`／`/cdk-dev`
+- app/・infra/・samples/ 以外のコード（`scripts/`・`.claude/hooks/`・`eslint-rules/`・`.claude/skills/` 配下のスクリプト）：`/quick-code-review <パス>`／`/code-review <パス>`（パスを渡さないと `.mjs` 本体が対象から外れる。samples/app はアプリ実装、samples/infra は CDK の行）
 - ハーネスのプロンプト定義（`.claude/skills/`・`.claude/agents/`）：`/quick-doc-review`／`/doc-review`
 - 要件定義書：`/quick-doc-review`／`/requirements-review`
 - ポリシー（`docs/policy/`）：`/quick-doc-review`／`/doc-review`
