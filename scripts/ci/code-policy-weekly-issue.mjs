@@ -6,7 +6,7 @@
 //   設計判断の理由は scripts/auto-programmer/README.md「週次スクリプトが Issue を供給する」を参照。
 //
 // 使い方:
-//   node scripts/code-policy-weekly-issue.mjs   起票したら、その URL を標準出力に返す。
+//   node scripts/ci/code-policy-weekly-issue.mjs   起票したら、その URL を標準出力に返す。
 //                                                 次のどちらかに当たるときは起票せず、その理由を標準出力に返す：
 //                                                 open な週次 Issue がある／対象ファイルが0件
 
@@ -16,7 +16,7 @@ import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 // 対象ディレクトリの存在確認・git ls-files はこのディレクトリを基準にする（カレントディレクトリに依存させない）
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 const WEEKLY_ISSUE_LABEL = 'code-policy-weekly'
 const AI_FIXABLE_LABEL = 'ai-fixable'

@@ -1,4 +1,4 @@
-# 責務: pipeline 完了後に、その PR へ判断基準（Policy・CLAUDE.md）変更の決定論ラベル付与と、
+# 責務: pipeline 完了後に、その PR へ判断基準（Policy・CLAUDE.md）と CI 定義の変更の決定論ラベル付与と、
 #       advisory な AI 処理（pr-label）、サイズ判定（pr-check）、auto-merge を行う。PR 本文には触れない。
 #       マージ可否の判定（cicd-gate）には一切関与しない。
 # なぜこの構成なのかは samples/docs/design/cicd-design.md を参照する。
@@ -82,6 +82,26 @@ jobs:
             gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
           gh pr edit "$PR" --add-label policy,needs-human-review
 
+      # CI の定義（.github/）と、CI が実行するスクリプト（scripts/ci/）に触れた PR も同じく人間レビューへ寄せる。
+      # 理由は上の policy と同じ。対象パスの正は docs/policy/pr-review-policy.md の cicd 行で、ここはその写し。
+      - name: Label cicd changes for human review
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          if ! gh pr diff "$PR" --name-only | grep -qE '^(\.github/|scripts/ci/)'; then
+            echo "no cicd path touched; skipping"
+            exit 0
+          fi
+          # ラベルが未作成のリポジトリでも動くよう、無ければ作る（既存なら何もしない）。
+          existing=$(gh label list --limit 200 --json name --jq '.[].name')
+          grep -qx 'cicd' <<< "$existing" ||
+            gh label create cicd --description ".github配下・CI・静的解析などの変更" --color 5319E7
+          grep -qx 'needs-human-review' <<< "$existing" ||
+            gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
+          gh pr edit "$PR" --add-label cicd,needs-human-review
+
       # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet
       - name: Run AI advisory (pr-label)
         id: advisory
@@ -159,7 +179,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # needs-human-review の PR だけ、レビューを依頼してよいサイズかを判定して PR に1件コメントする。
-      # 判定ロジックは手元の /pr-check と共有する scripts/pr-check.mjs にだけ置く。
+      # 判定ロジックは手元の /pr-check と共有する scripts/ci/pr-check.mjs にだけ置く。
       # Claude Code を CI で動かせない環境でも、手元から同じ判定を使えるようにするため（#631）。
       # ラベルは ⓪決定論ステップと ①AI の両方から付くため、その両方の後ろで最終状態を読む。
       - name: Check PR size for human-review PRs
@@ -172,7 +192,7 @@ jobs:
             echo "no needs-human-review label on PR #$PR; skipping size check"
             exit 0
           fi
-          node scripts/pr-check.mjs "$PR"
+          node scripts/ci/pr-check.mjs "$PR"
 
       # needs-human-review の PR は人間の後追いレビューが要る。PR 一覧を見張る運用に頼らず、
       # Issueを起票する。

@@ -37,7 +37,7 @@ readonly LABELS=(
   'chore|cfd3d7|設定変更・依存関係更新など'
   'docs|0e8a16|ドキュメント変更'
   'policy|D93F0B|判断基準の変更'
-  'needs-human-review|d93f0b|人間がレビューすべきPR（feature/cicd/bug を含む、または判定が不確実）'
+  'needs-human-review|d93f0b|人間がレビューすべきPR'
   'needs-manual-triage|e99695|レビュー要否を自動判定できなかった。人間が分類すること'
   # workflow: 実行時にも自己作成するが、初回の権限差を気にしなくて済むよう先に作っておく
   'doc-consistency-weekly|5319E7|週次の docs/ 横断整合性チェック Issue'
