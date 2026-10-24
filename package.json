@@ -18,7 +18,7 @@
     "auto-programmer": "node scripts/auto-programmer/index.mjs",
     "close-issues": "node scripts/close-issues.mjs",
     "move-issue-card": "node scripts/move-issue-card.mjs",
-    "prune-branches": "node scripts/prune-branches.mjs",
+    "prune-merged-branches-and-worktrees": "node scripts/prune-branches.mjs",
     "count-registered-sessions": "node scripts/count-registered-worktree-sessions.mjs",
     "gen:adr-index": "node scripts/generate-adr-index.mjs",
     "knip": "knip",
