@@ -1,4 +1,5 @@
 // 責務: AI 専用 clone をデフォルトブランチ（GitHub のリポジトリ設定）の最新の姿に戻し、そこからトピックブランチを作る。
+//   衝突を解かせるときは、既にある PR のブランチの、このツールが最後に CI を待った姿へ切り替える。
 //
 // 設計意図（WHY）:
 // - ブランチ作成を決定論的なこちら側で行うことで、AI 側はすでにトピックブランチの上にいる状態で
@@ -108,4 +109,23 @@ export function prepareTopicBranch({ workspaceDir, branchName }) {
   runGitInWorkspace(workspaceDir, ['reset', '--hard', `origin/${baseBranch}`])
   runGitInWorkspace(workspaceDir, ['clean', '-fd'])
   runGitInWorkspace(workspaceDir, ['checkout', '-B', branchName, `origin/${baseBranch}`])
+}
+
+/**
+ * clone を、既にある PR のブランチの、指定した commit の状態へ切り替える。衝突を解かせる前に呼ぶ。
+ *
+ * ブランチは指定した commit から作り直し、リモートのブランチを push 先にする。確かめた後にリモートへ別の push が入っても、
+ * その中身は取り込まない（push は先に進んだリモートに拒否される）。前回のセッションが残した未コミットの変更は、消さずに
+ * stash へ退避してから切り替える。
+ *
+ * @param {{ workspaceDir: string, branchName: string, headSha: string }} params このプロセスが使う AI 専用 clone・PR のブランチ名・切り替える先の commit の SHA
+ * @returns {void}
+ * @throws {Error} git の操作が失敗したとき（リモートにブランチや commit が無いときを含む）
+ */
+export function switchToPullRequestBranch({ workspaceDir, branchName, headSha }) {
+  runGitInWorkspace(workspaceDir, ['fetch', 'origin', '--prune'])
+  stashUncommittedChanges(workspaceDir)
+  runGitInWorkspace(workspaceDir, ['checkout', '--force', '-B', branchName, headSha])
+  runGitInWorkspace(workspaceDir, ['branch', '--set-upstream-to', `origin/${branchName}`])
+  runGitInWorkspace(workspaceDir, ['clean', '-fd'])
 }

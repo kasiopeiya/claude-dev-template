@@ -23,6 +23,7 @@ hook:
       '.claude/skills/sre-prr/**/*.md',
       '.claude/skills/auto-dev/**/*.md',
       '.claude/skills/auto-fix-ci/**/*.md',
+      '.claude/skills/auto-resolve-conflict/**/*.md',
       '.claude/skills/design/SKILL.md',
       '.claude/skills/code-review/**/*.md',
       '.claude/skills/doc-review/**/*.md',
@@ -158,7 +159,7 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 ## 無人実行が止まったら `needs-human-check` を付ける
 
-無人実行（Auto-Programmer と、それが起動する `/auto-dev`・`/auto-fix-ci`）が予定した終わり方以外で止まったら、Issue に `needs-human-check` を付ける。止まった Issue を、人間がこのラベル1つで引けるようにするためである。止まり方ごとに印を変えたり、ボードの列で示したりすると、引き漏れる（#1000）。
+無人実行（Auto-Programmer と、それが起動する `/auto-dev`・`/auto-fix-ci`・`/auto-resolve-conflict`）が予定した終わり方以外で止まったら、Issue に `needs-human-check` を付ける。止まった Issue を、人間がこのラベル1つで引けるようにするためである。止まり方ごとに印を変えたり、ボードの列で示したりすると、引き漏れる（#1000）。
 
 予定した終わり方は次の4つだけで、どれか1つに当たれば付けず、ほかはすべて付ける。ただし処理中の例外とセッションの失敗は、4つのどれかに当たっていても付ける。付ける例：`/auto-dev`・`/auto-fix-ci` の離脱、上限まで直させても CI が通らない、CI の時間切れ・キャンセル、`/issue-check` の判定が書き戻されない。
 

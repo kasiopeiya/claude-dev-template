@@ -1,4 +1,4 @@
-// 責務: AI 専用 clone の中で `claude` を起動し、Issue 1件ぶんの `/issue-check`・`/auto-dev`・`/auto-fix-ci` を走らせる。
+// 責務: AI 専用 clone の中で `claude` を起動し、Issue 1件ぶんの `/issue-check`・`/auto-dev`・`/auto-fix-ci`・`/auto-resolve-conflict` を走らせる。
 //
 // 設計意図（WHY）:
 // - Issue ごと・Skill ごとにプロセスを作り直す。1つのセッションで何件も処理すると文脈が積もり、品質が
@@ -134,6 +134,21 @@ export function runAutoDevSession({ issueNumber, workspaceDir, abortSignal }) {
 export function runAutoFixCiSession({ issueNumber, runId, workspaceDir, abortSignal }) {
   return runUnattendedSession({
     slashCommand: `/auto-fix-ci ${issueNumber} ${runId}`,
+    workspaceDir,
+    abortSignal
+  })
+}
+
+/**
+ * `/auto-resolve-conflict <Issue番号>` を無人セッションとして実行する。clone は、衝突した PR のブランチへ切り替えてから渡す。
+ *
+ * @param {{ issueNumber: number, workspaceDir: string, abortSignal: AbortSignal }} params 衝突した PR の Issue の番号・セッションを動かす AI 専用 clone・中止の合図（runUnattendedSession を参照）
+ * @returns {Promise<{ exitCode: number, signal: string | null }>} claude プロセスの終了状態（打ち切られたときは signal が入る）
+ * @throws {Error} claude を起動できなかったとき
+ */
+export function runAutoResolveConflictSession({ issueNumber, workspaceDir, abortSignal }) {
+  return runUnattendedSession({
+    slashCommand: `/auto-resolve-conflict ${issueNumber}`,
     workspaceDir,
     abortSignal
   })
