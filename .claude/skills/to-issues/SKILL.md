@@ -110,6 +110,21 @@ gh api graphql -f query='mutation($parent:ID!,$childUrl:String!){addSubIssue(inp
 
 紐付けに失敗しても、**登録そのものは成功している**。失敗したら親が付かなかったことを伝えて続行し、登録をやり直さない（同じ Issue を二重に立てることになる）。
 
+### 7. 起点 Issue の段番号を振り直す
+
+6 で起点 Issue に子を1件以上紐付けたときだけ行う。
+
+子を持った起点 Issue の段番号は、子の段の範囲に変わる。起点 Issue をブロッカーに持つ Issue の段も、その範囲の最大値で決まる（`/quick-issue` の「段番号の振り方」）。グループ全体を計算し直すので、[`/issue-deps`](../issue-deps/SKILL.md) に任せる。
+
+起点 Issue の親と、そのラベルを引く。
+
+```bash
+gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number:<起点Issueの番号>){parent{title labels(first:20){nodes{name}}}}}}'
+```
+
+- **親に `phase` ラベルがある**：親のタイトルを引数にして、Skill ツールで `/issue-deps` を起動する（例：`/issue-deps 設計・実装`）
+- **親が無い、または親に `phase` ラベルが無い**：起動しない。`/issue-deps` は引数を `phase` ラベルの Issue のタイトルと照合するので、渡せる引数が無い。引数なしで起動すると、起点 Issue と無関係なグループまで書き換えてしまう。代わりに最後の報告で、起点 Issue とそれをブロッカーに持つ Issue の段番号が古いままだと伝え、`/issue-deps` を打つよう促す
+
 <writing-rules>
 
 **文体**：中学生が一度で追える文で書く。専門用語は使ってよい。読みにくさの原因は用語ではなく言い回しにある。
@@ -215,5 +230,3 @@ Plan のスコープ「やらないこと」（`/grill-me` の Not-now リスト
 先に完了している必要がある Issue への参照。無ければ「なし（すぐ着手できる）」と書く。
 
 </issue-template>
-
-親 Issue はクローズも変更もしてはならない。例外は [`/issue-regroup`](../issue-regroup/SKILL.md) だけである。親の open な子が全部ブロッカー待ちになったときに限り、子を付け替えてその親を close する。
