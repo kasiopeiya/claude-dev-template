@@ -1,11 +1,13 @@
 {
   // 責務: .claude/hooks/ の .mjs に型情報を付け、eslint.config.mjs の型情報付きルール（浮いた Promise など）を掛けられるようにする。
+  // @types/node を読み、Node の組み込みモジュール（node:timers/promises など）が返す Promise も型付けする。TypeScript 6 は types の既定が空配列なので明示する
   // ESLint の projectService はファイルに最も近い tsconfig.json を読むため、ディレクトリごとに置く。tsc では使わない
   "compilerOptions": {
     "allowJs": true,
     "noEmit": true,
     "module": "nodenext",
-    "target": "es2024"
+    "target": "es2024",
+    "types": ["node"]
   },
   "include": ["**/*.mjs"]
 }
