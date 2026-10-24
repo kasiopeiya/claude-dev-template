@@ -62,7 +62,9 @@ export const config = {
     // run の状態を見直す間隔
     pollIntervalSeconds: 30,
     // run 1回が終わるまで待つ上限。needs で直列に並ぶジョブの timeout-minutes の合計（最も長い連なり）に、
-    // ランナーの起動待ちの分を足す。ワークフローのジョブ構成を変えたら見直す
+    // ランナーの起動待ちの分を足す。ワークフローのジョブ構成を変えたら見直す。
+    // 対話セッションの hook（.claude/settings.json の PostToolUse）の timeout は、この値に5分足した秒数にしてある。
+    // 上げたら、そちらも上げる
     runWaitLimitMinutes: 40,
     // CI が落ちたとき、AI に直させる回数の上限。使い切っても落ちていれば人間へ回す
     maxFixAttempts: 2

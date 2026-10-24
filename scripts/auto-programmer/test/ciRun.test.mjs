@@ -1,4 +1,4 @@
-// 責務: push 後の CI の run の状態の読み方と、次にすること（通った・直させる・諦める・やめる）の決め方を検証する。
+// 責務: push 後の CI の run の状態の読み方と、これまでに直させた回数の数え方と、次にすること（通った・直させる・諦める・やめる）の決め方を検証する。
 //
 // ここが壊れると、通っていない PR を通ったものとして次の Issue へ進むか、キャンセルされただけの run を
 // AI に何度も直させ、無関係なコミットが誰にも見られずに積まれる。
@@ -6,7 +6,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { decideAfterCiRun, readCiRunState } from '../ciRun.mjs'
+import { countPastFixAttempts, decideAfterCiRun, readCiRunState } from '../ciRun.mjs'
 
 const HEAD_SHA = 'aaaaaaa'
 
@@ -80,6 +80,53 @@ describe('run の状態を読む', () => {
 
     assert.equal(runState.runId, 200)
     assert.equal(runState.state, 'success')
+  })
+})
+
+describe('これまでに直させた回数を数える', () => {
+  test('落ちた run がいま見ている1件だけなら、まだ1回も直させていない', () => {
+    const sut = countPastFixAttempts
+    const branchRuns = [createRun({ databaseId: 3, conclusion: 'failure' })]
+
+    const pastFixAttemptCount = sut({ branchRuns, currentRunId: 3 })
+
+    assert.equal(pastFixAttemptCount, 0)
+  })
+
+  test('それより前に落ちた run の数を、直させた回数とする', () => {
+    const sut = countPastFixAttempts
+    const branchRuns = [
+      createRun({ databaseId: 1, conclusion: 'failure' }),
+      createRun({ databaseId: 2, conclusion: 'timed_out' }),
+      createRun({ databaseId: 3, conclusion: 'failure' })
+    ]
+
+    const pastFixAttemptCount = sut({ branchRuns, currentRunId: 3 })
+
+    assert.equal(pastFixAttemptCount, 2)
+  })
+
+  test('通った・キャンセルされた・終わっていない run は数えない', () => {
+    const sut = countPastFixAttempts
+    const branchRuns = [
+      createRun({ databaseId: 1, conclusion: 'failure' }),
+      createRun({ databaseId: 2, conclusion: 'success' }),
+      createRun({ databaseId: 3, conclusion: 'cancelled' }),
+      createRun({ databaseId: 4, status: 'in_progress', conclusion: '' })
+    ]
+
+    const pastFixAttemptCount = sut({ branchRuns, currentRunId: 1 })
+
+    assert.equal(pastFixAttemptCount, 0)
+  })
+
+  test('いま見ている run が一覧に無ければ、落ちた run を全部数える', () => {
+    const sut = countPastFixAttempts
+    const branchRuns = [createRun({ databaseId: 1, conclusion: 'failure' })]
+
+    const pastFixAttemptCount = sut({ branchRuns, currentRunId: 9 })
+
+    assert.equal(pastFixAttemptCount, 1)
   })
 })
 
