@@ -31,6 +31,7 @@ hook:
       '.claude/skills/doc-review/**/*.md',
       '.claude/skills/cdk-review/**/*.md',
       '.claude/skills/arch-review/**/*.md',
+      '.claude/skills/actions-review/**/*.md',
       '.claude/skills/requirements-review/**/*.md',
       'docs/policy/review-subagent-lens-policy.md',
       'docs/guide/development-flow.md',
