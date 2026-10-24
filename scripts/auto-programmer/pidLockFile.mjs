@@ -1,5 +1,5 @@
 // 責務: 同じマシンで動く複数の auto-programmer が、1つのものを同時に使わないよう、PID 入りのロックファイルを取る・外す。
-//   番号付きのロックは、一番小さい空き番号を取る。判断（死んだロック・空き番号）は pidLockFileDecision.mjs が持つ。
+//   番号付きのロックは一番小さい空き番号を取り、名前付きのロックはその名前のものだけを取る。判断（死んだロック・空き番号）は pidLockFileDecision.mjs が持つ。
 //
 // 設計意図（WHY）:
 // - npm の依存を足さず、Node の標準機能だけで作る（dependency-policy：依存は既定で足さない）。ロックの排他は、既にあれば失敗する
@@ -13,7 +13,12 @@ import { linkSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } 
 import { uptime } from 'node:os'
 import { join } from 'node:path'
 
-import { buildLockFileContent, isLockDead, selectLowestFreeNumber } from './pidLockFileDecision.mjs'
+import {
+  buildLockFileContent,
+  isLockDead,
+  readLockHolderPid,
+  selectLowestFreeNumber
+} from './pidLockFileDecision.mjs'
 
 /** @typedef {{ lockFilePath: string, lockFileContent: string }} AcquiredLockFile 取ったロックファイルのパスと、書いた中身 */
 
@@ -182,9 +187,28 @@ export function acquireLowestFreeNumberedLockFile({ lockDirectory, lockFileNameP
 }
 
 /**
+ * 名前で指したロックを1つ取る。ロックファイルは `<lockDirectory>/<lockName>.lock` に置く。
+ *
+ * @param {{ lockDirectory: string, lockName: string }} params ロックファイルの置き場（無ければ作る）と、拡張子を除いた名前
+ * @returns {{ lock: AcquiredLockFile | null, holderPid: number | null }} 取ったロック（取れなければ null）と、取れなかったときのいまの持ち主の PID（取れた・持ち主を読めなかったときは null）
+ * @throws {Error} ファイルを読めなかった・作れなかった・消せなかったとき
+ */
+export function tryAcquireNamedLockFile({ lockDirectory, lockName }) {
+  mkdirSync(lockDirectory, { recursive: true })
+  const lockFilePath = join(lockDirectory, `${lockName}.lock`)
+  const lock = tryAcquireLockFile(lockFilePath)
+  if (lock !== null) return { lock, holderPid: null }
+  const holderLockFileContent = readFileIfExists(lockFilePath)
+  return {
+    lock: null,
+    holderPid: holderLockFileContent === null ? null : readLockHolderPid(holderLockFileContent)
+  }
+}
+
+/**
  * 取ったロックを外す。中身が取ったときと違えば（死んだとみなされて取り直された後なら）、他のプロセスのロックなので消さない。
  *
- * @param {AcquiredLockFile} lock acquireLowestFreeNumberedLockFile が返したロック
+ * @param {AcquiredLockFile} lock acquireLowestFreeNumberedLockFile・tryAcquireNamedLockFile が返したロック
  * @returns {void}
  * @throws {Error} ファイルを読めなかった・消せなかったとき
  */

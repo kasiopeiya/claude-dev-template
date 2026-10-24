@@ -1,9 +1,10 @@
-// 責務: PID 入りのロックファイルについて、中身の組み立てと、ロックが死んでいるか・一番小さい空き番号はどれかの判断を担う純粋関数だけを置く。
+// 責務: PID 入りのロックファイルについて、中身の組み立て・持ち主の読み出しと、ロックが死んでいるか・一番小さい空き番号はどれかの判断を担う純粋関数だけを置く。
 //   ファイルの読み書きとプロセスの確認は pidLockFile.mjs が持つ。
 //
 // 設計意図（WHY）:
 // - import を1つも持たない形に保ち、ファイルもプロセスも要らずに確かめられるようにする（unit-test-policy）。
-//   判断を誤ると、2つのプロセスが同じ clone で reset --hard し合うか、空いている番号を使えずに clone が増え続ける。
+//   判断を誤ると、2つのプロセスが同じ clone で reset --hard し合う・同じ Issue を実装し合うか、
+//   空いている番号を使えずに clone が増え続ける・Issue を拾えなくなる。
 // - 死んだとみなすのは、PID のプロセスが動いていないときと、マシンの起動時刻より前に作られたときである。node が落ちても
 //   ロックが残り続けないようにする。再起動すると PID が再利用されるので、PID の確認だけでは前回の起動のロックを見分けられない。
 // - 起動時刻より前かは、起動ごとに変わる ID（Linux の boot_id）を引ける OS ではそれで見分ける。引けない OS では、時刻と
@@ -14,7 +15,7 @@
 
 // 時刻と起動時刻の比較に持たせる余裕。起動時刻は、秒の切り捨てと時計の補正の分だけずれる。
 // 生きているロックを死んだと取り違えると2つのプロセスが同じものを持つので、余裕は、前回の起動のロックを生きていると取り違える側に倒す
-// （取り違えても、そのロックを使わず次の番号へ進むだけで済む）
+// （取り違えても、clone のロックは次の番号へ進み、Issue のロックは PID を再利用したプロセスが終わるまでその Issue を飛ばすだけで済む）
 const BOOT_TIME_MARGIN_MS = 60 * 1000
 
 /**
@@ -47,6 +48,16 @@ function parseLockFileContent(lockFileContent) {
     createdAtMs,
     bootId: typeof holder.bootId === 'string' ? holder.bootId : null
   }
+}
+
+/**
+ * ロックファイルの中身から、持ち主の PID を読む。
+ *
+ * @param {string} lockFileContent ロックファイルの中身
+ * @returns {number | null} 持ち主の PID（読めない中身なら null）
+ */
+export function readLockHolderPid(lockFileContent) {
+  return parseLockFileContent(lockFileContent)?.pid ?? null
 }
 
 /**
