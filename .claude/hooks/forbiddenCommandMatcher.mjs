@@ -169,8 +169,7 @@ const RULE_GROUPS = [
         label: 'git branch の強制削除（-D・--delete --force・-fd）',
         prefix: ['git', 'branch'],
         detect: isForceBranchDelete,
-        advice:
-          '取り込み済みブランチの掃除は人間が npm run prune-merged-branches-and-worktrees で行う'
+        advice: '取り込み済みブランチの掃除は npm run prune-merged-branches-and-worktrees で行う'
       },
       {
         label: 'デフォルトブランチ・main・master を含む git branch の削除',
