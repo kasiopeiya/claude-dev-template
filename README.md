@@ -67,6 +67,7 @@ sequenceDiagram
 | テスト                      | 振る舞いの退行（単体テスト・CDK snapshot ＋ synth・dev 環境での結合テスト）           | 各ワークスペースの `*.test.ts`・`samples/infra/test/`                                                  |
 | CLAUDE.md 文字数検査        | 毎セッション消費する文脈の肥大（CLAUDE.md と `@` import 先の合計文字数が上限超過）    | 上限は `docs/policy/policy-driven-development-policy.md`、判定は `scripts/ci/check-claude-md-size.mjs` |
 | Rule 文字数検査             | 対象ファイルを読むたびに消費する文脈の肥大（`.claude/rules/*.md` の文字数が上限超過） | 上限は `docs/policy/policy-driven-development-policy.md`、判定は `scripts/ci/check-rule-size.mjs`      |
+| workflow 検査               | workflow の事故（Action のタグ固定・既定の権限・`run:` への式の直接埋め込み）         | 判定は `scripts/ci/check-workflow-pins-and-permissions.mjs`                                            |
 
 ### コーディング規約・技術ルール
 

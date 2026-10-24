@@ -208,6 +208,22 @@ jobs:
 
       - run: npm run check:rules
 
+  # workflow の SHA 固定・最上位の permissions・run: への式の直接埋め込みの検査。
+  # workflow だけを直す PR でも決まりを破りうる。検査スクリプトが外部依存を使わないため npm ci も要らない。
+  ci-workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+
+      - run: npm run check:workflows
+
   # リポジトリ全体を1回で舐めるツール。静的解析はルールを1箇所で定義しているため
   # 階層ごとに分割・スキップできない（cicd-design）。
   ci-common:
@@ -366,6 +382,7 @@ jobs:
         ci-links,
         ci-claude-md,
         ci-rules,
+        ci-workflows,
         ci-common,
         ci-app,
         ci-cdk
