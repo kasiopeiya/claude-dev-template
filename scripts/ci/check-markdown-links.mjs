@@ -9,7 +9,7 @@ import { execFileSync } from 'child_process'
 import { dirname, join, relative, resolve, sep } from 'path'
 import { fileURLToPath } from 'url'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 // [text](path) と ![alt](path) の両方。タイトル付き（"..."）も許す。
 const LINK_PATTERN = /!?\[[^\]\n]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g

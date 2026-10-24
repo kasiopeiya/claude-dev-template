@@ -7,13 +7,13 @@
 // 判定ロジックはこのファイル1ヶ所にしか置かない。手元の /pr-check と CI（pr-ai-triage.yml）の2経路から呼ばれる。
 // NG でも終了コードは 0 を返す。マージを止めるゲートではないため。
 //
-// 使い方: node scripts/pr-check.mjs [PR番号]（省略すると現ブランチの PR）
+// 使い方: node scripts/ci/pr-check.mjs [PR番号]（省略すると現ブランチの PR）
 
 import { execFileSync } from 'child_process'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 // pr-review-policy のサイズ区分「大」の下限。この行数以上を NG とする
 const LARGE_PR_LINES = 400

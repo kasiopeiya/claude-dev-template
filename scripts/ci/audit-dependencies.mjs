@@ -7,7 +7,7 @@ import { execFileSync } from 'child_process'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
-const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..')
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 // 脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実なので、階層を分けず全部舐める（cicd-design）
 const AUDIT_DIRECTORIES = ['.', 'samples/app/backend', 'samples/infra']
@@ -218,7 +218,7 @@ function main() {
     console.error(`\nhigh 以上の脆弱性があります: ${failedDirectories.join(' ')}`)
     console.error('直し方: 依存を修正版へ上げてください。上流に修正版が無い場合だけ、')
     console.error(
-      `根拠と失効条件を添えて ${'scripts/audit-dependencies.mjs'} の許容リストに追加します。`
+      `根拠と失効条件を添えて ${'scripts/ci/audit-dependencies.mjs'} の許容リストに追加します。`
     )
     process.exit(1)
   }
