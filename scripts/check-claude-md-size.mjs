@@ -4,7 +4,7 @@
 //   ここはその判定だけを担う。CLAUDE.md は毎セッション全文が読まれるため、文字数がそのまま
 //   恒久的なコンテキスト消費になる（Issue #247）。
 //
-// 判定ロジックはこのファイル1ヶ所にしか置かない。PostToolUse hook と CI の2経路から呼ばれる。
+// 判定ロジックはこのファイル1ヶ所にしか置かない。ターン末ゲート（.claude/hooks/turn-end-gate.mjs）と CI の2経路から呼ばれる。
 
 import { existsSync, readFileSync, statSync } from 'fs'
 import { execFileSync } from 'child_process'
