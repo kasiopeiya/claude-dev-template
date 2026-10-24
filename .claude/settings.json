@@ -22,6 +22,19 @@
         ]
       }
     ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/wake-on-ci-failure.mjs\"",
+            "asyncRewake": true,
+            "timeout": 2700
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

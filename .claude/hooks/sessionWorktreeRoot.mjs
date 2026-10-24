@@ -8,7 +8,7 @@
 //   ときだけに限る。無関係なリポジトリの中で動くセッションに、このプロジェクトの基準を当てないため。
 // - 決められないときは undefined を返し、代わりの基準は呼び出し側が選ぶ。hook ごとに、置き場所以外の
 //   既定（ターン末ゲートは hook の置き場所、禁止コマンドは CLAUDE_PROJECT_DIR など）が違うため。
-// - turn-end-gate.mjs と block-forbidden-commands.mjs が同じ判定を使うので、書き写さずここに置く。
+// - turn-end-gate.mjs・block-forbidden-commands.mjs・wake-on-ci-failure.mjs が同じ判定を使うので、書き写さずここに置く。
 
 import { execFileSync } from 'node:child_process'
 import { dirname } from 'node:path'

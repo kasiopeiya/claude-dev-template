@@ -178,14 +178,15 @@ export function runStreaming(command, args, options = {}) {
  *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
- * @param {{ cwd?: string, shell?: boolean }} options 実行ディレクトリと、シェルを介すか
+ * @param {{ cwd?: string, shell?: boolean, extraEnv?: Record<string, string> }} options 実行ディレクトリと、シェルを介すか、親の環境変数に足す環境変数
  * @returns {{ child: import('node:child_process').ChildProcess, killTree: (signal: NodeJS.Signals) => void }} 子プロセスと、子孫ごと止める関数（子がもう居なければ何もしない）
  */
-function spawnProcessTree(command, args, { cwd, shell }) {
+function spawnProcessTree(command, args, { cwd, shell, extraEnv }) {
   const usesProcessGroup = process.platform !== 'win32'
   const child = spawn(command, args, {
     cwd,
     shell,
+    env: { ...process.env, ...extraEnv },
     detached: usesProcessGroup,
     stdio: ['ignore', 'pipe', 'pipe']
   })
@@ -253,12 +254,16 @@ function watchForTermination({ child, killTree }, { timeoutMs, abortSignal }) {
  *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
- * @param {{ cwd?: string, shell?: boolean, timeoutMs?: number, abortSignal?: AbortSignal, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} params 実行ディレクトリ・シェルを介すか・打ち切るまでの時間・中止の合図・子の出力の中継先
+ * @param {{ cwd?: string, shell?: boolean, extraEnv?: Record<string, string>, timeoutMs?: number, abortSignal?: AbortSignal, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} params 実行ディレクトリ・シェルを介すか・親の環境変数に足す環境変数・打ち切るまでの時間・中止の合図・子の出力の中継先
  * @returns {Promise<{ error: Error | null, status: number | null, signal: string | null }>} 終了状態（打ち切ったときは signal が入る）
  */
-function spawnAndWaitForExit(command, args, { cwd, shell, timeoutMs, abortSignal, onOutput }) {
+function spawnAndWaitForExit(
+  command,
+  args,
+  { cwd, shell, extraEnv, timeoutMs, abortSignal, onOutput }
+) {
   return new Promise((resolve) => {
-    const processTree = spawnProcessTree(command, args, { cwd, shell })
+    const processTree = spawnProcessTree(command, args, { cwd, shell, extraEnv })
     const { child } = processTree
     const watcher = watchForTermination(processTree, { timeoutMs, abortSignal })
     child.stdout.on('data', (chunk) => onOutput('stdout', chunk))
@@ -290,14 +295,14 @@ function spawnAndWaitForExit(command, args, { cwd, shell, timeoutMs, abortSignal
  *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
- * @param {{ cwd?: string, timeoutMs?: number, abortSignal?: AbortSignal, onTick: (elapsedMs: number) => void, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} options 実行ディレクトリ・打ち切るまでの時間・中止の合図・1秒ごとに経過時間を受け取る関数・子の出力の中継先
+ * @param {{ cwd?: string, extraEnv?: Record<string, string>, timeoutMs?: number, abortSignal?: AbortSignal, onTick: (elapsedMs: number) => void, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} options 実行ディレクトリ・親の環境変数に足す環境変数・打ち切るまでの時間・中止の合図・1秒ごとに経過時間を受け取る関数・子の出力の中継先
  * @returns {Promise<{ exitCode: number, signal: string | null }>} 終了状態（打ち切られたときは signal が入る）
  * @throws {Error} コマンドを起動できなかったとき（PATH に無い・.cmd に渡せない引数がある など）
  */
 export async function runStreamingAsync(
   command,
   args,
-  { cwd, timeoutMs, abortSignal, onTick, onOutput }
+  { cwd, extraEnv, timeoutMs, abortSignal, onTick, onOutput }
 ) {
   const startedAt = Date.now()
   const tickTimer = setInterval(() => onTick(Date.now() - startedAt), ELAPSED_TIME_TICK_INTERVAL_MS)
@@ -307,6 +312,7 @@ export async function runStreamingAsync(
       (resolvedCommand, resolvedArgs, extraOptions) =>
         spawnAndWaitForExit(resolvedCommand, resolvedArgs, {
           cwd,
+          extraEnv,
           ...extraOptions,
           timeoutMs,
           abortSignal,
