@@ -8,7 +8,7 @@ import { basename, isAbsolute, resolve } from 'node:path'
 
 const repository = 'kasiopeiya/claude-dev-template'
 
-// AI 専用 clone と実行ログの置き場。人間の作業ツリーと別の場所であれば、どこでもよい。
+// AI 専用 clone・実行ログ・clone の番号ロック（locks/）の置き場。人間の作業ツリーと別の場所であれば、どこでもよい。
 // 置き場だけを変えたい人が追跡対象のこのファイルを編集せずに済むよう、環境変数で上書きできる
 // 空文字・相対パスは作業ディレクトリ基準で解決され、clone が人間の作業ツリーの中にできるので受け付けない
 const autoProgrammerHomeDir =
@@ -70,7 +70,8 @@ export const config = {
     maxFixAttempts: 2
   },
 
-  // AI が実装に使う clone。リポジトリ名から導くので、repository を変えれば別の clone になる
+  // AI が実装に使う clone の1番。並べて動かすと、2番以降はこの後ろに -<番号> を付ける（index.mjs の acquireWorkspaceDir）。
+  // リポジトリ名から導くので、repository を変えれば別の clone になる
   workspaceDir: resolve(autoProgrammerHomeDir, basename(repository)),
 
   // Issue 1件につき1行を追記する記録。clone の外に置く（clone は毎回デフォルトブランチまで戻されるため）
