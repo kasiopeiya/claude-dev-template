@@ -51,7 +51,7 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 > - **AI の作業と人間しかできない作業が混ざるなら、人間の作業を別 Issue に切り出す。**
 > - **人間が方針を決めたら、`ai-fixable` か `ready-for-human` に `issue:decided` を重ねる。**
 > - **無人実行が予定した終わり方以外で止まったら、`needs-human-check` を重ねる。** 人間が確かめたら外す
-> - **Issue の親子は分解の関係を表す。** 例外は最上位のルート Issue だけで、`phase` ラベルで探す。一度張った親子は、親の open な子が全部ブロッカー待ちになったときだけ動かす（親がルート Issue なら動かさない）
+> - **Issue の親子は分解の関係を表す。** 例外は最上位のルート Issue だけで、`phase` ラベルで探す。一度張った親子は、親の open な子が全部ブロッカー待ちになったときだけ動かす（親がルート Issue なら動かさない）。子を持つ親（ルート Issue を除く）には、`tracking-issue` を3択に重ねる
 > - **分解元の Issue が親になる。分解元の無い Issue は、すべてルート Issue の sub-issue にする。** 使うルートと振り分け条件は、起票先ファイル（`docs/project-context/issue-destinations.md`）が決める。ルートに紐づける手順は `/link-root-issue` が持つ
 > - **手順・書式・状態図はこのポリシーに置かない。** 選んだ後の How は各 Skill が持つ
 
@@ -82,6 +82,7 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 | `issue:checked`                                | `/issue-check` が一度監査した。いま妥当である保証ではない                                | `/issue-check` が判定を出した Issue に、判定が何であれ貼る。監査できなかった・飛ばした Issue には貼らない                                                        |
 | `broken-window`                                | AI が作業中に見つけ、その場で直さずに起票した問題                                        | AI が本筋外の問題を見つけて起票するとき（CLAUDE.md「本筋外の課題は起票する」と、それを引いて確認なしに起票するレビュー系 Skill）。人間が依頼した要望には付けない |
 | `harness`                                      | ハーネスを変える Issue。ハーネスの手直しをプロダクト開発と分けて一覧する印               | 下の「`harness` を付ける条件」に当たるとき。起票する Skill が付ける                                                                                              |
+| `tracking-issue`                               | 子を持つ親 Issue（ルート Issue を除く）。自分では実装せず、子に分けて進める単位          | 子を紐づけて親にした Skill が付ける。3択に重ねる。子が全部 close されても外さない。人間が GitHub の画面で子を紐づけたときは、人間が付ける（#1126）               |
 | `needs-human-check`                            | 無人実行が問題で止まった。人間に確かめてほしい                                           | 下の「無人実行が止まったら `needs-human-check` を付ける」の条件に当たるとき                                                                                      |
 | `phase`                                        | Issue 階層の最上位の常設 Issue（ルート Issue）                                           | ルート Issue にだけ付ける（3択の例外）                                                                                                                           |
 | `requirement`                                  | 要件定義書のレビュー指摘に起因する Issue                                                 | `/requirements-review` が起票するとき、ほかのラベルに重ねる                                                                                                      |
@@ -103,6 +104,10 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 [policy-driven-development-policy](policy-driven-development-policy.md) はハーネスの部品に CLAUDE.md とガードレール（静的解析設定・CI の検査）も数えるが、それらだけを変える Issue には付けない。人間が上の5つに絞った（#999）。
 
 3択が「誰が何をするか」を表すのに対し、`harness` は「何を変えるか」を表す。軸が違うので、3択のどれにも重ねる。
+
+## `tracking-issue` を3択に重ねる理由
+
+3択が「誰が何をするか」を表すのに対し、`tracking-issue` は「実行タスクか、子をまとめる親か」を表す。軸が違うので、3択のどれにも重ねる。親も `ai-fixable` を持つので、GitHub Projects の Dashboard のカードだけでは、親と実行タスクを見分けられない。このラベルで見分ける（#1126）。子が全部 close されても外さないのは、予実管理などで親を分析の単位にするとき、親だった印で引けるようにするためである。
 
 ## 人間が決めるべき Issue の条件
 
@@ -199,7 +204,7 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 これらは専用の経路（常設・自動 close・人間の確認）で扱う。3択を付けると、`/issue-check` や Auto-Programmer（ボードの `Ready` の Issue を1件ずつ拾い、AI に実装させるツール。`scripts/auto-programmer/`）が拾って空回りし、専用の経路と二重に扱われる（#996）。
 
-**umbrella の親は3択の例外にしない。** `/issue-regroup` が立てる子への入口の親も、`/to-issues` のまとめ用の親と同じく `ai-fixable` を付ける。子が open な間は `/issue-check` が飛ばし、子が全部 close されたら完了条件を見て閉じるので、空回りしない（#996）。
+**umbrella の親は3択の例外にしない。** `/issue-regroup` が立てる子への入口の親も、`/to-issues` のまとめ用の親と同じく `ai-fixable` を付け、`tracking-issue` を重ねる。子が open な間は `/issue-check` が飛ばし、子が全部 close されたら完了条件を見て閉じるので、空回りしない（#996）。親から `ai-fixable` を外さないのは、Auto-Programmer が `ai-fixable` のカードだけを拾い、拾った親の子を Ready に載せて引き継ぐからである。外すと親が拾われず、引き継ぎが止まる。
 
 ## ボードの Status の意味
 
