@@ -25,7 +25,7 @@ readonly LABELS=(
   'ready-for-human|FBCA04|方針は決まっているが、残る作業を AI が実行する手段を持たない Issue'
   'issue:decided|1D76DB|人間が方針を決めた Issue。決めた条件を理由に人間判断へ戻さない'
   'harness|BFDADC|ハーネス（Policy・Rule・Skill・SubAgent・hooks）を変えるIssue'
-  'tracking-issue|D4C5F9|子を持つ親 Issue。自分では実装せず、子に分けて進める単位'
+  'tracking-issue|D4C5F9|ルート直下（第2階層）で子を持つ親 Issue。自分では実装せず、子に分けて進める単位'
   'opus|7057FF|実行セッション全体を最上位モデル（Opus）で回す Issue'
   'issue:checked|BFD4F2|/issue-check が一度監査した Issue。いま妥当である保証ではない'
   'needs-human-check|F9D0C4|無人実行が問題で止まったIssue。人間が確かめたら外す'

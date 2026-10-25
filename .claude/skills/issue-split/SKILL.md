@@ -128,7 +128,13 @@ gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
 
 「この変更が必要な理由」と「作るもの」を消してはならない。子はスコープの一部しか持たないので、全体の意図を保つ場所が親だけになる。
 
-親に `tracking-issue` を足す。ラベル未作成で `gh` が失敗したら、`gh label create tracking-issue --description "<ポリシー「Issue に付けるラベル」表の意味>"` で作ってから同じコマンドを再実行する。
+対象の親の親（親にした Issue の親）とそのラベルを引く。
+
+```bash
+gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number:<番号>){parent{title labels(first:20){nodes{name}}}}}}'
+```
+
+親の親に `phase` ラベルがあるとき（対象が第2階層のとき）だけ、親に `tracking-issue` を足す。親の親が無い、または `phase` ラベルが無いとき（第3階層以下）は足さない（issue-policy「`tracking-issue` を3択に重ねる理由」）。例：第2階層の Issue を割れば付き、第3階層の Issue を割れば付かない。ラベル未作成で `gh` が失敗したら、`gh label create tracking-issue --description "<ポリシー「Issue に付けるラベル」表の意味>"` で作ってから同じコマンドを再実行する。
 
 ```bash
 gh issue edit <番号> --add-label tracking-issue
@@ -136,7 +142,7 @@ gh issue edit <番号> --add-label tracking-issue
 
 ## Phase 7: 報告する
 
-- **親 Issue**：#<番号>（umbrella 化・`tracking-issue` 付与済み／変更なし）
+- **親 Issue**：#<番号>（umbrella 化・`tracking-issue` 付与済み／第3階層以下のため `tracking-issue` は対象外／変更なし）
 - **子 Issue**：#<番号> ×N（ラベル・ブロッカー付き）
 - **紐付け**：成功／失敗した子の番号
 - **親から消えた節**：子へ移したタスク・完了条件

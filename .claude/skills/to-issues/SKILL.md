@@ -113,7 +113,13 @@ Issue は依存順（ブロッカーが先）に登録する。そうすれば�
 
 起点 Issue やまとめ用の親に子を紐づけるときは、REST で紐づける。GraphQL の形は、worktree で動くセッションのガードに拒否されるためである。
 
-子を紐づけた起点 Issue には、`tracking-issue` を足す。ラベル未作成で `gh` が失敗したら、`gh label create tracking-issue --description "<ポリシー「Issue に付けるラベル」表の意味>"` で作ってから同じコマンドを再実行する。
+子を紐づけた起点 Issue の親と、そのラベルを引く（7 でも使う）。
+
+```bash
+gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number:<起点Issueの番号>){parent{title labels(first:20){nodes{name}}}}}}'
+```
+
+起点 Issue の親に `phase` ラベルがあるとき（起点 Issue が第2階層のとき）だけ、起点 Issue に `tracking-issue` を足す。親が無い、または `phase` ラベルが無いときは足さない（第3階層以下の親には付けない。issue-policy「`tracking-issue` を3択に重ねる理由」）。ラベル未作成で `gh` が失敗したら、`gh label create tracking-issue --description "<ポリシー「Issue に付けるラベル」表の意味>"` で作ってから同じコマンドを再実行する。
 
 ```bash
 gh issue edit <起点 Issue の番号> --add-label tracking-issue
@@ -132,11 +138,7 @@ gh api --method POST repos/<owner>/<repo>/issues/<親の番号>/sub_issues -F su
 
 子を持った起点 Issue の段番号は、子の段の範囲に変わる。起点 Issue をブロッカーに持つ Issue の段も、その範囲の最大値で決まる（`/quick-issue` の「段番号の振り方」）。グループ全体を計算し直すので、[`/issue-deps`](../issue-deps/SKILL.md) に任せる。
 
-起点 Issue の親と、そのラベルを引く。
-
-```bash
-gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number:<起点Issueの番号>){parent{title labels(first:20){nodes{name}}}}}}'
-```
+6 で引いた起点 Issue の親とそのラベルで分ける。
 
 - **親に `phase` ラベルがある**：親のタイトルを引数にして、Skill ツールで `/issue-deps` を起動する（例：`/issue-deps 設計・実装`）
 - **親が無い、または親に `phase` ラベルが無い**：起動しない。`/issue-deps` は引数を `phase` ラベルの Issue のタイトルと照合するので、渡せる引数が無い。引数なしで起動すると、起点 Issue と無関係なグループまで書き換えてしまう。代わりに 8 の報告で、起点 Issue とそれをブロッカーに持つ Issue の段番号が古いままだと伝え、`/issue-deps` を打つよう促す
