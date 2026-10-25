@@ -1,8 +1,7 @@
 ---
 name: issue-check
-description: broken-window ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。1つの PR に収まらず割れる Issue は sub-issue に割り、AI の作業と人間しかできない作業が混ざる Issue は人間の作業を別 Issue に切り出す。初回の検査では、本文に新しい技術要素が出た Issue の外部依存の制約も調べる。着手する前に人間が打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
+description: broken-window ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。1つの PR に収まらず割れる Issue は sub-issue に割り、AI の作業と人間しかできない作業が混ざる Issue は人間の作業を別 Issue に切り出す。初回の検査では、本文に新しい技術要素が出た Issue の外部依存の制約も調べる。着手する前に打つ。人間が打つほか、「issue N 対応して」では AI が番号指定の1件だけ打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
-disable-model-invocation: true
 allowed-tools: Task, Skill, Bash, Read, Edit, Write
 ---
 
@@ -12,7 +11,7 @@ Issue を監査してください。あなたは判定本体を行わず、**Iss
 
 ## 前提
 
-- **起動はスラッシュコマンドの明示呼び出しに限ります。** 一度に多数の Issue を書き換えるため、モデルが自分の判断で走らせてはいけません。
+- **モデルが起動してよいのは、着手する Issue 1件を `#番号` で指定するときだけです**（CLAUDE.md「issue番号だけで開発フローを自動追従する」）。件数指定・指定なし（全件）は、一度に多数の Issue を書き換えるため、人間のスラッシュコマンドの明示呼び出しに限ります。
 - **リポジトリのファイルは変更しません。** 触るのは GitHub Issue（タイトル・本文・ラベル・コメント・close）と、`/issue-split` 経由の sub-issue 起票と、人間の作業を切り出す Issue の起票だけです。
 - **サイズ超過で割れる Issue は、確認なしで分割します。** 分割は GitHub Issue の操作だけで、誤っても子を閉じて親を戻せます。人間判断に倒すと、人間が気づくまで無人実行が止まります。
 - **判定の基準と優先順位は [`references/audit-criteria.md`](references/audit-criteria.md)（観点一覧）が、レンズの一覧と担当観点は `issue-auditor-agent` の定義が正典です。** ここに書き写しません——2箇所に持つと、判定を変えたときに片方が古いまま残ります。ただし観点「外部依存の前提」は、レンズではなく `premise-checker-agent` が担当します（Phase 2）。
