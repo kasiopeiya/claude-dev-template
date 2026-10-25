@@ -20,7 +20,7 @@ import { dirname, join, relative } from 'path'
 import { fileURLToPath } from 'url'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
-const workflowsDir = join(repoRoot, '.github/workflows')
+const workflowsDirectory = join(repoRoot, '.github/workflows')
 
 const FULL_SHA = /@[0-9a-f]{40}$/
 const FULL_DIGEST = /@sha256:[0-9a-f]{64}$/
@@ -31,7 +31,7 @@ const RUN_LINE = /^(?<indent>\s*)(?<dash>-\s+)?run:\s*(?<firstValue>.*)$/
 const SCRIPT_LINE = /^(?<indent>\s*)script:\s*(?<firstValue>.*)$/
 const BLOCK_WITH_LINE = /^\s*(?:-\s+)?with:(?:\s+#.*|\s*)$/
 const INLINE_WITH_LINE = /^\s*(?:-\s+)?with:\s*[^\s#]/
-const GITHUB_SCRIPT = /^actions\/github-script(?:@|$)/i
+const GITHUB_SCRIPT_ACTION_PATTERN = /^actions\/github-script(?:@|$)/i
 const BLOCK_CONTAINER_LINE = /^\s*container:(?:\s+#.*|\s*)$/
 const INLINE_CONTAINER_LINE = /^\s*container:\s*(?<reference>[^\s#{].*)$/
 const SERVICES_LINE = /^\s*services:(?:\s+#.*|\s*)$/
@@ -48,7 +48,7 @@ const FLOW_STYLE_RULES = [
       'flow 形式のコンテナ指定は検査できません。ブロック形式（`image:` を1行）で書いてください'
   }
 ]
-const EXPRESSION = /\$\{\{[\s\S]*?\}\}/g
+const GITHUB_EXPRESSION_PATTERN = /\$\{\{[\s\S]*?\}\}/g
 // `github.event`・`github.head_ref` の参照と、`toJSON(github)` のように `github` 全体を渡す形。
 // GitHub の式は大文字小文字を区別しない。`github.event_name` や `github.sha` は含めない
 const UNTRUSTED_CONTEXT =
@@ -74,12 +74,12 @@ function main() {
  *   workflow を全部消すとディレクトリごと消えるため、それを異常にしない）
  */
 function listWorkflowFiles() {
-  if (!existsSync(workflowsDir)) return []
+  if (!existsSync(workflowsDirectory)) return []
 
-  return readdirSync(workflowsDir)
+  return readdirSync(workflowsDirectory)
     .filter((name) => name.endsWith('.yml') || name.endsWith('.yaml'))
     .sort()
-    .map((name) => join(workflowsDir, name))
+    .map((name) => join(workflowsDirectory, name))
 }
 
 /**
@@ -346,7 +346,7 @@ function findUntrustedExpressionInCode(lines) {
 function findUntrustedExpressions({ label, valueLines }) {
   const codeText = valueLines.map(({ valueText }) => valueText).join('\n')
 
-  return [...codeText.matchAll(EXPRESSION)]
+  return [...codeText.matchAll(GITHUB_EXPRESSION_PATTERN)]
     .filter(([expression]) => UNTRUSTED_CONTEXT.test(expression))
     .map((match) => ({
       // 式の開始位置の手前にある改行の数が、valueLines の何番目の行かを表す
@@ -407,7 +407,7 @@ function isGitHubScriptInput(lines, scriptIndex) {
 function isGitHubScriptStep(lines, stepKeyIndex) {
   return collectSiblingKeyLines(lines, stepKeyIndex).some((lineText) => {
     const match = USES_LINE.exec(lineText)
-    return match !== null && GITHUB_SCRIPT.test(parseReference(match[1]))
+    return match !== null && GITHUB_SCRIPT_ACTION_PATTERN.test(parseReference(match[1]))
   })
 }
 
@@ -421,9 +421,9 @@ function isGitHubScriptStep(lines, stepKeyIndex) {
 function findParentIndex(lines, childIndex) {
   const childIndent = countIndent(lines[childIndex])
 
-  for (let previous = childIndex - 1; previous >= 0; previous--) {
-    if (isBlankOrCommentLine(lines[previous])) continue
-    if (countIndent(lines[previous]) < childIndent) return previous
+  for (let previousIndex = childIndex - 1; previousIndex >= 0; previousIndex--) {
+    if (isBlankOrCommentLine(lines[previousIndex])) continue
+    if (countIndent(lines[previousIndex]) < childIndent) return previousIndex
   }
 
   return undefined
@@ -486,10 +486,10 @@ function collectValueLines(lines, keyIndex, { indent, dash = '', firstValue }) {
   const keyIndent = indent.length + dash.length
   const valueLines = [{ lineNumber: keyIndex + 1, valueText: firstValue }]
 
-  for (let next = keyIndex + 1; next < lines.length; next++) {
+  for (let nextIndex = keyIndex + 1; nextIndex < lines.length; nextIndex++) {
     // 空行は値の途中にありうる。コメントに見える行も、ブロックの値の中では値の一部なので残す
-    if (lines[next].trim() !== '' && countIndent(lines[next]) <= keyIndent) break
-    valueLines.push({ lineNumber: next + 1, valueText: lines[next] })
+    if (lines[nextIndex].trim() !== '' && countIndent(lines[nextIndex]) <= keyIndent) break
+    valueLines.push({ lineNumber: nextIndex + 1, valueText: lines[nextIndex] })
   }
 
   return valueLines
