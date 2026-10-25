@@ -140,6 +140,8 @@ npm run auto-programmer
 | `targetIssueLabel`            | 対象にする Issue のラベル                                                                 | `gh label list`                                                                               |
 | `branchPrefix`                | トピックブランチ名の前に付ける接頭辞（`'st2'` なら `st2/feat/issue-123`。空なら付けない） | ライン（`main`・`main2` など）ごとに CI を分けているときだけ設定する。前提は表の下に書く      |
 | `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数                                 | 長いほうの実装に掛かる時間の上限として決める                                                  |
+| `sessionModel`                | claude セッションに `--model` で渡すモデル（既定 `sonnet`）                               | `claude --help` の `--model`。別名（`sonnet`・`opus`）か正式名                                |
+| `sessionEffort`               | claude セッションに `--effort` で渡す effort（既定 `xhigh`）                              | `claude --help` の `--effort`                                                                 |
 | `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数                               | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
 | `maxConsecutiveIdleWaits`     | 着手できない周が続いたとき、待ってよい回数の上限（使い切っても着手できなければ止まる）    | 放置を許せる時間（`pollIntervalMinutes` × この回数）から決める                                |
 | `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名                                   | `.github/workflows/` の下のファイル名                                                         |
@@ -160,6 +162,8 @@ npm run auto-programmer
 - `ci.workflowFile` がそのワークフローを指す
 
 `sessionTimeoutMinutes` は壁時計（wall-clock）で数える。OS がアイドルスリープすると、寝ていた時間もここに数えられ、無人セッションが実際より早く打ち切られる。`index.mjs` は起動直後にこれを防ぐコマンド（macOS は `caffeinate`、Windows は同梱の `sleepGuard.ps1`）を起動し続けるが、ノートPCの蓋を閉じたことによるスリープ（クラムシェルスリープ）までは止められない。実行中は蓋を閉じないか、外部ディスプレイに繋いでおくこと。Linux は `CLOCK_MONOTONIC` がサスペンド中に止まるため、この問題自体が起きず、何もしない。
+
+`sessionModel`・`sessionEffort` は、どの Issue にも同じ値を使う。Issue の `opus` ラベルは読まないので、`opus` の Issue は Ready に載せず、人間が対話で最上位モデルを選んで回す（[development-flow](../../docs/guide/development-flow.md)「フェーズごとにどのモデルで回すか」）。値を `claude` に渡すのは、渡さないと無人セッションが `~/.claude/settings.json` を継ぐからである。そこは対話で `/model` を打つたびに書き換わるので、無人実行のモデルが人間の最後の選択に引きずられる。2つのキーのどちらかが欠けていると、Issue を拾う前に止まる。
 
 AI 専用 clone と実行記録は `~/dev/auto-programmer/` の下に置かれる。置き場を変えたいときは、`config.mjs` を編集せず環境変数 `AUTO_PROGRAMMER_HOME` で指定する。
 

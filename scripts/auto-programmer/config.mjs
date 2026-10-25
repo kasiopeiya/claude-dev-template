@@ -46,6 +46,13 @@ export const config = {
   // claude セッション1回（Skill 1つぶん）を打ち切るまでの時間。無人で固まったまま止まらない事態を防ぐ
   sessionTimeoutMinutes: 60,
 
+  // claude セッションのモデルと effort。`claude --model`・`--effort` にそのまま渡す。渡さないと
+  // ~/.claude/settings.json を継ぎ、人間が対話で最後に打った /model に引きずられる（Issue #1218）。
+  // Issue の `opus` ラベルは読まない。`opus` の Issue はこのツールに載せず、人間が対話で回す。
+  // このファイルはテンプレート同期の対象外なので、同期した利用先では手で足す。無いと起動時に落ちる
+  sessionModel: 'sonnet',
+  sessionEffort: 'xhigh',
+
   // 着手できる Issue が無かったとき、ボードを見直すまで待つ時間（90秒）。短いほど gh project の呼び出し
   // 頻度が上がり、GitHub API のレートリミットに達しやすくなる
   pollIntervalMinutes: 1.5,

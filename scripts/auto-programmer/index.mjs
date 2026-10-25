@@ -72,6 +72,7 @@ import {
   selectConflictedOwnPullRequests
 } from './conflictedPullRequest.mjs'
 import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait.mjs'
+import { validateSessionModelSettings } from './sessionModel.mjs'
 import {
   findSkipImplementationDecision,
   ISSUE_CHECKED_LABEL,
@@ -1437,6 +1438,8 @@ async function main() {
   // 不正な接頭辞は buildBranchName が Issue ごとに投げ、catch で「飛ばします」になって全 Issue を飛ばし続ける。
   // Issue を拾う前に止める
   validateBranchPrefix(config.branchPrefix)
+  // 欠けたまま動かすと settings.json を継ぎ、対話の /model に引きずられる。Issue を拾う前に止める
+  validateSessionModelSettings(config)
   // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
   // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
   startSleepGuard()
