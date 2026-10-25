@@ -7,37 +7,29 @@
 // 判定ロジックはこのファイル1ヶ所にしか置かない。ターン末ゲートと CI の2経路から呼ばれる。
 
 import { readFileSync } from 'fs'
-import { execFileSync } from 'child_process'
-import { dirname, join, relative } from 'path'
+import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
+
+import { listWorkingTreeFiles } from './list-working-tree-files.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 const CHARACTER_LIMIT = 6000
 
-/**
- * `wc -m` と同じ数え方で文字数を返す（コードポイント単位。UTF-16 の符号単位ではない）。
- *
- * @param {string} text 数える対象の全文
- * @returns {number} 文字数
- */
-function countCharacters(text) {
-  return [...text].length
-}
+function main() {
+  const rulePaths = listWorkingTreeFiles(repoRoot, ['.claude/rules/*.md'])
+  const measurements = rulePaths.map(measureRule)
+  const oversized = measurements.filter(({ characters }) => characters > CHARACTER_LIMIT)
 
-/**
- * 上限を超えた Rule を返す。
- *
- * @param {string[]} rulePaths 検査対象の絶対パス
- * @returns {{ path: string, characters: number }[]} 超過したもの
- */
-function findOversized(rulePaths) {
-  return rulePaths
-    .map((path) => ({
-      path: relative(repoRoot, path),
-      characters: countCharacters(readFileSync(path, 'utf8'))
-    }))
-    .filter((result) => result.characters > CHARACTER_LIMIT)
+  if (oversized.length === 0) {
+    for (const { path, characters } of measurements) {
+      console.log(`${path}: ${characters} / ${CHARACTER_LIMIT} 文字`)
+    }
+    return
+  }
+
+  console.error(formatViolations(oversized))
+  process.exit(1)
 }
 
 /**
@@ -65,34 +57,26 @@ function formatViolations(oversized) {
 }
 
 /**
- * Git の追跡下にある Rule（`.claude/rules/*.md`）をすべて返す。
+ * Rule 1本の文字数を測る。
  *
- * @returns {string[]} 絶対パス
+ * @param {string} rulePath 測る Rule のリポジトリ相対パス
+ * @returns {{ path: string, characters: number }} 測った結果
  */
-function collectTrackedRules() {
-  return execFileSync('git', ['ls-files', '.claude/rules/*.md'], {
-    cwd: repoRoot,
-    encoding: 'utf8'
-  })
-    .split('\n')
-    .filter(Boolean)
-    .map((file) => join(repoRoot, file))
+function measureRule(rulePath) {
+  return {
+    path: rulePath,
+    characters: countCharacters(readFileSync(join(repoRoot, rulePath), 'utf8'))
+  }
 }
 
-function main() {
-  const targets = collectTrackedRules()
-  const oversized = findOversized(targets)
-
-  if (oversized.length === 0) {
-    for (const path of targets) {
-      const characters = countCharacters(readFileSync(path, 'utf8'))
-      console.log(`${relative(repoRoot, path)}: ${characters} / ${CHARACTER_LIMIT} 文字`)
-    }
-    return
-  }
-
-  console.error(formatViolations(oversized))
-  process.exit(1)
+/**
+ * `wc -m` と同じ数え方で文字数を返す（コードポイント単位。UTF-16 の符号単位ではない）。
+ *
+ * @param {string} text 数える対象の全文
+ * @returns {number} 文字数
+ */
+function countCharacters(text) {
+  return [...text].length
 }
 
 main()
