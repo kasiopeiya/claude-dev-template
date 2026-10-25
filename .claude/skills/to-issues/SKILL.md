@@ -99,7 +99,7 @@ Issue は依存順（ブロッカーが先）に登録する。そうすれば�
 
 ルート Issue への紐付け（2と3）は、`/link-root-issue` の SKILL.md の「紐づける（起票後）」段に従う。ルートは 4 で決めたものを使う。
 
-まとめ用の親は、子をすべて登録した後に作る。タイトルの先頭には、子の段の最小〜最大を付ける（例：`1〜3. …`。`/quick-issue` の「段番号の振り方」）。ラベルは `ai-fixable` を付ける。子が open な間は `/issue-check` が飛ばし、子が全部 close されたら完了条件を見て閉じるからである。本文は次の節だけにする。
+まとめ用の親は、子をすべて登録した後に作る。タイトルの先頭には、子の段の最小〜最大を付ける（例：`1〜3. …`。`/quick-issue` の「段番号の振り方」）。ラベルは `ai-fixable` と `tracking-issue` を付ける。子が open な間は `/issue-check` が飛ばし、子が全部 close されたら完了条件を見て閉じるからである。本文は次の節だけにする。
 
 - **この変更が必要な理由**：Plan 全体について、子と同じ書き方で3行書く
 - **タスク一覧**：子へのリンク一覧（`- [ ] #123 タイトル`）
@@ -108,6 +108,12 @@ Issue は依存順（ブロッカーが先）に登録する。そうすれば�
 - **実装フロー（使用するSkill）**：「sub-issue を順に処理する」
 
 起点 Issue やまとめ用の親に子を紐づけるときは、REST で紐づける。GraphQL の形は、worktree で動くセッションのガードに拒否されるためである。
+
+子を紐づけた起点 Issue には、`tracking-issue` を足す。ラベル未作成で `gh` が失敗したら、`gh label create tracking-issue --description "<ポリシー「Issue に付けるラベル」表の意味>"` で作ってから同じコマンドを再実行する。
+
+```bash
+gh issue edit <起点 Issue の番号> --add-label tracking-issue
+```
 
 ```bash
 gh api repos/<owner>/<repo>/issues/<子の番号> --jq .id
