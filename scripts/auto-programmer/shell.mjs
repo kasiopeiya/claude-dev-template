@@ -3,22 +3,27 @@
 // 設計意図（WHY）:
 // - 既定はシェルを介さない起動。引数はすべて配列で渡すので、Issue タイトルや
 //   ブランチ名に記号が混じってもシェルに解釈されない。例外は Windows の npm-shim（.cmd）
-//   フォールバックのみで、そこでは引数を1つずつクォートし、クォートで守れない文字を含む引数は拒む（後述）。
+//   フォールバック（windowsShimFallback.mjs）のみである。
 // - 呼び分けは「出力を受け取る」と「端末へ流す」の2通りで、「失敗を例外にする」「JSON として読む」は
 //   前者に重ねたものである。
 // - 基本は同期の spawnSync で待つ。例外は claude セッション用の runStreamingAsync だけである。
 //   spawnSync の間は Node のタイマーが1つも発火せず、数十分に及ぶセッション（上限は config.sessionTimeoutMinutes）の
-//   間、画面を更新する手段が無い（Issue #782）。短時間で終わる npm ci（出力は取り込む）・clone（自前で進捗を流す）は同期のまま残し、非同期化の影響範囲を絞る。
+//   間、画面を更新する手段が無い（Issue #782）。短時間で終わる npm ci（出力は取り込む）・clone（自前で進捗を流す）は同期で待つ。待つ間に画面を更新しなくても困らない。
 // - runStreamingAsync は子の出力を端末へ直結せず、パイプで受けて中継する。直結すると、その場更新中の
 //   ステータス行の末尾へ子の出力が連結される。中継は内容を解析しない素通しにして、claude の出力形式に依存しない。
 // - runStreamingAsync の打ち切りはプロセスツリーごと止める。spawn の timeout は直下の子しか殺さず、孫（Windows の
 //   .cmd 経由なら本体の claude）が AI 専用 clone を書き換え続けて次の Issue とぶつかる（Issue #791）。
+//   時間切れで SIGTERM が効かない子が居ると exit が来ず待ちが終わらないので、猶予の後に SIGKILL へ切り替える。
 //   POSIX では子を別のプロセスグループで起動するので、端末のシグナルは子に届かず、index.mjs が中継する。
 //   中継できない SIGKILL で親を止めると子は残る。Ctrl+Z（SIGTSTP）も中継しないので、止まるのは親だけで子は動き続ける。
-// - 標準出力の上限を既定（1MB）から広げている。gh の JSON 出力は MB 単位になりうる。
 
 import { spawn, spawnSync } from 'node:child_process'
 import { constants } from 'node:os'
+
+import {
+  spawnWithWindowsShimFallback,
+  spawnWithWindowsShimFallbackAsync
+} from './windowsShimFallback.mjs'
 
 // 標準出力として受け取れる上限。gh の JSON 出力がこれを超えると ENOBUFS で落ちる
 const MAX_OUTPUT_BYTES = 64 * 1024 * 1024
@@ -30,79 +35,8 @@ const ELAPSED_TIME_TICK_INTERVAL_MS = 1000
 // パイプはいつまでも閉じないので、ここで打ち切って読むのをやめる
 const OUTPUT_DRAIN_GRACE_MS = 5000
 
-// cmd.exe のダブルクォートの中でも意味を持ち続ける文字。`"` はクォートを閉じ、`%` は環境変数を展開し、
-// 改行はコマンドをそこで切る。どれもエスケープでは確実に守れないので、含む引数は渡さずに拒む
-const CMD_UNSAFE_CHARACTER_PATTERN = /["%\r\n]/
-
-/**
- * cmd.exe 経由で渡す引数を、空白で割れないようダブルクォートで囲む。
- *
- * shell: true の spawnSync は引数をクォートせずに空白でつなぐので、囲まないと
- * `claude -p "/auto-dev 123"` のプロンプトが `/auto-dev` と `123` の2つに割れる。
- *
- * @param {string} commandArgument 引数
- * @returns {string} ダブルクォートで囲んだ引数
- * @throws {Error} cmd.exe のクォートで守れない文字を含むとき
- */
-function quoteForCmd(commandArgument) {
-  if (CMD_UNSAFE_CHARACTER_PATTERN.test(commandArgument)) {
-    throw new Error(
-      `cmd.exe 経由では安全に渡せない文字（" % 改行）を含む引数です: ${commandArgument}`
-    )
-  }
-  return `"${commandArgument}"`
-}
-
-/**
- * 起動に失敗したコマンドを、Windows の npm-shim（.cmd バッチファイル）として実行し直すべきかを判定し、
- * 実行し直すときの呼び方を返す。同期版と非同期版のフォールバックがこの判定を共有する。
- *
- * .cmd/.bat は CVE-2024-27980 の修正（Node.js 18.20.0+/20.12.0+/21.7.0+）以降、shell: true を
- * 明示しない限り EINVAL になる（Node.js が自動で shell 経由に切り替えてはくれない）。npm は
- * 常に .cmd 配布だが、claude はインストール方法により .exe（ネイティブインストーラー）にも
- * .cmd（npm 経由）にもなるため、コマンド名の決め打ちでは対応できず、実行結果で判定する。
- *
- * @param {string} command 実行したコマンド
- * @param {string[]} args 引数（クォートしない素の値）
- * @param {(Error & { code?: string }) | null | undefined} error 起動時のエラー
- * @returns {{ command: string, args: string[], extraOptions: { shell: boolean } } | null} 実行し直す呼び方（実行し直さないときは null）
- * @throws {Error} 実行し直すときに、cmd.exe のクォートで守れない文字を含む引数があったとき
- */
-function findWindowsShimRetry(command, args, error) {
-  if (process.platform !== 'win32' || error?.code !== 'ENOENT') return null
-  return { command: `${command}.cmd`, args: args.map(quoteForCmd), extraOptions: { shell: true } }
-}
-
-/**
- * Windows で npm-shim（.cmd バッチファイル）配布のコマンドが ENOENT だったとき、.cmd を付けて
- * shell 経由で1回だけ実行し直す。
- *
- * @param {(command: string, args: string[], extraOptions: { shell?: boolean }) => import('node:child_process').SpawnSyncReturns<string | Buffer>} spawnWithCommand コマンド名・引数・追加オプションを受け取って spawnSync を呼ぶ関数
- * @param {string} command 実行するコマンド
- * @param {string[]} args 引数（クォートしない素の値）
- * @returns {import('node:child_process').SpawnSyncReturns<string | Buffer>} spawnSync の結果
- * @throws {Error} .cmd で実行し直すときに、cmd.exe のクォートで守れない文字を含む引数があったとき
- */
-export function spawnWithWindowsShimFallback(spawnWithCommand, command, args) {
-  const result = spawnWithCommand(command, args, {})
-  const retry = findWindowsShimRetry(command, args, result.error)
-  return retry ? spawnWithCommand(retry.command, retry.args, retry.extraOptions) : result
-}
-
-/**
- * spawnWithWindowsShimFallback の非同期版。起動の成否が非同期にしか分からない spawn 用。
- *
- * @param {(command: string, args: string[], extraOptions: { shell?: boolean }) => Promise<{ error: Error | null, status: number | null, signal: string | null }>} spawnWithCommand コマンド名・引数・追加オプションを受け取って spawn し、終了を待つ関数
- * @param {string} command 実行するコマンド
- * @param {string[]} args 引数（クォートしない素の値）
- * @returns {Promise<{ error: Error | null, status: number | null, signal: string | null }>} 終了状態
- * @throws {Error} .cmd で実行し直すときに、cmd.exe のクォートで守れない文字を含む引数があったとき
- */
-async function spawnWithWindowsShimFallbackAsync(spawnWithCommand, command, args) {
-  const result = await spawnWithCommand(command, args, {})
-  const retry = findWindowsShimRetry(command, args, result.error)
-  return retry ? spawnWithCommand(retry.command, retry.args, retry.extraOptions) : result
-}
+// 時間切れで SIGTERM を送ってから SIGKILL へ切り替えるまでの猶予。SIGKILL は後片付けの機会を奪うので、まず SIGTERM で頼む
+const FORCE_KILL_GRACE_MS = 5000
 
 /**
  * 子プロセスの終了結果（spawnSync の戻り値、または spawnAndWaitForExit の解決値）から終了コードを取り出す。
@@ -119,7 +53,7 @@ function readExitStatus(result) {
  * コマンドを実行し、標準出力を文字列で受け取る。
  *
  * @param {string} command 実行するコマンド
- * @param {string[]} args 引数（クオート不要。シェルを介すときはここで囲む）
+ * @param {string[]} args 引数（クォートしない素の値）
  * @param {{ cwd?: string }} [options] 実行ディレクトリ
  * @returns {{ exitCode: number, signal: string | null, stdout: string, stderr: string }} 終了状態と出力
  * @throws {Error} コマンドを起動できなかったとき（PATH に無い・出力が上限を超えた・.cmd に渡せない引数がある など）
@@ -143,10 +77,13 @@ export function runCapture(command, args, options = {}) {
 /**
  * コマンドを実行し、出力をそのまま端末へ流す。実行中の様子を人間が見られるようにするための形。
  *
+ * 打ち切りの時間は受け取らない。spawnSync の timeout は直下の子しか止めないので、打ち切りが要る長い処理は
+ * runStreamingAsync で起動する。
+ *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
- * @param {{ cwd?: string, timeoutMs?: number }} [options] 実行ディレクトリと、打ち切るまでの時間
- * @returns {{ exitCode: number, signal: string | null }} 終了状態（打ち切られたときは signal が入る）
+ * @param {{ cwd?: string }} [options] 実行ディレクトリ
+ * @returns {{ exitCode: number, signal: string | null }} 終了状態
  * @throws {Error} コマンドを起動できなかったとき（PATH に無い・.cmd に渡せない引数がある など）
  */
 export function runStreaming(command, args, options = {}) {
@@ -155,14 +92,12 @@ export function runStreaming(command, args, options = {}) {
       spawnSync(resolvedCommand, resolvedArgs, {
         cwd: options.cwd,
         stdio: 'inherit',
-        timeout: options.timeoutMs,
         ...extraOptions
       }),
     command,
     args
   )
-  // 打ち切りは ETIMEDOUT として error に入るが、止まったこと自体は終了状態で返す
-  if (result.error && result.error.code !== 'ETIMEDOUT') throw result.error
+  if (result.error) throw result.error
   return readExitStatus(result)
 }
 
@@ -213,35 +148,36 @@ function spawnProcessTree(command, args, { cwd, shell, extraEnv }) {
 /**
  * 子への打ち切り（時間切れ・呼び出し側からの中止）を見張り、子孫ごと止める。見張りは子が終わると自分で片付ける。
  *
+ * 時間切れでは SIGTERM を送り、FORCE_KILL_GRACE_MS を過ぎても子が終わらなければ SIGKILL を送る。
  * 中止の合図は AbortSignal で受け、reason に入ったシグナルをそのまま子のグループへ送る。親が受けたシグナルを
  * どう扱うか（中継するか・親も終わるか）は入口の index.mjs が決め、ここはプロセス全体のシグナルに触れない。
  *
  * @param {{ child: import('node:child_process').ChildProcess, killTree: (signal: NodeJS.Signals) => void }} processTree 見張る子プロセスと、子孫ごと止める関数
- * @param {{ timeoutMs?: number, abortSignal?: AbortSignal }} triggers 打ち切るまでの時間と、中止の合図（reason に送るシグナル名。シグナル名でなければ SIGTERM）
+ * @param {{ timeoutMs: number, abortSignal: AbortSignal }} triggers 打ち切るまでの時間と、中止の合図（reason に送るシグナル名。シグナル名でなければ SIGTERM）
  * @returns {{ wasTimedOut: () => boolean }} 時間切れで止めたかを返す関数
  */
 function watchForTermination({ child, killTree }, { timeoutMs, abortSignal }) {
   let isTimedOut = false
-  const timeoutTimer =
-    timeoutMs === undefined
-      ? undefined
-      : setTimeout(() => {
-          isTimedOut = true
-          killTree('SIGTERM')
-        }, timeoutMs)
+  let forceKillTimer
+  const timeoutTimer = setTimeout(() => {
+    isTimedOut = true
+    killTree('SIGTERM')
+    forceKillTimer = setTimeout(() => killTree('SIGKILL'), FORCE_KILL_GRACE_MS)
+  }, timeoutMs)
   const killOnAbort = () => {
-    const reason = abortSignal?.reason
+    const reason = abortSignal.reason
     // 理由なしの abort() では reason が DOMException になる。シグナル名でなければ SIGTERM で止める
     killTree(typeof reason === 'string' && reason in constants.signals ? reason : 'SIGTERM')
   }
-  if (abortSignal?.aborted) killOnAbort()
-  abortSignal?.addEventListener('abort', killOnAbort, { once: true })
-  const stop = () => {
+  if (abortSignal.aborted) killOnAbort()
+  abortSignal.addEventListener('abort', killOnAbort, { once: true })
+  const stopWatching = () => {
     clearTimeout(timeoutTimer)
-    abortSignal?.removeEventListener('abort', killOnAbort)
+    clearTimeout(forceKillTimer)
+    abortSignal.removeEventListener('abort', killOnAbort)
   }
-  child.once('exit', stop)
-  child.once('error', stop)
+  child.once('exit', stopWatching)
+  child.once('error', stopWatching)
   return { wasTimedOut: () => isTimedOut }
 }
 
@@ -254,7 +190,7 @@ function watchForTermination({ child, killTree }, { timeoutMs, abortSignal }) {
  *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
- * @param {{ cwd?: string, shell?: boolean, extraEnv?: Record<string, string>, timeoutMs?: number, abortSignal?: AbortSignal, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} params 実行ディレクトリ・シェルを介すか・親の環境変数に足す環境変数・打ち切るまでの時間・中止の合図・子の出力の中継先
+ * @param {{ cwd: string, shell?: boolean, extraEnv?: Record<string, string>, timeoutMs: number, abortSignal: AbortSignal, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} params 実行ディレクトリ・シェルを介すか・親の環境変数に足す環境変数・打ち切るまでの時間・中止の合図・子の出力の中継先
  * @returns {Promise<{ error: Error | null, status: number | null, signal: string | null }>} 終了状態（打ち切ったときは signal が入る）
  */
 function spawnAndWaitForExit(
@@ -295,7 +231,7 @@ function spawnAndWaitForExit(
  *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
- * @param {{ cwd?: string, extraEnv?: Record<string, string>, timeoutMs?: number, abortSignal?: AbortSignal, onTick: (elapsedMs: number) => void, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} options 実行ディレクトリ・親の環境変数に足す環境変数・打ち切るまでの時間・中止の合図・1秒ごとに経過時間を受け取る関数・子の出力の中継先
+ * @param {{ cwd: string, extraEnv?: Record<string, string>, timeoutMs: number, abortSignal: AbortSignal, onTick: (elapsedMs: number) => void, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} options 実行ディレクトリ・親の環境変数に足す環境変数・打ち切るまでの時間・中止の合図・1秒ごとに経過時間を受け取る関数・子の出力の中継先
  * @returns {Promise<{ exitCode: number, signal: string | null }>} 終了状態（打ち切られたときは signal が入る）
  * @throws {Error} コマンドを起動できなかったとき（PATH に無い・.cmd に渡せない引数がある など）
  */
@@ -307,7 +243,7 @@ export async function runStreamingAsync(
   const startedAt = Date.now()
   const tickTimer = setInterval(() => onTick(Date.now() - startedAt), ELAPSED_TIME_TICK_INTERVAL_MS)
   try {
-    // 打ち切っても error は出さず、signal を入れて返す（同期版と同じ終了状態になる）
+    // 打ち切っても error は出さず、signal を入れて返す
     const result = await spawnWithWindowsShimFallbackAsync(
       (resolvedCommand, resolvedArgs, extraOptions) =>
         spawnAndWaitForExit(resolvedCommand, resolvedArgs, {
@@ -340,8 +276,8 @@ export async function runStreamingAsync(
 export function runOrThrow(command, args, options = {}) {
   const { exitCode, signal, stdout, stderr } = runCapture(command, args, options)
   if (exitCode !== 0) {
-    const status = signal ? `signal ${signal}` : `exit ${exitCode}`
-    throw new Error(`${command} ${args.join(' ')} が失敗しました (${status})\n${stderr}`)
+    const exitStatusText = signal ? `signal ${signal}` : `exit ${exitCode}`
+    throw new Error(`${command} ${args.join(' ')} が失敗しました (${exitStatusText})\n${stderr}`)
   }
   return stdout
 }

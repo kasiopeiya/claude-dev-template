@@ -141,7 +141,7 @@ if command -v lsof >/dev/null 2>&1; then
     [ -n "$cwd" ] && [ "$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" = "$top" ] && echo "$pid"
   done | wc -l
 else
-  npm run -s --prefix "$top" count-registered-sessions
+  npm run -s --prefix "$top" count-registered-worktree-sessions
 fi
 ```
 

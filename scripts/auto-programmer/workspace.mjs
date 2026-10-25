@@ -49,12 +49,12 @@ function stashUncommittedChanges(workspaceDir) {
   if (runGit(['status', '--porcelain']).trim() === '') return
 
   const sourceBranchName = runGit(['rev-parse', '--abbrev-ref', 'HEAD']).trim()
-  const message = `auto-programmer: ${sourceBranchName} の未コミット変更（${new Date().toISOString()}）`
+  const stashMessage = `auto-programmer: ${sourceBranchName} の未コミット変更（${new Date().toISOString()}）`
   // 衝突を解決する前に落ちると、stash は "needs merge" で失敗し、以後 clone をデフォルトブランチへ戻せなく
   // なる。衝突マーカーごと index に載せてから退避する
   if (runGit(['diff', '--name-only', '--diff-filter=U']).trim() !== '') runGit(['add', '--all'])
-  runGit(['stash', 'push', '--include-untracked', '--message', message])
-  showInfo(`未コミットの変更を stash へ退避しました: ${message}`)
+  runGit(['stash', 'push', '--include-untracked', '--message', stashMessage])
+  showInfo(`未コミットの変更を stash へ退避しました: ${stashMessage}`)
 }
 
 /**
@@ -93,11 +93,17 @@ function readDefaultBranchName() {
  * @throws {Error} 同名ブランチがリモートにあるとき・git や gh の操作が失敗したとき
  */
 export function prepareTopicBranch({ workspaceDir, branchName }) {
-  const baseBranch = readDefaultBranchName()
+  const baseBranchName = readDefaultBranchName()
 
   runGitInWorkspace(workspaceDir, ['fetch', 'origin', '--prune'])
+  // ls-remote のパターンは ref の末尾で照合されるため、完全な ref 名で渡さないと st2/<branchName> のような別の接頭辞のブランチにも当たる
   if (
-    runGitInWorkspace(workspaceDir, ['ls-remote', '--heads', 'origin', branchName]).trim() !== ''
+    runGitInWorkspace(workspaceDir, [
+      'ls-remote',
+      '--heads',
+      'origin',
+      `refs/heads/${branchName}`
+    ]).trim() !== ''
   ) {
     throw new Error(
       `リモートに ${branchName} が残っています。前回の PR を閉じてこのブランチを消せば、次の巡回で拾われます`
@@ -105,10 +111,10 @@ export function prepareTopicBranch({ workspaceDir, branchName }) {
   }
 
   stashUncommittedChanges(workspaceDir)
-  runGitInWorkspace(workspaceDir, ['checkout', '--force', baseBranch])
-  runGitInWorkspace(workspaceDir, ['reset', '--hard', `origin/${baseBranch}`])
+  runGitInWorkspace(workspaceDir, ['checkout', '--force', baseBranchName])
+  runGitInWorkspace(workspaceDir, ['reset', '--hard', `origin/${baseBranchName}`])
   runGitInWorkspace(workspaceDir, ['clean', '-fd'])
-  runGitInWorkspace(workspaceDir, ['checkout', '-B', branchName, `origin/${baseBranch}`])
+  runGitInWorkspace(workspaceDir, ['checkout', '-B', branchName, `origin/${baseBranchName}`])
 }
 
 /**

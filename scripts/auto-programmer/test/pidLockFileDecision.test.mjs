@@ -182,6 +182,15 @@ describe('ロックの持ち主の PID を読む', () => {
     assert.equal(holderPid, HOLDER_PID)
   })
 
+  test('持ち主の PID が1（正の整数の境界）なら、PID を読める', () => {
+    const sut = readLockHolderPid
+    const lockFileContent = buildLockFileContent({ pid: 1, createdAt: BOOTED_AT, bootId: null })
+
+    const holderPid = sut(lockFileContent)
+
+    assert.equal(holderPid, 1)
+  })
+
   for (const { description, lockFileContent } of [
     { description: 'JSON でない中身', lockFileContent: 'not json' },
     {
