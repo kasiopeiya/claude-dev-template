@@ -8,7 +8,7 @@
 
 import { existsSync, readFileSync, statSync } from 'fs'
 import { execFileSync } from 'child_process'
-import { dirname, join, resolve, relative } from 'path'
+import { dirname, join, resolve, relative, sep } from 'path'
 import { fileURLToPath } from 'url'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -73,7 +73,7 @@ function resolveImport(target, sourceDir) {
   const base = target.startsWith('/') ? repoRoot : sourceDir
   const resolved = resolve(base, target.replace(/^\//, ''))
 
-  if (!resolved.startsWith(repoRoot)) return null
+  if (!resolved.startsWith(repoRoot + sep)) return null
   if (!existsSync(resolved) || !statSync(resolved).isFile()) return null
   return resolved
 }
