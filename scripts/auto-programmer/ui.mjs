@@ -116,14 +116,23 @@ function closeRelayedOutputLines() {
 }
 
 /**
- * ステータス行を書く端末で、中継した子の出力が行の途中になっているか。stderr は TTY のときだけ、
- * ステータス行と同じ端末に出ているとみなす。
+ * stderr が、stdout（ステータス行の書き込み先）と同じ端末に出ているか。どちらも TTY のときだけ、同じ端末とみなす
+ * （`2>&1` でファイルへ流したときは見分けられない）。
+ *
+ * @returns {boolean} true なら同じ端末
+ */
+function isStderrSharingTerminalWithStdout() {
+  return process.stdout.isTTY === true && process.stderr.isTTY === true
+}
+
+/**
+ * ステータス行を書く端末で、中継した子の出力が行の途中になっているか。
  *
  * @returns {boolean} true なら行の途中
  */
 function isStatusLineTerminalMidLine() {
   if (midLineRelayedStreamNames.has('stdout')) return true
-  return midLineRelayedStreamNames.has('stderr') && process.stderr.isTTY === true
+  return midLineRelayedStreamNames.has('stderr') && isStderrSharingTerminalWithStdout()
 }
 
 /**
@@ -186,7 +195,6 @@ export function relayChildProcessOutput(streamName, chunk) {
 /**
  * 同じ端末に出ている他方のストリームへ中継した子の出力が行の途中なら、改行を足して閉じる。
  * 閉じないと、こちらのストリームの罫線が画面上の行の途中に入り、他方の続きは行頭なのに罫線を欠く。
- * 同じ端末かは、stdout と stderr がどちらも TTY かで判定する（`2>&1` でファイルへ流したときは見分けられない）。
  *
  * @param {'stdout' | 'stderr'} streamName これから中継するストリームの名前
  * @returns {void}
@@ -194,7 +202,7 @@ export function relayChildProcessOutput(streamName, chunk) {
 function closeOtherRelayedStreamOnSharedTerminal(streamName) {
   const otherStreamName = streamName === 'stdout' ? 'stderr' : 'stdout'
   if (!midLineRelayedStreamNames.has(otherStreamName)) return
-  if (process.stdout.isTTY !== true || process.stderr.isTTY !== true) return
+  if (!isStderrSharingTerminalWithStdout()) return
   process[otherStreamName].write('\n')
   midLineRelayedStreamNames.delete(otherStreamName)
 }
@@ -208,10 +216,10 @@ function closeOtherRelayedStreamOnSharedTerminal(streamName) {
  * TTY のその場更新だけ見た目を変えたいときは、`liveMessage` と `symbol` を渡す（非TTY の追記は `message` のまま）。
  * プログレスバーのような毎秒変わる見た目を、追記するログに残さないため。
  *
- * @param {{ minAppendIntervalMs?: number }} [params] 非TTY で追記する最小間隔（省略時は毎回追記する）
+ * @param {{ minAppendIntervalMs: number }} params 非TTY で追記する最小間隔（0 なら毎回追記する）
  * @returns {(message: string, liveOptions?: { liveMessage?: string, symbol?: string }) => void} 呼ぶたびに状況を出す関数
  */
-export function createThrottledStatusLine({ minAppendIntervalMs = 0 } = {}) {
+export function createThrottledStatusLine({ minAppendIntervalMs }) {
   let lastAppendedAt = 0
   return (message, { liveMessage = message, symbol } = {}) => {
     if (isStdoutInteractiveTerminal()) {

@@ -4,13 +4,12 @@
 // - I/O を持たない層をここに切り出すことで、GitHub にも clone にも触れずに単体テストできる。
 // - 種類（feat・fix など）の語彙は .claude/skills/git-commit/SKILL.md「ブランチ命名規則」が正。pipeline.yml の
 //   push トリガもこの7つだけを受けるため、ここに無い種類を作ると CI が1つも走らない PR ができる。
-// - 種類ラベルが複数付いた Issue でも1つに決まるよう、表の並び順を優先順位そのものにしている。
 // - 種類の前に付ける接頭辞（config.mjs の branchPrefix。例 st2）は、ライン（main・main2 など）ごとに CI を
 //   分けている利用先のためにある。付けたら、その利用先の CI の push トリガにも同じ接頭辞を足さないと CI が走らない。
 // - 接頭辞は1段だけ、英数字・_・- だけを許す。要るのは st2 のような1語だけで、git のブランチ名の規則を全部写さずに
 //   確実に正しい名前だけを通すためである。
 
-// 「変更の種類」ラベル → ブランチの種類。上にあるものから先に当てる
+// 「変更の種類」ラベル → ブランチの種類。種類ラベルが複数付いた Issue でも1つに決まるよう、上にあるものから先に当てる
 const TYPE_LABEL_TO_BRANCH_TYPE = [
   ['feature', 'feat'],
   ['bug', 'fix'],
@@ -36,8 +35,8 @@ const BRANCH_PREFIX_PATTERN = /^[A-Za-z0-9_][A-Za-z0-9_-]*$/
  * @returns {string} ブランチの種類（git-commit Skill のブランチ命名規則にある7種類のいずれか）
  */
 function selectBranchType(labelNames) {
-  const names = new Set(Array.isArray(labelNames) ? labelNames : [])
-  const matched = TYPE_LABEL_TO_BRANCH_TYPE.find(([label]) => names.has(label))
+  const labelNameSet = new Set(labelNames)
+  const matched = TYPE_LABEL_TO_BRANCH_TYPE.find(([label]) => labelNameSet.has(label))
   return matched ? matched[1] : DEFAULT_BRANCH_TYPE
 }
 
