@@ -1,5 +1,4 @@
-// 責務: push 後の CI の run の状態を読み、次に何をするか（通った・直させる・諦める・直させずにやめる）を
-//   決める純粋関数だけを担う。これまでに直させた回数を、ブランチの run から数えることも含む。
+// 責務: push 後の CI の run の状態を読み、次に何をするかを決める純粋関数だけを担う。これまでに直させた回数を、ブランチの run から数えることも含む。
 //
 // 設計意図（WHY）:
 // - run は head SHA で特定する。CI のワークフローは同じブランチの古い run をキャンセルするので、ブランチ名だけで
@@ -12,6 +11,9 @@ const FIXABLE_CONCLUSIONS = new Set(['failure', 'timed_out'])
 
 // readCiRunState が読む項目。`gh run list --json` に渡す側と読む側で食い違うと、run を常に「まだ無い」と読んでしまう
 export const CI_RUN_STATE_FIELDS = 'databaseId,status,conclusion,headSha,url'
+
+// countPastFixAttempts が読む項目。食い違って status が来ないと、直させた回数を常に0と数え、上限が効かなくなる
+export const PAST_FIX_ATTEMPT_FIELDS = 'databaseId,status,conclusion'
 
 /**
  * `gh run list` の結果から、指定した commit の run の状態を読む。
@@ -41,7 +43,7 @@ export function readCiRunState(runs, headSha) {
  *
  * 直させる対象の終わり方（failure・timed_out）をした run のうち、いま見ている落ちた run を除いた数を返す。
  *
- * @param {{ branchRuns: { databaseId: number, status: string, conclusion: string }[], currentRunId: number }} params `gh run list --branch <ブランチ> --json databaseId,status,conclusion` の出力と、いま見ている落ちた run の ID（数えない）
+ * @param {{ branchRuns: { databaseId: number, status: string, conclusion: string }[], currentRunId: number }} params `gh run list --branch <ブランチ> --json <PAST_FIX_ATTEMPT_FIELDS>` の出力と、いま見ている落ちた run の ID（数えない）
  * @returns {number} これまでに直させた回数
  */
 export function countPastFixAttempts({ branchRuns, currentRunId }) {

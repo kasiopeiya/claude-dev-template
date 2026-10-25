@@ -32,11 +32,14 @@ public static class SleepGuardNativeMethods
 $ES_CONTINUOUS = [uint32]0x80000000
 $ES_SYSTEM_REQUIRED = [uint32]0x00000001
 
+# index.mjs が終わってから、スリープ抑止が切れるまでの最大の遅れになる
+$TargetPidPollIntervalSeconds = 5
+
 try {
   [SleepGuardNativeMethods]::SetThreadExecutionState($ES_CONTINUOUS -bor $ES_SYSTEM_REQUIRED) | Out-Null
 
   while (Get-Process -Id $TargetPid -ErrorAction SilentlyContinue) {
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds $TargetPidPollIntervalSeconds
   }
 }
 finally {
