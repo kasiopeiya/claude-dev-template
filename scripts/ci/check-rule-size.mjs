@@ -8,12 +8,12 @@
 
 import { readFileSync } from 'fs'
 import { execFileSync } from 'child_process'
-import { dirname, join, relative, resolve } from 'path'
+import { dirname, join, relative } from 'path'
 import { fileURLToPath } from 'url'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
-export const CHARACTER_LIMIT = 6000
+const CHARACTER_LIMIT = 6000
 
 /**
  * `wc -m` と同じ数え方で文字数を返す（コードポイント単位。UTF-16 の符号単位ではない）。
@@ -31,7 +31,7 @@ function countCharacters(text) {
  * @param {string[]} rulePaths 検査対象の絶対パス
  * @returns {{ path: string, characters: number }[]} 超過したもの
  */
-export function findOversized(rulePaths) {
+function findOversized(rulePaths) {
   return rulePaths
     .map((path) => ({
       path: relative(repoRoot, path),
@@ -46,7 +46,7 @@ export function findOversized(rulePaths) {
  * @param {{ path: string, characters: number }[]} oversized 超過したもの
  * @returns {string} 報告文
  */
-export function formatViolations(oversized) {
+function formatViolations(oversized) {
   const lines = [`Rule が上限 ${CHARACTER_LIMIT} 文字を超えています。`]
 
   for (const { path, characters } of oversized) {
@@ -95,7 +95,4 @@ function main() {
   process.exit(1)
 }
 
-// CI・npm scripts から直接実行されたときだけ検査する（hook からは関数として読み込まれる）
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main()
-}
+main()
