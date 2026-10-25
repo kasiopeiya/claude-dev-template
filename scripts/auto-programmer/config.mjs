@@ -46,10 +46,8 @@ export const config = {
   // claude セッション1回（Skill 1つぶん）を打ち切るまでの時間。無人で固まったまま止まらない事態を防ぐ
   sessionTimeoutMinutes: 60,
 
-  // claude セッションのモデルと effort。`claude --model`・`--effort` にそのまま渡す。渡さないと
-  // ~/.claude/settings.json を継ぎ、人間が対話で最後に打った /model に引きずられる（Issue #1218）。
+  // claude セッションのモデルと effort。`claude --model`・`--effort` にそのまま渡す。
   // Issue の `opus` ラベルは読まない。`opus` の Issue を回すときは、ここを最上位モデルに変えるか、人間が対話で回す。
-  // このファイルはテンプレート同期の対象外なので、同期した利用先では手で足す。無いと起動時に落ちる
   sessionModel: 'sonnet',
   sessionEffort: 'xhigh',
 
@@ -60,7 +58,6 @@ export const config = {
   // 着手できない周（Issue なし・候補を引けず・全件飛ばし）が続いたとき、待ってよい回数の上限。使い切った
   // 次の周も着手できなければ、待たずに止まる（止まるまでおよそ pollIntervalMinutes × この回数）。
   // 放置したまま見直し続けると gh のレートリミットに達するため。
-  // このファイルはテンプレート同期の対象外なので、同期した利用先では手で足す。無いと起動時に落ちる
   maxConsecutiveIdleWaits: 10,
 
   ci: {
