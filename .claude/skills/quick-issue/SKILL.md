@@ -47,6 +47,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - `ai-fixable` / `needs-human-decision` / `ready-for-human`：**必ずどれか1つだけ**を付ける。判定はポリシーの「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う
 - `issue:decided`：`ai-fixable` か `ready-for-human` にだけ重ねる。条件はポリシーの「人間が方針を決めたら `issue:decided` を付ける」に従う
 - `harness`：ポリシーの「`harness` を付ける条件」に当たるときに重ねる。3択のどれを付けたかとは別に決める
+- `opus`：ポリシーの「`opus` を付ける条件」の条件B・Cに当たるときに、起票時に重ねる。3択のどれを付けたかとは別に決める。条件Aは `add-opus-label.yml` が付けるので、ここでは判定しない
 
 ### 人間の作業を別 Issue に切り出す
 
@@ -257,6 +258,7 @@ AI の作業と、ポリシーの「人間しかできない作業の条件」�
 - [ ] `ai-fixable` / `needs-human-decision` / `ready-for-human` のどれか1つだけを決めた
 - [ ] ポリシーの「Issue に付けるラベル」表で `broken-window` を付けるかを決めた（当たれば `broken-window` を付けた）
 - [ ] ポリシーの「`harness` を付ける条件」に当たるかを決めた（当たれば `harness` を付けた）
+- [ ] ポリシーの「`opus` を付ける条件」の条件B・Cに当たるかを決めた（当たれば `opus` を付けた）
 - [ ] AI の作業と、ポリシーの「人間しかできない作業の条件」に当たる作業が1件に混ざっていない（混ざっていたら「人間の作業を別 Issue に切り出す」に従って2件に分けた）
 - [ ] `ready-for-human` を付けたなら、残るタスクがすべてポリシーの「人間しかできない作業の条件」のどれに当たるかを言えて、人間がするタスクの頭に「（人間）」と書いた
 - [ ] 人間が決めるべき条件に当たるのに `ai-fixable` か `ready-for-human` を付けたなら、ポリシーの「人間が方針を決めたら `issue:decided` を付ける」の条件を満たし、`issue:decided` と「人間が決めたこと」の行を付けた
@@ -274,7 +276,7 @@ AI の作業と、ポリシーの「人間しかできない作業の条件」�
 gh issue create \
   --title "<タイトル>" \
   --assignee @me \
-  --label <ai-fixable|needs-human-decision|ready-for-human>[,broken-window][,issue:decided][,harness] \
+  --label <ai-fixable|needs-human-decision|ready-for-human>[,broken-window][,issue:decided][,harness][,opus] \
   --body "$(cat <<'EOF'
 （テンプレートの全セクションを埋めた本文）
 EOF
