@@ -48,7 +48,7 @@ export const config = {
 
   // claude セッションのモデルと effort。`claude --model`・`--effort` にそのまま渡す。渡さないと
   // ~/.claude/settings.json を継ぎ、人間が対話で最後に打った /model に引きずられる（Issue #1218）。
-  // Issue の `opus` ラベルは読まない。`opus` の Issue はこのツールに載せず、人間が対話で回す。
+  // Issue の `opus` ラベルは読まない。`opus` の Issue を回すときは、ここを最上位モデルに変えるか、人間が対話で回す。
   // このファイルはテンプレート同期の対象外なので、同期した利用先では手で足す。無いと起動時に落ちる
   sessionModel: 'sonnet',
   sessionEffort: 'xhigh',
