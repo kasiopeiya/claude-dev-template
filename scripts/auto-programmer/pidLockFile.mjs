@@ -33,6 +33,8 @@ const MAX_CREATE_ATTEMPTS = 3
 // 取り直しの印の、そのまた印を辿る深さの上限。印が残るのは取り直しの途中で落ちたときだけなので、深く辿ることはまず無い
 const MAX_TAKEOVER_DEPTH = 3
 
+const TAKEOVER_MARK_DIGEST_HEX_LENGTH = 16
+
 /**
  * ファイルの中身を読む。
  *
@@ -135,7 +137,10 @@ function tryRemoveDeadLockFile(lockFilePath, depth) {
   if (deadLockFileContent === null) return true
   if (!isLockDeadOnThisMachine(deadLockFileContent) || depth >= MAX_TAKEOVER_DEPTH) return false
 
-  const contentDigest = createHash('sha256').update(deadLockFileContent).digest('hex').slice(0, 16)
+  const contentDigest = createHash('sha256')
+    .update(deadLockFileContent)
+    .digest('hex')
+    .slice(0, TAKEOVER_MARK_DIGEST_HEX_LENGTH)
   const takeoverMarkPath = `${lockFilePath}.takeover-${contentDigest}`
   if (tryCreateLockFile(takeoverMarkPath) === null) {
     return (

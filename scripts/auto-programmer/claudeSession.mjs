@@ -1,4 +1,4 @@
-// 責務: AI 専用 clone の中で `claude` を起動し、Issue 1件ぶんの `/issue-check`・`/auto-dev`・`/auto-fix-ci`・`/auto-resolve-conflict` を走らせる。
+// 責務: AI 専用 clone の中で `claude` を起動し、Issue 1件ぶんの Skill を1つずつ無人セッションとして走らせる。
 //
 // 設計意図（WHY）:
 // - Issue ごと・Skill ごとにプロセスを作り直す。1つのセッションで何件も処理すると文脈が積もり、品質が
