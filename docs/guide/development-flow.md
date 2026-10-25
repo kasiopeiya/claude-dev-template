@@ -128,7 +128,7 @@ AI は AI 専用 clone の中だけで作業するので、人間が作業中で
 | Issue を実行する（5〜12：実装・レビュー・コミット・PR）。`opus` が無い | Sonnet / xhigh                              | 仕様は Issue に書き下された後なので、実装品質を保ちながら時間とトークンを節約できる。effort を medium に落とすと多段の手順で取りこぼしが出る |
 | Issue を実行する。`opus` がある                                        | 使える中で最も性能の良いモデル・effort 最大 | 実行の中にも仕様の判断が残り、誤ると作り直しになる                                                                                           |
 
-モデルの切り替えは人間が `/model` で行う。Auto Programmer の無人セッションは例外で、`/model` ではなく `scripts/auto-programmer/config.mjs` の `sessionModel`・`sessionEffort`（既定 Sonnet / xhigh）で決まり、`opus` ラベルを読まない。そのため `opus` の Issue は Auto Programmer に載せず、人間が対話で回す。対話で Issue を実行するセッションは、Issue の `opus` ラベルを見て、上の表のモデルを選んで始め、途中で切り替えない。`opus` を付ける条件は [issue-policy](../policy/issue-policy.md)「`opus` を付ける条件」が決める。Skill の `model` に書くと切り替えのたびに会話を読み直すことになり、軽い Skill ほど遅くなる。
+モデルの切り替えは人間が `/model` で行う。Auto Programmer の無人セッションは例外で、`/model` ではなく `scripts/auto-programmer/config.mjs` の `sessionModel`・`sessionEffort`（既定 Sonnet / xhigh）で決まり、`opus` ラベルを読まない。`opus` の Issue は、この2つを上の表の値に変えて Auto Programmer で回すか、人間が対話で回す。対話で Issue を実行するセッションは、Issue の `opus` ラベルを見て、上の表のモデルを選んで始め、途中で切り替えない。`opus` を付ける条件は [issue-policy](../policy/issue-policy.md)「`opus` を付ける条件」が決める。Skill の `model` に書くと切り替えのたびに会話を読み直すことになり、軽い Skill ほど遅くなる。
 
 ## （任意）アーキテクチャ品質レビュー
 

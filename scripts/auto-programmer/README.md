@@ -163,7 +163,7 @@ npm run auto-programmer
 
 `sessionTimeoutMinutes` は壁時計（wall-clock）で数える。OS がアイドルスリープすると、寝ていた時間もここに数えられ、無人セッションが実際より早く打ち切られる。`index.mjs` は起動直後にこれを防ぐコマンド（macOS は `caffeinate`、Windows は同梱の `sleepGuard.ps1`）を起動し続けるが、ノートPCの蓋を閉じたことによるスリープ（クラムシェルスリープ）までは止められない。実行中は蓋を閉じないか、外部ディスプレイに繋いでおくこと。Linux は `CLOCK_MONOTONIC` がサスペンド中に止まるため、この問題自体が起きず、何もしない。
 
-`sessionModel`・`sessionEffort` は、どの Issue にも同じ値を使う。Issue の `opus` ラベルは読まないので、`opus` の Issue は Ready に載せず、人間が対話で最上位モデルを選んで回す（[development-flow](../../docs/guide/development-flow.md)「フェーズごとにどのモデルで回すか」）。値を `claude` に渡すのは、渡さないと無人セッションが `~/.claude/settings.json` を継ぐからである。そこは対話で `/model` を打つたびに書き換わるので、無人実行のモデルが人間の最後の選択に引きずられる。2つのキーのどちらかが欠けていると、Issue を拾う前に止まる。
+`sessionModel`・`sessionEffort` は、どの Issue にも同じ値を使う。Issue の `opus` ラベルは読まないので、`opus` の Issue を回すときは、この2つを最上位モデル・effort 最大に変えるか、人間が対話で回す（[development-flow](../../docs/guide/development-flow.md)「フェーズごとにどのモデルで回すか」）。値を `claude` に渡すのは、渡さないと無人セッションが `~/.claude/settings.json` を継ぐからである。そこは対話で `/model` を打つたびに書き換わるので、無人実行のモデルが人間の最後の選択に引きずられる。2つのキーのどちらかが欠けていると、Issue を拾う前に止まる。
 
 AI 専用 clone と実行記録は `~/dev/auto-programmer/` の下に置かれる。置き場を変えたいときは、`config.mjs` を編集せず環境変数 `AUTO_PROGRAMMER_HOME` で指定する。
 
