@@ -125,6 +125,7 @@ npm run format       # フォーマット
 - **`docs/project-context/issue-destinations.md`**：`/link-root-issue` が、分解元の親が無い Issue のルート Issue と振り分け条件を読む。ファイルが無いと紐付けは報告だけで終わる
 - **`docs/project-context/core-parts.md`**：`adr-policy.md` が ADR を作るかの判定の目安として直接参照。ファイルが無くても判定はできる
 - **`docs/requirements.md`**：`requirements-doc-policy.md` の `applies-to`、elicit-requirements/decide-tech-stack/requirements-review スキルの既定パス
+- **`docs/project-context/requirements-triage.md`**：要件定義書の仕分け台帳。要件定義書 Rule の本体が置き場として名指しし、スタブ（`.claude/rules/requirements-doc.md`）の `paths` がこのパスで Rule を読ませる
 
 ### トップレベル
 
