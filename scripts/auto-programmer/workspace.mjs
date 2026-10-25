@@ -96,8 +96,14 @@ export function prepareTopicBranch({ workspaceDir, branchName }) {
   const baseBranchName = readDefaultBranchName()
 
   runGitInWorkspace(workspaceDir, ['fetch', 'origin', '--prune'])
+  // ls-remote のパターンは ref の末尾で照合されるため、完全な ref 名で渡さないと st2/<branchName> のような別の接頭辞のブランチにも当たる
   if (
-    runGitInWorkspace(workspaceDir, ['ls-remote', '--heads', 'origin', branchName]).trim() !== ''
+    runGitInWorkspace(workspaceDir, [
+      'ls-remote',
+      '--heads',
+      'origin',
+      `refs/heads/${branchName}`
+    ]).trim() !== ''
   ) {
     throw new Error(
       `リモートに ${branchName} が残っています。前回の PR を閉じてこのブランチを消せば、次の巡回で拾われます`

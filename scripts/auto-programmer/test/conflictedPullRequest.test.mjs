@@ -279,4 +279,17 @@ describe('ロック後の読み直しで、衝突を解かせずに飛ばす理�
 
     assert.match(reason, /needs-human-check が付いています/)
   })
+
+  test('大文字小文字の違う Needs-Human-Check が付いた Issue の PR も、人間が見るまで飛ばす', () => {
+    const sut = findReasonNotToResolveConflict
+
+    const reason = sut(
+      createRereadPullRequestAndIssue({
+        issue: { number: 10, labelNames: ['ai-fixable', 'Needs-Human-Check'] },
+        needsHumanCheckLabel: 'needs-human-check'
+      })
+    )
+
+    assert.match(reason, /#10 に needs-human-check が付いています/)
+  })
 })
