@@ -54,7 +54,8 @@ usage() {
 
 前提:
   gh（GitHub CLI）が入っていて、`gh auth login` 済みであること。
-  対象は、カレントの git リポジトリを gh が指すリポジトリ（実行時に表示する）。
+  対象は、カレントの git リポジトリの origin が指すリポジトリ（実行時に表示する）。
+  upstream など別の remote があっても、そちらには作らない。
   どちらかが欠けていれば、何も作らずエラー終了する。
 
 動作:
@@ -77,15 +78,20 @@ main() {
 
   # 1. 前提チェック
   command -v gh >/dev/null 2>&1 || abort 'gh（GitHub CLI）が見つからない。インストールしてから実行すること。'
-  gh auth status >/dev/null 2>&1 || abort 'gh が未認証。`gh auth login` してから実行すること。'
-  local repo
-  repo="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)" ||
-    abort '対象リポジトリを gh が特定できない。GitHub に紐づく git リポジトリの中で実行すること。'
+  # 認証は `gh auth status` で確かめない。どれか1つのホストのトークンが切れているだけで失敗するため、
+  # 対象リポジトリを引く次の呼び出しの失敗で止め、gh のエラーをそのまま見せる
+  local origin_url repo
+  # gh の既定の解決は upstream の remote を優先しうるので、origin を名指しして作り先を取り違えない。
+  # 空の引数を渡すと既定の解決に戻るので、origin が無ければここで止める
+  origin_url="$(git remote get-url origin 2>/dev/null)" ||
+    abort 'origin の remote が無い。origin が GitHub を指す git リポジトリの中で実行すること。'
+  repo="$(gh repo view "$origin_url" --json nameWithOwner --jq .nameWithOwner 2>&1)" ||
+    abort "origin のリポジトリを引けなかった（未認証なら \`gh auth login\` する）: $repo"
   echo "対象リポジトリ: $repo"
 
   # 2. 既存ラベルの名前を1回だけ引く（GitHub のラベル名は大文字小文字を区別しないので小文字にそろえる）
   local existing
-  existing="$(gh label list --limit 1000 --json name --jq '.[].name' | tr '[:upper:]' '[:lower:]')" ||
+  existing="$(gh label list --repo "$repo" --limit 1000 --json name --jq '.[].name' | tr '[:upper:]' '[:lower:]')" ||
     abort '既存ラベルの一覧を取得できなかった。'
 
   # 3. 無いものだけ作る
@@ -96,7 +102,7 @@ main() {
       skipped+=("$name")
       continue
     fi
-    gh label create "$name" --color "$color" --description "$description" >/dev/null ||
+    gh label create --repo "$repo" "$name" --color "$color" --description "$description" >/dev/null ||
       abort "ラベル「$name」を作れなかった。ここまでに作った件数: ${#created[@]}"
     created+=("$name")
   done
