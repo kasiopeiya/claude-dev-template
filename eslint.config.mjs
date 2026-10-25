@@ -75,8 +75,8 @@ const ifStatementInTestCaseSelector = {
 }
 
 export default tseslint.config(
-  // 静的解析の対象外。cdk.out は CDK 合成物、*.d.ts は生成物なので除外する
-  { ignores: ['**/node_modules/**', '**/cdk.out/**', 'dist/**', '**/*.d.ts'] },
+  // 静的解析の対象外。cdk.out は CDK 合成物、*.d.ts は生成物、tmp は gitignore 済みの出力物なので除外する
+  { ignores: ['**/node_modules/**', '**/cdk.out/**', 'dist/**', '**/*.d.ts', '**/tmp/**'] },
 
   // 全ファイル共通: Node 実行環境のグローバルを有効化
   {
