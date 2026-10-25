@@ -28,7 +28,12 @@ export function findDecisionNotToWaitForCi({
   workStartedAt
 }) {
   // /auto-dev の起動前に外し、付いた Issue の衝突は解かせないので、付いていれば今回のセッションが離脱した印
-  if (labelNames.includes(NEEDS_HUMAN_CHECK_LABEL)) {
+  // GitHub のラベル名は大文字小文字を区別しない
+  if (
+    labelNames.some(
+      (labelName) => labelName.toLowerCase() === NEEDS_HUMAN_CHECK_LABEL.toLowerCase()
+    )
+  ) {
     return buildUnplannedDecision(`${NEEDS_HUMAN_CHECK_LABEL} が付いているので CI を待ちません`)
   }
   // Issue が OPEN なら、マージ済みの PR があっても今回の作業の PR ではない（再オープンされた Issue の古い PR など）
