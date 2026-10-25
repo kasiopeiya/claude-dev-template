@@ -26,22 +26,31 @@ const LOCK_FILE_NAME = 'package-lock.json'
 const INSTALL_STAMP_FILE_NAME = '.auto-programmer-installed'
 
 /**
+ * `gh auth status` が失敗したときに人間へ見せる文を作る。
+ *
+ * 原因は未ログインとは限らない（古い gh が `--active` を知らない・通信できないなど）ので、gh の stderr を添える。
+ *
+ * @param {string} ghStderr `gh auth status` の標準エラー出力
+ * @returns {string} 失敗したことと未ログインのときの直し方に、stderr（空なら省く）を続けた文
+ */
+function buildGhAuthFailureMessage(ghStderr) {
+  const summary =
+    '`gh auth status` が失敗しました（未ログインなら `gh auth login` を実行してから、もう一度打ってください）'
+  const trimmedStderr = ghStderr.trim()
+  return trimmedStderr === '' ? summary : `${summary}\n${trimmedStderr}`
+}
+
+/**
  * 人間が入れておくべきコマンドが使えるかを確かめる。
  *
  * @returns {void}
- * @throws {Error} `gh` が起動できない・未ログインのとき、または `claude` が起動できないとき
+ * @throws {Error} `gh` が起動できない・`gh auth status` が失敗したとき、または `claude` が起動できないとき
  */
 function ensureHumanPrerequisites() {
-  let ghAuthExitCode
+  let ghAuthResult
   try {
     // 対象を絞らないと、別ホスト・別アカウントのトークン切れでも失敗扱いになる
-    ghAuthExitCode = runCapture('gh', [
-      'auth',
-      'status',
-      '--hostname',
-      'github.com',
-      '--active'
-    ]).exitCode
+    ghAuthResult = runCapture('gh', ['auth', 'status', '--hostname', 'github.com', '--active'])
   } catch (error) {
     throw new Error(
       'gh コマンドを起動できません。GitHub CLI を入れてから、もう一度打ってください',
@@ -50,10 +59,8 @@ function ensureHumanPrerequisites() {
       }
     )
   }
-  if (ghAuthExitCode !== 0) {
-    throw new Error(
-      'GitHub CLI が未ログインです。`gh auth login` を実行してから、もう一度打ってください'
-    )
+  if (ghAuthResult.exitCode !== 0) {
+    throw new Error(buildGhAuthFailureMessage(ghAuthResult.stderr))
   }
   try {
     runCapture('claude', ['--version'])
