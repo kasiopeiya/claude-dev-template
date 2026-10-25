@@ -11,6 +11,8 @@
 // - 対象ラベル（ai-fixable）が外れた Issue も止める。/issue-check がラベルを付け替えると対象ラベルが外れるので、
 //   止める理由のラベルを1つずつ並べるだけでは、ラベルが増えたときに取りこぼす。
 // - ラベル名は `.claude/skills/issue-check/SKILL.md` が貼る表記が正。
+// - 対話の「issue N 対応して」も、CLAUDE.md「issue番号だけで開発フローを自動追従する」に同じ止める条件を
+//   文章で持つ。条件を変えるときは両方を直す。
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
 
 export const ISSUE_CHECKED_LABEL = 'issue:checked'

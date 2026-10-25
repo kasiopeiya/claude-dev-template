@@ -67,7 +67,7 @@ AI の提案が違うと思ったら、「`/grill-me` で始めて」「直接�
 2. **Plan作成＋チェック（人間＋AI）**：Planモードでの事前調査、または `/grill-me` の議論を `/to-plan` でPlanファイル化。`/to-plan` は、このリポジトリでまだ使っていない外部の技術要素が Plan に入るときだけ、`/check-plan` の前に `/premise-check`（外部の制約を一次資料で調べる）の実行を提案する。人間が「実行する」と答えると AI が `/premise-check` を実行し、見直す制約を選んだ後に `/check-plan` が走る。提案が無い・見送ったときは、続けて `/check-plan` を自動実行し、必須セクションの充足とコードベース・ドキュメントの影響範囲の網羅を早期にチェックする（シフトレフト）。`/check-plan` は単体でも実行できる。
    - 必須：「設計書への影響」セクション（更新不要なら「更新不要・理由：〇〇」と明記）
    - 必須：タスク一覧に設計書更新タスクを含める（更新不要な場合を除く）
-3. **Issue作成（AI）**：`/to-issues` — Planを実装Issueに分割してGitHub Issuesに登録。相談のセッションはここで終わり、4 以降は別のセッションで回す
+3. **Issue作成（AI）**：`/to-issues` — Planを実装Issueに分割してGitHub Issuesに登録。相談のセッションはここで終わり、4 以降は別のセッションで回す。4 以降に着手する前に、`issue:checked` の無い Issue は `/issue-check #<番号>` を通す（対話で「issue N 対応して」と指示すると AI が確認なしで打つ）
 4. **設計書更新（AI）**：`/design <Issue番号>` — 設計書更新→レビュー→修正までを自律実行
 5. **アプリ実装（AI）**：`/code-dev <Issue番号>` — TDD実装→コードレビュー→静的解析/単体テスト→設計書整合性チェックまでを自律実行
 6. **CDK実装（AI）**：`/cdk-dev <Issue番号>` — 実装→レビュー→静的解析/snapshotテスト/cdk synth までを自律実行（※CDKはTDD対象外）
@@ -105,7 +105,7 @@ Issue 番号を人間が渡して 4〜9 を回す代わりに、ボードに積�
 
 1. **カードを Ready へ動かし、担当者を付ける（人間）**：対象は `ai-fixable` が付いた open な Issue。拾うのは担当者のマシンの auto-programmer だけなので、担当者の無い Issue は誰にも拾われない。本文の「ブロッカー」に並ぶ Issue が全部 closed になるまでは拾われない。open な sub-issue を持つ親のうち、ルート直下（第2階層）の親は `tracking-issue` のカードで見分けられ、親のカードだけ動かせばよい。第3階層以下の親にはこのラベルが付かないが、そのカードを動かしても、スクリプトが子へ引き継ぐので害は無い。スクリプトは親を実装せず、子を Ready に載せて自分を担当者にする
 2. **起動する（人間）**：`npm run auto-programmer` を打つ。1件終えると次の1件へ進み、着手できる Issue が無い状態が一定の回数続くと止まる。並列に片付けたいときは、端末を分けて同じコマンドを打つ。同じマシンなら、同じ Issue を2本が拾うことはない。AI のセッションからは起動できない
-3. **実装して push する（AI）**：スクリプトが AI 専用 clone にブランチを切る。`issue:checked` の無い Issue は、先に `/issue-check` で監査する。見込み 400 行以上で割れる Issue は、ここで `/issue-split` が sub-issue に割る。それ以外は `/auto-dev <Issue番号>` を起動する。`/auto-dev` は Issue の「実装フロー（使用するSkill）」に並ぶ Skill で実装し、検証・コミット・push と、`/pr-body` による PR 本文の差し替えまで確認なしで進める。リポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は、PR を作らずに `/auto-dev` が閉じる
+3. **実装して push する（AI）**：スクリプトが AI 専用 clone にブランチを切る。`issue:checked` の無い Issue は、先に `/issue-check` で監査する。見込み行数が WANT の線以上で割れる Issue（MUST の線以上は、割らない例外を除くすべて）は、ここで `/issue-split` が sub-issue に割る。MUST の線以上で割れない Issue は、人間判断で止める（線の値と例外は [pr-review-policy](../policy/pr-review-policy.md)「見積もりで割る線」）。それ以外は `/auto-dev <Issue番号>` を起動する。`/auto-dev` は Issue の「実装フロー（使用するSkill）」に並ぶ Skill で実装し、検証・コミット・push と、`/pr-body` による PR 本文の差し替えまで確認なしで進める。リポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は、PR を作らずに `/auto-dev` が閉じる
 4. **CI が通るまで直す（AI）**：スクリプトが push 後の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。CI の結果が出てから次の1件へ進む。CI が通った後に、先にマージされた別の PR と衝突して止まった PR は、スクリプトが次の Issue より先に `/auto-resolve-conflict` で解かせ、もう一度 CI を待つ
 5. **PR 以降は 10〜11 と同じ**：PR が Issue に紐づくとカードは In Review へ動くので、その列の PR をレビューする。自動マージされた PR の Issue は、スクリプトが次の Issue を選ぶ前に閉じる。スクリプトを止めているときも、対話の作業で AI が着手の直前に打つ `npm run close-issues` が閉じる
 
