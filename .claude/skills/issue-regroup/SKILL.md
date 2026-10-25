@@ -88,7 +88,7 @@ gh issue view <番号> --json state,url --jq '{state,url}'
 **新しい親は、移す子の元の親と同じ親（元の親の親）にぶら下げます。** そうしないとルート Issue まで辿れなくなり、`/issue-deps` のグループ分けから外れます。元の親の親にぶら下がるので、`/link-root-issue` での紐付けは足しません。
 
 ```bash
-gh issue create --title "<関心事の名前>" --label ai-fixable --label tracking-issue --body "<何の塊かを1文、子の一覧、完了条件>"
+gh issue create --title "<関心事の名前>" --assignee @me --label ai-fixable --label tracking-issue --body "<何の塊かを1文、子の一覧、完了条件>"
 ```
 
 ラベル未作成で `gh` が失敗したら、`gh label create tracking-issue --description "<ポリシー「Issue に付けるラベル」表の意味>"` で作ってから同じコマンドを再実行します。
