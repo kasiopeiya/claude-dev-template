@@ -222,7 +222,10 @@ export function ensureDependencies(workspaceDir) {
       relayChildProcessOutput('stderr', Buffer.from(stderr))
       throw new Error(`npm ci に失敗しました: ${relativePackageDirectory}`)
     }
-    writeFileSync(buildInstallStampPath(packageDirectory), '')
+    // 依存が0件のロックファイルでは npm ci が成功しても node_modules ができず、印の書き込みが ENOENT で落ちる
+    const installStampPath = buildInstallStampPath(packageDirectory)
+    mkdirSync(dirname(installStampPath), { recursive: true })
+    writeFileSync(installStampPath, '')
     showSuccess(
       `依存をインストール  ${relativePackageDirectory}  ${formatElapsedTime(Date.now() - startedAt)}`
     )
