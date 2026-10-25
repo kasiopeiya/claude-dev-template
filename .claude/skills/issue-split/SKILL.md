@@ -62,7 +62,7 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 ## Phase 4: 子 Issue を起票する
 
-分割案を、依存順（ブロッカーが先）に起票する。
+分割案を、依存順（ブロッカーが先）に起票する。`gh issue create` には `--assignee @me` を付ける（Auto Programmer は候補を `assignee:@me` で探すため）。
 
 本文は `/quick-issue` の `<issue-template>` に従う。人間が上から3節（「この変更が必要な理由」「対応方針」「タスク一覧」）を読むだけで、何の話で結局何をするのかが分かる型だからである。
 

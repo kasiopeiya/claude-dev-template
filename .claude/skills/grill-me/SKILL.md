@@ -7,9 +7,9 @@ description: Interview the user relentlessly about a plan or design until reachi
 
 **Before anything else**, ask:
 
-> この対話が終わったとき、何が決まっていれば／何が確認できていれば終わりですか？
+> 今回作るものが、どうなっていれば完成ですか？
 
-Ask for an **externally observable state**, not a restatement of the work（✅「dev に `cdk deploy` が通り、スタックができたことを確認できた」／❌「CDK を書く」）. Restate the answer as one sentence and get an explicit yes before asking anything else. That sentence is the scope of this interview.
+Ask for an **externally observable state** of what is being built, not a restatement of the work（✅「dev に `cdk deploy` が通り、スタックができた」／❌「CDK を書く」）. Don't ask when this interview ends — **Stop** below already fixes that, so the answer would be the same every time and narrow nothing. If the user's answer names the end of the interview instead of the thing being built（❌「Issue 作成まで」）, say so and ask again. Restate the answer as one sentence and get an explicit yes before asking anything else. That sentence is the scope of this interview.
 
 If the caller passed a scope or a stopping condition in the arguments (another Skill may invoke this one), adopt it as the agreed sentence and skip this question — the caller already fixed the scope, and asking the user again only widens it.
 
@@ -49,10 +49,12 @@ As you interview, hold each answer and proposed direction against the refined en
 
 ## `--small` — the agreed sentence must be a thin vertical slice
 
-Applies **only if the arguments contain `--small`**. It changes nothing above except what counts as an acceptable scope sentence.
+Applies **only if the arguments contain `--small`**. It changes nothing above except the first question and what counts as an acceptable scope sentence.
 
-- **`--small` なし**：ユーザーが「終わり」と呼ぶ状態であれば何でもよい
-- **`--small` あり**：曳光弾（薄い縦スライス）であること。最初の質問を下のものに置き換える
+- **`--small` なし**：ユーザーが「完成」と呼ぶ、作るものの状態であれば何でもよい
+- **`--small` あり**：曳光弾（薄い縦スライス）であること。最初の質問を省き、AI が依頼から一番薄い一本道を一文に書いて、明示の肯定を得る
+
+Skip the question because `--small` already answers how deep the scope goes. If the sentence you wrote lists features rather than one path, cut it down to one path before presenting it. Only when the request gives too little to write one path (e.g. `/grill-me --small` with no context), ask this instead:
 
 > 「これが動いた」と言える、入口から出口まで通る一番薄い一本道は何ですか？
 
