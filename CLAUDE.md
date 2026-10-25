@@ -39,6 +39,8 @@
 
 > [!IMPORTANT]
 > **（AI・必須）** **issue番号だけで開発フローを自動追従する**：「issue 111 対応して」のように番号だけ渡されたら、`gh issue view 111` の「実装フロー（使用するSkill）」に書かれた Skill を記載順に実行する。同セクションが無ければ、変更種別から下の一覧で決める。
+>
+> その前に、実装する Issue（open な子を持つ親なら、着手する子）に `issue:checked` が無ければ、確認なしで `/issue-check #<番号>` を番号指定の1件だけ打つ。対話の経路でも行数の見積もりを通すためである。打った後に Issue を引き直し、open で `ai-fixable` と `issue:checked` があり、`needs-human-decision`・`ready-for-human` と open な子が無いときだけ着手する。それ以外は着手せず、理由を伝えて止まる。週次チェックの Issue（`doc-consistency-weekly`・`code-policy-weekly` ラベル）は確かめずに進む
 
 変更種別ごとの使用Skill（直接編集した場合／新規・大幅加筆の場合）：
 
