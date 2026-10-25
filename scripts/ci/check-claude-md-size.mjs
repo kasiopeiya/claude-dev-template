@@ -7,9 +7,10 @@
 // 判定ロジックはこのファイル1ヶ所にしか置かない。ターン末ゲート（.claude/hooks/turn-end-gate.mjs）と CI の2経路から呼ばれる。
 
 import { existsSync, readFileSync, statSync } from 'fs'
-import { execFileSync } from 'child_process'
 import { dirname, join, resolve, relative, sep } from 'path'
 import { fileURLToPath } from 'url'
+
+import { listWorkingTreeFiles } from './list-working-tree-files.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -19,119 +20,43 @@ const CHARACTER_LIMIT = 7000
 // メールアドレス・装飾記号を拾わないよう、直前が行頭か空白のものだけを対象にする。
 const IMPORT_PATTERN = /(?:^|\s)@([^\s`)\]]+)/g
 
-/**
- * `wc -m` と同じ数え方で文字数を返す（コードポイント単位。UTF-16 の符号単位ではない）。
- *
- * @param {string} text 数える対象の全文
- * @returns {number} 文字数
- */
-function countCharacters(text) {
-  return [...text].length
-}
+function main() {
+  const measurements = measureClaudeMdFiles(collectClaudeMdPaths())
+  const oversized = measurements.filter(({ total }) => total > CHARACTER_LIMIT)
 
-/**
- * 本文から `@` 記法の import 先を取り出す。
- *
- * コードフェンス内とインラインコードは、記法の説明であって import ではないので落とす。
- *
- * @param {string} source ファイル全文
- * @returns {string[]} import 先として書かれた文字列
- */
-function extractImportTargets(source) {
-  const targets = []
-  let insideFence = false
-
-  for (const line of source.split('\n')) {
-    if (/^\s*(```|~~~)/.test(line)) {
-      insideFence = !insideFence
-      continue
+  if (oversized.length === 0) {
+    for (const { path, total } of measurements) {
+      console.log(`${path}: ${total} / ${CHARACTER_LIMIT} 文字`)
     }
-    if (insideFence) continue
-
-    const withoutInlineCode = line.replace(/`+[^`]*`+/g, '')
-    for (const match of withoutInlineCode.matchAll(IMPORT_PATTERN)) {
-      targets.push(match[1])
-    }
+    return
   }
 
-  return targets
+  console.error(formatViolations(oversized))
+  process.exit(1)
 }
 
 /**
- * import 先を実ファイルの絶対パスへ解決する。読み込めないものは null を返す。
+ * Git が無視しない CLAUDE.md をすべて返す（ルート・サブディレクトリの両方。まだ追跡していない新規も含む）。
  *
- * リポジトリ外（`~/.claude/CLAUDE.md` 等）は他プロジェクトと共有され CI からも見えないため、
- * 上限の対象にしない。
- *
- * @param {string} target import 先として書かれた文字列
- * @param {string} sourceDir import 元ファイルのあるディレクトリ（絶対パス）
- * @returns {string | null} 解決した絶対パス
+ * @returns {string[]} 絶対パス
  */
-function resolveImport(target, sourceDir) {
-  if (target.startsWith('~') || /^[a-z]+:/i.test(target)) return null
-
-  const base = target.startsWith('/') ? repoRoot : sourceDir
-  const resolved = resolve(base, target.replace(/^\//, ''))
-
-  if (!resolved.startsWith(repoRoot + sep)) return null
-  if (!existsSync(resolved) || !statSync(resolved).isFile()) return null
-  return resolved
+function collectClaudeMdPaths() {
+  return listWorkingTreeFiles(repoRoot, ['CLAUDE.md', '**/CLAUDE.md']).map((relativePath) =>
+    join(repoRoot, relativePath)
+  )
 }
 
 /**
- * 本文に書かれた import 先のうち、実ファイルへ辿れたものだけを絶対パスで返す。
+ * CLAUDE.md ごとの消費文字数を測る。
  *
- * @param {string} source import 元ファイルの本文
- * @param {string} sourceDir import 元ファイルのあるディレクトリ（絶対パス）
- * @returns {string[]} 解決できた絶対パス
+ * @param {string[]} claudeMdPaths 測る CLAUDE.md の絶対パス
+ * @returns {{ path: string, total: number, breakdown: { path: string, characters: number }[] }[]} 測った結果
  */
-function resolveImportTargets(source, sourceDir) {
-  return extractImportTargets(source)
-    .map((target) => resolveImport(target, sourceDir))
-    .filter((resolved) => resolved !== null)
-}
-
-/**
- * CLAUDE.md 1本の消費文字数を測る。`@` 記法で import したファイルを再帰的に合算する。
- *
- * import に逃がしても自動ロードされる以上、消費するコンテキストは変わらない。合算しないと
- * 上限が意味を失う。
- *
- * @param {string} claudeMdPath 測る CLAUDE.md の絶対パス
- * @returns {{ total: number, breakdown: { path: string, characters: number }[] }} 合計と内訳
- */
-function measureClaudeMd(claudeMdPath) {
-  const breakdown = []
-  const visited = new Set()
-  const queue = [claudeMdPath]
-
-  while (queue.length > 0) {
-    const current = queue.shift()
-    if (visited.has(current)) continue
-    visited.add(current)
-
-    const source = readFileSync(current, 'utf8')
-    breakdown.push({
-      path: relative(repoRoot, current),
-      characters: countCharacters(source)
-    })
-
-    queue.push(...resolveImportTargets(source, dirname(current)))
-  }
-
-  return { total: breakdown.reduce((sum, entry) => sum + entry.characters, 0), breakdown }
-}
-
-/**
- * 上限を超えた CLAUDE.md を返す。
- *
- * @param {string[]} claudeMdPaths 検査対象の絶対パス
- * @returns {{ path: string, total: number, breakdown: { path: string, characters: number }[] }[]} 超過したもの
- */
-function findOversized(claudeMdPaths) {
-  return claudeMdPaths
-    .map((path) => ({ path: relative(repoRoot, path), ...measureClaudeMd(path) }))
-    .filter((result) => result.total > CHARACTER_LIMIT)
+function measureClaudeMdFiles(claudeMdPaths) {
+  return claudeMdPaths.map((claudeMdPath) => ({
+    path: relative(repoRoot, claudeMdPath),
+    ...measureClaudeMd(claudeMdPath)
+  }))
 }
 
 /**
@@ -166,34 +91,106 @@ function formatViolations(oversized) {
 }
 
 /**
- * Git の追跡下にある CLAUDE.md をすべて返す（ルート・サブディレクトリの両方）。
+ * CLAUDE.md 1本の消費文字数を測る。`@` 記法で import したファイルを再帰的に合算する。
  *
- * @returns {string[]} 絶対パス
+ * import に逃がしても自動ロードされる以上、消費するコンテキストは変わらない。合算しないと
+ * 上限が意味を失う。
+ *
+ * @param {string} claudeMdPath 測る CLAUDE.md の絶対パス
+ * @returns {{ total: number, breakdown: { path: string, characters: number }[] }} 合計と内訳
  */
-function collectTrackedClaudeMd() {
-  return execFileSync('git', ['ls-files', 'CLAUDE.md', '**/CLAUDE.md'], {
-    cwd: repoRoot,
-    encoding: 'utf8'
-  })
-    .split('\n')
-    .filter(Boolean)
-    .map((file) => join(repoRoot, file))
-}
+function measureClaudeMd(claudeMdPath) {
+  const breakdown = []
+  const visited = new Set()
+  const queue = [claudeMdPath]
 
-function main() {
-  const targets = collectTrackedClaudeMd()
-  const oversized = findOversized(targets)
+  while (queue.length > 0) {
+    const current = queue.shift()
+    if (visited.has(current)) continue
+    visited.add(current)
 
-  if (oversized.length === 0) {
-    for (const path of targets) {
-      const { total } = measureClaudeMd(path)
-      console.log(`${relative(repoRoot, path)}: ${total} / ${CHARACTER_LIMIT} 文字`)
-    }
-    return
+    const source = readFileSync(current, 'utf8')
+    breakdown.push({
+      path: relative(repoRoot, current),
+      characters: countCharacters(source)
+    })
+
+    queue.push(...resolveImportTargets(source, dirname(current)))
   }
 
-  console.error(formatViolations(oversized))
-  process.exit(1)
+  return { total: breakdown.reduce((sum, entry) => sum + entry.characters, 0), breakdown }
+}
+
+/**
+ * 本文に書かれた import 先のうち、実ファイルへ辿れたものだけを絶対パスで返す。
+ *
+ * @param {string} source import 元ファイルの本文
+ * @param {string} sourceDirectory import 元ファイルのあるディレクトリ（絶対パス）
+ * @returns {string[]} 解決できた絶対パス
+ */
+function resolveImportTargets(source, sourceDirectory) {
+  return extractImportTargets(source)
+    .map((importTarget) => resolveImport(importTarget, sourceDirectory))
+    .filter((resolved) => resolved !== null)
+}
+
+/**
+ * import 先を実ファイルの絶対パスへ解決する。読み込めないものは null を返す。
+ *
+ * リポジトリ外（`~/.claude/CLAUDE.md` 等）は他プロジェクトと共有され CI からも見えないため、
+ * 上限の対象にしない。
+ *
+ * @param {string} importTarget import 先として書かれた文字列
+ * @param {string} sourceDirectory import 元ファイルのあるディレクトリ（絶対パス）
+ * @returns {string | null} 解決した絶対パス
+ */
+function resolveImport(importTarget, sourceDirectory) {
+  if (importTarget.startsWith('~') || /^[a-z]+:/i.test(importTarget)) return null
+
+  const base = importTarget.startsWith('/') ? repoRoot : sourceDirectory
+  const resolved = resolve(base, importTarget.replace(/^\//, ''))
+
+  if (!resolved.startsWith(repoRoot + sep)) return null
+  if (!existsSync(resolved) || !statSync(resolved).isFile()) return null
+  return resolved
+}
+
+/**
+ * 本文から `@` 記法の import 先を取り出す。
+ *
+ * コードフェンス内とインラインコードは、記法の説明であって import ではないので落とす。
+ *
+ * @param {string} source ファイル全文
+ * @returns {string[]} import 先として書かれた文字列
+ */
+function extractImportTargets(source) {
+  const importTargets = []
+  let insideFence = false
+
+  for (const line of source.split('\n')) {
+    if (/^\s*(```|~~~)/.test(line)) {
+      insideFence = !insideFence
+      continue
+    }
+    if (insideFence) continue
+
+    const withoutInlineCode = line.replace(/`+[^`]*`+/g, '')
+    for (const match of withoutInlineCode.matchAll(IMPORT_PATTERN)) {
+      importTargets.push(match[1])
+    }
+  }
+
+  return importTargets
+}
+
+/**
+ * `wc -m` と同じ数え方で文字数を返す（コードポイント単位。UTF-16 の符号単位ではない）。
+ *
+ * @param {string} text 数える対象の全文
+ * @returns {number} 文字数
+ */
+function countCharacters(text) {
+  return [...text].length
 }
 
 main()

@@ -27,15 +27,20 @@ const MECHANICAL_FILE_PATTERNS = [
   /\.snap$/
 ]
 
-/**
- * gh を実行して標準出力を返す。
- *
- * @param {string[]} args gh に渡す引数
- * @param {string} [input] 標準入力に流す文字列
- * @returns {string} 標準出力
- */
-function gh(args, input) {
-  return execFileSync('gh', args, { cwd: repoRoot, encoding: 'utf8', input })
+function main() {
+  const prNumber = resolvePrNumber(process.argv[2])
+  const reviewedLineCount = countReviewedLines(fetchChangedFiles(prNumber))
+  const verdict = isLargePr(reviewedLineCount) ? 'NG' : 'OK'
+  // 本文は標準入力で渡す。本文の改行や記号でコマンド行を壊さないため
+  const commentUrl = runGhCommand(
+    ['pr', 'comment', prNumber, '--body-file', '-'],
+    formatComment(reviewedLineCount)
+  ).trim()
+
+  console.log(
+    `PR #${prNumber}: ${verdict}（差分 ${reviewedLineCount} 行。${LARGE_PR_LINES} 行以上で NG）`
+  )
+  console.log(`コメント: ${commentUrl}`)
 }
 
 /**
@@ -43,6 +48,7 @@ function gh(args, input) {
  *
  * @param {string | undefined} argument コマンドライン引数
  * @returns {string} PR 番号
+ * @throws {Error} 引数が数字でないとき、または引数が無く現ブランチに紐づく PR が無いとき
  */
 function resolvePrNumber(argument) {
   if (argument !== undefined) {
@@ -53,7 +59,7 @@ function resolvePrNumber(argument) {
   }
 
   try {
-    return gh(['pr', 'view', '--json', 'number', '--jq', '.number']).trim()
+    return runGhCommand(['pr', 'view', '--json', 'number', '--jq', '.number']).trim()
   } catch {
     throw new Error(
       '現ブランチに紐づく PR が見つかりません。PR 番号を引数で渡すか、push して PR ができてから実行してください。'
@@ -69,7 +75,7 @@ function resolvePrNumber(argument) {
  * @returns {{ path: string, additions: number, deletions: number }[]} 変更ファイル
  */
 function fetchChangedFiles(prNumber) {
-  return gh([
+  return runGhCommand([
     'api',
     '--paginate',
     `repos/{owner}/{repo}/pulls/${prNumber}/files`,
@@ -79,6 +85,23 @@ function fetchChangedFiles(prNumber) {
     .split('\n')
     .filter(Boolean)
     .map((line) => JSON.parse(line))
+}
+
+/**
+ * レビューで読む行数（機械的な変更を除いた、追加と削除の合計）を返す。
+ *
+ * @param {{ path: string, additions: number, deletions: number }[]} files 変更ファイル
+ * @returns {number} 行数
+ */
+function countReviewedLines(files) {
+  const ignoredPaths = findGitIgnored(files.map(({ path }) => path))
+
+  return files
+    .filter(
+      ({ path }) =>
+        !ignoredPaths.has(path) && !MECHANICAL_FILE_PATTERNS.some((pattern) => pattern.test(path))
+    )
+    .reduce((sum, { additions, deletions }) => sum + additions + deletions, 0)
 }
 
 /**
@@ -106,31 +129,14 @@ function findGitIgnored(paths) {
 }
 
 /**
- * レビューで読む行数（機械的な変更を除いた、追加と削除の合計）を返す。
- *
- * @param {{ path: string, additions: number, deletions: number }[]} files 変更ファイル
- * @returns {number} 行数
- */
-function countReviewedLines(files) {
-  const ignoredPaths = findGitIgnored(files.map(({ path }) => path))
-
-  return files
-    .filter(
-      ({ path }) =>
-        !ignoredPaths.has(path) && !MECHANICAL_FILE_PATTERNS.some((pattern) => pattern.test(path))
-    )
-    .reduce((sum, { additions, deletions }) => sum + additions + deletions, 0)
-}
-
-/**
  * PR に投稿するコメント本文を返す。pr-review-policy へのリンクは入れない（コメントの可搬性を保つため）。
  *
- * @param {number} lines レビューで読む行数
+ * @param {number} reviewedLineCount レビューで読む行数
  * @returns {string} コメント本文
  */
-function formatComment(lines) {
-  if (lines < LARGE_PR_LINES) {
-    return `## PRレビュー前提チェック: OK\n\n差分は ${lines} 行です（ロックファイルなど機械的な変更を除く）。`
+function formatComment(reviewedLineCount) {
+  if (!isLargePr(reviewedLineCount)) {
+    return `## PRレビュー前提チェック: OK\n\n差分は ${reviewedLineCount} 行です（ロックファイルなど機械的な変更を除く）。`
   }
 
   return [
@@ -138,22 +144,29 @@ function formatComment(lines) {
     '',
     'レビューを依頼する前に、以下を満たしてください。',
     '',
-    `MUST: 差分が ${lines} 行で、サイズ区分「大」（${LARGE_PR_LINES} 行以上）です。分割を検討してください。`
+    `MUST: 差分が ${reviewedLineCount} 行で、サイズ区分「大」（${LARGE_PR_LINES} 行以上）です。分割を検討してください。`
   ].join('\n')
 }
 
-function main() {
-  const prNumber = resolvePrNumber(process.argv[2])
-  const lines = countReviewedLines(fetchChangedFiles(prNumber))
-  const verdict = lines < LARGE_PR_LINES ? 'OK' : 'NG'
-  // 本文は標準入力で渡す。本文の改行や記号でコマンド行を壊さないため
-  const commentUrl = gh(
-    ['pr', 'comment', prNumber, '--body-file', '-'],
-    formatComment(lines)
-  ).trim()
+/**
+ * レビューで読む行数が、サイズ区分「大」（NG）にあたるかを返す。
+ *
+ * @param {number} reviewedLineCount レビューで読む行数
+ * @returns {boolean} 「大」なら true
+ */
+function isLargePr(reviewedLineCount) {
+  return reviewedLineCount >= LARGE_PR_LINES
+}
 
-  console.log(`PR #${prNumber}: ${verdict}（差分 ${lines} 行。${LARGE_PR_LINES} 行以上で NG）`)
-  console.log(`コメント: ${commentUrl}`)
+/**
+ * gh を実行して標準出力を返す。
+ *
+ * @param {string[]} args gh に渡す引数
+ * @param {string} [input] 標準入力に流す文字列
+ * @returns {string} 標準出力
+ */
+function runGhCommand(args, input) {
+  return execFileSync('gh', args, { cwd: repoRoot, encoding: 'utf8', input })
 }
 
 try {

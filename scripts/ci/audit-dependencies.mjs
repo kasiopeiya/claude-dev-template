@@ -9,12 +9,15 @@ import { fileURLToPath } from 'url'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
-// 脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実なので、階層を分けず全部舐める（cicd-design）
+// 脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実なので、階層を分けず全部舐める
 const AUDIT_DIRECTORIES = ['.', 'samples/app/backend', 'samples/infra']
 
-// どこから落とすか。high 未満を落とさないのは、受容するかが人間の判断だから（cicd-design）
+// どこから落とすか。high 未満を落とさないのは、受容するかが人間の判断だから
 const SEVERITY_ORDER = ['info', 'low', 'moderate', 'high', 'critical']
 const FAILING_SEVERITY = 'high'
+
+// npm audit --json の標準出力の上限（1回の監査は1階層分）。脆弱性の詳細が多いと、既定の 1MiB を超えうる
+const AUDIT_OUTPUT_MAX_BYTES = 32 * 1024 * 1024
 
 /**
  * 許容する脆弱性。**上流に修正版が存在せず、手元の設定では直せないものに限る。**
@@ -47,37 +50,196 @@ const ALLOWED_VULNERABILITIES = [
   }
 ]
 
+function main() {
+  const audits = []
+  for (const directory of AUDIT_DIRECTORIES) {
+    const audit = auditDirectory(directory)
+    reportDirectory(audit.directory, audit.blocking)
+    audits.push(audit)
+  }
+
+  const failedDirectories = audits
+    .filter(({ blocking }) => blocking.length > 0)
+    .map(({ directory }) => directory)
+  const matchedAllowlistKeys = new Set(audits.flatMap((audit) => [...audit.matchedAllowlistKeys]))
+  const staleEntries = findStaleEntries(matchedAllowlistKeys)
+
+  if (staleEntries.length > 0) reportStaleEntries(staleEntries)
+  if (failedDirectories.length > 0) reportFailedDirectories(failedDirectories)
+  if (staleEntries.length > 0 || failedDirectories.length > 0) process.exit(1)
+
+  console.log('\nhigh 以上の脆弱性はありません。')
+}
+
 /**
- * npm audit を JSON で実行する。脆弱性があると npm は非ゼロ終了するため、その場合も標準出力を読む。
+ * 1階層を監査し、許容されていない high 以上の脆弱性と、効いた許容エントリを返す。
  *
  * @param {string} directory リポジトリ相対のディレクトリ
- * @returns {{ vulnerabilities?: Record<string, object> }} 監査レポート
+ * @returns {{ directory: string, blocking: object[], matchedAllowlistKeys: Set<string> }} 監査の結果
  */
-function runAudit(directory) {
-  try {
-    return JSON.parse(
-      execFileSync('npm', ['audit', '--json', '--prefix', directory], {
-        cwd: repoRoot,
-        encoding: 'utf8',
-        maxBuffer: 32 * 1024 * 1024
-      })
-    )
-  } catch (error) {
-    if (!error.stdout) throw error
-    return JSON.parse(error.stdout)
+function auditDirectory(directory) {
+  return {
+    directory,
+    ...selectBlockingVulnerabilities(runAudit(directory), directory, ALLOWED_VULNERABILITIES)
   }
 }
 
 /**
- * 開示情報を持つ脆弱性について、開示情報と混入経路の組をすべて許容しているエントリを探す。
+ * npm audit を JSON で実行する。脆弱性があると npm は非ゼロ終了するため、その場合も標準出力を読む。
+ *
+ * npm は監査自体に失敗したとき（ロックファイルが無い・レジストリが落ちているなど）も、非ゼロ終了で
+ * `{"error": ...}` だけを標準出力に出す。これを脆弱性なしと読むと、検査していないのに合格になる。
+ *
+ * @param {string} directory リポジトリ相対のディレクトリ
+ * @returns {{ vulnerabilities: Record<string, object> }} 監査レポート
+ * @throws {Error} npm audit が脆弱性の一覧を返さなかったとき
+ */
+function runAudit(directory) {
+  const report = parseAuditOutput(directory, readAuditOutput(directory))
+  if (!isObject(report) || report.error !== undefined || !isObject(report.vulnerabilities)) {
+    const reason = report?.error
+      ? `${report.error.code}: ${report.error.summary}`
+      : '脆弱性の一覧が無い'
+    throw new Error(`${directory}: npm audit が監査結果を返しませんでした（${reason}）`)
+  }
+  return report
+}
+
+/**
+ * npm audit --json の標準出力を返す。非ゼロ終了でも、標準出力があれば返す
+ * （脆弱性があるときと、監査に失敗して `{"error": ...}` を出したときの両方）。
+ * 標準出力が空なら、実行時の例外をそのまま投げる。
+ *
+ * @param {string} directory リポジトリ相対のディレクトリ
+ * @returns {string} 標準出力
+ */
+function readAuditOutput(directory) {
+  try {
+    return execFileSync('npm', ['audit', '--json', '--prefix', directory], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+      maxBuffer: AUDIT_OUTPUT_MAX_BYTES
+    })
+  } catch (error) {
+    if (!error.stdout) throw error
+    return error.stdout
+  }
+}
+
+/**
+ * npm audit --json の標準出力を JSON として読む。
+ *
+ * @param {string} directory リポジトリ相対のディレクトリ（失敗の報告に使う）
+ * @param {string} auditOutput 標準出力
+ * @returns {{ error?: { code: string, summary: string }, vulnerabilities?: Record<string, object> }} 読んだ JSON
+ * @throws {Error} JSON として読めないとき（途中で切れた出力や、npm の警告が混じった出力）
+ */
+function parseAuditOutput(directory, auditOutput) {
+  try {
+    return JSON.parse(auditOutput)
+  } catch (error) {
+    throw new Error(
+      `${directory}: npm audit の出力を JSON として読めませんでした（${error.message}）`,
+      {
+        cause: error
+      }
+    )
+  }
+}
+
+/**
+ * 値が null でないオブジェクトかを返す。
+ *
+ * @param {unknown} candidate 判定する値
+ * @returns {boolean} null でないオブジェクトなら true
+ */
+function isObject(candidate) {
+  return typeof candidate === 'object' && candidate !== null
+}
+
+/**
+ * 監査レポートから、許容されていない high 以上の脆弱性を抜き出す。
+ *
+ * @param {{ vulnerabilities: Record<string, object> }} report npm audit --json の出力
+ * @param {string} directory 監査対象ディレクトリ
+ * @param {typeof ALLOWED_VULNERABILITIES} allowlist 許容リスト
+ * @returns {{ blocking: object[], matchedAllowlistKeys: Set<string> }} 落とすべき脆弱性と、効いた許容エントリ
+ */
+function selectBlockingVulnerabilities(report, directory, allowlist) {
+  const threshold = SEVERITY_ORDER.indexOf(FAILING_SEVERITY)
+  const context = { directory, allowlist, vulnerabilityByName: report.vulnerabilities }
+
+  const matches = Object.values(report.vulnerabilities)
+    .filter((vulnerability) => SEVERITY_ORDER.indexOf(vulnerability.severity) >= threshold)
+    .map((vulnerability) => ({ vulnerability, ...matchAllowlist(vulnerability, context) }))
+
+  return {
+    blocking: matches
+      .filter(({ isCovered }) => !isCovered)
+      .map(({ vulnerability }) => vulnerability),
+    matchedAllowlistKeys: new Set(matches.flatMap(({ entries }) => entries).map(buildAllowlistKey))
+  }
+}
+
+/**
+ * 許容エントリのうち、どの階層のどの脆弱性にも効かなかったものを返す。
+ *
+ * @param {Set<string>} matchedAllowlistKeys 効いた許容エントリのキー
+ * @returns {typeof ALLOWED_VULNERABILITIES} 効かなかった許容エントリ
+ */
+function findStaleEntries(matchedAllowlistKeys) {
+  return ALLOWED_VULNERABILITIES.filter(
+    (entry) => !matchedAllowlistKeys.has(buildAllowlistKey(entry))
+  )
+}
+
+/**
+ * 脆弱性に効く許容エントリを集め、許容リストで丸ごと覆われているかを判定する。
+ *
+ * 開示情報を持つ脆弱性は、開示情報も混入経路もすべて許容済みのときだけ覆われる。1つでも未許容が混じれば覆われていない。
+ * 開示情報を持たず、原因パッケージの名前だけを指す傍系（via が文字列だけ）は、指している原因がすべて覆われているときだけ覆われる。
+ * 原因が1つでも未許容なら傍系も落ちる。傍系が通るのは、原因が根拠付きで許容リストに載っているときだけなので、原因は隠れない。
+ *
+ * 覆われていなくても、効いた許容エントリは返す。許容した経路が残ったまま別の経路が増えたとき、
+ * 許容エントリは失効しておらず、増えた経路だけが落とす理由だと報告するため。
+ *
+ * @param {object} vulnerability npm audit の1エントリ
+ * @param {{ directory: string, allowlist: typeof ALLOWED_VULNERABILITIES, vulnerabilityByName: Record<string, object> }} context 監査対象ディレクトリ・許容リスト・監査レポートの脆弱性
+ * @param {Set<string>} [pathNames] 原因をたどってきた経路の脆弱性名（循環を止める）
+ * @returns {{ entries: object[], isCovered: boolean }} 効いた許容エントリと、丸ごと覆われているか
+ */
+function matchAllowlist(vulnerability, context, pathNames = new Set()) {
+  const advisories = vulnerability.via.filter((via) => typeof via === 'object')
+  if (advisories.length > 0) return matchAdvisories(vulnerability, advisories, context)
+
+  const causeNames = vulnerability.via
+  if (causeNames.length === 0 || pathNames.has(vulnerability.name)) {
+    return { entries: [], isCovered: false }
+  }
+
+  const causePathNames = new Set([...pathNames, vulnerability.name])
+  const causeMatches = causeNames.map((causeName) => {
+    const cause = context.vulnerabilityByName[causeName]
+    return cause
+      ? matchAllowlist(cause, context, causePathNames)
+      : { entries: [], isCovered: false }
+  })
+  return {
+    entries: causeMatches.flatMap(({ entries }) => entries),
+    isCovered: causeMatches.every(({ isCovered }) => isCovered)
+  }
+}
+
+/**
+ * 開示情報を持つ脆弱性について、開示情報と混入経路の組ごとに、許容しているエントリを探す。
  *
  * @param {object} vulnerability npm audit の1エントリ
  * @param {object[]} advisories その脆弱性の開示情報（via のうちオブジェクトのもの）
  * @param {{ directory: string, allowlist: typeof ALLOWED_VULNERABILITIES }} context 監査対象ディレクトリと許容リスト
- * @returns {object[] | null} 効いた許容エントリ。1組でも未許容なら null
+ * @returns {{ entries: object[], isCovered: boolean }} 効いた許容エントリと、すべての組が許容済みか
  */
-function findAdvisoryEntries(vulnerability, advisories, { directory, allowlist }) {
-  const entryFor = (advisoryUrl, nodePath) =>
+function matchAdvisories(vulnerability, advisories, { directory, allowlist }) {
+  const findAllowlistEntry = (advisoryUrl, nodePath) =>
     allowlist.find(
       (entry) =>
         entry.directory === directory &&
@@ -86,53 +248,13 @@ function findAdvisoryEntries(vulnerability, advisories, { directory, allowlist }
         nodePath.startsWith(entry.nodePathPrefix)
     )
 
-  const entries = advisories.flatMap((advisory) =>
-    vulnerability.nodes.map((nodePath) => entryFor(advisory.url, nodePath))
+  const entriesByPair = advisories.flatMap((advisory) =>
+    vulnerability.nodes.map((nodePath) => findAllowlistEntry(advisory.url, nodePath))
   )
-  return entries.includes(undefined) ? null : entries
-}
-
-/**
- * その脆弱性を覆っている許容エントリを探す。
- *
- * 開示情報を持つ脆弱性は、開示情報も混入経路もすべて許容済みのときだけ覆われる。1つでも未許容が混じれば覆われていない。
- * 開示情報を持たず、原因パッケージの名前だけを指す傍系（via が文字列だけ）は、指している原因がすべて覆われているときだけ覆われる。
- * 原因が1つでも未許容なら傍系も落ちる。傍系が通るのは、原因が根拠付きで許容リストに載っているときだけなので、原因は隠れない。
- *
- * @param {object} vulnerability npm audit の1エントリ
- * @param {{ directory: string, allowlist: typeof ALLOWED_VULNERABILITIES, vulnerabilityByName: Record<string, object> }} context 監査対象ディレクトリ・許容リスト・監査レポートの脆弱性
- * @param {Set<string>} [pathNames] 原因をたどってきた経路の脆弱性名（循環を止める）
- * @returns {object[] | null} 効いた許容エントリ。覆われていなければ null
- */
-function findCoveringEntries(vulnerability, context, pathNames = new Set()) {
-  const advisories = vulnerability.via.filter((via) => typeof via === 'object')
-  if (advisories.length > 0) return findAdvisoryEntries(vulnerability, advisories, context)
-
-  const causeNames = vulnerability.via
-  if (causeNames.length === 0 || pathNames.has(vulnerability.name)) return null
-
-  const causePathNames = new Set([...pathNames, vulnerability.name])
-  const causeEntries = causeNames.map((causeName) => {
-    const cause = context.vulnerabilityByName[causeName]
-    return cause ? findCoveringEntries(cause, context, causePathNames) : null
-  })
-  return causeEntries.includes(null) ? null : causeEntries.flat()
-}
-
-/**
- * その脆弱性が許容リストで丸ごと覆われているかを判定する。覆われていれば、効いた許容エントリを記録する。
- *
- * @param {object} vulnerability npm audit の1エントリ
- * @param {Set<string>} matchedKeys 実際に効いた許容エントリの記録先（副作用）
- * @param {Parameters<typeof findCoveringEntries>[1]} context 監査対象ディレクトリ・許容リスト・監査レポートの脆弱性
- * @returns {boolean} 覆われていれば true
- */
-function isFullyAllowed(vulnerability, matchedKeys, context) {
-  const entries = findCoveringEntries(vulnerability, context)
-  if (entries === null) return false
-
-  for (const entry of entries) matchedKeys.add(allowlistKey(entry))
-  return true
+  return {
+    entries: entriesByPair.filter((entry) => entry !== undefined),
+    isCovered: !entriesByPair.includes(undefined)
+  }
 }
 
 /**
@@ -141,32 +263,8 @@ function isFullyAllowed(vulnerability, matchedKeys, context) {
  * @param {(typeof ALLOWED_VULNERABILITIES)[number]} entry 許容エントリ
  * @returns {string} キー
  */
-function allowlistKey(entry) {
+function buildAllowlistKey(entry) {
   return [entry.directory, entry.packageName, entry.advisoryUrl, entry.nodePathPrefix].join(' | ')
-}
-
-/**
- * 監査レポートから、許容されていない high 以上の脆弱性を抜き出す。
- *
- * 「別の脆弱パッケージのとばっちり」（via が文字列だけ）は、原因側がすべて許容済みのときだけ覆われた判定にする。
- * 原因側が未許容なら、原因が落ちて一緒に見えるべきものなので、ここで通さない（安全側に倒す）。
- *
- * @param {{ vulnerabilities?: Record<string, object> }} report npm audit --json の出力
- * @param {string} directory 監査対象ディレクトリ
- * @param {typeof ALLOWED_VULNERABILITIES} allowlist 許容リスト
- * @returns {{ blocking: object[], matchedKeys: Set<string> }} 落とすべき脆弱性と、効いた許容エントリ
- */
-function selectBlockingVulnerabilities(report, directory, allowlist) {
-  const matchedKeys = new Set()
-  const threshold = SEVERITY_ORDER.indexOf(FAILING_SEVERITY)
-  const vulnerabilityByName = report.vulnerabilities ?? {}
-  const context = { directory, allowlist, vulnerabilityByName }
-
-  const blocking = Object.values(vulnerabilityByName)
-    .filter((vulnerability) => SEVERITY_ORDER.indexOf(vulnerability.severity) >= threshold)
-    .filter((vulnerability) => !isFullyAllowed(vulnerability, matchedKeys, context))
-
-  return { blocking, matchedKeys }
 }
 
 /**
@@ -188,42 +286,36 @@ function reportDirectory(directory, blocking) {
   }
 }
 
-function main() {
-  const failedDirectories = []
-  const usedKeys = new Set()
-
-  for (const directory of AUDIT_DIRECTORIES) {
-    const { blocking, matchedKeys } = selectBlockingVulnerabilities(
-      runAudit(directory),
-      directory,
-      ALLOWED_VULNERABILITIES
-    )
-    for (const key of matchedKeys) usedKeys.add(key)
-    reportDirectory(directory, blocking)
-    if (blocking.length > 0) failedDirectories.push(directory)
+/**
+ * どの脆弱性にも効かなかった許容エントリを報告する。
+ *
+ * @param {typeof ALLOWED_VULNERABILITIES} staleEntries 効かなかった許容エントリ
+ */
+function reportStaleEntries(staleEntries) {
+  console.error(
+    '\nもう当たらない許容エントリがあります。上流が直った可能性が高いので削除してください。'
+  )
+  for (const entry of staleEntries) {
+    console.error(`  ${entry.directory}: ${entry.packageName} ${entry.advisoryUrl}`)
   }
-
-  const staleEntries = ALLOWED_VULNERABILITIES.filter((entry) => !usedKeys.has(allowlistKey(entry)))
-  if (staleEntries.length > 0) {
-    console.error(
-      '\nもう当たらない許容エントリがあります。上流が直った可能性が高いので削除してください。'
-    )
-    for (const entry of staleEntries) {
-      console.error(`  ${entry.directory}: ${entry.packageName} ${entry.advisoryUrl}`)
-    }
-    process.exit(1)
-  }
-
-  if (failedDirectories.length > 0) {
-    console.error(`\nhigh 以上の脆弱性があります: ${failedDirectories.join(' ')}`)
-    console.error('直し方: 依存を修正版へ上げてください。上流に修正版が無い場合だけ、')
-    console.error(
-      `根拠と失効条件を添えて ${'scripts/ci/audit-dependencies.mjs'} の許容リストに追加します。`
-    )
-    process.exit(1)
-  }
-
-  console.log('\nhigh 以上の脆弱性はありません。')
 }
 
-main()
+/**
+ * 落とすべき脆弱性があった階層と、直し方を報告する。
+ *
+ * @param {string[]} failedDirectories 落とすべき脆弱性があった階層
+ */
+function reportFailedDirectories(failedDirectories) {
+  console.error(`\nhigh 以上の脆弱性があります: ${failedDirectories.join(' ')}`)
+  console.error('直し方: 依存を修正版へ上げてください。上流に修正版が無い場合だけ、')
+  console.error(
+    '根拠と失効条件を添えて scripts/ci/audit-dependencies.mjs の許容リストに追加します。'
+  )
+}
+
+try {
+  main()
+} catch (error) {
+  console.error(error.message)
+  process.exit(1)
+}

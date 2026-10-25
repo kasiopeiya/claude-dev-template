@@ -112,6 +112,22 @@ describe('予定した終わり方ではないので、人間の手当てが要�
     assert.equal(decision?.isClosedWithoutChanges, false)
   })
 
+  test('大文字小文字の違う Needs-Human-Check が付いていても、マージ済みの PR があっても待たない', () => {
+    const sut = findDecisionNotToWaitForCi
+
+    const decision = sut(
+      createParams({
+        state: 'CLOSED',
+        remoteHeadSha: '',
+        labelNames: ['Needs-Human-Check'],
+        mergedPullRequest: PULL_REQUEST_MERGED_DURING_THIS_WORK
+      })
+    )
+
+    assert.equal(decision?.ciOutcome, 'needs-human-check が付いているので CI を待ちません')
+    assert.equal(decision?.isCiPassed, false)
+  })
+
   test('ブランチが無く Issue が OPEN なら、push されていないと読む', () => {
     const sut = findDecisionNotToWaitForCi
 

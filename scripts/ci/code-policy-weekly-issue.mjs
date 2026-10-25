@@ -11,12 +11,20 @@
 //                                                 open な週次 Issue がある／対象ファイルが0件
 
 import { execFileSync } from 'child_process'
-import { existsSync, realpathSync } from 'fs'
+import { existsSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
+import {
+  GITHUB_ISSUE_BODY_MAX_LENGTH,
+  assertEmbeddablePaths,
+  createIssue,
+  ensureLabelExists,
+  hasOpenIssueWithLabel
+} from './weekly-issue-filing.mjs'
+
 // 対象ディレクトリの存在確認・git ls-files はこのディレクトリを基準にする（カレントディレクトリに依存させない）
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 const WEEKLY_ISSUE_LABEL = 'code-policy-weekly'
 const AI_FIXABLE_LABEL = 'ai-fixable'
@@ -26,28 +34,18 @@ const TARGET_DIRECTORIES = ['app']
 
 const WEEKLY_ISSUE_TITLE = `週次: ${TARGET_DIRECTORIES.join('・')} の Policy 準拠チェック (/code-review)`
 
-// レビュー対象に残すファイル末尾
 const REVIEW_TARGET_SUFFIXES = ['.ts', '.tsx', '.test.mjs']
 
-// レビュー対象から除外するファイル末尾（REVIEW_TARGET_SUFFIXES の .ts と重なるため、除外を後段で効かせる）
+// REVIEW_TARGET_SUFFIXES の .ts と重なるため、除外を後段で効かせる
 const REVIEW_EXCLUDED_SUFFIXES = ['.config.ts', '.config.js']
-
-// Issue 本文に埋め込んでよいパスの文字種。この本文は無人の Auto Programmer が指示として読むため、
-// 改行や Markdown 記号を含むファイル名が紛れると、ファイル名という「データ」が
-// タスク一覧に「命令」として混入する（プロンプトインジェクション）。埋め込む前に許可リストで弾く
-const EMBEDDABLE_PATH_PATTERN = /^[\p{L}\p{N}._/@-]+$/u
 
 // 週次 Issue で実行を依頼するレンズ（理由は scripts/auto-programmer/README.md 参照）
 const REVIEW_LENSES = ['決まりどおりか', '設計の形']
 
 const RESULT_COMMENT_HEADING = '## 実行結果'
 
-// GitHub の Issue 本文の上限文字数。対象ファイルが増えて超えるときは、起票せず失敗させる
-// （冒頭の README の「起点を計算せず、毎週 app/ 全体を対象にする」が引き受けた制約。超えたら起点を差分計算に切り替える判断材料にする）
-const GITHUB_ISSUE_BODY_MAX_LENGTH = 65536
-
 function main() {
-  if (hasOpenWeeklyIssue()) {
+  if (hasOpenIssueWithLabel(WEEKLY_ISSUE_LABEL)) {
     console.log('起票しない（open な週次 Issue が既にある）')
     return
   }
@@ -69,23 +67,12 @@ function main() {
     color: '0E8A16'
   })
 
-  console.log(fileWeeklyIssue(buildWeeklyIssueBody(targetFiles)))
-}
-
-/**
- * open な週次 Issue が既にあるかを返す。起票の直後の Issue も数える。
- *
- * @returns {boolean} open な週次 Issue があれば true
- */
-function hasOpenWeeklyIssue() {
-  // gh issue list --label は検索 API 経由で、起票直後は結果整合の遅延で漏れるため issues 一覧（REST）を使う
-  const openWeeklyIssueCount = runGhCommand([
-    'api',
-    `repos/{owner}/{repo}/issues?labels=${WEEKLY_ISSUE_LABEL}&state=open`,
-    '--jq',
-    'map(select(.pull_request == null)) | length'
-  ]).trim()
-  return Number(openWeeklyIssueCount) > 0
+  const issueUrl = createIssue({
+    title: WEEKLY_ISSUE_TITLE,
+    labelNames: [AI_FIXABLE_LABEL, WEEKLY_ISSUE_LABEL],
+    body: buildWeeklyIssueBody(targetFiles)
+  })
+  console.log(issueUrl)
 }
 
 /**
@@ -96,17 +83,14 @@ function hasOpenWeeklyIssue() {
  */
 function listTargetFiles() {
   const files = TARGET_DIRECTORIES.filter((directory) =>
-    existsSync(resolve(REPO_ROOT, directory))
+    existsSync(resolve(repoRoot, directory))
   ).flatMap((directory) => listGitTrackedFiles(directory))
   const targetFiles = files
     .filter((path) => REVIEW_TARGET_SUFFIXES.some((suffix) => path.endsWith(suffix)))
     .filter((path) => !REVIEW_EXCLUDED_SUFFIXES.some((suffix) => path.endsWith(suffix)))
     .sort()
 
-  const unembeddablePaths = targetFiles.filter((path) => !EMBEDDABLE_PATH_PATTERN.test(path))
-  if (unembeddablePaths.length > 0) {
-    throw new Error(`Issue 本文に埋め込めないパスがある: ${JSON.stringify(unembeddablePaths)}`)
-  }
+  assertEmbeddablePaths(targetFiles)
   return targetFiles
 }
 
@@ -119,34 +103,10 @@ function listTargetFiles() {
 function listGitTrackedFiles(directory) {
   // -z（NUL区切り）でないと、日本語などASCII外のパスが core.quotePath でクォートされる
   const output = execFileSync('git', ['ls-files', '-z', '--', directory], {
-    cwd: REPO_ROOT,
+    cwd: repoRoot,
     encoding: 'utf8'
   })
   return output.split('\0').filter((path) => path.length > 0)
-}
-
-/**
- * ラベルが無ければ作る。
- *
- * @param {{ name: string, description: string, color: string }} label
- *   name: ラベル名 / description: ラベルの説明 / color: ラベルの色（16進6桁、先頭 `#` 無し）
- * @returns {void}
- */
-function ensureLabelExists({ name, description, color }) {
-  // --limit で全件を取ってから探すと、ラベル数が上限を超えたリポジトリで既存ラベルを見落とし、
-  // gh label create が「既にある」で失敗し続ける。--search で名前を絞ってから完全一致を見る
-  const matchingLabelNames = runGhCommand([
-    'label',
-    'list',
-    '--search',
-    name,
-    '--json',
-    'name',
-    '--jq',
-    '.[].name'
-  ])
-  if (matchingLabelNames.split('\n').includes(name)) return
-  runGhCommand(['label', 'create', name, '--description', description, '--color', color])
 }
 
 /**
@@ -207,6 +167,8 @@ ${implementationFlowRows}
 なし（すぐ着手できる）
 `
 
+  // 対象ファイルが増えて上限を超えるときは、起票せず失敗させる
+  // （冒頭の README の「起点を計算せず、毎週 app/ 全体を対象にする」が引き受けた制約。超えたら起点を差分計算に切り替える判断材料にする）
   if (body.length > GITHUB_ISSUE_BODY_MAX_LENGTH) {
     throw new Error(
       `週次 Issue 本文が ${body.length} 文字で GitHub の上限 ${GITHUB_ISSUE_BODY_MAX_LENGTH} を超える（対象 ${targetFiles.length} ファイル）。scripts/auto-programmer/README.md「週次スクリプトが Issue を供給する」の対象範囲（起点を計算せず全体を対象にする）を見直す`
@@ -215,44 +177,9 @@ ${implementationFlowRows}
   return body
 }
 
-/**
- * 週次 Issue を起票する。
- *
- * @param {string} body Issue 本文
- * @returns {string} 起票した Issue の URL
- */
-function fileWeeklyIssue(body) {
-  return runGhCommand(
-    [
-      'issue',
-      'create',
-      '--title',
-      WEEKLY_ISSUE_TITLE,
-      '--label',
-      `${AI_FIXABLE_LABEL},${WEEKLY_ISSUE_LABEL}`,
-      '--body-file',
-      '-'
-    ],
-    body
-  ).trim()
-}
-
-/**
- * gh を実行して標準出力を返す。
- *
- * @param {string[]} args gh に渡す引数
- * @param {string} [input] 標準入力に渡す内容（`--body-file -` などで使う。巨大な引数を argv 経由にせず OS の引数長上限を避ける）
- * @returns {string} 標準出力
- */
-function runGhCommand(args, input) {
-  return execFileSync('gh', args, { encoding: 'utf8', input })
-}
-
-if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    main()
-  } catch (error) {
-    console.error(error.message)
-    process.exit(1)
-  }
+try {
+  main()
+} catch (error) {
+  console.error(error.message)
+  process.exit(1)
 }

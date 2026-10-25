@@ -13,11 +13,24 @@
 //                                                     open な週次 Issue がある／前回処理以降に docs/ の変更が無い
 
 import { execFileSync } from 'child_process'
-import { resolve } from 'path'
+import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
-// 週次 Issue を見分ける専用ラベル
-const WEEKLY_LABEL = 'doc-consistency-weekly'
+import {
+  GITHUB_ISSUE_BODY_MAX_LENGTH,
+  assertEmbeddablePaths,
+  createIssue,
+  ensureLabelExists,
+  fetchIssueComments,
+  hasOpenIssueWithLabel,
+  listIssuesWithLabel
+} from './weekly-issue-filing.mjs'
+
+// git はこのディレクトリを基準に実行する（カレントディレクトリに依存させない。
+// 依存させると、リポジトリ直下以外から起動したとき docs/ の変更が見つからず、黙って起票しない）
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+
+const WEEKLY_ISSUE_LABEL = 'doc-consistency-weekly'
 
 const AI_FIXABLE_LABEL = 'ai-fixable'
 
@@ -38,20 +51,21 @@ const HEAD_SHA_LINE_PATTERN = new RegExp(`${HEAD_SHA_LINE_PREFIX} \`([0-9a-f]{7,
 // 閉じた Issue が続くと docs/ 全体へ静かにフォールバックする
 const WEEKLY_ISSUE_LOOKUP_LIMIT = 100
 
-// GitHub の Issue 本文の上限文字数。変更ファイルが多すぎて超えるときは docs/ 全体にフォールバックする
-const GITHUB_ISSUE_BODY_MAX_LENGTH = 65536
-
 function main() {
-  if (hasOpenWeeklyIssue()) {
+  if (hasOpenIssueWithLabel(WEEKLY_ISSUE_LABEL)) {
     console.log('起票しない（open な週次 Issue が既にある）')
     return
   }
-  ensureLabelExists(WEEKLY_LABEL, '週次の docs/ 横断整合性チェック Issue', '5319E7')
-  ensureLabelExists(
-    AI_FIXABLE_LABEL,
-    '問題と対応方針が一意に定まり、AIが単独で対応できるIssue',
-    '0E8A16'
-  )
+  ensureLabelExists({
+    name: WEEKLY_ISSUE_LABEL,
+    description: '週次の docs/ 横断整合性チェック Issue',
+    color: '5319E7'
+  })
+  ensureLabelExists({
+    name: AI_FIXABLE_LABEL,
+    description: '問題と対応方針が一意に定まり、AIが単独で対応できるIssue',
+    color: '0E8A16'
+  })
 
   const headSha = getCurrentHeadSha()
   const scope = decideCheckScope(headSha)
@@ -59,7 +73,21 @@ function main() {
     console.log('起票しない（前回処理以降に docs/ の変更が無い）')
     return
   }
-  console.log(fileWeeklyIssue(buildWeeklyIssueBody(headSha, scope)))
+  const issueUrl = createIssue({
+    title: WEEKLY_ISSUE_TITLE,
+    labelNames: [AI_FIXABLE_LABEL, WEEKLY_ISSUE_LABEL],
+    body: buildWeeklyIssueBody(headSha, scope)
+  })
+  console.log(issueUrl)
+}
+
+/**
+ * リポジトリのローカル HEAD の SHA を返す。
+ *
+ * @returns {string} コミット SHA
+ */
+function getCurrentHeadSha() {
+  return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: repoRoot, encoding: 'utf8' }).trim()
 }
 
 /**
@@ -71,81 +99,15 @@ function main() {
  *
  * @param {string} headSha 今回のチェックの終点にする HEAD SHA
  * @returns {{ kind: 'all' } | { kind: 'changedFiles', files: string[] } | null} 対象範囲。files は必ず1件以上
+ * @throws {Error} 変わったファイルのパスに、Issue 本文へ埋め込めない文字（改行など）があるとき
  */
 function decideCheckScope(headSha) {
   const lastProcessedSha = findLastProcessedWeeklyIssueSha()
   if (!lastProcessedSha || !isCommitAvailable(lastProcessedSha)) return { kind: 'all' }
 
   const files = computeChangedDocFilesBetween(lastProcessedSha, headSha)
+  assertEmbeddablePaths(files)
   return files.length === 0 ? null : { kind: 'changedFiles', files }
-}
-
-/**
- * ラベルが無ければ作る。
- *
- * @param {string} name ラベル名
- * @param {string} description ラベルの説明
- * @param {string} color ラベルの色（16進6桁、先頭 `#` 無し）
- * @returns {void}
- */
-function ensureLabelExists(name, description, color) {
-  const existingLabelNames = runGhCommand([
-    'label',
-    'list',
-    '--limit',
-    '200',
-    '--json',
-    'name',
-    '--jq',
-    '.[].name'
-  ])
-  if (existingLabelNames.split('\n').includes(name)) return
-  runGhCommand(['label', 'create', name, '--description', description, '--color', color])
-}
-
-/**
- * 週次 Issue を起票する。
- *
- * @param {string} body Issue 本文
- * @returns {string} 起票した Issue の URL
- */
-function fileWeeklyIssue(body) {
-  return runGhCommand([
-    'issue',
-    'create',
-    '--title',
-    WEEKLY_ISSUE_TITLE,
-    '--label',
-    `${AI_FIXABLE_LABEL},${WEEKLY_LABEL}`,
-    '--body',
-    body
-  ]).trim()
-}
-
-/**
- * gh を実行して標準出力を返す。
- *
- * @param {string[]} args gh に渡す引数
- * @returns {string} 標準出力
- */
-function runGhCommand(args) {
-  return execFileSync('gh', args, { encoding: 'utf8' })
-}
-
-/**
- * open な週次 Issue が既にあるかを返す。起票の直後の Issue も数える。
- *
- * @returns {boolean} open な週次 Issue があれば true
- */
-function hasOpenWeeklyIssue() {
-  // gh issue list --label は検索 API 経由で、起票直後は結果整合の遅延で漏れるため issues 一覧（REST）を使う
-  const openWeeklyIssueCount = runGhCommand([
-    'api',
-    `repos/{owner}/{repo}/issues?labels=${WEEKLY_LABEL}&state=open`,
-    '--jq',
-    'map(select(.pull_request == null)) | length'
-  ]).trim()
-  return Number(openWeeklyIssueCount) > 0
 }
 
 /**
@@ -158,20 +120,10 @@ function hasOpenWeeklyIssue() {
  * @returns {string | null} HEAD SHA。見つからなければ null
  */
 function findLastProcessedWeeklyIssueSha() {
-  const issues = JSON.parse(
-    runGhCommand([
-      'issue',
-      'list',
-      '--label',
-      WEEKLY_LABEL,
-      '--state',
-      'all',
-      '--json',
-      'number,body,createdAt',
-      '--limit',
-      String(WEEKLY_ISSUE_LOOKUP_LIMIT)
-    ])
-  )
+  const issues = listIssuesWithLabel({
+    labelName: WEEKLY_ISSUE_LABEL,
+    limit: WEEKLY_ISSUE_LOOKUP_LIMIT
+  })
   issues.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
   for (const issue of issues) {
@@ -190,10 +142,7 @@ function findLastProcessedWeeklyIssueSha() {
  * @returns {boolean} 付いていれば true
  */
 function hasResultComment(issueNumber) {
-  const { comments } = JSON.parse(
-    runGhCommand(['issue', 'view', String(issueNumber), '--json', 'comments'])
-  )
-  return comments.some(
+  return fetchIssueComments(issueNumber).some(
     (comment) =>
       TRUSTED_AUTHOR_ASSOCIATIONS.has(comment.authorAssociation) &&
       comment.body.trimStart().startsWith(RESULT_COMMENT_HEADING)
@@ -208,7 +157,7 @@ function hasResultComment(issueNumber) {
  */
 function isCommitAvailable(sha) {
   try {
-    execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { stdio: 'ignore' })
+    execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd: repoRoot, stdio: 'ignore' })
     return true
   } catch {
     return false
@@ -229,31 +178,22 @@ function computeChangedDocFilesBetween(fromSha, toSha) {
   const nameStatusOutput = execFileSync(
     'git',
     ['diff', '--name-status', '-z', '-M', fromSha, toSha, '--', 'docs'],
-    { encoding: 'utf8' }
+    { cwd: repoRoot, encoding: 'utf8' }
   )
   const fields = nameStatusOutput.split('\0').filter((field) => field.length > 0)
 
   const changedFiles = []
-  for (let i = 0; i < fields.length;) {
-    const status = fields[i]
+  for (let fieldIndex = 0; fieldIndex < fields.length;) {
+    const status = fields[fieldIndex]
     const isRenameOrCopy = status.startsWith('R') || status.startsWith('C')
     const pathFieldCount = isRenameOrCopy ? 2 : 1
-    const path = fields[i + pathFieldCount]
-    i += 1 + pathFieldCount
+    const path = fields[fieldIndex + pathFieldCount]
+    fieldIndex += 1 + pathFieldCount
 
     if (status.startsWith('D')) continue
     if (path.endsWith('.md')) changedFiles.push(path)
   }
   return changedFiles
-}
-
-/**
- * リポジトリのローカル HEAD の SHA を返す。
- *
- * @returns {string} コミット SHA
- */
-function getCurrentHeadSha() {
-  return execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim()
 }
 
 /**
@@ -329,11 +269,9 @@ ${targetDocsSection}
 `
 }
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  try {
-    main()
-  } catch (error) {
-    console.error(error.message)
-    process.exit(1)
-  }
+try {
+  main()
+} catch (error) {
+  console.error(error.message)
+  process.exit(1)
 }

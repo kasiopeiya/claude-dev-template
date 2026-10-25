@@ -82,6 +82,15 @@ describe('実行記録から、このツールが作った PR を集める', () 
     assert.equal(ownPullRequestsByUrl.get(`${PULL_REQUEST_URL_PREFIX}101`).lastWaitedHeadSha, null)
   })
 
+  test('CI を待つ前に終わり ciRuns を持たない記録の PR は、最後に CI を待った commit を持たない', () => {
+    const sut = collectOwnPullRequestsByUrl
+    const runRecords = [{ issueNumber: 10, pullRequestUrl: `${PULL_REQUEST_URL_PREFIX}101` }]
+
+    const ownPullRequestsByUrl = sut(runRecords)
+
+    assert.equal(ownPullRequestsByUrl.get(`${PULL_REQUEST_URL_PREFIX}101`).lastWaitedHeadSha, null)
+  })
+
   test('PR の URL が残っていない記録は飛ばす', () => {
     const sut = collectOwnPullRequestsByUrl
     const runRecords = [
@@ -269,5 +278,18 @@ describe('ロック後の読み直しで、衝突を解かせずに飛ばす理�
     )
 
     assert.match(reason, /needs-human-check が付いています/)
+  })
+
+  test('大文字小文字の違う Needs-Human-Check が付いた Issue の PR も、人間が見るまで飛ばす', () => {
+    const sut = findReasonNotToResolveConflict
+
+    const reason = sut(
+      createRereadPullRequestAndIssue({
+        issue: { number: 10, labelNames: ['ai-fixable', 'Needs-Human-Check'] },
+        needsHumanCheckLabel: 'needs-human-check'
+      })
+    )
+
+    assert.match(reason, /#10 に needs-human-check が付いています/)
   })
 })
