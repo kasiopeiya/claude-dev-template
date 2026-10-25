@@ -26,6 +26,7 @@ import {
   CI_RUN_STATE_FIELDS,
   countPastFixAttempts,
   decideAfterCiRun,
+  PAST_FIX_ATTEMPT_FIELDS,
   readCiRunState
 } from '../../scripts/auto-programmer/ciRun.mjs'
 import {
@@ -291,7 +292,7 @@ async function waitForCiRunState(ciSettings, headSha) {
 function countPastFixAttemptsOnBranch(ciSettings, { branchName, currentRunId }) {
   const branchRuns = listCiRuns(ciSettings, {
     filterArgs: ['--branch', branchName, '--limit', String(BRANCH_RUN_LIST_LIMIT)],
-    fields: 'databaseId,status,conclusion'
+    fields: PAST_FIX_ATTEMPT_FIELDS
   })
   return countPastFixAttempts({ branchRuns, currentRunId })
 }
