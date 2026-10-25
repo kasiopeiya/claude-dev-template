@@ -81,6 +81,18 @@ describe('run の状態を読む', () => {
     assert.equal(runState.runId, 200)
     assert.equal(runState.state, 'success')
   })
+
+  test('同じ commit の run が古い順に並んでいても、最後に作られたものを見る', () => {
+    const sut = readCiRunState
+
+    const runState = sut(
+      [createRun({ databaseId: 100, conclusion: 'failure' }), createRun({ databaseId: 200 })],
+      HEAD_SHA
+    )
+
+    assert.equal(runState.runId, 200)
+    assert.equal(runState.state, 'success')
+  })
 })
 
 describe('これまでに直させた回数を数える', () => {

@@ -184,12 +184,11 @@ export function readCardStatusName(itemId) {
 /**
  * カードの Status を、表記で指定した選択肢へ動かす。
  *
- * @param {string} itemId ボードのカード ID
- * @param {string} statusName 動かす先の選択肢の表記（config.mjs が持つ値）
+ * @param {{ itemId: string, statusName: string }} params ボードのカード ID と、動かす先の選択肢の表記（config.mjs が持つ値）
  * @returns {void}
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
-function moveCardToStatus(itemId, statusName) {
+function moveCardToStatus({ itemId, statusName }) {
   const { id: projectId } = runJson('gh', ['project', 'view', ...ghProjectJsonArgs])
   if (!projectId) throw new Error('gh project view の出力に project の ID がありません')
   const { fieldId, optionId } = resolveStatusOption(statusName)
@@ -230,18 +229,16 @@ function addCard(issueUrl) {
 /**
  * Issue のカードをボードに載せ、Status を表記で指定した選択肢へ動かす。
  *
- * @param {string} issueUrl Issue の URL
- * @param {string} statusName 動かす先の選択肢の表記（config.mjs が持つ値）
- * @returns {string} 動かした先の選択肢の表記
+ * @param {{ issueUrl: string, statusName: string }} params Issue の URL と、動かす先の選択肢の表記（config.mjs が持つ値）
+ * @returns {void}
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
-function addCardWithStatus(issueUrl, statusName) {
+function addCardWithStatus({ issueUrl, statusName }) {
   // 表記が食い違うボードに「Status の無いカード」を増やさないため、載せる前に選択肢の実在を確かめる
   resolveStatusOption(statusName)
   // 載せた直後の書き換えが、組み込みワークフロー（載せたカードの Status を決める自動化）に上書きされないことは
-  // 確かめていない。カードが Status を変えずに残る回が出たら、載せた後に読み直して書き直す処理が要る
-  moveCardToStatus(addCard(issueUrl), statusName)
-  return statusName
+  // 確かめていない
+  moveCardToStatus({ itemId: addCard(issueUrl), statusName })
 }
 
 /**
@@ -254,7 +251,7 @@ function addCardWithStatus(issueUrl, statusName) {
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
 export function putOnReadyAssignedToMe(issueUrl) {
-  addCardWithStatus(issueUrl, board.readyStatusName)
+  addCardWithStatus({ issueUrl, statusName: board.readyStatusName })
   runOrThrow('gh', ['issue', 'edit', issueUrl, '--add-assignee', '@me'])
 }
 
@@ -266,7 +263,7 @@ export function putOnReadyAssignedToMe(issueUrl) {
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
 export function markCardAsStarted(itemId) {
-  moveCardToStatus(itemId, board.inProgressStatusName)
+  moveCardToStatus({ itemId, statusName: board.inProgressStatusName })
 }
 
 /**
@@ -280,5 +277,6 @@ export function markCardAsStarted(itemId) {
  * @throws {Error} ボードの表記が config.mjs と食い違うとき・gh が失敗したとき
  */
 export function markIssueAsStarted(issueUrl) {
-  return addCardWithStatus(issueUrl, board.inProgressStatusName)
+  addCardWithStatus({ issueUrl, statusName: board.inProgressStatusName })
+  return board.inProgressStatusName
 }

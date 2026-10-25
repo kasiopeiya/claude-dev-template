@@ -6,7 +6,10 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { spawnWithWindowsShimFallback } from '../shell.mjs'
+import {
+  spawnWithWindowsShimFallback,
+  spawnWithWindowsShimFallbackAsync
+} from '../windowsShimFallback.mjs'
 
 /** テスト中だけ process.platform を差し替え、終わったら元に戻す */
 function withPlatform(platform, callback) {
@@ -15,6 +18,19 @@ function withPlatform(platform, callback) {
   Object.defineProperty(process, 'platform', { value: platform })
   try {
     callback()
+  } finally {
+    // eslint-disable-next-line id-denylist -- Object.defineProperty の記述子のキーは仕様が決めた名前
+    Object.defineProperty(process, 'platform', { value: original })
+  }
+}
+
+/** withPlatform の非同期版。callback が終わるまで待ってから戻す（await の後の判定も差し替えた platform を見る） */
+async function withPlatformAsync(platform, callback) {
+  const original = process.platform
+  // eslint-disable-next-line id-denylist -- Object.defineProperty の記述子のキーは仕様が決めた名前
+  Object.defineProperty(process, 'platform', { value: platform })
+  try {
+    await callback()
   } finally {
     // eslint-disable-next-line id-denylist -- Object.defineProperty の記述子のキーは仕様が決めた名前
     Object.defineProperty(process, 'platform', { value: original })
@@ -111,6 +127,44 @@ describe('Windows での npm-shim フォールバック', () => {
 
       assert.deepEqual(calledCommands, ['claude'])
       assert.equal(result, enoentResult)
+    })
+  })
+})
+
+describe('Windows での npm-shim フォールバック（非同期の起動）', () => {
+  test('Windows で ENOENT のとき、.cmd を shell 経由で実行し直す', async () => {
+    const sut = spawnWithWindowsShimFallbackAsync
+    const calls = []
+    const spawnWithCommand = (command, args, extraOptions) => {
+      calls.push({ command, args, extraOptions })
+      return Promise.resolve(
+        command.endsWith('.cmd') ? { error: null, status: 0, signal: null } : createEnoentResult()
+      )
+    }
+
+    await withPlatformAsync('win32', async () => {
+      const result = await sut(spawnWithCommand, 'claude', ['-p', '/auto-dev 123'])
+
+      assert.deepEqual(calls, [
+        { command: 'claude', args: ['-p', '/auto-dev 123'], extraOptions: {} },
+        { command: 'claude.cmd', args: ['"-p"', '"/auto-dev 123"'], extraOptions: { shell: true } }
+      ])
+      assert.equal(result.error, null)
+    })
+  })
+
+  test('Windows で1回目が成功したとき、.cmd では実行し直さない', async () => {
+    const sut = spawnWithWindowsShimFallbackAsync
+    const calledCommands = []
+    const spawnWithCommand = (command) => {
+      calledCommands.push(command)
+      return Promise.resolve({ error: null, status: 0, signal: null })
+    }
+
+    await withPlatformAsync('win32', async () => {
+      await sut(spawnWithCommand, 'claude', [])
+
+      assert.deepEqual(calledCommands, ['claude'])
     })
   })
 })

@@ -82,6 +82,15 @@ describe('実行記録から、このツールが作った PR を集める', () 
     assert.equal(ownPullRequestsByUrl.get(`${PULL_REQUEST_URL_PREFIX}101`).lastWaitedHeadSha, null)
   })
 
+  test('CI を待つ前に終わり ciRuns を持たない記録の PR は、最後に CI を待った commit を持たない', () => {
+    const sut = collectOwnPullRequestsByUrl
+    const runRecords = [{ issueNumber: 10, pullRequestUrl: `${PULL_REQUEST_URL_PREFIX}101` }]
+
+    const ownPullRequestsByUrl = sut(runRecords)
+
+    assert.equal(ownPullRequestsByUrl.get(`${PULL_REQUEST_URL_PREFIX}101`).lastWaitedHeadSha, null)
+  })
+
   test('PR の URL が残っていない記録は飛ばす', () => {
     const sut = collectOwnPullRequestsByUrl
     const runRecords = [

@@ -2,8 +2,10 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      // `.claude/hooks/**/*.mjs` は対象にしない。hook は Claude Code が .claude/settings.json から
-      // 文字列パスで起動するため import グラフに載らず、全ファイルが未使用と報告されてしまう
+      // `.claude/hooks/**/*.mjs` は project に入れない。hook は Claude Code が .claude/settings.json から
+      // 文字列パスで起動するため import グラフに載らず、全ファイルが未使用と報告されてしまう。
+      // 起動の入口ではあるので entry には載せ、hook だけが使う scripts/ の export を未使用と報告させない
+      "entry": [".claude/hooks/*.mjs"],
       "project": ["eslint-rules/**/*.mjs", "scripts/**/*.mjs"]
     },
     "samples/infra": {

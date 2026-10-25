@@ -25,6 +25,8 @@ const LOCK_FILE_NAME = 'package-lock.json'
 // 入れるので、途中で落ちると node_modules だけが新しい mtime で残る。ディレクトリではなく印の mtime と比べる
 const INSTALL_STAMP_FILE_NAME = '.auto-programmer-installed'
 
+const LABEL_SEARCH_LIMIT = 100
+
 /**
  * `gh auth status` が失敗したときに人間へ見せる文を作る。
  *
@@ -91,7 +93,7 @@ function ensureNeedsHumanCheckLabel(workspaceDir) {
     '--search',
     NEEDS_HUMAN_CHECK_LABEL,
     '--limit',
-    '100',
+    String(LABEL_SEARCH_LIMIT),
     '--json',
     'name'
   ])
@@ -173,17 +175,27 @@ function listPackageLockDirectories(workspaceDir) {
 }
 
 /**
+ * 成功した npm ci の印のパスを返す。印を読む側と書く側が同じ場所を指すよう、ここだけで組み立てる。
+ *
+ * @param {string} packageDirectory ロックファイルを持つディレクトリ（絶対パス）
+ * @returns {string} 印のパス
+ */
+function buildInstallStampPath(packageDirectory) {
+  return join(packageDirectory, 'node_modules', INSTALL_STAMP_FILE_NAME)
+}
+
+/**
  * 依存を入れ直す必要があるかを判定する。
  *
  * clone は毎回デフォルトブランチまで戻されるので、そちらで依存が変わるとロックファイルだけが新しくなる。
  *
- * @param {string} directory 判定するディレクトリ（絶対パス）。ロックファイルを持つこと
+ * @param {string} packageDirectory 判定するディレクトリ（絶対パス）。ロックファイルを持つこと
  * @returns {boolean} 成功した npm ci の印が無いか、印がロックファイルより古ければ true
  */
-function needsDependencyInstall(directory) {
-  const stampPath = join(directory, 'node_modules', INSTALL_STAMP_FILE_NAME)
+function needsDependencyInstall(packageDirectory) {
+  const stampPath = buildInstallStampPath(packageDirectory)
   if (!existsSync(stampPath)) return true
-  return statSync(join(directory, LOCK_FILE_NAME)).mtimeMs > statSync(stampPath).mtimeMs
+  return statSync(join(packageDirectory, LOCK_FILE_NAME)).mtimeMs > statSync(stampPath).mtimeMs
 }
 
 /**
@@ -195,24 +207,24 @@ function needsDependencyInstall(directory) {
  * @throws {Error} clone 内の `git ls-files` が失敗したとき・`npm` を起動できないとき・`npm ci` が 0 以外で終わったとき
  */
 export function ensureDependencies(workspaceDir) {
-  for (const relativeDirectory of listPackageLockDirectories(workspaceDir)) {
-    const directory = join(workspaceDir, relativeDirectory)
-    if (!needsDependencyInstall(directory)) continue
+  for (const relativePackageDirectory of listPackageLockDirectories(workspaceDir)) {
+    const packageDirectory = join(workspaceDir, relativePackageDirectory)
+    if (!needsDependencyInstall(packageDirectory)) continue
 
     // 取り込むと終わるまで何も出ず止まって見えるので、始まりの行は先に出す
-    showInfo(`AI 専用 clone に依存をインストールします: ${relativeDirectory}`)
+    showInfo(`AI 専用 clone に依存をインストールします: ${relativePackageDirectory}`)
     const startedAt = Date.now()
     // 出力は取り込み、失敗したときだけ出す。成功時の funding・audit の行は、画面の半分以上を埋めて
     // 要る情報を探しにくくする（Issue #848）
-    const { exitCode, stdout, stderr } = runCapture('npm', ['ci'], { cwd: directory })
+    const { exitCode, stdout, stderr } = runCapture('npm', ['ci'], { cwd: packageDirectory })
     if (exitCode !== 0) {
       relayChildProcessOutput('stdout', Buffer.from(stdout))
       relayChildProcessOutput('stderr', Buffer.from(stderr))
-      throw new Error(`npm ci に失敗しました: ${relativeDirectory}`)
+      throw new Error(`npm ci に失敗しました: ${relativePackageDirectory}`)
     }
-    writeFileSync(join(directory, 'node_modules', INSTALL_STAMP_FILE_NAME), '')
+    writeFileSync(buildInstallStampPath(packageDirectory), '')
     showSuccess(
-      `依存をインストール  ${relativeDirectory}  ${formatElapsedTime(Date.now() - startedAt)}`
+      `依存をインストール  ${relativePackageDirectory}  ${formatElapsedTime(Date.now() - startedAt)}`
     )
   }
 }
