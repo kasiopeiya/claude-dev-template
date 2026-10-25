@@ -88,7 +88,10 @@ npm run format       # フォーマット
 3. `docs/project-context/core-parts.md` の一覧を自分のシステムのコア（壊れると全体が回らなくなる部分）に書き換える。まだ決まっていなければ表を空にする
 4. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
 5. 実装は `app/`・`infra/` に書く。どちらも空なので、[`samples/`](samples/README.md) の参照実装を手本にして写す（`samples/` 自体は書き換えない）
-6. Issue 系の Skill が使うラベルを作る。`gh auth login` 済みの状態で `./scripts/setup-labels.sh` を1回流す（無いラベルだけ作り、何度流しても安全）。ラベルが無いと、Issue を起票する Skill が途中で失敗する
+6. GitHub 側の準備をする。`gh auth login` 済みの状態で次を済ませる。どちらのスクリプトも何度流しても安全
+   - `./scripts/setup-labels.sh` を1回流し、Issue 系の Skill が使うラベルを作る。ラベルが無いと、Issue を起票する Skill が途中で失敗する
+   - `./scripts/setup-repo-settings.sh` を1回流し、CI が前提とするリポジトリ設定を入れる（中身は `--help`）。入れないと、最初の push で PR が作られず CI が落ちる
+   - Settings → Secrets and variables → Actions で、シークレット `CLAUDE_CODE_OAUTH_TOKEN` を登録する（値は `claude setup-token` で発行する）。無いと `pr-ai-triage` が落ち、PR が auto-merge されない
 7. ボード（GitHub Projects）で進み具合を追うなら、次の3つを済ませる。どれかが抜けていると、AI が着手時に打つ `npm run move-issue-card` は警告だけ出して何もしない（作業は止まらない）
    - `gh auth refresh -s project` で、トークンに `project` スコープ（ボードを読み書きする権限）を足す
    - `scripts/auto-programmer/config.mjs` の `repository` と `board` を、自分のリポジトリとボードに向ける
