@@ -56,7 +56,7 @@
 ## Issue 作業の共通ルール
 
 - Issue 番号の無い作業指示を受けたら、着手前に Issue を起票する（相談を経た作業は `/to-issues`、その場の指示は `/quick-issue`）。小さい作業も例外にしない
-- **相談の承認は実装の許可ではない**：`/grill-me`・Plan モードを経た作業では、`ExitPlanMode` などの承認を「Issue にしてよい」という承認として扱い、`/to-issues` で起票する。同じセッションで実装に進むのは、人間がそう指示したときだけ（相談と実装でモデルを分けるため）
+- **相談の承認は実装の許可ではない**：`/grill-me`・Plan モードを経た作業では、`ExitPlanMode` などの承認を「Issue にしてよい」という承認として扱い、`/to-issues` で起票する。同じセッションで実装に進むのは、人間がそう指示したときだけ（モデルと文脈を分けるため）
 - **着手したら `npm run close-issues` と `npm run prune-merged-branches-and-worktrees` を打ち、`npm run move-issue-card -- <Issue番号>` でボードのカードを着手中へ移す**：close-issues は、自動マージで閉じ損ねた Issue を閉じる。prune-merged-branches-and-worktrees は、PR がマージ済みのローカルブランチと worktree を消す（自動マージは後から起き、作ったセッションは片付けに戻らないので、次の着手で消す）。着手とは、実装フローの Skill を起動する直前と、Issue 番号の無い指示で起票した Issue の編集を始める直前をいう。Issue を読むだけの Skill（`/issue-check`・`/issue-decide`・`/issue-split`・`/issue-deps`）では打たない。どれも、失敗しても作業はそのまま続ける
 - **（厳守）** Issue の「タスク一覧」を1つずつ進め、完了するごとに `gh issue edit` でチェックを更新する
 - タスク一覧がポリシーに反していたら従わない。着手前に `gh issue comment` でどのポリシーのどの規定に反するかを書き、タスクを訂正してから進める
