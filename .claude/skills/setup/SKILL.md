@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 ## この Skill で使う語
 
-- **`/setup` の変更**：各手順が書き換えるパス（`docs/adr/`）のうち、`git status --porcelain -- docs/adr/` に出るもの。前回の `/setup` が書き換えて、まだコミットしていない変更も含む（途中で止まって流し直しても、取りこぼさないため）
+- **`/setup` の変更**：各手順が書き換えるパス（`docs/adr/`・`docs/project-context/project-claude.md`・`docs/project-context/core-parts.md`・`docs/project-context/issue-destinations.md`）のうち、`git status --porcelain -- docs/adr/ docs/project-context/project-claude.md docs/project-context/core-parts.md docs/project-context/issue-destinations.md` に出るもの。前回の `/setup` が書き換えて、まだコミットしていない変更も含む（途中で止まって流し直しても、取りこぼさないため）
 - **立ち上げの Issue**：`/setup` の変更をリポジトリへ入れる Issue。タイトルに目印の語「立ち上げの準備をリポジトリへ入れる」を含む。次で探す
 
   ```bash
@@ -59,6 +59,28 @@ disable-model-invocation: true
 `./scripts/setup-repo-settings.sh` を流す。最初の push で PR が作られ、CI が動くための設定を入れる。
 
 終了コードが 1 なら、「失敗した」と表示された段を人間の手作業として扱う（管理者権限・組織の設定・プランの制約など、AI には直せない原因のため）。直し方は各段のエラーに添えてある。確かめ直すときは、スクリプトを流し直す。
+
+### project-context の3ファイルを書く
+
+`docs/project-context/` の `project-claude.md`・`core-parts.md`・`issue-destinations.md` には、テンプレート本体の内容が入っている。残すと、AI が自分のプロジェクトをテンプレート本体だと思い込み、`/link-root-issue` はテンプレートのルート（構築・改善）を自分のプロジェクトに作る。3ファイルを書く機会は立ち上げのときしかないので、人間に聞いて、その場で書く。
+
+3ファイルのどれにもテンプレート本体の説明が残っていなければ、済みとして飛ばす。テンプレート本体の説明とは、次をいう。書くときは、これらも消す。
+
+- `project-claude.md` の「（テンプレート本体の記述。」で始まる段落
+- `core-parts.md`・`issue-destinations.md` の注記にある「下の表はテンプレート本体のもの」の文
+- `core-parts.md`・`issue-destinations.md` の、テンプレート本体の表の行
+
+3ファイルごとに、`AskUserQuestion` で次を聞いて書く。
+
+- **`project-claude.md`**：何を作るシステムか（一文）と、いまのフェーズ（立ち上げ段階など）。「このシステムは何か」と「現在のプロジェクトのフェーズ・状況」に書く
+- **`issue-destinations.md`**：新規開発ガイドを使うか。使うなら、表の代わりに「issue-policy の標準のルートを使う」と書く。使わないなら、ルートと振り分け条件を聞いて表に書く
+- **`core-parts.md`**：コア部分（壊れると全体が回らなくなる部分）が決まっていれば表に書く。まだなら表を空にする
+
+答えられない項目は、空にして進む。Issue にはしない。「すべての手順に効く決まり」の「人間の手作業は、済まなければ Issue にして進む」は、この手順には当てない。質問への答えは人間の手作業ではなく、空でもハーネスは止まらないためである（`core-parts.md` には、空でも ADR の判定ができると書いてある）。
+
+「立ち上げの Issue を起票する」は、この手順で書いた `issue-destinations.md` を前提にする（起票のとき `/link-root-issue` が読むため）。
+
+`glossary.md` はこの手順で書かない。
 
 ### テンプレートの ADR を消す
 
