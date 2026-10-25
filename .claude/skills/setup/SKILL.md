@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 ## この Skill で使う語
 
-- **`/setup` の変更**：各手順が書き換えるパス（`docs/adr/`）のうち、`git status --porcelain -- docs/adr/` に出るもの。前回の `/setup` が書き換えて、まだコミットしていない変更も含む（途中で止まって流し直しても、取りこぼさないため）
+- **`/setup` の変更**：各手順が書き換えるパス（`docs/adr/`・`scripts/auto-programmer/config.mjs`）のうち、`git status --porcelain -- docs/adr/ scripts/auto-programmer/config.mjs` に出るもの。前回の `/setup` が書き換えて、まだコミットしていない変更も含む（途中で止まって流し直しても、取りこぼさないため）
 - **立ち上げの Issue**：`/setup` の変更をリポジトリへ入れる Issue。タイトルに目印の語「立ち上げの準備をリポジトリへ入れる」を含む。次で探す
 
   ```bash
@@ -25,7 +25,7 @@ disable-model-invocation: true
 
 ## すべての手順に効く決まり
 
-- **済んだ手順は飛ばす**：各手順は、まず済んでいるかを確かめ、済んでいれば飛ばす。途中で止まっても、もう一度 `/setup` を流せば続きから進む。何度流しても同じ結果になるスクリプトを流す手順（「ラベルを作る」「リポジトリ設定を入れる」）は、確かめをスクリプトに任せる
+- **済んだ手順は飛ばす**：各手順は、まず済んでいるかを確かめ、済んでいれば飛ばす。途中で止まっても、もう一度 `/setup` を流せば続きから進む（例外は「ボードを作る」で、作りかけのボードを消してから流し直す）。何度流しても同じ結果になるスクリプトを流す手順（「ラベルを作る」「リポジトリ設定を入れる」）は、確かめをスクリプトに任せる
 - **人間の手作業は、済まなければ Issue にして進む**：人間にしかできない作業は、何をするかを案内し、`AskUserQuestion` で済ませたかを聞く。済ませたなら確かめ直して次へ進む。その場で済まなければ、手作業の Issue を `/quick-issue` で起票し、次の手順へ進む。ラベルは `ready-for-human` にし、人間のタスクの頭に「（人間）」と書く。同じ手順の手作業の Issue が open で残っていれば、起票し直さない。例外は次の2つで、どちらも Issue にせずに止める
   - 「ラベルを作る」が済むまでの手作業が済まなかった：gh かラベルが無く、Issue を起票できない
   - テンプレート本体のリポジトリで流された：手作業として聞かずに止める（続けると、本体の ADR や設定を消す）
@@ -59,6 +59,89 @@ disable-model-invocation: true
 `./scripts/setup-repo-settings.sh` を流す。最初の push で PR が作られ、CI が動くための設定を入れる。
 
 終了コードが 1 なら、「失敗した」と表示された段を人間の手作業として扱う（管理者権限・組織の設定・プランの制約など、AI には直せない原因のため）。直し方は各段のエラーに添えてある。確かめ直すときは、スクリプトを流し直す。
+
+### ボードを作る
+
+GitHub Projects のボードを API で作る。Auto-Programmer が拾う `Ready` と、レビュー待ちの `In Review` が、新しいボードの Status には無いためである。持ち主はリポジトリの持ち主、名前はリポジトリ名にする。組織が持つリポジトリでも同じステップを流す。失敗したら、末尾の扱いに従う。
+
+1. `project` スコープ（ボードを読み書きする権限）を確かめる。失敗してエラーに `scopes` を含む文が出たら、スコープ不足である。`! gh auth refresh -s project` を案内し、人間の手作業として扱う（「すべての手順に効く決まり」）。それ以外のエラーは、エラーを見せて人間の手作業として扱う。済まなければ、この節の残りを飛ばす。
+
+   ```bash
+   gh api graphql -f query='{viewer{projectsV2(first:1){totalCount}}}'
+   ```
+
+2. 済んでいれば、この節の残りを飛ばす。**済んでいる**とは、`config.mjs` の `repository` が origin のリポジトリで、`board.owner`・`board.number` のボードが引け、その Status に、ステップ4で入れる選択肢が全部あることである。
+
+   ```bash
+   origin=$(gh repo view "$(git remote get-url origin)" --json nameWithOwner --jq .nameWithOwner) && node -e "import('./scripts/auto-programmer/config.mjs').then(({config})=>{if(config.repository!==process.argv[1])process.exit(1);console.log(config.board.owner,config.board.number)})" "$origin"
+   ```
+
+   `repository` が違えば何も出ず、終了コード 1 で終わる（テンプレートから作った直後はこうなる）。`<owner> <番号>` が出たら、Status の選択肢を見る。
+
+   ```bash
+   gh project field-list <番号> --owner <owner> --format json --jq '.fields[] | select(.name=="Status") | [.options[].name] | join(",")'
+   ```
+
+   - `Todo,Ready,In progress,In Review,Done` が出たら、済んでいる
+   - 作りたてのボードの `Todo,In Progress,Done` のように足りなければ、済んでいない（`In Progress` は P が大文字で、`In progress` とは別の表記である）
+   - `Could not resolve to a ProjectV2 with the number <番号>` のエラーで終わったら、ボードが引けないので、済んでいない
+
+3. ボードを作る。`repositoryId` を渡すので、作成と同時にリポジトリへ紐づく。出力の `<ボードID> <番号>` を以降で使う。
+
+   ```bash
+   repo=$(gh repo view "$(git remote get-url origin)" --json nameWithOwner --jq .nameWithOwner) && ids=$(gh api graphql -f query='query($o:String!,$n:String!){repository(owner:$o,name:$n){id owner{id}}}' -f o="${repo%/*}" -f n="${repo#*/}" --jq '.data.repository | "\(.owner.id) \(.id)"') && gh api graphql -f query='mutation($o:ID!,$r:ID!,$t:String!){createProjectV2(input:{ownerId:$o,repositoryId:$r,title:$t}){projectV2{id number}}}' -f o="${ids% *}" -f r="${ids#* }" -f t="${repo#*/}" --jq '.data.createProjectV2.projectV2 | "\(.id) \(.number)"'
+   ```
+
+4. Status の選択肢を `Todo`・`Ready`・`In progress`・`In Review`・`Done` にする（表記は [issue-policy](../../../docs/policy/issue-policy.md)「ボードの Status の意味」と同じ）。`updateProjectV2Field` は渡した値で選択肢を上書きするので、残す選択肢には `id` を渡す。まず Status のフィールド ID と選択肢の ID を引く。
+
+   ```bash
+   gh api graphql -f query='query($p:ID!){node(id:$p){... on ProjectV2{fields(first:30){nodes{... on ProjectV2SingleSelectField{id name options{id name}}}}}}}' -f p=<ボードID> --jq '.data.node.fields.nodes[] | select(.name=="Status")'
+   ```
+
+   `Todo`・`In Progress`・`Done` の `id` を、次の `<…の id>` に入れて流す（`In Progress` は `In progress` へ改名される）。
+
+   ```bash
+   gh api graphql -f query='mutation($f:ID!){updateProjectV2Field(input:{fieldId:$f,singleSelectOptions:[{id:"<Todo の id>",name:"Todo",color:GREEN,description:"ボードに積まれただけ"},{name:"Ready",color:BLUE,description:"着手してよい"},{id:"<In Progress の id>",name:"In progress",color:YELLOW,description:"着手した"},{name:"In Review",color:ORANGE,description:"PR が出た"},{id:"<Done の id>",name:"Done",color:PURPLE,description:"完了した"}]}){projectV2Field{... on ProjectV2SingleSelectField{options{id name}}}}}' -f f=<Status のフィールド ID>
+   ```
+
+5. 表ビューを整える。新しいボードには表形式のビュー（`View 1`）が1つあるので、名前を `Backlog` にし、フィルタを `-status:Done`、列を Title・Status・Labels・Assignees にする。`visibleFieldIds` は `configuration` の中に置く。まずビューの ID と、4つのフィールドの ID を引く。
+
+   ```bash
+   gh api graphql -f query='query($p:ID!){node(id:$p){... on ProjectV2{views(first:5){nodes{id name}} fields(first:30){nodes{... on ProjectV2FieldCommon{id name}}}}}}' -f p=<ボードID>
+   ```
+
+   ```bash
+   gh api graphql -f query='mutation($v:ID!){updateProjectV2View(input:{viewId:$v,name:"Backlog",layout:TABLE_LAYOUT,filter:"-status:Done",configuration:{visibleFieldIds:["<Title の id>","<Status の id>","<Labels の id>","<Assignees の id>"]}}){projectV2View{name filter}}}' -f v=<ビューの ID>
+   ```
+
+6. API で設定できない Workflows と階層表示を、画面で案内する。ボードの URL は `https://github.com/users/<owner>/projects/<番号>`（組織なら `orgs`）。`AskUserQuestion` で済ませたかを聞く。
+
+   - Workflows の「Auto-add to project」を有効にする（対象はこのリポジトリ）。新しいボードには無く、無いと Issue がボードに載らない
+   - Workflows の「Pull request linked to issue」の移し先を `In Review` にする。有効にはなっているが、移し先は既定のままで、API では変えられず読めもしない
+   - 表ビュー（`Backlog`）で、sub-issue の階層表示を有効にする。API で設定も確認もできない
+
+   済んだと答えたら、Workflows が有効かだけ API で確かめる。移し先と階層表示は確かめられないので、答えを信じる。
+
+   ```bash
+   gh api graphql -f query='query($p:ID!){node(id:$p){... on ProjectV2{workflows(first:20){nodes{name enabled}}}}}' -f p=<ボードID> --jq '.data.node.workflows.nodes[] | select(.name=="Auto-add to project" or .name=="Pull request linked to issue")'
+   ```
+
+   両方が `"enabled":true` で出れば済んでいる。作りたてのボードでは `{"enabled":true,"name":"Pull request linked to issue"}` の1行だけが出る。「Auto-add to project」の行が出ないか `"enabled":false` なら、済んでいない。
+
+ステップ3〜5の API が失敗したら、エラーを見せ、人間の手作業として扱う。作りかけのボードを残すと、流し直しで2つ目のボードができるので、`gh project delete <番号> --owner <owner>` で消すよう案内する。消したと答えたら、ステップ3からやり直す。済まなければ、この節の残りと「`config.mjs` にボードを書く」を飛ばす。
+
+### `config.mjs` にボードを書く
+
+「ボードを作る」を飛ばしたか、そのステップ3〜5が失敗して済まなかったなら、これも飛ばす。
+
+`scripts/auto-programmer/config.mjs` を書き換える。
+
+- `repository`（ファイル先頭の定数）：origin の `owner/repo`
+- `board.owner`：作ったボードの持ち主
+- `board.number`：作ったボードの番号
+- `board.statusFieldName`・`todoStatusName`・`readyStatusName`・`inProgressStatusName`：ボードの Status のフィールド名と、ステップ4で入れた「積まれただけ」「着手してよい」「着手した」の選択肢の表記。すでに同じなら触らない
+
+書き換えたら、「ボードを作る」ステップ2の2本のコマンドを流して確かめる。`<owner> <番号>` が出て、Status が全部揃っていれば終わり。出なければ、`config.mjs` の書き換えを見直す。
 
 ### テンプレートの ADR を消す
 
