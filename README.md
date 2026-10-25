@@ -83,23 +83,10 @@ npm run format       # フォーマット
 
 このテンプレートを使う手順:
 
-1. `docs/adr/` にあるテンプレートの ADR（`NNN-*.md`）を削除し、`npm run gen:adr-index` で一覧を作り直す（`docs/adr/` は同期対象外なので、消さずに残すとテンプレートのハーネスに関する ADR が自分のプロジェクトの一覧に混ざり続ける）
-2. `docs/project-context/project-claude.md` に自分のシステムの情報を書く（テンプレート同期の対象外なので、テンプレート側の更新で上書きされない）
-3. `docs/project-context/core-parts.md` の一覧を自分のシステムのコア（壊れると全体が回らなくなる部分）に書き換える。まだ決まっていなければ表を空にする
-4. `docs/` 配下を自分のプロジェクトの内容に書き換える（Policy はそのまま使える。要件定義・設計書は空の状態から書く）
-5. 実装は `app/`・`infra/` に書く。どちらも空なので、[`samples/`](samples/README.md) の参照実装を手本にして写す（`samples/` 自体は書き換えない）
-6. GitHub 側の準備をする。`gh auth login` 済みの状態で次を済ませる。どちらのスクリプトも何度流しても安全
-   - `./scripts/setup-labels.sh` を1回流し、Issue 系の Skill が使うラベルを作る。ラベルが無いと、Issue を起票する Skill が途中で失敗する
-   - `./scripts/setup-repo-settings.sh` を1回流し、CI が前提とするリポジトリ設定を入れる（中身は `--help`）。入れないと、最初の push で PR が作られず CI が落ちる
-   - Settings → Secrets and variables → Actions で、シークレット `CLAUDE_CODE_OAUTH_TOKEN` を登録する（値は `claude setup-token` で発行する）。無いと `pr-ai-triage` が落ち、PR が auto-merge されない
-7. ボード（GitHub Projects）で進み具合を追うなら、次の3つを済ませる。どれかが抜けていると、AI が着手時に打つ `npm run move-issue-card` は警告だけ出して何もしない（作業は止まらない）
-   - `gh auth refresh -s project` で、トークンに `project` スコープ（ボードを読み書きする権限）を足す
-   - `scripts/auto-programmer/config.mjs` の `repository` と `board` を、自分のリポジトリとボードに向ける
-   - ボードの Workflows 画面で、組み込みワークフロー「Pull request linked to issue」の移し先を `In Review` にする（既定は `In progress`）
-8. `docs/project-context/issue-destinations.md` を自分の起票先に書き換える（分解元の親が無い Issue をどのルート Issue の下に入れるかを決める。テンプレート同期の対象外なので、書き換えても戻らない。既存の利用先には同期で届かないので、自分で作る。新規開発ガイドを使うなら、標準のルート（フェーズ）を使うと書く）
-9. 新規に立ち上げるなら [docs/guide/new-development-guide.md](docs/guide/new-development-guide.md) に従って要件定義 → Plan → 起点 Issue を作る
-10. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
-11. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
+1. 前提を整える。`npm install` で依存を入れ、`gh auth login` で GitHub にログインし、リポジトリのルートで Claude Code を起動する
+2. Claude Code で `/setup` を実行する。ラベル・リポジトリ設定・ボード・認証・`docs/project-context/` の3ファイル・テンプレートの ADR の削除までを進め、立ち上げの PR を作る。人間の手作業が要るところは案内され、済まなければ Issue になる。途中で止まっても、流し直せば続きから進む
+3. 以降は Claude Code に Issue 番号を渡すだけでよい。AI が Issue に書かれた開発フロー（設計書更新 → 実装 → レビュー → CI）を読み取り、対応するスラッシュコマンドを順に自分で実行する。各ステップの説明は [docs/guide/development-flow.md](docs/guide/development-flow.md) にある
+4. テンプレート側の更新を取り込むときは `./scripts/sync-template.sh` を実行する（使い方は `./scripts/sync-template.sh --help`）
 
 ## 変更してはならないパス
 
