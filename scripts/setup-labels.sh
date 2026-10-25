@@ -3,9 +3,6 @@
 #   ラベルが無いと `gh issue create --label` や `gh issue edit --add-label` が失敗するため、
 #   使い始めに1回流して失敗の元を無くす（Issue #945）。
 #
-#   無いラベルだけ作り、既存のラベルは上書きしない。利用先が色や説明を変えていても壊さず、
-#   何度流しても同じ結果になる。
-#
 #   ラベルを足す・変えるときは、下の LABELS を直す（定義はここ1か所）。ラベルの意味と付ける条件は
 #   docs/policy/issue-policy.md が正で、LABELS の説明はその要約である。Skill と workflow が
 #   失敗時や実行時に個別に作る処理（`/quick-issue` など）は、このスクリプトを流していない
@@ -15,6 +12,9 @@
 # （説明の正は下の usage()。ここに二重に書かない）。
 
 set -euo pipefail
+
+# shellcheck source=lib/resolve-origin-repo.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/resolve-origin-repo.sh"
 
 # 「名前|色(# なし)|説明」。色と説明は、テンプレートのリポジトリの現行値に合わせる。
 readonly LABELS=(
@@ -70,6 +70,38 @@ abort() {
   exit 1
 }
 
+created_labels=()
+skipped_labels=()
+
+# LABELS のうち、対象リポジトリに無いものだけを作り、作った名前を created_labels に、
+# 既存のため飛ばした名前を skipped_labels に積む。
+create_missing_labels() {
+  local repo=$1 existing_label_names_lowercase label_definition name color description
+  # GitHub のラベル名は大文字小文字を区別しないので、既存の名前を1回だけ引いて小文字にそろえる
+  existing_label_names_lowercase="$(gh label list --repo "$repo" --limit 1000 --json name --jq '.[].name' | tr '[:upper:]' '[:lower:]')" ||
+    abort '既存ラベルの一覧を取得できなかった。'
+
+  for label_definition in "${LABELS[@]}"; do
+    IFS='|' read -r name color description <<<"$label_definition"
+    if grep -Fxq -- "$(tr '[:upper:]' '[:lower:]' <<<"$name")" <<<"$existing_label_names_lowercase"; then
+      skipped_labels+=("$name")
+      continue
+    fi
+    gh label create --repo "$repo" "$name" --color "$color" --description "$description" >/dev/null ||
+      abort "ラベル「$name」を作れなかった。ここまでに作った件数: ${#created_labels[@]}"
+    created_labels+=("$name")
+  done
+}
+
+print_summary() {
+  echo
+  echo "作成: ${#created_labels[@]} 件"
+  if [[ ${#created_labels[@]} -gt 0 ]]; then
+    printf '  %s\n' "${created_labels[@]}"
+  fi
+  echo "既存のため飛ばした: ${#skipped_labels[@]} 件"
+}
+
 main() {
   if [[ ${1:-} == '--help' || ${1:-} == '-h' ]]; then
     usage
@@ -77,44 +109,12 @@ main() {
   fi
   [[ $# -eq 0 ]] || abort "不明な引数: $1（使い方は --help）"
 
-  # 1. 前提チェック
-  command -v gh >/dev/null 2>&1 || abort 'gh（GitHub CLI）が見つからない。インストールしてから実行すること。'
-  # 認証は `gh auth status` で確かめない。どれか1つのホストのトークンが切れているだけで失敗するため、
-  # 対象リポジトリを引く次の呼び出しの失敗で止め、gh のエラーをそのまま見せる
-  local origin_url repo
-  # gh の既定の解決は upstream の remote を優先しうるので、origin を名指しして作り先を取り違えない。
-  # 空の引数を渡すと既定の解決に戻るので、origin が無ければここで止める
-  origin_url="$(git remote get-url origin 2>/dev/null)" ||
-    abort 'origin の remote が無い。origin が GitHub を指す git リポジトリの中で実行すること。'
-  repo="$(gh repo view "$origin_url" --json nameWithOwner --jq .nameWithOwner 2>&1)" ||
-    abort "origin のリポジトリを引けなかった（未認証なら \`gh auth login\` する）: $repo"
+  local repo
+  repo="$(resolve_origin_repo)" || exit 1
   echo "対象リポジトリ: $repo"
 
-  # 2. 既存ラベルの名前を1回だけ引く（GitHub のラベル名は大文字小文字を区別しないので小文字にそろえる）
-  local existing
-  existing="$(gh label list --repo "$repo" --limit 1000 --json name --jq '.[].name' | tr '[:upper:]' '[:lower:]')" ||
-    abort '既存ラベルの一覧を取得できなかった。'
-
-  # 3. 無いものだけ作る
-  local entry name color description created=() skipped=()
-  for entry in "${LABELS[@]}"; do
-    IFS='|' read -r name color description <<<"$entry"
-    if grep -Fxq -- "$(tr '[:upper:]' '[:lower:]' <<<"$name")" <<<"$existing"; then
-      skipped+=("$name")
-      continue
-    fi
-    gh label create --repo "$repo" "$name" --color "$color" --description "$description" >/dev/null ||
-      abort "ラベル「$name」を作れなかった。ここまでに作った件数: ${#created[@]}"
-    created+=("$name")
-  done
-
-  # 4. 結果表示
-  echo
-  echo "作成: ${#created[@]} 件"
-  if [[ ${#created[@]} -gt 0 ]]; then
-    printf '  %s\n' "${created[@]}"
-  fi
-  echo "既存のため飛ばした: ${#skipped[@]} 件"
+  create_missing_labels "$repo"
+  print_summary
 }
 
 main "$@"
