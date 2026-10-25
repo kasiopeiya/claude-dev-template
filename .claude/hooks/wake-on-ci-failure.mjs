@@ -10,7 +10,8 @@
 // - run の判定は auto-programmer の ciRun.mjs を使い、待つループは共有しない。auto-programmer の待ちは
 //   画面表示と Ctrl+C の中止を抱えており、ここには要らない。
 // - 直させた回数は状態をファイルに持たず、起こす直前にそのブランチで落ちた run を数え直す。AI に数えさせると、
-//   文脈が圧縮されたときに数え違える。
+//   文脈が圧縮されたときに数え違える。数えるのは、いまのブランチの最初の commit より後に作られた run だけにする。
+//   Issue を開き直して同じ名前のブランチを作り直すと、前の回で落ちた run も一覧に入り、無関係な失敗で上限を使い切るため。
 // - 作業ツリーは、環境変数 CLAUDE_PROJECT_DIR ではなく stdin の cwd で決める（sessionWorktreeRoot.mjs）。
 // - auto-programmer が起動した無人のセッションでは何もしない。CI を待って直させるのは起動側で、
 //   ここでも起こすと二重になる。
@@ -27,7 +28,8 @@ import {
   countPastFixAttempts,
   decideAfterCiRun,
   PAST_FIX_ATTEMPT_FIELDS,
-  readCiRunState
+  readCiRunState,
+  selectRunsCreatedSince
 } from '../../scripts/auto-programmer/ciRun.mjs'
 import {
   UNATTENDED_SESSION_ENV_NAME,
@@ -282,19 +284,54 @@ async function waitForCiRunState(ciSettings, headSha) {
 }
 
 /**
+ * いまのブランチが最初の commit を持った時刻を返す。
+ *
+ * デフォルトブランチに無い commit（このブランチで足した commit）のうち、最も古い commit の時刻を取る。
+ * git log の並び順に頼らず、最小値を取る。
+ *
+ * @param {string} worktreeRoot 作業ツリーのルート
+ * @param {{ defaultBranchName: string, headSha: string }} pushed デフォルトブランチ名と、見張った commit の SHA
+ * @returns {number | null} 最初の commit の時刻（epoch ミリ秒）。このブランチで足した commit が無いときは null
+ * @throws {Error} git が失敗したとき
+ */
+function readBranchStartedAtMs(worktreeRoot, { defaultBranchName, headSha }) {
+  const commitTimesInSeconds = runGit(worktreeRoot, [
+    'log',
+    '--format=%ct',
+    `origin/${defaultBranchName}..${headSha}`
+  ])
+    .split('\n')
+    .filter(Boolean)
+    .map(Number)
+  if (commitTimesInSeconds.length === 0) return null
+  return Math.min(...commitTimesInSeconds) * MILLISECONDS_PER_SECOND
+}
+
+/**
  * そのブランチで、これまでに `/auto-fix-ci` に直させた回数を数える。
  *
+ * いまのブランチの最初の commit より前に作られた run は数えない。最初の commit が無いときは絞らず、一覧の run をすべて数える。
+ *
  * @param {CiSettings} ciSettings 対象のリポジトリとワークフロー
- * @param {{ branchName: string, currentRunId: number }} target ブランチ名と、いま見ている落ちた run の ID（数えない）
+ * @param {{ pushToWatch: NonNullable<ReturnType<typeof findPushToWatch>>, currentRunId: number }} target 見張る対象と、いま見ている落ちた run の ID（数えない）
  * @returns {number} これまでに直させた回数
- * @throws {Error} gh が失敗したとき・出力が JSON でないとき
+ * @throws {Error} gh または git が失敗したとき・gh の出力が JSON でないとき
  */
-function countPastFixAttemptsOnBranch(ciSettings, { branchName, currentRunId }) {
+function countPastFixAttemptsOnBranch(ciSettings, { pushToWatch, currentRunId }) {
+  const { worktreeRoot, defaultBranchName, pushedBranch } = pushToWatch
+  const branchStartedAtMs = readBranchStartedAtMs(worktreeRoot, {
+    defaultBranchName,
+    headSha: pushedBranch.headSha
+  })
   const branchRuns = listCiRuns(ciSettings, {
-    filterArgs: ['--branch', branchName, '--limit', String(BRANCH_RUN_LIST_LIMIT)],
+    filterArgs: ['--branch', pushedBranch.branchName, '--limit', String(BRANCH_RUN_LIST_LIMIT)],
     fields: PAST_FIX_ATTEMPT_FIELDS
   })
-  return countPastFixAttempts({ branchRuns, currentRunId })
+  const runsSinceBranchStarted =
+    branchStartedAtMs === null
+      ? branchRuns
+      : selectRunsCreatedSince({ runs: branchRuns, sinceMs: branchStartedAtMs })
+  return countPastFixAttempts({ branchRuns: runsSinceBranchStarted, currentRunId })
 }
 
 /**
@@ -393,15 +430,15 @@ function findPushToWatch(input) {
  *
  * @param {CiSettings} ciSettings 設定
  * @param {{ state: string, runId: number | null }} runState 待ち終えた run の状態（通ったときは渡さない）
- * @param {string} branchName 見張ったブランチ名
+ * @param {NonNullable<ReturnType<typeof findPushToWatch>>} pushToWatch 見張った対象
  * @returns {{ nextStep: WakeStep, pastFixAttemptCount: number }} すること。直させた回数を数えるのは、直せる失敗のときだけ
  */
-function decideWakeStep(ciSettings, runState, branchName) {
+function decideWakeStep(ciSettings, runState, pushToWatch) {
   let pastFixAttemptCount = 0
   if (runState.state === 'fixable-failure') {
     try {
       pastFixAttemptCount = countPastFixAttemptsOnBranch(ciSettings, {
-        branchName,
+        pushToWatch,
         currentRunId: runState.runId
       })
     } catch {
@@ -434,11 +471,7 @@ async function main() {
   const remoteSha = readRemoteBranchSha(worktreeRoot, pushedBranch.branchName)
   if (remoteSha !== null && remoteSha !== pushedBranch.headSha) return
 
-  const { nextStep, pastFixAttemptCount } = decideWakeStep(
-    ciSettings,
-    runState,
-    pushedBranch.branchName
-  )
+  const { nextStep, pastFixAttemptCount } = decideWakeStep(ciSettings, runState, pushToWatch)
   const issueNumber = readIssueNumber(worktreeRoot, {
     defaultBranchName,
     headSha: pushedBranch.headSha
