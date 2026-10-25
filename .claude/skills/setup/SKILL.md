@@ -23,6 +23,12 @@ disable-model-invocation: true
   gh issue list --state open --label ready-for-human --limit 100 --search '"/setup の手作業" in:title' --json number,title --jq '.[] | select(.title | contains("/setup の手作業：<手順の見出し>"))'
   ```
 
+- **Bedrock 切り替えの Issue**：Claude の認証方式に Bedrock を選んだときに起票する Issue。タイトルに目印の語「pr-ai-triage を Bedrock 認証に切り替える」を含む。次で探す
+
+  ```bash
+  gh issue list --state open --limit 100 --search 'pr-ai-triage を Bedrock 認証に切り替える in:title' --json number,title --jq '.[] | select(.title | contains("pr-ai-triage を Bedrock 認証に切り替える"))'
+  ```
+
 ## すべての手順に効く決まり
 
 - **済んだ手順は飛ばす**：各手順は、まず済んでいるかを確かめ、済んでいれば飛ばす。途中で止まっても、もう一度 `/setup` を流せば続きから進む。何度流しても同じ結果になるスクリプトを流す手順（「ラベルを作る」「リポジトリ設定を入れる」）は、確かめをスクリプトに任せる
@@ -59,6 +65,29 @@ disable-model-invocation: true
 `./scripts/setup-repo-settings.sh` を流す。最初の push で PR が作られ、CI が動くための設定を入れる。
 
 終了コードが 1 なら、「失敗した」と表示された段を人間の手作業として扱う（管理者権限・組織の設定・プランの制約など、AI には直せない原因のため）。直し方は各段のエラーに添えてある。確かめ直すときは、スクリプトを流し直す。
+
+### Claude の認証方式を決める
+
+`pr-ai-triage.yml` は、シークレット `CLAUDE_CODE_OAUTH_TOKEN` で Claude を呼ぶ。無いと `pr-ai-triage` が落ち、PR が auto-merge されない。Bedrock のプロジェクトは、このトークンを使わない。
+
+次のどちらかなら飛ばす。
+
+- **`gh secret list` に `CLAUDE_CODE_OAUTH_TOKEN` がある**
+- **Bedrock 切り替えの Issue が open である**
+
+飛ばさないなら、`AskUserQuestion` で方式を聞く（選択肢は「Claude サブスクリプションの OAuth トークン」「Bedrock」。最初を既定にする）。
+
+- **OAuth**：次を案内する。トークンの値は会話に貼らせない。人間が自分で登録する
+  1. `claude setup-token` でトークンを発行する
+  2. Settings → Secrets and variables → Actions で、シークレット `CLAUDE_CODE_OAUTH_TOKEN` に登録する
+
+  済ませたかを `AskUserQuestion` で聞き、済んだなら `gh secret list` に名前があるかだけを確かめる。無い、または済ませていないなら、手作業の Issue（見出しは「Claude の認証方式を決める」）を起票して次へ進む
+
+- **Bedrock**：その場では `pr-ai-triage.yml` を切り替えない。立ち上げ時は `infra/` が空で、GitHub Actions から AWS に入るための IAM ロールがまだ無いため。代わりに Bedrock 切り替えの Issue を `/quick-issue` で起票して次へ進む。Issue には次を書く
+  - **タイトル**：Bedrock 切り替えの Issue の目印の語「pr-ai-triage を Bedrock 認証に切り替える」を含める
+  - **理由**：`pr-ai-triage.yml` は `CLAUDE_CODE_OAUTH_TOKEN` で Claude を呼ぶ。Bedrock のプロジェクトはこのトークンを使わず、シークレットが無いと `pr-ai-triage` が落ちて PR が auto-merge されない
+  - **対応方針**：`pr-ai-triage.yml` を Bedrock 認証に切り替える。`.github/` はテンプレート同期の対象外なので、書き換えても戻らない
+  - **ブロッカー**：先に `infra/` で、GitHub Actions から AWS に入るための IAM ロールを作る
 
 ### テンプレートの ADR を消す
 
