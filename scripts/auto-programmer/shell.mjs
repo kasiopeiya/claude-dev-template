@@ -13,6 +13,7 @@
 //   ステータス行の末尾へ子の出力が連結される。中継は内容を解析しない素通しにして、claude の出力形式に依存しない。
 // - runStreamingAsync の打ち切りはプロセスツリーごと止める。spawn の timeout は直下の子しか殺さず、孫（Windows の
 //   .cmd 経由なら本体の claude）が AI 専用 clone を書き換え続けて次の Issue とぶつかる（Issue #791）。
+//   時間切れで SIGTERM が効かない子が居ると exit が来ず待ちが終わらないので、猶予の後に SIGKILL へ切り替える。
 //   POSIX では子を別のプロセスグループで起動するので、端末のシグナルは子に届かず、index.mjs が中継する。
 //   中継できない SIGKILL で親を止めると子は残る。Ctrl+Z（SIGTSTP）も中継しないので、止まるのは親だけで子は動き続ける。
 // - 標準出力の上限を既定（1MB）から広げている。gh の JSON 出力は MB 単位になりうる。
@@ -29,6 +30,9 @@ const ELAPSED_TIME_TICK_INTERVAL_MS = 1000
 // 子が終了してから、パイプに残った出力を読み切るまで待つ上限。孫プロセスがパイプを握ったまま残ると
 // パイプはいつまでも閉じないので、ここで打ち切って読むのをやめる
 const OUTPUT_DRAIN_GRACE_MS = 5000
+
+// 時間切れで SIGTERM を送ってから SIGKILL へ切り替えるまでの猶予。SIGKILL は後片付けの機会を奪うので、まず SIGTERM で頼む
+const FORCE_KILL_GRACE_MS = 5000
 
 // cmd.exe のダブルクォートの中でも意味を持ち続ける文字。`"` はクォートを閉じ、`%` は環境変数を展開し、
 // 改行はコマンドをそこで切る。どれもエスケープでは確実に守れないので、含む引数は渡さずに拒む
@@ -213,6 +217,7 @@ function spawnProcessTree(command, args, { cwd, shell, extraEnv }) {
 /**
  * 子への打ち切り（時間切れ・呼び出し側からの中止）を見張り、子孫ごと止める。見張りは子が終わると自分で片付ける。
  *
+ * 時間切れでは SIGTERM を送り、FORCE_KILL_GRACE_MS を過ぎても子が終わらなければ SIGKILL を送る。
  * 中止の合図は AbortSignal で受け、reason に入ったシグナルをそのまま子のグループへ送る。親が受けたシグナルを
  * どう扱うか（中継するか・親も終わるか）は入口の index.mjs が決め、ここはプロセス全体のシグナルに触れない。
  *
@@ -222,12 +227,14 @@ function spawnProcessTree(command, args, { cwd, shell, extraEnv }) {
  */
 function watchForTermination({ child, killTree }, { timeoutMs, abortSignal }) {
   let isTimedOut = false
+  let forceKillTimer
   const timeoutTimer =
     timeoutMs === undefined
       ? undefined
       : setTimeout(() => {
           isTimedOut = true
           killTree('SIGTERM')
+          forceKillTimer = setTimeout(() => killTree('SIGKILL'), FORCE_KILL_GRACE_MS)
         }, timeoutMs)
   const killOnAbort = () => {
     const reason = abortSignal?.reason
@@ -238,6 +245,7 @@ function watchForTermination({ child, killTree }, { timeoutMs, abortSignal }) {
   abortSignal?.addEventListener('abort', killOnAbort, { once: true })
   const stop = () => {
     clearTimeout(timeoutTimer)
+    clearTimeout(forceKillTimer)
     abortSignal?.removeEventListener('abort', killOnAbort)
   }
   child.once('exit', stop)
