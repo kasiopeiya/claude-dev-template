@@ -101,7 +101,12 @@ export function findReasonNotToResolveConflict({
     return 'このツールが最後に CI を待った commit の後に、別の push があります（人間か別の仕組みが引き取ったので触りません）'
   }
   if (issue.state !== 'OPEN') return `#${issue.number} が閉じています`
-  if (issue.labelNames.includes(needsHumanCheckLabel)) {
+  // GitHub のラベル名は大文字小文字を区別しない
+  if (
+    issue.labelNames.some(
+      (labelName) => labelName.toLowerCase() === needsHumanCheckLabel.toLowerCase()
+    )
+  ) {
     return `#${issue.number} に ${needsHumanCheckLabel} が付いています`
   }
   return null
