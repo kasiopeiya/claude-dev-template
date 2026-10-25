@@ -6,7 +6,7 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { resolveSleepGuardLaunch } from '../sleepGuard.mjs'
+import { describeSleepGuardExit, resolveSleepGuardLaunch } from '../sleepGuard.mjs'
 
 const TARGET_PID = 4321
 
@@ -35,5 +35,32 @@ describe('スリープ抑止コマンドの選択', () => {
     const launch = sut('linux', TARGET_PID)
 
     assert.equal(launch, null)
+  })
+})
+
+describe('スリープ抑止が終わったときの警告文', () => {
+  test('見張る pid が消えて 0 で終わった場合は警告を出さない', () => {
+    const sut = describeSleepGuardExit
+
+    const message = sut(0, null)
+
+    assert.equal(message, null)
+  })
+
+  test('0 以外の終了コードで終わった場合は、その終了コードを含む警告を返す', () => {
+    const sut = describeSleepGuardExit
+
+    const message = sut(1, null)
+
+    assert.equal(message, 'スリープ抑止が途中で終わりました（終了コード 1。続行します）')
+  })
+
+  test('シグナルで終わった場合は、null を出さずにシグナル名を含む警告を返す', () => {
+    const sut = describeSleepGuardExit
+
+    const message = sut(null, 'SIGKILL')
+
+    assert.equal(message, 'スリープ抑止が途中で終わりました（シグナル SIGKILL で終了。続行します）')
+    assert.ok(!message.includes('null'))
   })
 })
