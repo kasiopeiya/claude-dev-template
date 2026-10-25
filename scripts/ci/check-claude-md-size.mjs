@@ -8,12 +8,12 @@
 
 import { existsSync, readFileSync, statSync } from 'fs'
 import { execFileSync } from 'child_process'
-import { dirname, join, resolve, relative } from 'path'
+import { dirname, join, resolve, relative, sep } from 'path'
 import { fileURLToPath } from 'url'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
-export const CHARACTER_LIMIT = 7000
+const CHARACTER_LIMIT = 7000
 
 // Claude Code が自動ロードする import 記法（行頭または空白の直後の @パス）。
 // メールアドレス・装飾記号を拾わないよう、直前が行頭か空白のものだけを対象にする。
@@ -73,7 +73,7 @@ function resolveImport(target, sourceDir) {
   const base = target.startsWith('/') ? repoRoot : sourceDir
   const resolved = resolve(base, target.replace(/^\//, ''))
 
-  if (!resolved.startsWith(repoRoot)) return null
+  if (!resolved.startsWith(repoRoot + sep)) return null
   if (!existsSync(resolved) || !statSync(resolved).isFile()) return null
   return resolved
 }
@@ -100,7 +100,7 @@ function resolveImportTargets(source, sourceDir) {
  * @param {string} claudeMdPath 測る CLAUDE.md の絶対パス
  * @returns {{ total: number, breakdown: { path: string, characters: number }[] }} 合計と内訳
  */
-export function measureClaudeMd(claudeMdPath) {
+function measureClaudeMd(claudeMdPath) {
   const breakdown = []
   const visited = new Set()
   const queue = [claudeMdPath]
@@ -128,7 +128,7 @@ export function measureClaudeMd(claudeMdPath) {
  * @param {string[]} claudeMdPaths 検査対象の絶対パス
  * @returns {{ path: string, total: number, breakdown: { path: string, characters: number }[] }[]} 超過したもの
  */
-export function findOversized(claudeMdPaths) {
+function findOversized(claudeMdPaths) {
   return claudeMdPaths
     .map((path) => ({ path: relative(repoRoot, path), ...measureClaudeMd(path) }))
     .filter((result) => result.total > CHARACTER_LIMIT)
@@ -140,7 +140,7 @@ export function findOversized(claudeMdPaths) {
  * @param {{ path: string, total: number, breakdown: { path: string, characters: number }[] }[]} oversized 超過したもの
  * @returns {string} 報告文
  */
-export function formatViolations(oversized) {
+function formatViolations(oversized) {
   const lines = [`CLAUDE.md が上限 ${CHARACTER_LIMIT} 文字を超えています。`]
 
   for (const { path, total, breakdown } of oversized) {
@@ -196,7 +196,4 @@ function main() {
   process.exit(1)
 }
 
-// CI・npm scripts から直接実行されたときだけ検査する（hook からは関数として読み込まれる）
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main()
-}
+main()
