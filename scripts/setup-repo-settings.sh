@@ -13,6 +13,9 @@
 
 set -euo pipefail
 
+# shellcheck source=lib/resolve-origin-repo.sh
+source "$(dirname "${BASH_SOURCE[0]}")/lib/resolve-origin-repo.sh"
+
 # マージ可否を決める唯一の required check（pipeline.yml の cicd-gate ジョブ）。
 readonly REQUIRED_CHECK='cicd-gate'
 
@@ -109,7 +112,7 @@ apply_actions_settings() {
 }
 
 apply_ruleset() {
-  local repo=$1 default_branch has_required_check err
+  local repo=$1 default_branch matching_rule_output err
   if ! default_branch="$(gh repo view "$repo" --json defaultBranchRef --jq .defaultBranchRef.name 2>&1)"; then
     failed_stages+=("ルールセット: デフォルトブランチを取得できなかった: $default_branch")
     return
@@ -121,12 +124,12 @@ apply_ruleset() {
   fi
   # ルールセット名ではなく、ブランチに実際に効いているルールで判定する（名前を変えていても重ねて作らない）。
   # --paginate では jq がページごとに評価されるので、一致したルールだけを出し、出力が空かで判定する
-  if ! has_required_check="$(gh api --paginate "repos/$repo/rules/branches/$default_branch" --jq \
+  if ! matching_rule_output="$(gh api --paginate "repos/$repo/rules/branches/$default_branch" --jq \
     ".[] | select(.type == \"required_status_checks\" and any(.parameters.required_status_checks[]; .context == \"$REQUIRED_CHECK\")) | .type" 2>&1)"; then
-    failed_stages+=("ルールセット: $default_branch に効いているルールを取得できなかった: $has_required_check")
+    failed_stages+=("ルールセット: $default_branch に効いているルールを取得できなかった: $matching_rule_output")
     return
   fi
-  if [[ -n $has_required_check ]]; then
+  if [[ -n $matching_rule_output ]]; then
     skipped_stages+=("ルールセット（$default_branch に $REQUIRED_CHECK の必須チェックが既にある）")
     return
   fi
@@ -135,36 +138,6 @@ apply_ruleset() {
   else
     failed_stages+=("ルールセット: $err（private リポジトリは GitHub Free プランでは作れない）")
   fi
-}
-
-main() {
-  if [[ ${1:-} == '--help' || ${1:-} == '-h' ]]; then
-    usage
-    exit 0
-  fi
-  [[ $# -eq 0 ]] || abort "不明な引数: $1（使い方は --help）"
-
-  # 1. 前提チェック
-  command -v gh >/dev/null 2>&1 || abort 'gh（GitHub CLI）が見つからない。インストールしてから実行すること。'
-  # 認証は `gh auth status` で確かめない。どれか1つのホストのトークンが切れているだけで失敗するため、
-  # 対象リポジトリを引く次の呼び出しの失敗で止め、gh のエラーをそのまま見せる
-  local origin_url repo
-  # gh の既定の解決は upstream の remote を優先しうるので、origin を名指しして書き込み先を取り違えない。
-  # 空の引数を渡すと既定の解決に戻るので、origin が無ければここで止める
-  origin_url="$(git remote get-url origin 2>/dev/null)" ||
-    abort 'origin の remote が無い。origin が GitHub を指す git リポジトリの中で実行すること。'
-  repo="$(gh repo view "$origin_url" --json nameWithOwner --jq .nameWithOwner 2>&1)" ||
-    abort "origin のリポジトリを引けなかった（未認証なら \`gh auth login\` する）: $repo"
-  echo "対象リポジトリ: $repo"
-
-  # 2. 各段を入れる（失敗しても次の段へ進む）
-  apply_merge_settings "$repo"
-  apply_actions_settings "$repo"
-  apply_ruleset "$repo"
-
-  # 3. 結果表示
-  print_summary
-  [[ ${#failed_stages[@]} -eq 0 ]] || exit 1
 }
 
 print_summary() {
@@ -181,6 +154,26 @@ print_summary() {
     echo "失敗した: ${#failed_stages[@]} 件" >&2
     printf '  %s\n' "${failed_stages[@]}" >&2
   fi
+}
+
+main() {
+  if [[ ${1:-} == '--help' || ${1:-} == '-h' ]]; then
+    usage
+    exit 0
+  fi
+  [[ $# -eq 0 ]] || abort "不明な引数: $1（使い方は --help）"
+
+  local repo
+  repo="$(resolve_origin_repo)" || exit 1
+  echo "対象リポジトリ: $repo"
+
+  # 1つの段が失敗しても次の段へ進む（失敗は最後にまとめて表示する）
+  apply_merge_settings "$repo"
+  apply_actions_settings "$repo"
+  apply_ruleset "$repo"
+
+  print_summary
+  [[ ${#failed_stages[@]} -eq 0 ]] || exit 1
 }
 
 main "$@"
