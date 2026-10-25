@@ -14,11 +14,13 @@
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
 
 export const ISSUE_CHECKED_LABEL = 'issue:checked'
-const NEEDS_HUMAN_DECISION_LABEL = 'needs-human-decision'
-const READY_FOR_HUMAN_LABEL = 'ready-for-human'
-// 人間が方針を決める・人間が作業する Issue に付くラベル。子を着手待ちに載せるかの判定もこれを使い、
-// 人間向けのラベルが増えたときに片方だけ直る食い違いを防ぐ
-export const HUMAN_ONLY_LABELS = [NEEDS_HUMAN_DECISION_LABEL, READY_FOR_HUMAN_LABEL]
+// 人間が方針を決める・人間が作業する Issue に付くラベルと、実装を止めるときに記録へ残す判定の言い回し。
+// 子を着手待ちに載せるかの判定も HUMAN_ONLY_LABELS を使い、人間向けのラベルが増えたときに片方だけ直る食い違いを防ぐ
+const HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE = new Map([
+  ['needs-human-decision', '人間の判断を要する'],
+  ['ready-for-human', '人間しかできない作業だ']
+])
+export const HUMAN_ONLY_LABELS = [...HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE.keys()]
 
 /**
  * 監査後の Issue を実装へ進めてはいけない理由を返す。
@@ -34,16 +36,12 @@ export function findSkipImplementationDecision({ state, labelNames }, targetIssu
   if (!labelNames.includes(ISSUE_CHECKED_LABEL)) {
     return { reason: '/issue-check が判定を書き戻しませんでした', isVerdict: false }
   }
-  if (labelNames.includes(NEEDS_HUMAN_DECISION_LABEL)) {
-    return {
-      reason: `/issue-check が人間の判断を要すると判定しました（${NEEDS_HUMAN_DECISION_LABEL}）`,
-      isVerdict: true
-    }
-  }
-  if (labelNames.includes(READY_FOR_HUMAN_LABEL)) {
-    return {
-      reason: `/issue-check が人間しかできない作業だと判定しました（${READY_FOR_HUMAN_LABEL}）`,
-      isVerdict: true
+  for (const [humanOnlyLabel, verdictPhrase] of HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE) {
+    if (labelNames.includes(humanOnlyLabel)) {
+      return {
+        reason: `/issue-check が${verdictPhrase}と判定しました（${humanOnlyLabel}）`,
+        isVerdict: true
+      }
     }
   }
   if (!labelNames.includes(targetIssueLabel)) {
