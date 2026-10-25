@@ -150,7 +150,7 @@ gh api --method POST repos/<owner>/<repo>/issues/<親の番号>/sub_issues -F su
 報告には次の一手を添える。
 
 - 別セッションを開き、`issue <番号> 対応して` と打つ
-- モデルは同節のとおり、Issue に `opus` ラベルがあれば最も性能の良いモデル、無ければ Sonnet / high にする
+- モデルは同節のとおり、Issue に `opus` ラベルがあれば最も性能の良いモデル、無ければ Sonnet / xhigh にする
 
 人間が同じセッションでの実装を指示していたときだけ、続けて着手する。
 
