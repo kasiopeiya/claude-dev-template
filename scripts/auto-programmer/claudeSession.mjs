@@ -12,6 +12,7 @@
 // - セッションの終わりに、終了状態と所要時間の行を出す。無いと、何分かかったかを時刻の引き算でしか知れない。
 
 import { config } from './config.mjs'
+import { buildSessionModelArgs } from './sessionModel.mjs'
 import { runStreamingAsync } from './shell.mjs'
 import {
   createThrottledStatusLine,
@@ -52,7 +53,7 @@ async function runUnattendedSession({ slashCommand, workspaceDir, abortSignal })
   // clone の中でも .claude/hooks/ のガードは効き続け、このツール自体の起動も AI には禁じている。
   const exitStatus = await runStreamingAsync(
     'claude',
-    ['-p', slashCommand, '--dangerously-skip-permissions'],
+    ['-p', slashCommand, '--dangerously-skip-permissions', ...buildSessionModelArgs(config)],
     {
       cwd: workspaceDir,
       // 中で動く hook と Skill が無人だと見分けるため（読み手と理由は unattendedSessionEnv.mjs）
