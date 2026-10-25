@@ -11,6 +11,7 @@ hook:
       '.github/workflows/pr-ai-triage.yml',
       '.github/workflows/deploy-dev.yml',
       '.github/workflows/close-human-review-issue.yml',
+      '.github/workflows/add-opus-label.yml',
       '.claude/agents/issue-auditor-agent/*.md',
       '.claude/skills/quick-issue/**/*.md',
       '.claude/skills/link-root-issue/**/*.md',
@@ -61,6 +62,7 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 | このポリシーが決める                                          | 決めない（置き場所）                                                                            |
 | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Issue ラベルの意味・付ける条件・移し先                        | ラベルを付ける手順・本文の書式（`/quick-issue` など各 Skill）                                   |
+| —                                                             | `opus` の条件Aに当たる Skill の一覧と、新しい設計書を見分ける書き方（`add-opus-label.yml`）     |
 | 人間が決めるべき Issue の条件と、`issue:decided` を付ける条件 | 「人間が決めたこと」の行の形（`/quick-issue`）                                                  |
 | 人間しかできない作業の条件と、混ざったときの切り出し          | 切り出す手順と、人間がするタスクの書き方（`/quick-issue`）                                      |
 | 3択の例外                                                     | 状態の遷移を示す図（`/issue-decide`）                                                           |
@@ -83,6 +85,7 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 | `issue:checked`                                | `/issue-check` が一度監査した。いま妥当である保証ではない                                | `/issue-check` が判定を出した Issue に、判定が何であれ貼る。監査できなかった・飛ばした Issue には貼らない                                                        |
 | `broken-window`                                | AI が作業中に見つけ、その場で直さずに起票した問題                                        | AI が本筋外の問題を見つけて起票するとき（CLAUDE.md「本筋外の課題は起票する」と、それを引いて確認なしに起票するレビュー系 Skill）。人間が依頼した要望には付けない |
 | `harness`                                      | ハーネスを変える Issue。ハーネスの手直しをプロダクト開発と分けて一覧する印               | 下の「`harness` を付ける条件」に当たるとき。起票する Skill が付ける                                                                                              |
+| `opus`                                         | 実行セッション全体を最上位モデルで回す Issue。モデルを選ぶ人間が見る印                   | 下の「`opus` を付ける条件」に当たるとき。3択に重ねる                                                                                                             |
 | `tracking-issue`                               | 子を持つ親 Issue（ルート Issue を除く）。自分では実装せず、子に分けて進める単位          | 子を紐づけて親にした Skill が付ける。3択に重ねる。子が全部 close されても外さない。人間が GitHub の画面で子を紐づけたときは、人間が付ける（#1126）               |
 | `needs-human-check`                            | 無人実行が問題で止まった。人間に確かめてほしい                                           | 下の「無人実行が止まったら `needs-human-check` を付ける」の条件に当たるとき                                                                                      |
 | `phase`                                        | Issue 階層の最上位の常設 Issue（ルート Issue）                                           | ルート Issue にだけ付ける（3択の例外）                                                                                                                           |
@@ -105,6 +108,31 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 [policy-driven-development-policy](policy-driven-development-policy.md) はハーネスの部品に CLAUDE.md とガードレール（静的解析設定・CI の検査）も数えるが、それらだけを変える Issue には付けない。人間が上の5つに絞った（#999）。
 
 3択が「誰が何をするか」を表すのに対し、`harness` は「何を変えるか」を表す。軸が違うので、3択のどれにも重ねる。
+
+## `opus` を付ける条件
+
+`opus` は、その Issue の実行セッションを、使える中で最も性能の良いモデルで最後まで回す印である。ラベルの無い Issue は既定のモデルで回す。印は1つで足りるので、`sonnet`・`haiku` のラベルは作らない。人間はこのラベルを見て、セッションのモデルを選ぶ（選び方は [development-flow](../guide/development-flow.md)「フェーズごとにどのモデルで回すか」）。
+
+次のどれかに当たる Issue に付ける。
+
+- **条件A（`add-opus-label.yml` が付ける）**：実装フローのどこかに、仕様を決める Skill が入っている。位置は問わない。どの Skill が当たるかは `add-opus-label.yml` が持つ。`/create-adr` は当たらない。`/design` は、新しい設計書を作るときだけ当たる（既存の設計書の更新・加筆は当たらない）。作るのか直すのかは、`/design` を書いた行の変更種別で見分ける（見分け方も `add-opus-label.yml` が持つ）
+- **条件B（起票する Skill が付ける）**：`app/` と `infra/` を別々に判定する。コードを入れる先のディレクトリに、起票時に追跡されたファイルが1つも無く（`git ls-files <ディレクトリ>` が空）、その Issue が最初のコードを入れる。かつ、その Issue のブロッカー（ブロッカーのブロッカーも含む）に、同じディレクトリへコードを入れる Issue が無い
+- **条件C（起票する Skill が付ける）**：`.github/workflows/` に新しい workflow ファイルを作る、または `docs/policy/` に新しいポリシーを作る。既存ファイルの変更は当たらない
+
+条件Bの例：`app/` が空で、#30（API を実装する）のブロッカーが #20（設計書を書く）だけなら、#30 に付ける。#20 のブロッカーに #10（`app/` に雛形を置く）があれば、#30 には付けず、#10 に付ける。
+
+3択が「誰が何をするか」を表すのに対し、`opus` は「どのモデルで回すか」を表す。軸が違うので、3択のどれにも重ねる。
+
+`add-opus-label.yml` は足すだけで、外さない。外すと、条件B・Cで付けた印や人間が付けた印まで消えるためである。
+
+**根拠**（条件と、ラベルを `opus` 1つにすることは、#1198 で人間が決めた）：
+
+- **条件Aは機械が付ける**：本文を機械的に読めば同じ答えが出る。機械で解ける問題を文章で解かない（refined-engineer-judgment-principles「確率論より決定論」）。workflow は Issue の編集時にも動くので、`/issue-check`・`/issue-decide` が実装フローを書き換えた Issue や、人間が作った Issue も拾える。Skill の一覧を issue-policy と workflow の両方に書くと、片方だけ直して食い違う。そこで一覧は workflow だけが持つ
+- **`/design` は新しい設計書を作るときに限る**：`/design` は既存の設計書の更新にも使うので、入っているだけで付けると `opus` だらけになる（人間の指示）
+- **条件B・Cは起票する Skill が付ける**：本文から、何を作り何を変えるかを読む必要があり、機械で同じ答えが出ない
+- **条件Bは最初のコードに限る**：新しいファイルを作るたびに付けると、`opus` だらけになる。`app/` のコアドメイン（`domain/`）は条件にしない。機能1つでファイルが何個もでき、機能の Issue のほとんどに付いてしまう
+- **条件Cは新設に限る**：既存の workflow やポリシーの手直しは、置き場の判断が要らない。`.claude/` の Skill・SubAgent の新設は当たらない
+- **レビューは条件にしない**：判定型の SubAgent は定義でモデルを固定しており、メインセッションのモデルでは判定が変わらない
 
 ## `tracking-issue` を3択に重ねる理由
 

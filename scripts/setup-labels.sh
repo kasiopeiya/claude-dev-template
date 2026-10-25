@@ -18,7 +18,7 @@ set -euo pipefail
 
 # 「名前|色(# なし)|説明」。色と説明は、テンプレートのリポジトリの現行値に合わせる。
 readonly LABELS=(
-  # Issue: /quick-issue・/issue-check・/auto-dev・Auto-Programmer などが付ける
+  # Issue: /quick-issue・/issue-check・/auto-dev・Auto-Programmer・add-opus-label.yml などが付ける
   'broken-window|C2E0C6|AI が作業中に見つけ、その場で直さずに起票した問題'
   'ai-fixable|0E8A16|問題と対応方針が一意に定まり、AIが単独で対応できるIssue'
   'needs-human-decision|0052cc|中身を見ずには直せない。人間が1件ずつ方針を決める対象を選ぶ印'
@@ -26,6 +26,7 @@ readonly LABELS=(
   'issue:decided|1D76DB|人間が方針を決めた Issue。決めた条件を理由に人間判断へ戻さない'
   'harness|BFDADC|ハーネス（Policy・Rule・Skill・SubAgent・hooks）を変えるIssue'
   'tracking-issue|D4C5F9|子を持つ親 Issue。自分では実装せず、子に分けて進める単位'
+  'opus|7057FF|実行セッション全体を最上位モデル（Opus）で回す Issue'
   'issue:checked|BFD4F2|/issue-check が一度監査した Issue。いま妥当である保証ではない'
   'needs-human-check|F9D0C4|無人実行が問題で止まったIssue。人間が確かめたら外す'
   'phase|0E4B99|Issue階層の最上位の常設Issue（起票先）'
