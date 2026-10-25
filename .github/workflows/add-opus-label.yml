@@ -1,0 +1,62 @@
+# 責務: Issue の「実装フロー（使用するSkill）」節に、仕様を決める Skill が入っていたら `opus` ラベルを足す
+#   （issue-policy.md「`opus` を付ける条件」の条件A）。Issue を開いたときと本文を編集したときに動く。
+#   足すだけで外さない。条件B・C で起票 Skill が付けた印や、人間が付けた印を消さないため。
+#   ラベルを足すと起きるのは `labeled` だけで `edited` は起きないので、自分で自分を起こさない。
+#   GITHUB_TOKEN で作られた Issue ではイベントが起きず動かない。pr-ai-triage.yml の人間レビュー Issue などが
+#   これに当たるが、どれも条件A に当たらないので構わない。
+#   どの Skill が条件A に当たるかの一覧は、このファイルだけが持つ（run の中の skills と design_lines）。
+#   `/design` は既存の設計書の更新にも使うので、新しい設計書を作る行（変更種別に「新設」か「新規」）だけを数える。
+
+name: add-opus-label
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  add-opus-label:
+    # 付いているなら、本文の編集のたびに読みに行かない（タスク一覧のチェックでも edited が起きる）
+    if: ${{ !contains(github.event.issue.labels.*.name, 'opus') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # gh issue edit に必要
+      issues: write
+    steps:
+      # checkout をしないので、gh はリポジトリを git リモートから引けない。GH_REPO で渡す。
+      - name: Add the opus label when the implementation flow has a skill that decides the spec
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          skills='grill-me|to-plan|to-issues|elicit-requirements|decide-tech-stack'
+
+          # 「実装フロー（使用するSkill）」節（次の `## ` 見出しまで）だけを取り出す。
+          # `###` 以下の見出しは節の中として残る。
+          flow_section=$(printf '%s\n' "$ISSUE_BODY" | tr -d '\r' | awk '
+            /^## / { in_flow = ($0 ~ /^## 実装フロー（使用するSkill）[[:space:]]*$/); next }
+            in_flow
+          ')
+
+          # Skill 名は `/` の直後に書かれたものだけを数える。前後を区切りで挟むのは、
+          # `docs/design/` のパスや `/design-doc-mermaid` を `/design` と取り違えないため。
+          has_skill() { grep -Eq "(^|[^A-Za-z0-9_./-])/($1)($|[^A-Za-z0-9_-])" <<<"$2"; }
+
+          # `/design` は既存の設計書の更新にも使うので、新しい設計書を作る行（変更種別に「新設」か「新規」）だけを数える。
+          # grep を二段に繋がず変数に受けるのは、pipefail 下で後段が先に終わると SIGPIPE で偽になるため。
+          design_lines=$(grep -E "(^|[^A-Za-z0-9_./-])/design($|[^A-Za-z0-9_-])" <<<"$flow_section" || true)
+
+          if has_skill "$skills" "$flow_section" || grep -Eq '新設|新規' <<<"$design_lines"; then
+            gh issue edit "$ISSUE_NUMBER" --add-label opus
+            echo "added opus to #$ISSUE_NUMBER"
+          else
+            echo "no skill that decides the spec in the implementation flow of #$ISSUE_NUMBER; nothing to add"
+          fi
