@@ -231,13 +231,13 @@ function listPullRequests(branchName) {
 }
 
 /**
- * ブランチを head とするマージ済みの PR の番号を引く。
+ * ブランチを head とするマージ済みの PR の番号とマージ時刻を引く。
  *
  * @param {string} branchName トピックブランチ名
- * @returns {number | null} マージ済みの PR の番号（無ければ null）
- * @throws {Error} gh が失敗したとき
+ * @returns {{ number: number, mergedAt: string } | null} マージ済みの PR の番号とマージ時刻（ISO 8601。無ければ null）
+ * @throws {Error} gh が失敗したとき、または返した PR の番号かマージ時刻を読めないとき
  */
-function findMergedPullRequestNumber(branchName) {
+function findMergedPullRequest(branchName) {
   const [mergedPullRequest] = runJson('gh', [
     'pr',
     'list',
@@ -248,9 +248,19 @@ function findMergedPullRequestNumber(branchName) {
     '--state',
     'merged',
     '--json',
-    'number'
+    'number,mergedAt'
   ])
-  return mergedPullRequest?.number ?? null
+  if (mergedPullRequest === undefined) return null
+  // 時刻を読めないまま渡すと「今回の作業の前のマージ」と取り違え、PR を出した Issue を差分なしと記録して通知も出ない
+  if (
+    !Number.isInteger(mergedPullRequest.number) ||
+    Number.isNaN(Date.parse(mergedPullRequest.mergedAt))
+  ) {
+    throw new Error(
+      `マージ済みの PR の番号かマージ時刻を読めません: ${JSON.stringify(mergedPullRequest)}`
+    )
+  }
+  return mergedPullRequest
 }
 
 /**
@@ -801,7 +811,7 @@ function concludeCiWatch({ issueNumber, nextStep, runState }) {
 /**
  * リモートのブランチ・clone の HEAD・Issue を引き、CI を待っても意味が無い理由を探す。
  *
- * @param {{ issueNumber: number, branchName: string, workspaceDir: string, previousHeadSha: string | null, lastSessionName: string }} params 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・push されなかったとみなす SHA と直前に走らせたセッションの名前（findDecisionNotToWaitForCi を参照）
+ * @param {{ issueNumber: number, branchName: string, workspaceDir: string, previousHeadSha: string | null, lastSessionName: string, workStartedAt: string }} params 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・push されなかったとみなす SHA と直前に走らせたセッションの名前・今回の作業を始めた時刻（findDecisionNotToWaitForCi を参照）
  * @returns {{ headSha: string, decisionNotToWait: ReturnType<typeof findDecisionNotToWaitForCi> }} リモートのブランチの SHA と、記録にそのまま書く待たない理由（待ってよければ null）
  * @throws {Error} git・gh が失敗したとき
  */
@@ -810,23 +820,25 @@ function readHeadShaAndDecisionNotToWait({
   branchName,
   workspaceDir,
   previousHeadSha,
-  lastSessionName
+  lastSessionName,
+  workStartedAt
 }) {
-  const headSha = readRemoteHeadSha({ workspaceDir, branchName })
+  const remoteHeadSha = readRemoteHeadSha({ workspaceDir, branchName })
   const localHeadSha = runOrThrow('git', ['rev-parse', 'HEAD'], { cwd: workspaceDir }).trim()
   const { state, labelNames } = readIssueStatus(issueNumber)
   // マージで消えたブランチを、差分が出ずに閉じた Issue と見分けるためだけに引く。ブランチが残っていれば要らない
-  const mergedPullRequestNumber = headSha ? null : findMergedPullRequestNumber(branchName)
+  const mergedPullRequest = remoteHeadSha ? null : findMergedPullRequest(branchName)
   return {
-    headSha,
+    headSha: remoteHeadSha,
     decisionNotToWait: findDecisionNotToWaitForCi({
       state,
       labelNames,
-      headSha,
+      remoteHeadSha,
       localHeadSha,
       previousHeadSha,
       lastSessionName,
-      mergedPullRequestNumber
+      mergedPullRequest,
+      workStartedAt
     })
   }
 }
@@ -835,13 +847,13 @@ function readHeadShaAndDecisionNotToWait({
  * push した commit の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。通るか、直させるのをやめるまで戻らない。
  * 結果は record へ書き足す。
  *
- * @param {{ issueNumber: number, branchName: string, workspaceDir: string, headShaBeforeSession: string | null, sessionName: string }} target 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・セッションの前のリモートのブランチの SHA（これと同じなら push されなかったとみなす。新しく作ったブランチなら null）・CI を待つ前に走らせたセッションの名前
+ * @param {{ issueNumber: number, branchName: string, workspaceDir: string, headShaBeforeSession: string | null, sessionName: string, workStartedAt: string }} target 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・セッションの前のリモートのブランチの SHA（これと同じなら push されなかったとみなす。新しく作ったブランチなら null）・CI を待つ前に走らせたセッションの名前・今回の作業を始めた時刻（ISO 8601）
  * @param {Record<string, unknown>} record 書き足す先の記録
  * @returns {Promise<boolean>} `/auto-fix-ci` を走らせなかったか、すべて正常終了したら true
  * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
  */
 async function watchCiAndFix(
-  { issueNumber, branchName, workspaceDir, headShaBeforeSession, sessionName },
+  { issueNumber, branchName, workspaceDir, headShaBeforeSession, sessionName, workStartedAt },
   record
 ) {
   record.ciRuns = []
@@ -856,6 +868,7 @@ async function watchCiAndFix(
       issueNumber,
       branchName,
       workspaceDir,
+      workStartedAt,
       ...pushCheck
     })
     if (decisionNotToWait) {
@@ -969,16 +982,17 @@ function tryMarkAsNeedsHumanCheck(issueNumber, record) {
  * Issue 1件ぶんの作業を走らせ、途中で落ちても結果を記録する。予定した終わり方以外で終えたら、記録の前に `needs-human-check` を付ける
  * （付けられなくても投げない）。
  *
- * @param {{ record: Record<string, unknown> & { issueNumber: number }, runWork: (record: Record<string, unknown>) => Promise<boolean>, readPullRequestUrl: () => string | null }} params 記録の初期値・作業（受け取った記録へ結果を書き足し、走らせた claude セッションがすべて正常終了したら true を返す）・記録に残す PR の URL を引く関数（作業の後に呼ぶ）
+ * @param {{ record: Record<string, unknown> & { issueNumber: number }, runWork: (record: Record<string, unknown>, workStartedAt: string) => Promise<boolean>, readPullRequestUrl: () => string | null }} params 記録の初期値・作業（受け取った記録へ結果を書き足し、作業を始めた時刻（ISO 8601。記録の `sessionStartedAt` と同じ値）を受け取り、走らせた claude セッションがすべて正常終了したら true を返す）・記録に残す PR の URL を引く関数（作業の後に呼ぶ）
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true（起動できなかった・打ち切られた・0 以外で終わった・途中で例外が出たら false）
  * @throws {Error} 記録ファイルへ書けなかったとき
  */
 async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
-  record.sessionStartedAt = new Date().toISOString()
+  const workStartedAt = new Date().toISOString()
+  record.sessionStartedAt = workStartedAt
   inFlightIssueNumber = record.issueNumber
   let isAllSessionsSucceeded = false
   try {
-    isAllSessionsSucceeded = await runWork(record)
+    isAllSessionsSucceeded = await runWork(record, workStartedAt)
   } catch (error) {
     // 無人実行の画面はセッションの出力で流れるため、スタックを出すと原因の1行が埋もれる（Issue #780）
     record.error = formatError(error)
@@ -1002,10 +1016,11 @@ async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
  *
  * @param {StartedIssue} startedIssue startFirstStartableIssue の結果
  * @param {Record<string, unknown>} record 書き足す先の記録
+ * @param {string} workStartedAt 今回の作業を始めた時刻（ISO 8601）
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
  * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
  */
-async function implementAndWatchCi(startedIssue, record) {
+async function implementAndWatchCi(startedIssue, record, workStartedAt) {
   const { issue, branchName, workspaceDir } = startedIssue
   const isImplemented = await handOverOrImplement(issue.number, workspaceDir, record)
   if (record.subIssueHandover) showSubIssueHandover(record)
@@ -1019,7 +1034,8 @@ async function implementAndWatchCi(startedIssue, record) {
       branchName,
       workspaceDir,
       headShaBeforeSession: null,
-      sessionName: '/auto-dev'
+      sessionName: '/auto-dev',
+      workStartedAt
     },
     record
   )
@@ -1037,7 +1053,7 @@ function implementIssueAndRecord(startedIssue) {
   return runWorkAndRecord({
     // 記録ファイルは全プロセスで共有するので、どの clone で作業したかを載せる。途中で消えた変更の stash を探す先になる
     record: { issueNumber: issue.number, issueTitle: issue.title, branchName, workspaceDir },
-    runWork: (record) => implementAndWatchCi(startedIssue, record),
+    runWork: (record, workStartedAt) => implementAndWatchCi(startedIssue, record, workStartedAt),
     readPullRequestUrl: () => findCreatedPullRequestUrl(branchName, existingPullRequestNumbers)
   })
 }
@@ -1205,10 +1221,15 @@ function disableAutoMerge(pullRequestNumber) {
  *
  * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string }} params 解かせると決めた PR と、このプロセスが使う AI 専用 clone
  * @param {Record<string, unknown>} record 書き足す先の記録
+ * @param {string} workStartedAt 今回の作業を始めた時刻（ISO 8601）
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
  * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
  */
-async function resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }, record) {
+async function resolveConflictAndWatchCi(
+  { conflictedPullRequest, workspaceDir },
+  record,
+  workStartedAt
+) {
   const { issueNumber, pullRequestNumber, branchName, headShaBeforeSession, isAutoMergeEnabled } =
     conflictedPullRequest
   // 外さずに解くと、解いた push の CI が通った瞬間、pr-ai-triage が中身を見る前にマージされうる。
@@ -1234,7 +1255,8 @@ async function resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }
       branchName,
       workspaceDir,
       headShaBeforeSession,
-      sessionName: '/auto-resolve-conflict'
+      sessionName: '/auto-resolve-conflict',
+      workStartedAt
     },
     record
   )
@@ -1257,7 +1279,8 @@ function resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }) {
   })
   return runWorkAndRecord({
     record: { issueNumber, branchName, workspaceDir, isConflictResolution: true },
-    runWork: (record) => resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }, record),
+    runWork: (record, workStartedAt) =>
+      resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }, record, workStartedAt),
     // 解いた後も PR の URL を記録に残し、次に衝突したときもこのツールの PR として見分ける
     readPullRequestUrl: () => pullRequestUrl
   })

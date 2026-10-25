@@ -98,6 +98,18 @@ describe('メッセージ行の組み立て', () => {
     assert.deepEqual(lines, ['01:02:03 ℹ 偽の行[2K本物'])
   })
 
+  test('ESC を落としても迂回できる C1 制御文字（CSI など）を落とす', () => {
+    const sut = buildMessageLines
+
+    const lines = sut({
+      clockTime: '01:02:03',
+      symbol: 'ℹ',
+      message: '偽の行\u009b2K本物\u0080\u009f'
+    })
+
+    assert.deepEqual(lines, ['01:02:03 ℹ 偽の行2K本物'])
+  })
+
   test('本文の色付けは制御文字を落とした後に掛け、色の制御文字を残す', () => {
     const sut = buildMessageLines
 
@@ -258,6 +270,14 @@ describe('ステータス行の組み立て', () => {
     const line = sut({ clockTime: '01:02:03', symbol: '⏳', message: '偽の行\r\u001b[2K本物' })
 
     assert.equal(line, '01:02:03 ⏳ 偽の行[2K本物')
+  })
+
+  test('ESC を落としても迂回できる C1 制御文字（CSI など）を落とす', () => {
+    const sut = buildStatusLineText
+
+    const line = sut({ clockTime: '01:02:03', symbol: '⏳', message: '偽の行\u009b2K本物' })
+
+    assert.equal(line, '01:02:03 ⏳ 偽の行2K本物')
   })
 })
 
