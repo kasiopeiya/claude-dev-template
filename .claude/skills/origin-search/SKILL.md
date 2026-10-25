@@ -1,7 +1,6 @@
 ---
 name: origin-search
 description: 発信元の原典（一次資料）だけを根拠に web を調べ、主張ごとに出典URLを付けて答える。原典で確かめられなければ答えず「確認できなかった」と返す。「origin-search」「一次資料で調べて」「出典付きで調べて」「原典に当たって」と指示されたとき。
-disable-model-invocation: true
 ---
 
 # Origin Search（一次資料だけで調べる）
