@@ -6,7 +6,12 @@
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { countPastFixAttempts, decideAfterCiRun, readCiRunState } from '../ciRun.mjs'
+import {
+  countPastFixAttempts,
+  decideAfterCiRun,
+  readCiRunState,
+  selectRunsCreatedSince
+} from '../ciRun.mjs'
 
 const HEAD_SHA = 'aaaaaaa'
 
@@ -18,6 +23,7 @@ function createRun(overrides = {}) {
     conclusion: 'success',
     headSha: HEAD_SHA,
     url: 'https://example.com/runs/100',
+    createdAt: '2026-10-20T00:00:00Z',
     ...overrides
   }
 }
@@ -139,6 +145,50 @@ describe('これまでに直させた回数を数える', () => {
     const pastFixAttemptCount = sut({ branchRuns, currentRunId: 9 })
 
     assert.equal(pastFixAttemptCount, 1)
+  })
+})
+
+describe('ブランチを作り直す前の run を除く', () => {
+  const branchStartedAtMs = Date.parse('2026-10-20T00:00:00Z')
+
+  test('ブランチの最初の commit より前に作られた run は残さない', () => {
+    const sut = selectRunsCreatedSince
+    const runs = [
+      createRun({ databaseId: 1, createdAt: '2026-10-19T23:59:59Z' }),
+      createRun({ databaseId: 2, createdAt: '2026-10-20T00:00:01Z' })
+    ]
+
+    const selectedRuns = sut({ runs, sinceMs: branchStartedAtMs })
+
+    assert.deepEqual(
+      selectedRuns.map((run) => run.databaseId),
+      [2]
+    )
+  })
+
+  test('ブランチの最初の commit と同時刻に作られた run は残す', () => {
+    const sut = selectRunsCreatedSince
+    const runs = [createRun({ databaseId: 1, createdAt: '2026-10-20T00:00:00Z' })]
+
+    const selectedRuns = sut({ runs, sinceMs: branchStartedAtMs })
+
+    assert.equal(selectedRuns.length, 1)
+  })
+
+  test('前の回に落ちた run を除くので、直させた回数に数えない', () => {
+    const sut = selectRunsCreatedSince
+    const branchRuns = [
+      createRun({ databaseId: 1, conclusion: 'failure', createdAt: '2026-10-10T00:00:00Z' }),
+      createRun({ databaseId: 2, conclusion: 'failure', createdAt: '2026-10-10T01:00:00Z' }),
+      createRun({ databaseId: 3, conclusion: 'failure', createdAt: '2026-10-21T00:00:00Z' })
+    ]
+
+    const pastFixAttemptCount = countPastFixAttempts({
+      branchRuns: sut({ runs: branchRuns, sinceMs: branchStartedAtMs }),
+      currentRunId: 3
+    })
+
+    assert.equal(pastFixAttemptCount, 0)
   })
 })
 
