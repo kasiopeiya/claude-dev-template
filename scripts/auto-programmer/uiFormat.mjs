@@ -1,4 +1,4 @@
-// 責務: 画面へ出す1行を組み立てる純粋関数だけを置く。端末への書き出しと色付けは ui.mjs が持つ。
+// 責務: 画面へ出す1行や、例外の表示用文字列を組み立てる純粋関数だけを置く。端末への書き出しと色付けは ui.mjs が持つ。
 //
 // 設計意図（WHY）:
 // - import を1つも持たない形に保つ。時刻の整形・所要時間の言い回し・行の組み立ては、端末もプロセスも
@@ -305,4 +305,26 @@ export function collapseToSingleLine(text) {
 
   const tailLength = MAX_SINGLE_LINE_LENGTH - SINGLE_LINE_HEAD_LENGTH
   return `${collapsed.slice(0, SINGLE_LINE_HEAD_LENGTH)}…${collapsed.slice(-tailLength)}`
+}
+
+/**
+ * 例外を、メッセージだけの表示用文字列にする。
+ *
+ * @param {unknown} error 受け取った例外
+ * @returns {string} 表示する文字列
+ */
+export function formatErrorMessage(error) {
+  if (!(error instanceof Error)) return String(error)
+  return error.message
+}
+
+/**
+ * 予期しない例外を、stack まで含む表示用の文字列にする。
+ *
+ * @param {unknown} error 受け取った例外
+ * @returns {string} 表示する文字列（stack が無ければメッセージ）
+ */
+export function formatErrorWithStack(error) {
+  if (!(error instanceof Error)) return String(error)
+  return error.stack ?? error.message
 }
