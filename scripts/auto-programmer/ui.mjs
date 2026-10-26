@@ -53,6 +53,143 @@ let activeStatusLine = null
 const midLineRelayedStreamNames = new Set()
 
 /**
+ * 待っている間の状況を出す。TTY ではその場を書き換え（中継した子の出力が行の途中で終わっているときは
+ * 何も出さない）、非TTY では時刻・レベル記号付きの1行として追記する（追記だけになる非TTY では、
+ * この行自体が生存確認を兼ねる）。
+ *
+ * @param {string} message 出す内容（1行想定）
+ * @param {{ symbol?: string }} [options] TTY のその場更新で、既定の ⏳ の代わりに出す記号（スピナーなど）。非TTY の追記には使わない
+ * @returns {void}
+ */
+export function showStatusLine(message, { symbol = LINE_STYLES.status.symbol } = {}) {
+  if (!isStdoutInteractiveTerminal()) {
+    writeLines('status', message)
+    return
+  }
+  // 子の出力が行の途中なら書かない。次の呼び出し（1秒ごとの経過表示など）で、行が閉じてから出る
+  if (isStatusLineTerminalMidLine()) return
+  const line = buildStatusLineText({
+    ...buildStyledLinePrefix({
+      symbol,
+      symbolStyle: LINE_STYLES.status.symbolStyle,
+      stream: STATUS_LINE_STREAM
+    }),
+    message
+  })
+  STATUS_LINE_STREAM.write(`${ERASE_CURRENT_LINE}${line}`)
+  activeStatusLine = { message, symbol }
+}
+
+/**
+ * 子プロセスの出力を、各行の頭に罫線を付けて端末へ中継する。罫線以外の内容には手を加えない。
+ * その場更新中のステータス行があれば、消してから書き、子の出力が改行で終わっていれば同じ内容で
+ * 引き直す（行の途中で終わったときは、行が閉じるまで引き直さない）。
+ *
+ * @param {'stdout' | 'stderr'} streamName 子のどちらのストリームから来たか（親の同じ名前のストリームへ書く）
+ * @param {Buffer} chunk 子が書いた内容
+ * @returns {void}
+ */
+export function relayChildProcessOutput(streamName, chunk) {
+  if (chunk.length === 0) return
+  const interruptedStatusLine = activeStatusLine
+  clearStatusLine()
+  closeOtherRelayedStreamOnSharedTerminal(streamName)
+  const stream = process[streamName]
+  stream.write(
+    prefixChunkLines({
+      chunk,
+      prefix: styleText('dim', CHILD_OUTPUT_GUTTER, { stream }),
+      isAtLineStart: !midLineRelayedStreamNames.has(streamName)
+    })
+  )
+  if (chunk.at(-1) === LINE_FEED_BYTE) midLineRelayedStreamNames.delete(streamName)
+  else midLineRelayedStreamNames.add(streamName)
+  if (interruptedStatusLine !== null) {
+    showStatusLine(interruptedStatusLine.message, { symbol: interruptedStatusLine.symbol })
+  }
+}
+
+/**
+ * 間引いて追記するステータス行を作る。TTY は呼ばれるたびに showStatusLine へ渡し、非TTY は `minAppendIntervalMs`
+ * 未満の間隔では追記しない（間引かないと、ポーリング間隔の短い場面でログが溢れる）。
+ * 呼ぶたびに新しい間引き区間を始めたい場面（CI の run を待つループなど）では、呼び出し側で
+ * そのたびに作り直す。
+ *
+ * TTY のその場更新だけ見た目を変えたいときは、`liveMessage` と `symbol` を渡す（非TTY の追記は `message` のまま）。
+ * プログレスバーのような毎秒変わる見た目を、追記するログに残さないため。
+ *
+ * @param {{ minAppendIntervalMs: number }} params 非TTY で追記する最小間隔（0 なら毎回追記する）
+ * @returns {(message: string, liveOptions?: { liveMessage?: string, symbol?: string }) => void} 呼ぶたびに状況を出す関数
+ */
+export function createThrottledStatusLine({ minAppendIntervalMs }) {
+  let lastAppendedAt = 0
+  return (message, { liveMessage = message, symbol } = {}) => {
+    if (isStdoutInteractiveTerminal()) {
+      showStatusLine(liveMessage, { symbol })
+      return
+    }
+    const now = Date.now()
+    if (now - lastAppendedAt < minAppendIntervalMs) return
+    lastAppendedAt = now
+    showStatusLine(message)
+  }
+}
+
+/**
+ * 進行中の出来事を伝える。
+ *
+ * @param {string} message 出す内容
+ * @returns {void}
+ */
+export function showInfo(message) {
+  writeLines('info', message)
+}
+
+/**
+ * うまくいったことを伝える。
+ *
+ * @param {string} message 出す内容
+ * @returns {void}
+ */
+export function showSuccess(message) {
+  writeLines('success', message)
+}
+
+/**
+ * 処理は続くが人間に見てほしいことを、stderr へ伝える。
+ *
+ * @param {string} message 出す内容
+ * @returns {void}
+ */
+export function showWarning(message) {
+  writeLines('warning', message)
+}
+
+/**
+ * 異常を stderr へ伝える。
+ *
+ * @param {string} message 出す内容
+ * @returns {void}
+ */
+export function showError(message) {
+  writeLines('error', message)
+}
+
+/**
+ * Issue 1件の始まりを区切りバナーで示す。claude のセッションが流す出力との境目を作るためのもの。
+ *
+ * @param {{ issueNumber: number, title: string, branchName: string, workspaceDir: string }} issue 対象 Issue の番号・タイトルと、作るトピックブランチ名・作業する AI 専用 clone
+ * @returns {void}
+ */
+export function showIssueBanner({ issueNumber, title, branchName, workspaceDir }) {
+  // 先に消さずに '\n' を書くと、その場更新中のステータス行が改行の上に取り残される
+  clearStatusLine()
+  closeRelayedOutputLines()
+  LINE_STYLES.banner.stream.write('\n')
+  writeLines('banner', buildIssueBannerText({ issueNumber, title, branchName, workspaceDir }))
+}
+
+/**
  * メッセージを1行以上の行にして書き出す。改行を含むメッセージも、行ごとに時刻とレベル記号が付く。
  *
  * @param {'info' | 'banner' | 'success' | 'warning' | 'error' | 'status'} kind 行の種類
@@ -136,63 +273,6 @@ function isStatusLineTerminalMidLine() {
 }
 
 /**
- * 待っている間の状況を出す。TTY ではその場を書き換え（中継した子の出力が行の途中で終わっているときは
- * 何も出さない）、非TTY では時刻・レベル記号付きの1行として追記する（追記だけになる非TTY では、
- * この行自体が生存確認を兼ねる）。
- *
- * @param {string} message 出す内容（1行想定）
- * @param {{ symbol?: string }} [options] TTY のその場更新で、既定の ⏳ の代わりに出す記号（スピナーなど）。非TTY の追記には使わない
- * @returns {void}
- */
-export function showStatusLine(message, { symbol = LINE_STYLES.status.symbol } = {}) {
-  if (!isStdoutInteractiveTerminal()) {
-    writeLines('status', message)
-    return
-  }
-  // 子の出力が行の途中なら書かない。次の呼び出し（1秒ごとの経過表示など）で、行が閉じてから出る
-  if (isStatusLineTerminalMidLine()) return
-  const line = buildStatusLineText({
-    ...buildStyledLinePrefix({
-      symbol,
-      symbolStyle: LINE_STYLES.status.symbolStyle,
-      stream: STATUS_LINE_STREAM
-    }),
-    message
-  })
-  STATUS_LINE_STREAM.write(`${ERASE_CURRENT_LINE}${line}`)
-  activeStatusLine = { message, symbol }
-}
-
-/**
- * 子プロセスの出力を、各行の頭に罫線を付けて端末へ中継する。罫線以外の内容には手を加えない。
- * その場更新中のステータス行があれば、消してから書き、子の出力が改行で終わっていれば同じ内容で
- * 引き直す（行の途中で終わったときは、行が閉じるまで引き直さない）。
- *
- * @param {'stdout' | 'stderr'} streamName 子のどちらのストリームから来たか（親の同じ名前のストリームへ書く）
- * @param {Buffer} chunk 子が書いた内容
- * @returns {void}
- */
-export function relayChildProcessOutput(streamName, chunk) {
-  if (chunk.length === 0) return
-  const interruptedStatusLine = activeStatusLine
-  clearStatusLine()
-  closeOtherRelayedStreamOnSharedTerminal(streamName)
-  const stream = process[streamName]
-  stream.write(
-    prefixChunkLines({
-      chunk,
-      prefix: styleText('dim', CHILD_OUTPUT_GUTTER, { stream }),
-      isAtLineStart: !midLineRelayedStreamNames.has(streamName)
-    })
-  )
-  if (chunk.at(-1) === LINE_FEED_BYTE) midLineRelayedStreamNames.delete(streamName)
-  else midLineRelayedStreamNames.add(streamName)
-  if (interruptedStatusLine !== null) {
-    showStatusLine(interruptedStatusLine.message, { symbol: interruptedStatusLine.symbol })
-  }
-}
-
-/**
  * 同じ端末に出ている他方のストリームへ中継した子の出力が行の途中なら、改行を足して閉じる。
  * 閉じないと、こちらのストリームの罫線が画面上の行の途中に入り、他方の続きは行頭なのに罫線を欠く。
  *
@@ -205,84 +285,4 @@ function closeOtherRelayedStreamOnSharedTerminal(streamName) {
   if (!isStderrSharingTerminalWithStdout()) return
   process[otherStreamName].write('\n')
   midLineRelayedStreamNames.delete(otherStreamName)
-}
-
-/**
- * 間引いて追記するステータス行を作る。TTY は呼ばれるたびに showStatusLine へ渡し、非TTY は `minAppendIntervalMs`
- * 未満の間隔では追記しない（間引かないと、ポーリング間隔の短い場面でログが溢れる）。
- * 呼ぶたびに新しい間引き区間を始めたい場面（CI の run を待つループなど）では、呼び出し側で
- * そのたびに作り直す。
- *
- * TTY のその場更新だけ見た目を変えたいときは、`liveMessage` と `symbol` を渡す（非TTY の追記は `message` のまま）。
- * プログレスバーのような毎秒変わる見た目を、追記するログに残さないため。
- *
- * @param {{ minAppendIntervalMs: number }} params 非TTY で追記する最小間隔（0 なら毎回追記する）
- * @returns {(message: string, liveOptions?: { liveMessage?: string, symbol?: string }) => void} 呼ぶたびに状況を出す関数
- */
-export function createThrottledStatusLine({ minAppendIntervalMs }) {
-  let lastAppendedAt = 0
-  return (message, { liveMessage = message, symbol } = {}) => {
-    if (isStdoutInteractiveTerminal()) {
-      showStatusLine(liveMessage, { symbol })
-      return
-    }
-    const now = Date.now()
-    if (now - lastAppendedAt < minAppendIntervalMs) return
-    lastAppendedAt = now
-    showStatusLine(message)
-  }
-}
-
-/**
- * 進行中の出来事を伝える。
- *
- * @param {string} message 出す内容
- * @returns {void}
- */
-export function showInfo(message) {
-  writeLines('info', message)
-}
-
-/**
- * うまくいったことを伝える。
- *
- * @param {string} message 出す内容
- * @returns {void}
- */
-export function showSuccess(message) {
-  writeLines('success', message)
-}
-
-/**
- * 処理は続くが人間に見てほしいことを、stderr へ伝える。
- *
- * @param {string} message 出す内容
- * @returns {void}
- */
-export function showWarning(message) {
-  writeLines('warning', message)
-}
-
-/**
- * 異常を stderr へ伝える。
- *
- * @param {string} message 出す内容
- * @returns {void}
- */
-export function showError(message) {
-  writeLines('error', message)
-}
-
-/**
- * Issue 1件の始まりを区切りバナーで示す。claude のセッションが流す出力との境目を作るためのもの。
- *
- * @param {{ issueNumber: number, title: string, branchName: string, workspaceDir: string }} issue 対象 Issue の番号・タイトルと、作るトピックブランチ名・作業する AI 専用 clone
- * @returns {void}
- */
-export function showIssueBanner({ issueNumber, title, branchName, workspaceDir }) {
-  // 先に消さずに '\n' を書くと、その場更新中のステータス行が改行の上に取り残される
-  clearStatusLine()
-  closeRelayedOutputLines()
-  LINE_STYLES.banner.stream.write('\n')
-  writeLines('banner', buildIssueBannerText({ issueNumber, title, branchName, workspaceDir }))
 }
