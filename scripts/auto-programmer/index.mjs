@@ -24,6 +24,8 @@
 //   確かめるのは `/issue-check` の前・後と `/auto-dev` の後である。前は割り済みの親に監査の費用を掛けないため。
 //   `/issue-check` の後は今回の監査が割った分を、`/auto-dev` の後は実装フローの `/issue-split` が割った分を拾うため。
 //   親のカードは着手中のまま残す。子が進んでいる間、親は作業中である。
+// - Issue 1件の行き先（引き継いだ・見送った・実装した・セッション失敗）は、handOverOrImplement が戻り値で1か所に決める。
+//   呼び出し側が record から同じ条件を組み直すと、止める理由を足したときに片方を直し忘れ、実装していない Issue の CI を待ちに行く。
 // - PR を作った後は、CI の結果が出るまで次の Issue へ進まない。落ちていれば `/auto-fix-ci` を
 //   別プロセスで起こして直させ、上限まで直させても落ちていれば人間へ回す。待たずに次へ進むと、落ちた PR が
 //   誰にも直されずに残る。CI が落ちたこと自体はセッションの失敗に数えない（claude が壊れている兆候ではない）。
@@ -83,7 +85,12 @@ import {
   ISSUE_CHECKED_LABEL,
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
-import { CI_RUN_STATE_FIELDS, decideAfterCiRun, readCiRunState } from './ciRun.mjs'
+import {
+  CI_RUN_STATE_FIELDS,
+  decideAfterCiRun,
+  describeCiOutcome,
+  readCiRunState
+} from './ciRun.mjs'
 import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
 import {
   acquireLowestFreeNumberedLockFile,
@@ -476,7 +483,7 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
  * 締めの記号は、例外の有無だけでなく「人間の手当てが要るか」で決める。実装が失敗しても例外は出ない
  * （セッションが 0 以外で終わるだけ）ので、例外だけで決めると失敗した実行に ✓ が出て、異常が埋もれる。
  *
- * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, isClosedWithoutChanges?: boolean, skippedReason?: string | null, isSkippedByIssueCheckVerdict?: boolean, subIssueHandover?: { reason: string, putOnReadySubIssueNumbers: number[] }, error?: string }} record 記録した内容
+ * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, isClosedWithoutChanges?: boolean, reasonNotToImplement?: string | null, isSkippedByIssueCheckVerdict?: boolean, subIssueHandover?: { reason: string, putOnReadySubIssueNumbers: number[] }, error?: string }} record 記録した内容
  * @param {boolean} isAllSessionsSucceeded 走らせた claude セッションがすべて正常終了したか
  * @returns {void}
  */
@@ -487,7 +494,8 @@ function showRunSummary(record, isAllSessionsSucceeded) {
   const headline = `#${record.issueNumber} を終えました（${elapsedTime}）`
   // /issue-check の判定で止めた Issue は予定した終わり方だが、人間判断・close を見てほしいので警告で出す
   const needsHumanAttention =
-    Boolean(record.skippedReason) || shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)
+    Boolean(record.reasonNotToImplement) ||
+    shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)
   if (record.error) showError(headline)
   else if (needsHumanAttention) showWarning(headline)
   else showSuccess(headline)
@@ -655,16 +663,16 @@ async function startFirstStartableIssue(workspaceDir) {
  * @param {number} issueNumber 対象 Issue の番号
  * @param {string} workspaceDir claude セッションを動かす AI 専用 clone
  * @param {Record<string, unknown>} record 書き足す先の記録
- * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
+ * @returns {Promise<'handed-over' | 'skipped' | 'implemented' | 'session-failed'>} 子へ引き継いだ（handed-over）・止める理由があって実装せず見送った（skipped）・`/auto-dev` が正常終了した（implemented。CI を待つのはこの回だけ）・claude のセッションが失敗した（session-failed）のどれか
  * @throws {Error} claude を起動できなかったとき・Issue のラベルを外せなかった／引き直せなかったとき・sub-issue を引けなかった／子を着手待ちに載せられなかったとき
  */
 async function handOverOrImplement(issueNumber, workspaceDir, record) {
   handOverToSubIssuesIfAny(issueNumber, record)
   // 監査前の親のラベルは止める理由の判定に通さない。`/to-issues` のまとめ用の親は issue:checked を持たないことがある
-  if (record.subIssueHandover) return true
+  if (record.subIssueHandover) return 'handed-over'
 
-  record.issueCheckSkipped = readIssueStatus(issueNumber).labelNames.includes(ISSUE_CHECKED_LABEL)
-  if (record.issueCheckSkipped) {
+  record.isIssueCheckSkipped = readIssueStatus(issueNumber).labelNames.includes(ISSUE_CHECKED_LABEL)
+  if (record.isIssueCheckSkipped) {
     showInfo(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
   } else {
     const issueCheckStatus = await runIssueCheckSession({
@@ -676,8 +684,8 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
     record.issueCheckSignal = issueCheckStatus.signal
     if (!hasSessionSucceeded(issueCheckStatus)) {
       // 監査の結果が書き戻されたか分からないまま実装へ進むと、止めるべき Issue を実装しうる
-      record.skippedReason = '/issue-check のセッションが失敗しました'
-      return false
+      record.reasonNotToImplement = '/issue-check のセッションが失敗しました'
+      return 'session-failed'
     }
     // 割るのに失敗して人間判断になった親も、できた子は引き継ぐ。人間判断は下の判定で記録に残す
     handOverToSubIssuesIfAny(issueNumber, record)
@@ -687,20 +695,13 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
     readIssueStatus(issueNumber),
     config.targetIssueLabel
   )
-  record.skippedReason = skipDecision?.reason ?? null
+  record.reasonNotToImplement = skipDecision?.reason ?? null
   if (skipDecision) record.isSkippedByIssueCheckVerdict = skipDecision.isVerdict
-  if (record.skippedReason || record.subIssueHandover) return true
+  if (record.subIssueHandover) return 'handed-over'
+  if (record.reasonNotToImplement) return 'skipped'
 
   // 前の実行が止まって残した印を外し、CI を待つ前に付いていれば今回の離脱と読めるようにする
-  runOrThrow('gh', [
-    'issue',
-    'edit',
-    String(issueNumber),
-    '--repo',
-    config.repository,
-    '--remove-label',
-    NEEDS_HUMAN_CHECK_LABEL
-  ])
+  removeNeedsHumanCheckLabel(issueNumber)
   const headShaBeforeAutoDev = readLocalHeadSha(workspaceDir)
   const autoDevStatus = await runAutoDevSession({
     issueNumber,
@@ -709,13 +710,13 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
   })
   record.autoDevExitCode = autoDevStatus.exitCode
   record.autoDevSignal = autoDevStatus.signal
-  if (!hasSessionSucceeded(autoDevStatus)) return false
+  if (!hasSessionSucceeded(autoDevStatus)) return 'session-failed'
   // /auto-dev が /issue-split で割った親は、差分も commit も無いまま終わる。ここで拾わないと、作られた子が誰にも載せられない。
-  // commit した回は PR の CI を待たせる。引き継ぐと shouldWatchCi が false になり、落ちた PR が直されずに残る
+  // commit した回は PR の CI を待たせる。引き継ぐと 'handed-over' になって CI を待たず、落ちた PR が直されずに残る
   if (readLocalHeadSha(workspaceDir) === headShaBeforeAutoDev) {
     handOverToSubIssuesIfAny(issueNumber, record)
   }
-  return true
+  return record.subIssueHandover ? 'handed-over' : 'implemented'
 }
 
 /**
@@ -876,24 +877,21 @@ function handOverToHuman(issueNumber, lastRun) {
 }
 
 /**
- * 直させずに終える run について、記録に残す結果を決める。上限まで直させても落ちていれば人間へ回す。
+ * CI 待ちを終える。直させずに終える run の結果を record へ書き足し、上限まで直させても落ちていれば、書き足す前に人間へ回すコメントを Issue に付ける。
  *
- * @param {{ issueNumber: number, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null } }} params 対象 Issue の番号・decideAfterCiRun の結果・待ち終えた run の状態
- * @returns {string} 記録に残す CI の結果
+ * @param {{ issueNumber: number, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null }, record: Record<string, unknown> }} params 対象 Issue の番号・decideAfterCiRun の結果（直させる 'fix' は渡さない）・待ち終えた run の状態・書き足す先の記録
+ * @returns {void}
  * @throws {Error} 人間へ回すときに gh が失敗したとき
  */
-function concludeCiWatch({ issueNumber, nextStep, runState }) {
-  switch (nextStep) {
-    case 'finish-passed':
-      return 'CI が通りました'
-    case 'stop-timed-out':
-      return `CI の run が ${config.ci.runWaitLimitMinutes} 分以内に終わりませんでした（run が見つからない場合を含む）`
-    case 'stop-unfixable':
-      return `CI の run が ${runState.conclusion} で終わったので直させません`
-    case 'hand-over':
-      handOverToHuman(issueNumber, runState)
-      return `${config.ci.maxFixAttempts} 回直させても CI が通らないので人間へ回しました`
-  }
+function finishCiWatch({ issueNumber, nextStep, runState, record }) {
+  if (nextStep === 'hand-over') handOverToHuman(issueNumber, runState)
+  record.ciOutcome = describeCiOutcome({
+    nextStep,
+    conclusion: runState.conclusion,
+    runWaitLimitMinutes: config.ci.runWaitLimitMinutes,
+    maxFixAttempts: config.ci.maxFixAttempts
+  })
+  record.isCiPassed = nextStep === 'finish-passed'
 }
 
 /**
@@ -979,8 +977,7 @@ async function watchCiAndFix(
       maxFixAttempts: config.ci.maxFixAttempts
     })
     if (nextStep !== 'fix') {
-      record.ciOutcome = concludeCiWatch({ issueNumber, nextStep, runState })
-      record.isCiPassed = nextStep === 'finish-passed'
+      finishCiWatch({ issueNumber, nextStep, runState, record })
       return true
     }
 
@@ -1034,6 +1031,25 @@ function showSubIssueHandover(record) {
   showHandover(
     `実装せず子へ引き継ぎます: ${reason}。${config.board.readyStatusName} に載せた子は ${putOnReadySubIssueNumbers.length} 件です`
   )
+}
+
+/**
+ * Issue から `needs-human-check` を外す。付いていなくても失敗しない（付いているかを確かめずに呼べる）。
+ *
+ * @param {number} issueNumber 対象 Issue の番号
+ * @returns {void}
+ * @throws {Error} gh が失敗したとき
+ */
+function removeNeedsHumanCheckLabel(issueNumber) {
+  runOrThrow('gh', [
+    'issue',
+    'edit',
+    String(issueNumber),
+    '--repo',
+    config.repository,
+    '--remove-label',
+    NEEDS_HUMAN_CHECK_LABEL
+  ])
 }
 
 /**
@@ -1110,11 +1126,11 @@ async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
  */
 async function implementAndWatchCi(startedIssue, record, workStartedAt) {
   const { issue, branchName, workspaceDir } = startedIssue
-  const isImplemented = await handOverOrImplement(issue.number, workspaceDir, record)
+  const issueDestination = await handOverOrImplement(issue.number, workspaceDir, record)
   if (record.subIssueHandover) showSubIssueHandover(record)
-  if (record.skippedReason) showWarning(`実装へ進みません: ${record.skippedReason}`)
-  const shouldWatchCi = isImplemented && !record.skippedReason && !record.subIssueHandover
-  if (!shouldWatchCi) return isImplemented
+  if (record.reasonNotToImplement) showWarning(`実装へ進みません: ${record.reasonNotToImplement}`)
+  // 引き継いだ・見送った回は、走らせたセッションがすべて成功している
+  if (issueDestination !== 'implemented') return issueDestination !== 'session-failed'
   // ブランチは着手時にデフォルトブランチから作り直しているので、push されていれば最初の SHA から待ってよい
   return watchCiAndFix(
     {
