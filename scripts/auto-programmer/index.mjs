@@ -93,6 +93,7 @@ import {
   ISSUE_CHECKED_LABEL,
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
+import { listSubIssues, readIssueStatus } from './issueQuery.mjs'
 import {
   CI_RUN_STATE_FIELDS,
   decideAfterCiRun,
@@ -161,40 +162,8 @@ const LOCK_DIRECTORY = join(dirname(config.workspaceDir), 'locks', basename(conf
 // 着手できる Issue が無い周に、待機中のステータス行へ出す理由
 const NO_STARTABLE_ISSUE_IDLE_REASON = '着手できる Issue なし'
 
-// GraphQL が1つの接続（sub-issue・ラベル・カード）から一度に返せる件数の上限。sub-issue は超えていたら読み落としとして止める
-const GRAPHQL_CONNECTION_FETCH_LIMIT = 100
-
 // 衝突した PR を探すときに引く open な PR の上限。gh pr list の既定の30件では、人間のレビュー待ちが溜まると取りこぼす
 const OPEN_PULL_REQUEST_FETCH_LIMIT = 200
-
-// 1つの Issue に付けられる担当者の上限（GitHub の仕様）。この件数を読めば全員がそろう
-const ISSUE_ASSIGNEE_LIMIT = 10
-
-// gh issue view の --json は sub-issue を返さないので、GraphQL で引く。自分のログイン名（viewer）も同じ呼び出しで引く
-const SUB_ISSUES_QUERY = `query($owner: String!, $name: String!, $number: Int!, $statusFieldName: String!) {
-  viewer { login }
-  repository(owner: $owner, name: $name) {
-    issue(number: $number) {
-      subIssues(first: ${GRAPHQL_CONNECTION_FETCH_LIMIT}) {
-        totalCount
-        nodes {
-          number
-          url
-          state
-          repository { nameWithOwner }
-          assignees(first: ${ISSUE_ASSIGNEE_LIMIT}) { nodes { login } }
-          labels(first: ${GRAPHQL_CONNECTION_FETCH_LIMIT}) { nodes { name } }
-          projectItems(first: ${GRAPHQL_CONNECTION_FETCH_LIMIT}) {
-            nodes {
-              project { number owner { ... on User { login } ... on Organization { login } } }
-              fieldValueByName(name: $statusFieldName) { ... on ProjectV2ItemFieldSingleSelectValue { name } }
-            }
-          }
-        }
-      }
-    }
-  }
-}`
 
 // セッションがこの回数続けて失敗したら止める。claude 側が壊れている（ログイン切れ・利用上限など）と、
 // 待たずに次のカードを着手中へ送り、Ready のカードを PR 無しのまま使い切るため
@@ -270,89 +239,6 @@ try {
 } catch (error) {
   showError(formatErrorWithStack(error))
   process.exitCode = 1
-}
-
-/**
- * Issue の state とラベルを引き直す。
- *
- * @param {number} issueNumber Issue の番号
- * @returns {{ state: string, labelNames: string[] }} state（'OPEN' / 'CLOSED'）とラベル名
- * @throws {Error} gh が失敗したとき、または返した state かラベルを読めないとき
- */
-function readIssueStatus(issueNumber) {
-  const { state, labels } = runJson('gh', [
-    'issue',
-    'view',
-    String(issueNumber),
-    '--repo',
-    config.repository,
-    '--json',
-    'state,labels'
-  ])
-  // state が欠けたまま渡すと「OPEN でない」と読まれ、閉じた・差分なしと取り違えた記録が残り、needs-human-check も付かない
-  if ((state !== 'OPEN' && state !== 'CLOSED') || !Array.isArray(labels)) {
-    throw new Error(
-      `Issue #${issueNumber} の state かラベルを読めません: ${JSON.stringify({ state, labels })}`
-    )
-  }
-  return { state, labelNames: labels.map(({ name }) => name) }
-}
-
-/**
- * GraphQL が返した sub-issue のノードを、子を選ぶ純粋関数が受け取る形にする。
- *
- * @param {{ number: number, url: string, state: string, repository: { nameWithOwner: string }, assignees: { nodes: { login: string }[] }, labels: { nodes: { name: string }[] }, projectItems: { nodes: { project?: { number: number, owner: { login?: string } }, fieldValueByName?: { name?: string } | null }[] } }} node sub-issue のノード
- * @returns {{ number: number, url: string, state: string, repository: string, labelNames: string[], assigneeLogins: string[], boardStatusName: string | null }} 子（boardStatusName は config.mjs のボードに無ければ null）
- */
-function toSubIssue({ number, url, state, repository, assignees, labels, projectItems }) {
-  const boardItem = projectItems.nodes.find(
-    ({ project }) =>
-      project?.number === config.board.number && project.owner.login === config.board.owner
-  )
-  return {
-    number,
-    url,
-    state,
-    repository: repository.nameWithOwner,
-    labelNames: labels.nodes.map((label) => label.name),
-    assigneeLogins: assignees.nodes.map((assignee) => assignee.login),
-    boardStatusName: boardItem?.fieldValueByName?.name ?? null
-  }
-}
-
-/**
- * Issue の sub-issue と、gh にログインしている自分のログイン名を引く。
- *
- * @param {number} issueNumber 親 Issue の番号
- * @returns {{ viewerLogin: string, subIssues: ReturnType<typeof toSubIssue>[] }} 自分のログイン名と sub-issue（state は 'OPEN' / 'CLOSED'）
- * @throws {TechnicalError} sub-issue が一度に読める件数を超えたとき
- * @throws {Error} gh が失敗したとき
- */
-function listSubIssues(issueNumber) {
-  const [repositoryOwner, repositoryName] = config.repository.split('/')
-  const {
-    data: { repository, viewer }
-  } = runJson('gh', [
-    'api',
-    'graphql',
-    '-f',
-    `query=${SUB_ISSUES_QUERY}`,
-    '-f',
-    `owner=${repositoryOwner}`,
-    '-f',
-    `name=${repositoryName}`,
-    '-F',
-    `number=${issueNumber}`,
-    '-f',
-    `statusFieldName=${config.board.statusFieldName}`
-  ])
-  const { totalCount, nodes } = repository.issue.subIssues
-  if (totalCount > nodes.length) {
-    throw new TechnicalError(
-      `#${issueNumber} の sub-issue ${totalCount} 件のうち ${nodes.length} 件しか読めていません。読み落とした子を載せ損ねるため止めます`
-    )
-  }
-  return { viewerLogin: viewer.login, subIssues: nodes.map(toSubIssue) }
 }
 
 /**
