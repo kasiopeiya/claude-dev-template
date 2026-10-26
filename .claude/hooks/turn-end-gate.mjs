@@ -32,6 +32,29 @@ const MAX_OUTPUT_CHARS = 3000
 // ゲートが固まってもターンを永久に止めない。
 const GATE_TIMEOUT_MS = 180_000
 
+function main() {
+  // Claude Code の hook 契約（外部仕様）：Stop フックはイベント情報を JSON として
+  // 子プロセスの標準入力（fd 0）経由で渡す。stop_hook_active は本フック起点の継続かを示す。
+  const input = JSON.parse(readFileSync(0, 'utf8'))
+
+  // この停止自体が本フックの再開由来なら、もう走らせない（1回だけ・無限ループ防止）。
+  if (input?.stop_hook_active) return
+
+  const gateRoot = findSessionWorktreeRoot(input?.cwd, hookProjectRoot) ?? hookProjectRoot
+  const failures = selectTurnEndGates(collectChangedPaths(gateRoot))
+    .map((npmScript) => ({ npmScript, output: collectGateFailure(npmScript, gateRoot) }))
+    .filter(({ output }) => output !== null)
+  if (failures.length === 0) return
+
+  const reason = [
+    'ターン末ゲートが落ちました。ローカルで修正してから終了してください（push 後に GitHub Actions で落とさないため）。',
+    ...failures.map(({ npmScript, output }) => `\n### npm run ${npmScript}\n\n${output}`)
+  ].join('\n')
+
+  // Stop フックの契約：decision: "block" にすると reason がモデルに渡り、ターンを継続する。
+  process.stdout.write(JSON.stringify({ decision: 'block', reason }))
+}
+
 /**
  * 作業ツリーの未コミット変更パス一覧を返す（追跡外・ステージ済み・未ステージを含む）。
  * リネームは新パス側を採る。git が無い等で失敗したら例外を投げる（呼び出し元で fail-open）。
@@ -75,29 +98,6 @@ function collectGateFailure(npmScript, gateRoot) {
 
   const output = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim()
   return output.length > MAX_OUTPUT_CHARS ? output.slice(-MAX_OUTPUT_CHARS) : output
-}
-
-function main() {
-  // Claude Code の hook 契約（外部仕様）：Stop フックはイベント情報を JSON として
-  // 子プロセスの標準入力（fd 0）経由で渡す。stop_hook_active は本フック起点の継続かを示す。
-  const input = JSON.parse(readFileSync(0, 'utf8'))
-
-  // この停止自体が本フックの再開由来なら、もう走らせない（1回だけ・無限ループ防止）。
-  if (input?.stop_hook_active) return
-
-  const gateRoot = findSessionWorktreeRoot(input?.cwd, hookProjectRoot) ?? hookProjectRoot
-  const failures = selectTurnEndGates(collectChangedPaths(gateRoot))
-    .map((npmScript) => ({ npmScript, output: collectGateFailure(npmScript, gateRoot) }))
-    .filter(({ output }) => output !== null)
-  if (failures.length === 0) return
-
-  const reason = [
-    'ターン末ゲートが落ちました。ローカルで修正してから終了してください（push 後に GitHub Actions で落とさないため）。',
-    ...failures.map(({ npmScript, output }) => `\n### npm run ${npmScript}\n\n${output}`)
-  ].join('\n')
-
-  // Stop フックの契約：decision: "block" にすると reason がモデルに渡り、ターンを継続する。
-  process.stdout.write(JSON.stringify({ decision: 'block', reason }))
 }
 
 try {

@@ -7,6 +7,25 @@
 //   「ターン末ゲートは1本に統合する」）。
 
 /**
+ * 変更パスの一覧から、走らせるべきゲートの npm script 名を選ぶ。
+ *
+ * @param {string[]} changedRelativePaths プロジェクトルート相対の変更パス一覧
+ * @returns {string[]} 走らせる npm script 名（対象が無ければ空配列）
+ */
+export function selectTurnEndGates(changedRelativePaths) {
+  if (!Array.isArray(changedRelativePaths)) return []
+
+  // Windows 区切りを正規化してから判定する
+  const normalizedPaths = changedRelativePaths
+    .filter((path) => typeof path === 'string' && path !== '')
+    .map((path) => path.replaceAll('\\', '/'))
+
+  return GATES.filter(({ isTarget }) => normalizedPaths.some(isTarget)).map(
+    ({ npmScript }) => npmScript
+  )
+}
+
+/**
  * 変更パスがローカル静的ゲート（lint/knip/typecheck・整形チェック）の対象かを判定する。
  *
  * @param {string} normalizedPath スラッシュ区切りに正規化した、プロジェクトルート相対パス
@@ -66,22 +85,3 @@ const GATES = [
   { npmScript: 'check:rules', isTarget: isRuleTarget },
   { npmScript: 'check:workflows', isTarget: isWorkflowTarget }
 ]
-
-/**
- * 変更パスの一覧から、走らせるべきゲートの npm script 名を選ぶ。
- *
- * @param {string[]} changedRelativePaths プロジェクトルート相対の変更パス一覧
- * @returns {string[]} 走らせる npm script 名（対象が無ければ空配列）
- */
-export function selectTurnEndGates(changedRelativePaths) {
-  if (!Array.isArray(changedRelativePaths)) return []
-
-  // Windows 区切りを正規化してから判定する
-  const normalizedPaths = changedRelativePaths
-    .filter((path) => typeof path === 'string' && path !== '')
-    .map((path) => path.replaceAll('\\', '/'))
-
-  return GATES.filter(({ isTarget }) => normalizedPaths.some(isTarget)).map(
-    ({ npmScript }) => npmScript
-  )
-}
