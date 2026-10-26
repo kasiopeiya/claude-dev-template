@@ -16,18 +16,6 @@ const CONFLICTING_MERGEABLE_STATE = 'CONFLICTING'
 export const CONFLICT_CHECK_PULL_REQUEST_FIELDS = 'number,url,headRefName,mergeable'
 
 /**
- * 実行記録の1件から、このツールが最後に CI を待った commit の SHA を読む。
- *
- * @param {{ ciRuns?: unknown }} runRecord 実行記録の1件
- * @returns {string | null} 最後に CI を待った commit の SHA（CI を待っていなければ null）
- */
-function readLastWaitedHeadSha(runRecord) {
-  if (!Array.isArray(runRecord.ciRuns)) return null
-  const lastCiRun = runRecord.ciRuns.at(-1)
-  return typeof lastCiRun?.headSha === 'string' ? lastCiRun.headSha : null
-}
-
-/**
  * 実行記録から、このツールが作った PR を URL ごとに集める。同じ PR の記録が何件もあれば、後の記録を採る。
  *
  * ただし後の記録が CI を待っていなければ（セッションが落ちた・push せずに離脱した）、前の記録の commit を残す。
@@ -110,4 +98,16 @@ export function findReasonNotToResolveConflict({
     return `#${issue.number} に ${needsHumanCheckLabel} が付いています`
   }
   return null
+}
+
+/**
+ * 実行記録の1件から、このツールが最後に CI を待った commit の SHA を読む。
+ *
+ * @param {{ ciRuns?: unknown }} runRecord 実行記録の1件
+ * @returns {string | null} 最後に CI を待った commit の SHA（CI を待っていなければ null）
+ */
+function readLastWaitedHeadSha(runRecord) {
+  if (!Array.isArray(runRecord.ciRuns)) return null
+  const lastCiRun = runRecord.ciRuns.at(-1)
+  return typeof lastCiRun?.headSha === 'string' ? lastCiRun.headSha : null
 }
