@@ -12,6 +12,7 @@
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 
+import { TechnicalError } from '../lib/errors.mjs'
 import { config } from './config.mjs'
 import { NEEDS_HUMAN_CHECK_LABEL } from './needsHumanCheck.mjs'
 import { runCapture, runJson, runOrThrow, runStreaming } from './shell.mjs'
@@ -26,6 +27,55 @@ const LOCK_FILE_NAME = 'package-lock.json'
 const INSTALL_STAMP_FILE_NAME = '.auto-programmer-installed'
 
 const LABEL_SEARCH_LIMIT = 100
+
+/**
+ * AI 専用 clone の依存を、ロックファイルを持つディレクトリごとにロックファイルどおり入れる。
+ * 入っていて最新のディレクトリは飛ばす。
+ *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
+ * @returns {void}
+ * @throws {TechnicalError} clone 内の `git ls-files` が失敗したとき・`npm ci` が 0 以外で終わったとき
+ * @throws {Error} `npm` を起動できないとき
+ */
+export function ensureDependencies(workspaceDir) {
+  for (const relativePackageDirectory of listPackageLockDirectories(workspaceDir)) {
+    const packageDirectory = join(workspaceDir, relativePackageDirectory)
+    if (!needsDependencyInstall(packageDirectory)) continue
+
+    // 取り込むと終わるまで何も出ず止まって見えるので、始まりの行は先に出す
+    showInfo(`AI 専用 clone に依存をインストールします: ${relativePackageDirectory}`)
+    const startedAt = Date.now()
+    // 出力は取り込み、失敗したときだけ出す。成功時の funding・audit の行は、画面の半分以上を埋めて
+    // 要る情報を探しにくくする（Issue #848）
+    const { exitCode, stdout, stderr } = runCapture('npm', ['ci'], { cwd: packageDirectory })
+    if (exitCode !== 0) {
+      relayChildProcessOutput('stdout', Buffer.from(stdout))
+      relayChildProcessOutput('stderr', Buffer.from(stderr))
+      throw new TechnicalError(`npm ci に失敗しました: ${relativePackageDirectory}`)
+    }
+    // 依存が0件のロックファイルでは npm ci が成功しても node_modules ができず、印の書き込みが ENOENT で落ちる
+    const installStampPath = buildInstallStampPath(packageDirectory)
+    mkdirSync(dirname(installStampPath), { recursive: true })
+    writeFileSync(installStampPath, '')
+    showSuccess(
+      `依存をインストール  ${relativePackageDirectory}  ${formatElapsedTime(Date.now() - startedAt)}`
+    )
+  }
+}
+
+/**
+ * Issue を選ぶ前に済ませられる準備を整える。依存は clone をデフォルトブランチへ戻した後でないと
+ * 判定できないため、ここには含めず ensureDependencies で別に行う。
+ *
+ * @param {string} workspaceDir このプロセスが使う AI 専用 clone
+ * @returns {void}
+ * @throws {TechnicalError} 人間が済ませるべき準備が無いとき・clone に失敗したとき・既存 clone の origin が config.repository と違うとき・対象リポジトリに needs-human-check ラベルが無いとき
+ */
+export function runPreflight(workspaceDir) {
+  ensureHumanPrerequisites()
+  ensureWorkspaceClone(workspaceDir)
+  ensureNeedsHumanCheckLabel(workspaceDir)
+}
 
 /**
  * `gh auth status` が失敗したときに人間へ見せる文を作る。
@@ -46,7 +96,7 @@ function buildGhAuthFailureMessage(ghStderr) {
  * 人間が入れておくべきコマンドが使えるかを確かめる。
  *
  * @returns {void}
- * @throws {Error} `gh` が起動できない・`gh auth status` が失敗したとき、または `claude` が起動できないとき
+ * @throws {TechnicalError} `gh` が起動できない・`gh auth status` が失敗したとき、または `claude` が起動できないとき
  */
 function ensureHumanPrerequisites() {
   let ghAuthResult
@@ -54,7 +104,7 @@ function ensureHumanPrerequisites() {
     // 対象を絞らないと、別ホスト・別アカウントのトークン切れでも失敗扱いになる
     ghAuthResult = runCapture('gh', ['auth', 'status', '--hostname', 'github.com', '--active'])
   } catch (error) {
-    throw new Error(
+    throw new TechnicalError(
       'gh コマンドを起動できません。GitHub CLI を入れてから、もう一度打ってください',
       {
         cause: error
@@ -62,12 +112,12 @@ function ensureHumanPrerequisites() {
     )
   }
   if (ghAuthResult.exitCode !== 0) {
-    throw new Error(buildGhAuthFailureMessage(ghAuthResult.stderr))
+    throw new TechnicalError(buildGhAuthFailureMessage(ghAuthResult.stderr))
   }
   try {
     runCapture('claude', ['--version'])
   } catch (error) {
-    throw new Error(
+    throw new TechnicalError(
       'claude コマンドを起動できません。Claude Code を入れてから、もう一度打ってください',
       { cause: error }
     )
@@ -82,7 +132,7 @@ function ensureHumanPrerequisites() {
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone（作り方の案内に出す）
  * @returns {void}
- * @throws {Error} ラベルが無いとき・gh が失敗したとき
+ * @throws {TechnicalError} ラベルが無いとき・gh が失敗したとき
  */
 function ensureNeedsHumanCheckLabel(workspaceDir) {
   const labels = runJson('gh', [
@@ -102,7 +152,7 @@ function ensureNeedsHumanCheckLabel(workspaceDir) {
     ({ name }) => name.toLowerCase() === NEEDS_HUMAN_CHECK_LABEL.toLowerCase()
   )
   if (!hasLabel) {
-    throw new Error(
+    throw new TechnicalError(
       `${config.repository} に ${NEEDS_HUMAN_CHECK_LABEL} ラベルがありません。` +
         `${workspaceDir} で ./scripts/setup-labels.sh を流すか、` +
         `gh label create ${NEEDS_HUMAN_CHECK_LABEL} --repo ${config.repository} を打ってから、もう一度打ってください`
@@ -130,7 +180,7 @@ function readRepositoryFromRemoteUrl(remoteUrl) {
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {void}
- * @throws {Error} clone に失敗したとき・既存 clone の向き先が config.repository と違うとき
+ * @throws {TechnicalError} clone に失敗したとき・既存 clone の向き先が config.repository と違うとき
  */
 function ensureWorkspaceClone(workspaceDir) {
   if (existsSync(join(workspaceDir, '.git'))) {
@@ -140,7 +190,7 @@ function ensureWorkspaceClone(workspaceDir) {
     }).trim()
     if (readRepositoryFromRemoteUrl(originUrl) !== config.repository.toLowerCase()) {
       // 2番以降の clone は名前の後ろに -<番号> を付けるので、名前が -<数字> で終わる別のリポジトリの clone と重なりうる
-      throw new Error(
+      throw new TechnicalError(
         `${workspaceDir} の origin（${originUrl}）が ${config.repository} ではありません。` +
           '名前が -<数字> で終わる別のリポジトリの clone と重なったときは、AUTO_PROGRAMMER_HOME をリポジトリごとに分けてください'
       )
@@ -151,7 +201,7 @@ function ensureWorkspaceClone(workspaceDir) {
   showInfo(`AI 専用 clone を作成します: ${workspaceDir}`)
   mkdirSync(dirname(workspaceDir), { recursive: true })
   const { exitCode } = runStreaming('gh', ['repo', 'clone', config.repository, workspaceDir])
-  if (exitCode !== 0) throw new Error(`clone に失敗しました: ${config.repository}`)
+  if (exitCode !== 0) throw new TechnicalError(`clone に失敗しました: ${config.repository}`)
 }
 
 /**
@@ -161,7 +211,7 @@ function ensureWorkspaceClone(workspaceDir) {
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {string[]} clone 直下からの相対パス（直下は `.`）
- * @throws {Error} `git ls-files` に失敗したとき
+ * @throws {TechnicalError} `git ls-files` に失敗したとき
  */
 function listPackageLockDirectories(workspaceDir) {
   // pathspec の `*` は `/` もまたぐので、入れ子のロックファイルも拾える。
@@ -196,52 +246,4 @@ function needsDependencyInstall(packageDirectory) {
   const stampPath = buildInstallStampPath(packageDirectory)
   if (!existsSync(stampPath)) return true
   return statSync(join(packageDirectory, LOCK_FILE_NAME)).mtimeMs > statSync(stampPath).mtimeMs
-}
-
-/**
- * AI 専用 clone の依存を、ロックファイルを持つディレクトリごとにロックファイルどおり入れる。
- * 入っていて最新のディレクトリは飛ばす。
- *
- * @param {string} workspaceDir このプロセスが使う AI 専用 clone
- * @returns {void}
- * @throws {Error} clone 内の `git ls-files` が失敗したとき・`npm` を起動できないとき・`npm ci` が 0 以外で終わったとき
- */
-export function ensureDependencies(workspaceDir) {
-  for (const relativePackageDirectory of listPackageLockDirectories(workspaceDir)) {
-    const packageDirectory = join(workspaceDir, relativePackageDirectory)
-    if (!needsDependencyInstall(packageDirectory)) continue
-
-    // 取り込むと終わるまで何も出ず止まって見えるので、始まりの行は先に出す
-    showInfo(`AI 専用 clone に依存をインストールします: ${relativePackageDirectory}`)
-    const startedAt = Date.now()
-    // 出力は取り込み、失敗したときだけ出す。成功時の funding・audit の行は、画面の半分以上を埋めて
-    // 要る情報を探しにくくする（Issue #848）
-    const { exitCode, stdout, stderr } = runCapture('npm', ['ci'], { cwd: packageDirectory })
-    if (exitCode !== 0) {
-      relayChildProcessOutput('stdout', Buffer.from(stdout))
-      relayChildProcessOutput('stderr', Buffer.from(stderr))
-      throw new Error(`npm ci に失敗しました: ${relativePackageDirectory}`)
-    }
-    // 依存が0件のロックファイルでは npm ci が成功しても node_modules ができず、印の書き込みが ENOENT で落ちる
-    const installStampPath = buildInstallStampPath(packageDirectory)
-    mkdirSync(dirname(installStampPath), { recursive: true })
-    writeFileSync(installStampPath, '')
-    showSuccess(
-      `依存をインストール  ${relativePackageDirectory}  ${formatElapsedTime(Date.now() - startedAt)}`
-    )
-  }
-}
-
-/**
- * Issue を選ぶ前に済ませられる準備を整える。依存は clone をデフォルトブランチへ戻した後でないと
- * 判定できないため、ここには含めず ensureDependencies で別に行う。
- *
- * @param {string} workspaceDir このプロセスが使う AI 専用 clone
- * @returns {void}
- * @throws {Error} 人間が済ませるべき準備が無いとき・clone に失敗したとき・既存 clone の origin が config.repository と違うとき・対象リポジトリに needs-human-check ラベルが無いとき
- */
-export function runPreflight(workspaceDir) {
-  ensureHumanPrerequisites()
-  ensureWorkspaceClone(workspaceDir)
-  ensureNeedsHumanCheckLabel(workspaceDir)
 }
