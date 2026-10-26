@@ -18,6 +18,7 @@ import {
 import { homedir } from 'node:os'
 import { join } from 'node:path'
 
+import { TechnicalError } from './lib/errors.mjs'
 import { isProcessAlive } from './processLiveness.mjs'
 
 const REGISTRATION_FILE_NAME_PATTERN = /^(\d+)\.json$/
@@ -56,7 +57,8 @@ export function listLiveSessionRegistrationFilePaths(configDirectory) {
  *
  * @param {string} configDirectory Claude Code の設定ディレクトリ
  * @returns {string[]} 作業ディレクトリ
- * @throws {Error} 登録ファイル・会話ログを読めないとき・作業ディレクトリが分からないセッションがあるとき
+ * @throws {TechnicalError} 登録ファイルを読めない・sessionId か cwd が無い・会話ログの末尾に cwd を持つ行が無いとき
+ * @throws {Error} 会話ログのディレクトリ・ファイルを読めないとき（fs のエラーをそのまま通す）
  */
 export function readLiveSessionWorkingDirectories(configDirectory) {
   const projectsDirectory = join(configDirectory, 'projects')
@@ -85,20 +87,25 @@ export function readRegisteredWorkingDirectory(registrationFilePath) {
  *
  * @param {string} registrationFilePath 登録ファイルのパス
  * @returns {{ sessionId: string, cwd: string }} セッションの ID と、登録時の作業ディレクトリ
- * @throws {Error} 読めない・JSON が壊れている・sessionId か cwd が無い（文字列でない・cwd が空文字）とき。メッセージはファイルのパスを含む
+ * @throws {TechnicalError} 読めない・JSON が壊れている・sessionId か cwd が無い（文字列でない・cwd が空文字）とき。メッセージはファイルのパスを含む
  */
 function readSessionRegistration(registrationFilePath) {
   let registration
   try {
     registration = parseSessionRegistration(registrationFilePath)
   } catch (error) {
-    throw new Error(`登録ファイルを読めません: ${registrationFilePath}: ${error.message}`, {
-      cause: error
-    })
+    throw new TechnicalError(
+      `登録ファイルを読めません: ${registrationFilePath}: ${error.message}`,
+      {
+        cause: error
+      }
+    )
   }
   const { sessionId, cwd } = registration
   if (sessionId === undefined || cwd === undefined) {
-    throw new Error(`登録ファイルに sessionId か cwd がありません: ${registrationFilePath}`)
+    throw new TechnicalError(
+      `登録ファイルに sessionId か cwd がありません: ${registrationFilePath}`
+    )
   }
   return { sessionId, cwd }
 }
@@ -125,7 +132,7 @@ function parseSessionRegistration(registrationFilePath) {
  * @param {{ projectsDirectory: string, sessionId: string }} params
  *   projectsDirectory: 会話ログを置く `<設定ディレクトリ>/projects` / sessionId: 調べるセッションの ID
  * @returns {string | undefined} 作業ディレクトリ。会話ログがまだ無ければ undefined
- * @throws {Error} 会話ログの末尾に cwd を持つ行が無いとき
+ * @throws {TechnicalError} 会話ログの末尾に cwd を持つ行が無いとき
  */
 function readLastTranscriptWorkingDirectory({ projectsDirectory, sessionId }) {
   const transcriptPath = readdirSync(projectsDirectory)
@@ -142,7 +149,7 @@ function readLastTranscriptWorkingDirectory({ projectsDirectory, sessionId }) {
     }
     if (typeof entry?.cwd === 'string' && entry.cwd !== '') return entry.cwd
   }
-  throw new Error(`会話ログの末尾に cwd がありません: ${transcriptPath}`)
+  throw new TechnicalError(`会話ログの末尾に cwd がありません: ${transcriptPath}`)
 }
 
 /**

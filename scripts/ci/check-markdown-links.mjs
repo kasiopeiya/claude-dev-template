@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from 'fs'
 import { dirname, join, relative, resolve, sep } from 'path'
 import { fileURLToPath } from 'url'
 
+import { TechnicalError } from '../lib/errors.mjs'
 import { listWorkingTreeFiles } from './list-working-tree-files.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -69,10 +70,11 @@ function readSyncExcludeConfig() {
  * @param {string} scriptSource sync-template.sh の全文
  * @param {string} arrayName 配列変数名
  * @returns {string[]} 配列の要素
+ * @throws {TechnicalError} sync-template.sh に配列が見つからないとき
  */
 function readBashArray(scriptSource, arrayName) {
   const match = scriptSource.match(new RegExp(`readonly ${arrayName}=\\(([^)]*)\\)`, 's'))
-  if (!match) throw new Error(`scripts/sync-template.sh に ${arrayName} が見つかりません`)
+  if (!match) throw new TechnicalError(`scripts/sync-template.sh に ${arrayName} が見つかりません`)
   return [...match[1].matchAll(/'([^']*)'/g)].map((elementMatch) => elementMatch[1])
 }
 

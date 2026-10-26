@@ -38,6 +38,7 @@ import { sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { readDefaultBranchName } from './githubDefaultBranch.mjs'
+import { BusinessError, TechnicalError } from './lib/errors.mjs'
 import {
   readLiveSessionWorkingDirectories,
   resolveClaudeConfigDirectory
@@ -52,7 +53,8 @@ const LOCAL_BRANCH_REF_PREFIX = 'refs/heads/'
  * 残したものがあれば異常終了する。
  *
  * @returns {void}
- * @throws {Error} 知らない引数があるとき・origin やデフォルトブランチ・worktree の一覧を引けなかったとき（ブランチは1件も消さない）
+ * @throws {BusinessError} 知らない引数があるとき
+ * @throws {TechnicalError} origin やデフォルトブランチ・worktree の一覧を引けなかったとき（ブランチは1件も消さない）
  */
 function runCli() {
   const { dryRun } = parseCliOptions(process.argv.slice(2), process.env)
@@ -71,12 +73,14 @@ function runCli() {
  * @param {string[]} args `--dry-run` などの引数（node とスクリプトのパスは含まない）
  * @param {Record<string, string | undefined>} env 環境変数
  * @returns {{ dryRun: boolean }} 読み取った指定
- * @throws {Error} 知らない引数があるとき
+ * @throws {BusinessError} 知らない引数があるとき
  */
 function parseCliOptions(args, env) {
   const unknownOptions = args.filter((cliArgument) => !KNOWN_OPTIONS.has(cliArgument))
   if (unknownOptions.length > 0) {
-    throw new Error(`知らない引数です: ${unknownOptions.join(' ')}（使えるのは --dry-run だけ）`)
+    throw new BusinessError(
+      `知らない引数です: ${unknownOptions.join(' ')}（使えるのは --dry-run だけ）`
+    )
   }
   return { dryRun: args.includes('--dry-run') || env.npm_config_dry_run === 'true' }
 }
@@ -88,7 +92,7 @@ function parseCliOptions(args, env) {
  * @param {{ configDirectory: string }} params configDirectory: Claude Code の設定ディレクトリ
  * @returns {{ deletionTargets: { branch: string, worktreePath: string | undefined }[], keptCount: number }}
  *   消すブランチ（抱えている worktree の場所つき）と、残した件数（PR を確かめられなかったものを含む）
- * @throws {Error} origin・デフォルトブランチ・worktree の一覧を引けなかったとき
+ * @throws {TechnicalError} origin・デフォルトブランチ・worktree の一覧を引けなかったとき
  */
 function planMergedBranchDeletions({ configDirectory }) {
   const { originUrl, defaultBranchName } = fetchOriginDefaultBranch()
@@ -116,7 +120,7 @@ function planMergedBranchDeletions({ configDirectory }) {
  * origin の URL とデフォルトブランチ名を引き、デフォルトブランチの最新を fetch する。
  *
  * @returns {{ originUrl: string, defaultBranchName: string }} origin の URL とデフォルトブランチ名
- * @throws {Error} origin・デフォルトブランチを引けなかったとき・fetch が失敗したとき
+ * @throws {TechnicalError} origin・デフォルトブランチを引けなかったとき・fetch が失敗したとき
  */
 function fetchOriginDefaultBranch() {
   // デフォルトブランチも PR も、取り込み済みの基準 origin/<名前> と同じリポジトリから引く。
@@ -133,7 +137,7 @@ function fetchOriginDefaultBranch() {
  * @returns {{ mainWorktreeBranch: string | undefined, worktreePathByBranch: Map<string, string> }}
  *   mainWorktreeBranch: メインの作業フォルダのブランチ（detached HEAD などブランチが無ければ undefined）/
  *   worktreePathByBranch: メイン以外の worktree が抱えるブランチと、その場所
- * @throws {Error} git が失敗したとき・出力の形が想定と違うとき
+ * @throws {TechnicalError} git が失敗したとき・出力の形が想定と違うとき
  */
 function readWorktreeLayout() {
   const [mainWorktree, ...linkedWorktrees] = runGit(['worktree', 'list', '--porcelain'])
@@ -153,7 +157,7 @@ function readWorktreeLayout() {
  * @param {{ defaultBranchName: string, mainWorktreeBranch: string | undefined }} params
  *   defaultBranchName: デフォルトブランチ名 / mainWorktreeBranch: メインの作業フォルダのブランチ
  * @returns {Set<string>} デフォルトブランチ・いまのブランチ・メインの作業フォルダのブランチ
- * @throws {Error} git が失敗したとき
+ * @throws {TechnicalError} git が失敗したとき
  */
 function listProtectedBranches({ defaultBranchName, mainWorktreeBranch }) {
   const currentBranch = runGit(['branch', '--show-current'])
@@ -166,13 +170,13 @@ function listProtectedBranches({ defaultBranchName, mainWorktreeBranch }) {
  * @param {string} block 作業フォルダ1件分の出力（空行で区切られた1ブロック）
  * @returns {{ path: string, branch: string | undefined }}
  *   作業フォルダの場所と、チェックアウト中のブランチ名（detached HEAD などブランチが無ければ undefined）
- * @throws {Error} ブロックに `worktree` の行が無いとき
+ * @throws {TechnicalError} ブロックに `worktree` の行が無いとき
  */
 function parseWorktreeBlock(block) {
   const lines = block.split('\n')
   const path = lines.find((line) => line.startsWith('worktree '))?.slice('worktree '.length)
   if (path === undefined) {
-    throw new Error(`git worktree list の出力に worktree の行がありません: ${block}`)
+    throw new TechnicalError(`git worktree list の出力に worktree の行がありません: ${block}`)
   }
   const ref = lines.find((line) => line.startsWith('branch '))?.slice('branch '.length)
   return { path, branch: ref?.replace(/^refs\/heads\//, '') }
@@ -201,7 +205,7 @@ function readSessionWorkingDirectoriesOrUndefined(configDirectory) {
  * @param {{ defaultBranchName: string, protectedBranches: Set<string> }} params
  *   defaultBranchName: デフォルトブランチ名 / protectedBranches: 消さないブランチ
  * @returns {string[]} 候補のブランチ名。detached HEAD の行は含まない
- * @throws {Error} git が失敗したとき
+ * @throws {TechnicalError} git が失敗したとき
  */
 function listMergedCandidateBranches({ defaultBranchName, protectedBranches }) {
   const remoteDefaultBranchRef = `origin/${defaultBranchName}`
@@ -244,7 +248,7 @@ function selectBranchesCoveredByMergedPullRequest({ originUrl, defaultBranchName
  * @param {{ originUrl: string, defaultBranchName: string, branch: string }} params
  *   originUrl: origin の URL / defaultBranchName: PR のマージ先 / branch: 確かめるブランチ名
  * @returns {boolean} 当てはまるマージ済み PR があれば true。PR が無い・マージされていない・PR の作業でなければ false
- * @throws {Error} gh が失敗したとき・PR のコミットが手元に無く判定できなかったとき
+ * @throws {TechnicalError} gh が失敗したとき・PR のコミットが手元に無く判定できなかったとき
  */
 function isCoveredByMergedPullRequest({ originUrl, defaultBranchName, branch }) {
   const mergedPullRequests = JSON.parse(
@@ -280,7 +284,7 @@ function isCoveredByMergedPullRequest({ originUrl, defaultBranchName, branch }) 
  *
  * @param {{ ancestor: string, descendant: string }} params ancestor: 祖先と見込むコミット / descendant: 子孫と見込むコミット
  * @returns {boolean} 同じか祖先なら true
- * @throws {Error} どちらかのコミットが手元に無いなど、判定できなかったとき
+ * @throws {TechnicalError} どちらかのコミットが手元に無いなど、判定できなかったとき
  */
 function isAncestorCommit({ ancestor, descendant }) {
   try {
@@ -335,7 +339,7 @@ function selectDeletionTargets({
  *   branch: 消す候補 / worktreePath: そのブランチを抱える worktree の場所 /
  *   sessionWorkingDirectories: 生きているセッションの作業ディレクトリ。分からなければ undefined
  * @returns {string | undefined} 残す理由。消してよければ undefined
- * @throws {Error} git が失敗して判定できなかったとき
+ * @throws {TechnicalError} git が失敗して判定できなかったとき
  */
 function findReasonToKeepBranch({ branch, worktreePath, sessionWorkingDirectories }) {
   if (worktreePath && isWorktreeUsedBySession({ worktreePath, sessionWorkingDirectories })) {
@@ -427,7 +431,7 @@ function deleteBranches(deletionTargets) {
  *
  * @param {{ branch: string, worktreePath: string | undefined }} target 消すブランチと、そのブランチを抱える worktree の場所
  * @returns {void}
- * @throws {Error} worktree を外せない・`-d` が拒否したとき（未コミットの変更など）
+ * @throws {TechnicalError} worktree を外せない・`-d` が拒否したとき（未コミットの変更など）
  */
 function deleteBranch({ branch, worktreePath }) {
   const deletedBranchTipSha = runGit(['rev-parse', `${LOCAL_BRANCH_REF_PREFIX}${branch}`])
@@ -444,7 +448,7 @@ function deleteBranch({ branch, worktreePath }) {
  *
  * @param {string[]} args git に渡す引数
  * @returns {string} 標準出力
- * @throws {Error} git が失敗したとき（`runCommand` と同じ）
+ * @throws {TechnicalError} git が失敗したとき（`runCommand` と同じ）
  */
 function runGit(args) {
   return runCommand('git', args)
@@ -455,7 +459,7 @@ function runGit(args) {
  *
  * @param {string[]} args git に渡す引数
  * @returns {string[]} 標準出力の各行。出力が空なら空配列
- * @throws {Error} git が失敗したとき（`runCommand` と同じ）
+ * @throws {TechnicalError} git が失敗したとき（`runCommand` と同じ）
  */
 function readGitOutputLines(args) {
   const output = runGit(args)

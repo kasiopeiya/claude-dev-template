@@ -1,6 +1,7 @@
 // 責務: GitHub のリポジトリに設定されたデフォルトブランチ名を、gh で引くことのみを担う。
 //   origin/HEAD は使わない。clone 後に GitHub 側で変えても追従せず、`git remote add` だけのリポジトリには無いため
 
+import { TechnicalError } from './lib/errors.mjs'
 import { runCommand } from './runCommand.mjs'
 
 /**
@@ -8,7 +9,7 @@ import { runCommand } from './runCommand.mjs'
  *
  * @param {string} repository リポジトリの URL または `OWNER/REPO`
  * @returns {string} デフォルトブランチ名
- * @throws {Error} gh が失敗したとき・デフォルトブランチを引けなかったとき
+ * @throws {TechnicalError} gh が失敗したとき・デフォルトブランチを引けなかったとき
  */
 export function readDefaultBranchName(repository) {
   const defaultBranchName = runCommand('gh', [
@@ -22,7 +23,7 @@ export function readDefaultBranchName(repository) {
   ])
   // コミットの無い空のリポジトリでは defaultBranchRef が null になり、gh は空文字を返す
   if (defaultBranchName === '') {
-    throw new Error(
+    throw new TechnicalError(
       'デフォルトブランチを引けませんでした（コミットの無い空のリポジトリではありませんか）'
     )
   }

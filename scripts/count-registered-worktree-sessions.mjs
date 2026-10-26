@@ -24,6 +24,7 @@ import {
   readRegisteredWorkingDirectory,
   resolveClaudeConfigDirectory
 } from './liveClaudeSessions.mjs'
+import { TechnicalError } from './lib/errors.mjs'
 
 // git が応答しないときに、検出の手順ごと止めないための上限
 const GIT_QUERY_TIMEOUT_MS = 5000
@@ -83,7 +84,7 @@ function isSessionInOwnWorktree({ registrationFilePath, ownWorktreeRoot }) {
  *
  * @param {string} directory 調べるディレクトリ
  * @returns {string | undefined} 作業ツリーのルート。git の外にある・ディレクトリが無いと分かったときは undefined
- * @throws {Error} git に確かめられなかったとき（タイムアウト・git を起動できないなど）
+ * @throws {TechnicalError} git に確かめられなかったとき（タイムアウト・git を起動できないなど）
  */
 function readWorktreeRoot(directory) {
   try {
@@ -95,7 +96,7 @@ function readWorktreeRoot(directory) {
     }).trim()
   } catch (error) {
     if (error.status === GIT_FATAL_EXIT_CODE) return undefined
-    throw new Error(`作業ツリーを git に確かめられません: ${directory}`, { cause: error })
+    throw new TechnicalError(`作業ツリーを git に確かめられません: ${directory}`, { cause: error })
   }
 }
 

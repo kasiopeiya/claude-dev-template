@@ -15,6 +15,7 @@ import { existsSync } from 'fs'
 import { dirname, resolve } from 'path'
 import { fileURLToPath } from 'url'
 
+import { TechnicalError } from '../lib/errors.mjs'
 import {
   GITHUB_ISSUE_BODY_MAX_LENGTH,
   assertEmbeddablePaths,
@@ -79,7 +80,7 @@ function main() {
  * 対象ディレクトリの git 管理下から、レビュー対象ファイルの一覧を返す。
  *
  * @returns {string[]} 対象ファイルパスの一覧（リポジトリルートからの相対パス、ソート済み）
- * @throws {Error} Issue 本文に埋め込めない文字（改行など）を含むパスがあるとき
+ * @throws {BusinessError} Issue 本文に埋め込めない文字（改行など）を含むパスがあるとき
  */
 function listTargetFiles() {
   const files = TARGET_DIRECTORIES.filter((directory) =>
@@ -114,7 +115,7 @@ function listGitTrackedFiles(directory) {
  *
  * @param {string[]} targetFiles 対象ファイルの一覧
  * @returns {string} Issue 本文
- * @throws {Error} 本文が GitHub の Issue 本文の上限を超えるとき
+ * @throws {TechnicalError} 本文が GitHub の Issue 本文の上限を超えるとき
  */
 function buildWeeklyIssueBody(targetFiles) {
   const targetFilesSection = targetFiles.map((path) => `  - \`${path}\``).join('\n')
@@ -170,7 +171,7 @@ ${implementationFlowRows}
   // 対象ファイルが増えて上限を超えるときは、起票せず失敗させる
   // （冒頭の README の「起点を計算せず、毎週 app/ 全体を対象にする」が引き受けた制約。超えたら起点を差分計算に切り替える判断材料にする）
   if (body.length > GITHUB_ISSUE_BODY_MAX_LENGTH) {
-    throw new Error(
+    throw new TechnicalError(
       `週次 Issue 本文が ${body.length} 文字で GitHub の上限 ${GITHUB_ISSUE_BODY_MAX_LENGTH} を超える（対象 ${targetFiles.length} ファイル）。scripts/auto-programmer/README.md「週次スクリプトが Issue を供給する」の対象範囲（起点を計算せず全体を対象にする）を見直す`
     )
   }

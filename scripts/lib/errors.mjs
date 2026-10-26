@@ -15,13 +15,7 @@ export class TechnicalError extends Error {
   }
 }
 
-/**
- * 利用者の入力・操作が不正なために、わざと投げる失敗。直すのは利用者。
- *
- * 使い手はまだ無い。ポリシーが基底2クラスを常に用意する決まりなので置き、`@public` で knip の未使用 export の報告から外す。
- *
- * @public
- */
+/** 利用者の入力・操作が不正なために、わざと投げる失敗。直すのは利用者（コマンドの引数や、読ませる文書の書き方を誤った人）。 */
 export class BusinessError extends Error {
   constructor(message, options) {
     super(message, options)

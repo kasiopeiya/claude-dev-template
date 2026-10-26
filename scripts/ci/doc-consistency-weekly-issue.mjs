@@ -99,7 +99,7 @@ function getCurrentHeadSha() {
  *
  * @param {string} headSha 今回のチェックの終点にする HEAD SHA
  * @returns {{ kind: 'all' } | { kind: 'changedFiles', files: string[] } | null} 対象範囲。files は必ず1件以上
- * @throws {Error} 変わったファイルのパスに、Issue 本文へ埋め込めない文字（改行など）があるとき
+ * @throws {BusinessError} 変わったファイルのパスに、Issue 本文へ埋め込めない文字（改行など）があるとき
  */
 function decideCheckScope(headSha) {
   const lastProcessedSha = findLastProcessedWeeklyIssueSha()

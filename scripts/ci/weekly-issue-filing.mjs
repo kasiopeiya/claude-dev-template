@@ -7,6 +7,8 @@ import { execFileSync } from 'child_process'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
+import { BusinessError } from '../lib/errors.mjs'
+
 // gh はどこから起動されても同じリポジトリを対象にするよう、このディレクトリを基準に実行する
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
@@ -111,6 +113,21 @@ export function createIssue({ title, labelNames, body }) {
 }
 
 /**
+ * パスがすべて Issue 本文に埋め込んでよい文字だけでできていることを確かめる。
+ *
+ * @param {string[]} paths Issue 本文に埋め込む予定のパス
+ * @throws {BusinessError} 改行や Markdown 記号など、埋め込めない文字を含むパスがあるとき
+ */
+export function assertEmbeddablePaths(paths) {
+  const unembeddablePaths = paths.filter((path) => !EMBEDDABLE_PATH_PATTERN.test(path))
+  if (unembeddablePaths.length > 0) {
+    throw new BusinessError(
+      `Issue 本文に埋め込めないパスがある: ${JSON.stringify(unembeddablePaths)}`
+    )
+  }
+}
+
+/**
  * gh を実行して標準出力を返す。
  *
  * @param {string[]} args gh に渡す引数
@@ -119,17 +136,4 @@ export function createIssue({ title, labelNames, body }) {
  */
 function runGhCommand(args, input) {
   return execFileSync('gh', args, { cwd: repoRoot, encoding: 'utf8', input })
-}
-
-/**
- * パスがすべて Issue 本文に埋め込んでよい文字だけでできていることを確かめる。
- *
- * @param {string[]} paths Issue 本文に埋め込む予定のパス
- * @throws {Error} 改行や Markdown 記号など、埋め込めない文字を含むパスがあるとき
- */
-export function assertEmbeddablePaths(paths) {
-  const unembeddablePaths = paths.filter((path) => !EMBEDDABLE_PATH_PATTERN.test(path))
-  if (unembeddablePaths.length > 0) {
-    throw new Error(`Issue 本文に埋め込めないパスがある: ${JSON.stringify(unembeddablePaths)}`)
-  }
 }

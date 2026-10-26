@@ -8,6 +8,8 @@ import { fileURLToPath } from 'url'
 
 import prettier from 'prettier'
 
+import { BusinessError } from './lib/errors.mjs'
+
 const scriptDirectory = dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = join(scriptDirectory, '..')
 // 一覧表を持つ ADR ディレクトリ。samples/ の ADR も同じ生成に乗せ、表を手で保つ場所を残さない。
@@ -39,7 +41,7 @@ const STATUS_LABEL_BY_KEY = {
  * CLI として実行したときの本体。ADR ディレクトリごとに一覧表を生成して書き込む。
  *
  * @returns {Promise<void>}
- * @throws {Error} ADR の frontmatter・H1 見出しが不正なとき、adr-index.md にマーカーが無いとき
+ * @throws {BusinessError} ADR の frontmatter・H1 見出しが不正なとき、adr-index.md にマーカーが無いとき
  */
 async function runCli() {
   for (const adrDirectory of ADR_DIRECTORIES) {
@@ -98,14 +100,14 @@ async function formatWithPrettier({ content, indexPath }) {
  *
  * @param {string} adrDirectory ADR ディレクトリの絶対パス
  * @returns {string} 差し替え後の全文
- * @throws {Error} adr-index.md に START / END マーカーが無いとき、または ADR の内容が不正なとき（`collectAdrs`）
+ * @throws {BusinessError} adr-index.md に START / END マーカーが無いとき、または ADR の内容が不正なとき（`collectAdrs`）
  */
 function renderIndex(adrDirectory) {
   const currentIndexContent = readFileSync(toIndexPath(adrDirectory), 'utf8')
   const startMarkerIndex = currentIndexContent.indexOf(START_MARKER)
   const endMarkerIndex = currentIndexContent.indexOf(END_MARKER)
   if (startMarkerIndex === -1 || endMarkerIndex === -1) {
-    throw new Error(`adr-index.md に ${START_MARKER} / ${END_MARKER} マーカーが必要です`)
+    throw new BusinessError(`adr-index.md に ${START_MARKER} / ${END_MARKER} マーカーが必要です`)
   }
   const beforeTable = currentIndexContent.slice(0, startMarkerIndex + START_MARKER.length)
   const afterTable = currentIndexContent.slice(endMarkerIndex)
@@ -134,7 +136,7 @@ function buildTable(adrs) {
  *
  * @param {string} adrDirectory ADR ディレクトリの絶対パス
  * @returns {ReturnType<typeof toAdrEntry>[]}
- * @throws {Error} ADR の内容が不正なとき（`toAdrEntry`）
+ * @throws {BusinessError} ADR の内容が不正なとき（`toAdrEntry`）
  */
 function collectAdrs(adrDirectory) {
   const adrFileNames = readdirSync(adrDirectory).filter((name) => ADR_FILE_NAME_PATTERN.test(name))
@@ -151,7 +153,7 @@ function collectAdrs(adrDirectory) {
  * @param {{ fileName: string, content: string }} params
  *   fileName: ファイル名（NNN-*.md） / content: ファイル全文
  * @returns {{ number: string, title: string, fileName: string, status: string, date: string, supersededBy?: string }}
- * @throws {Error} frontmatter の status が無い・未知のとき、date が YYYY-MM-DD でないとき、status が superseded
+ * @throws {BusinessError} frontmatter の status が無い・未知のとき、date が YYYY-MM-DD でないとき、status が superseded
  *   なのに supersededBy が3桁の番号でないとき、H1 見出し（タイトル）が無いとき
  */
 function toAdrEntry({ fileName, content }) {
@@ -160,7 +162,7 @@ function toAdrEntry({ fileName, content }) {
 
   assertValidFrontmatter({ fileName, frontmatter })
   const title = extractTitle(content)
-  if (!title) throw new Error(`${fileName}: H1 見出し（タイトル）がありません`)
+  if (!title) throw new BusinessError(`${fileName}: H1 見出し（タイトル）がありません`)
 
   return {
     number,
@@ -180,29 +182,30 @@ function toAdrEntry({ fileName, content }) {
  * @param {{ fileName: string, frontmatter: Record<string, string> }} params
  *   fileName: ファイル名（メッセージに出す） / frontmatter: `parseFrontmatter` の結果
  * @returns {void}
- * @throws {Error} status が無い・未知のとき、date が無い・YYYY-MM-DD でないとき、status が superseded なのに
+ * @throws {BusinessError} status が無い・未知のとき、date が無い・YYYY-MM-DD でないとき、status が superseded なのに
  *   supersededBy が無い・3桁の番号でないとき
  */
 function assertValidFrontmatter({ fileName, frontmatter }) {
   const { status, date, supersededBy } = frontmatter
-  if (status === undefined) throw new Error(`${fileName}: frontmatter に status がありません`)
+  if (status === undefined)
+    throw new BusinessError(`${fileName}: frontmatter に status がありません`)
   if (!STATUS_LABEL_BY_KEY[status]) {
-    throw new Error(
+    throw new BusinessError(
       `${fileName}: 未知の status "${status}"（許容: ${Object.keys(STATUS_LABEL_BY_KEY).join(' / ')}）`
     )
   }
-  if (date === undefined) throw new Error(`${fileName}: frontmatter に date がありません`)
+  if (date === undefined) throw new BusinessError(`${fileName}: frontmatter に date がありません`)
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw new Error(`${fileName}: date は YYYY-MM-DD の日付で書いてください: "${date}"`)
+    throw new BusinessError(`${fileName}: date は YYYY-MM-DD の日付で書いてください: "${date}"`)
   }
   if (status !== 'superseded') return
   if (supersededBy === undefined) {
-    throw new Error(
+    throw new BusinessError(
       `${fileName}: status が superseded なら supersededBy（置換先ADR番号）が必要です`
     )
   }
   if (!ADR_NUMBER_PATTERN.test(supersededBy)) {
-    throw new Error(
+    throw new BusinessError(
       `${fileName}: supersededBy は置換先ADRの3桁の番号で書いてください: "${supersededBy}"`
     )
   }
