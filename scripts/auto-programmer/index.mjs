@@ -47,6 +47,9 @@
 //   `/auto-resolve-conflict` に解かせてから CI を待つ（Issue #1076）。CI が通った時点で手放すので、後から衝突しても誰も気づかない。
 //   新しい Issue より先に片付けるのは、止まった PR の Issue をブロッカーに持つ Issue が、それまで拾われないためである。
 //   取り合わないよう、衝突を解かせる間も同じ Issue のロックを持つ。
+// - gh の戻り値は、並び順も欠けない値も信じない。記録する PR は番号が最大のものを採り（gh は新しい順に返す）、Issue の
+//   state・ラベルが読めなければ安全側の既定値に倒さず投げる。倒すと、止まった Issue を「予定どおり閉じた」と記録して
+//   `needs-human-check` も付かず、誰も見つけられない。
 
 import { basename, dirname, join } from 'node:path'
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
@@ -269,7 +272,7 @@ function findMergedPullRequest(branchName) {
  *
  * @param {number} issueNumber Issue の番号
  * @returns {{ state: string, labelNames: string[] }} state（'OPEN' / 'CLOSED'）とラベル名
- * @throws {Error} gh が失敗したとき
+ * @throws {Error} gh が失敗したとき、または返した state かラベルを読めないとき
  */
 function readIssueStatus(issueNumber) {
   const { state, labels } = runJson('gh', [
@@ -281,6 +284,12 @@ function readIssueStatus(issueNumber) {
     '--json',
     'state,labels'
   ])
+  // state が欠けたまま渡すと「OPEN でない」と読まれ、閉じた・差分なしと取り違えた記録が残り、needs-human-check も付かない
+  if ((state !== 'OPEN' && state !== 'CLOSED') || !Array.isArray(labels)) {
+    throw new Error(
+      `Issue #${issueNumber} の state かラベルを読めません: ${JSON.stringify({ state, labels })}`
+    )
+  }
   return { state, labelNames: labels.map(({ name }) => name) }
 }
 
@@ -385,6 +394,7 @@ function hasSessionSucceeded({ exitCode, signal }) {
  * セッションの後に、そのセッションが作った PR の URL を引く。
  *
  * 同じブランチ名で過去に作られた PR と見分けるため、セッション前に無かった番号だけを採る。
+ * 複数あるときは、番号が最大（最後に作られた）のものを採る。
  * PR の有無を確かめられなかったときは、「作られなかった」と取り違えないよう null を返す。
  *
  * @param {string} branchName トピックブランチ名
@@ -396,7 +406,13 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
     const created = listPullRequests(branchName).filter(
       ({ number }) => !existingPullRequestNumbers.has(number)
     )
-    return created.length > 0 ? created[created.length - 1].url : ''
+    // gh pr list は新しい順に返すが、並び順に頼らず、作られた順に増える番号で最新を選ぶ
+    const latestCreatedPullRequest = created.reduce(
+      (latestSoFar, pullRequest) =>
+        latestSoFar && latestSoFar.number > pullRequest.number ? latestSoFar : pullRequest,
+      null
+    )
+    return latestCreatedPullRequest ? latestCreatedPullRequest.url : ''
   } catch (error) {
     showWarning(`PR の有無を確かめられませんでした: ${formatError(error)}`)
     return null
