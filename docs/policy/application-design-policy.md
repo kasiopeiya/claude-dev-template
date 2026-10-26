@@ -1,6 +1,7 @@
 ---
 hook:
-  applies-to: ['app/**/*.ts', 'app/**/*.tsx', 'samples/app/**/*.ts', 'samples/app/**/*.tsx']
+  applies-to:
+    ['app/**/*.ts', 'app/**/*.tsx', 'samples/app/**/*.ts', 'samples/app/**/*.tsx', '**/*.mjs']
 ---
 
 # アプリケーション設計ポリシー
