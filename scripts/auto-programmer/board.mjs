@@ -1,5 +1,5 @@
 // 責務: GitHub Projects のボードの着手待ちから、いま着手できる Issue を着手順に選び出し、カードの Status を書き換える。
-//   拾わせたい Issue を着手待ちに置くのもここが担う。
+//   拾わせたい Issue を着手待ちに置くのもここが担う。Issue が載った project のうち、このボードのカードを見分けて Status を読むのもここが担う。
 //
 // 設計意図（WHY）:
 // - フィールド ID・選択肢 ID を設定に持たせず、毎回表記から引き直す。ID は人間が見ても正しさを
@@ -39,6 +39,11 @@ const CARD_STATUS_QUERY = `query($itemId: ID!, $statusFieldName: String!) {
     }
   }
 }`
+
+// findBoardStatusName が読む項目の GraphQL の選択。Issue の projectItems のノードの中に埋め込む（`$statusFieldName` を宣言したクエリで使う）。
+// 見分けに使う項目と見分ける処理を同じファイルに置き、片方だけ直して、どのカードにも一致しない（Status が null になる）事故を防ぐ
+export const BOARD_CARD_STATUS_FIELDS = `project { number owner { ... on User { login } ... on Organization { login } } }
+fieldValueByName(name: $statusFieldName) { ... on ProjectV2ItemFieldSingleSelectValue { name } }`
 
 /**
  * いま着手できる Issue を、着手する順に並べて返す。
@@ -90,6 +95,21 @@ export function readCardStatusName(itemId) {
   ])
   if (!node) throw new TechnicalError(`ボードにカード ${itemId} が見つかりません`)
   return node.fieldValueByName?.name ?? null
+}
+
+/**
+ * Issue が載った project のカードから、config.mjs のボードのカードを見分け、その Status の表記を返す。
+ *
+ * project は number と owner の組で見分ける。同じ number の project は owner が違えば別物だからである。
+ *
+ * @param {{ project?: { number: number, owner: { login?: string } }, fieldValueByName?: { name?: string } | null }[]} projectItems Issue が載った project のカード（GraphQL の projectItems.nodes を BOARD_CARD_STATUS_FIELDS で引いたもの）
+ * @returns {string | null} Status の表記（Issue がこのボードに載っていないとき・Status が空なら null）
+ */
+export function findBoardStatusName(projectItems) {
+  const boardItem = projectItems.find(
+    ({ project }) => project?.number === board.number && project.owner.login === board.owner
+  )
+  return boardItem?.fieldValueByName?.name ?? null
 }
 
 /**
