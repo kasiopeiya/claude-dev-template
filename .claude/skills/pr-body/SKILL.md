@@ -1,6 +1,6 @@
 ---
 name: pr-body
-description: 今のブランチの PR のタイトルと本文を差し替え、何を・なぜ変えたかと、マージで Issue を閉じる `Closes` 行を書く。push した後に使う。「pr-body」「PR本文を書いて」と指示されたとき。
+description: 今のブランチの PR のタイトルと本文を差し替え、何を・なぜ変えたかと、マージで Issue を閉じる `Closes` 行（open な sub-issue を持つ Issue は閉じない `Refs` 行）を書く。push した後に使う。「pr-body」「PR本文を書いて」と指示されたとき。
 argument-hint: '<Issue番号> [<Issue番号>...]'
 ---
 
@@ -27,11 +27,17 @@ for n in $ARGUMENTS; do gh issue view "$n" --json number,title,body; done
 base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && git log --format='%s%n%n%b' "origin/$base..HEAD"
 ```
 
+渡した Issue ごとに、open な sub-issue（子の Issue）を引く。`state` が `OPEN` の子が1件以上ある番号を「open な子を持つ」と判定する。`subIssues.totalCount` では判定しない（close 済みの子も数えるため）。
+
+```bash
+for n in $ARGUMENTS; do echo "#$n open な子:"; gh api graphql -F owner='{owner}' -F name='{repo}' -F number="$n" -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){subIssues(first:50){nodes{number state}}}}}' --jq '.data.repository.issue.subIssues.nodes | map(select(.state=="OPEN") | .number)'; done
+```
+
 本文には次を書く。
 
 - 何を変えたか
 - なぜ変えたか（差分の機械的な要約ではなく、Issue の「この変更が必要な理由」を自分の言葉で）
-- 末尾に、渡した番号ごとに `Closes #<番号>` を1行ずつ
+- 末尾に、渡した番号ごとに1行ずつ。open な子を持つ番号は `Refs #<番号>`（子が残っているので閉じない、と添える）。それ以外は `Closes #<番号>`
 
 「なぜ」は動機が読み取れる形で書く。
 
