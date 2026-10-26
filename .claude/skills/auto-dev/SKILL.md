@@ -15,7 +15,7 @@ Issue 1件を実装し、**push と PR 本文の差し替えまで**を人間へ
 
 - **作業ツリーは AI 専用の clone で、人間の作業ツリーとは別物。** 起動側がこの clone をデフォルトブランチ（GitHub のリポジトリ設定）の最新の状態へ戻し、トピックブランチを作り、ボードの Status を「着手中」へ動かしたうえで起動する。**このスキルはブランチを作らない・切り替えない・Status を動かさない**（どれも起動側が済ませているので、CLAUDE.md の着手ルールのコマンドも打たない）。
 - **人間はこの実行を見ていない。** 確認を待たずに最後まで進める。進めないと分かったら「離脱手順」で痕跡を残して終了する。
-- **1 Issue = 1 ブランチ = 1 PR。Issue は閉じない。** PR 本文の `Closes` を頼りにマージ後に閉じる（自動マージで閉じ損ねた分は、起動側が次の Issue を選ぶ前に閉じる）。ただしリポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は PR を経由しないので、このスキルが閉じる（「差分が無いとき」）。
+- **1 Issue = 1 ブランチ = 1 PR。Issue は閉じない。** PR 本文の `Closes` を頼りにマージ後に閉じる（自動マージで閉じ損ねた分は、起動側が次の Issue を選ぶ前に閉じる）。ただしリポジトリの差分が出ない Issue（GitHub 上の操作だけで完了するもの）は PR を経由しないので、このスキルが閉じる（`/issue-split` で割った親を除く。「差分が無いとき」）。
 - **PR 本文は `/pr-body` が書く。** ラベル付与・マージ可否の判定・auto-merge は `pipeline.yml` → `pr-ai-triage.yml` が行う。
 - **push 前の取り込みは Phase 4 の手順で行う。** CLAUDE.md の「`git push` する前に、デフォルトブランチの最新を取り込む」は、このスキルでは Phase 4 で置き換える。PR はデフォルトブランチ宛てに作られるので、取り込む先もデフォルトブランチにする。
 
@@ -62,7 +62,19 @@ Phase 2 で同じ Skill を実行済みなら、その後にファイルを直�
 
 `git status --short` が空なら、Phase 4〜6 を飛ばす。離脱手順にも回さない（作業は終わっているのに「直しきれなかった」印が付く）。
 
-本文の「完了条件」をすべて満たしたと確かめてから、何をしたかを書いて閉じ、Phase 7 へ進む。満たしていなければ離脱手順へ進む。
+先に、この Issue が open な sub-issue（`state` が `OPEN` の子）を持つかを確かめる。`subIssues.totalCount` では判定しない（close 済みの子も数えるため）。
+
+```bash
+gh api graphql -F owner='{owner}' -F name='{repo}' -F number=$ARGUMENTS -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){subIssues(first:50){nodes{number state}}}}}' --jq '.data.repository.issue.subIssues.nodes | map(select(.state=="OPEN") | .number)'
+```
+
+**open な子があるとき**（実装フローの `/issue-split` で割ったとき）は、離脱手順に回さず、ラベルも付けない。割った親は、すべての子が close されるまで完了条件を満たせないので、閉じない。子を着手待ちに載せるのは起動側で、子への引き継ぎは予定した終わり方である。どの子を作ったかをコメントして、Phase 7 へ進む。
+
+```bash
+gh issue comment $ARGUMENTS --body "<作った子の番号と、それぞれ何をする子か>"
+```
+
+**無いとき**は、本文の「完了条件」をすべて満たしたと確かめてから、何をしたかを書いて閉じ、Phase 7 へ進む。満たしていなければ離脱手順へ進む。
 
 ```bash
 gh issue close $ARGUMENTS --comment "<何をしたか>"
@@ -97,7 +109,7 @@ git push -u origin HEAD
 
 ### Phase 7: 報告する
 
-PR の URL・実行した検証・更新したタスクを表示して終了する。差分が無く PR を経ずに閉じたときは、URL の代わりに close した理由を表示する。
+PR の URL・実行した検証・更新したタスクを表示して終了する。差分が無く PR を経ずに閉じたときは、URL の代わりに close した理由を表示する。割った親を閉じずに終えたときは、URL の代わりに作った子の番号を表示する。
 
 ## 離脱手順
 
