@@ -5,7 +5,7 @@
 //   引くと、キャンセルされた古い run を「落ちた」と取り違える。
 // - 直させるのは conclusion が failure・timed_out のときだけにする。キャンセル・承認待ちなどは差分の中身で
 //   直せる失敗ではなく、AI に直させても空振りする。
-// - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
+// - I/O を持たない層をここに切り出すことで、GitHub に触れずに確かめられる。
 
 const FIXABLE_CONCLUSIONS = new Set(['failure', 'timed_out'])
 

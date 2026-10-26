@@ -13,7 +13,7 @@
 // - ラベル名は `.claude/skills/issue-check/SKILL.md` が貼る表記が正。
 // - 対話の「issue N 対応して」も、CLAUDE.md「issue番号だけで開発フローを自動追従する」に同じ止める条件を
 //   文章で持つ。条件を変えるときは両方を直す。
-// - I/O を持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
+// - I/O を持たない層をここに切り出すことで、GitHub に触れずに確かめられる。
 
 export const ISSUE_CHECKED_LABEL = 'issue:checked'
 // 人間が方針を決める・人間が作業する Issue に付くラベルと、実装を止めるときに記録へ残す判定の言い回し。

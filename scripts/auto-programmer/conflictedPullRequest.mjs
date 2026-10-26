@@ -8,7 +8,7 @@
 //   ブランチは、もうこのツールの持ち物ではない。その中身を、権限確認を飛ばした無人セッションと `npm ci` で走らせない。
 // - mergeable が CONFLICTING の PR だけを選ぶ。UNKNOWN は GitHub がまだ計算していないだけなので、次の巡回で見直す。
 // - `needs-human-check` が付いた Issue の PR は解かせない。解けずに離脱した PR を、人間が見るまで何度も解かせ直さない。
-// - I/O も import も持たない層をここに切り出すことで、GitHub に触れずに単体テストできる。
+// - I/O も import も持たない層をここに切り出すことで、GitHub に触れずに確かめられる。
 
 const CONFLICTING_MERGEABLE_STATE = 'CONFLICTING'
 
