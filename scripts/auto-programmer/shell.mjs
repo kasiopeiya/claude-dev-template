@@ -20,6 +20,7 @@
 import { spawn, spawnSync } from 'node:child_process'
 import { constants } from 'node:os'
 
+import { TechnicalError } from '../lib/errors.mjs'
 import {
   spawnWithWindowsShimFallback,
   spawnWithWindowsShimFallbackAsync
@@ -37,17 +38,6 @@ const OUTPUT_DRAIN_GRACE_MS = 5000
 
 // 時間切れで SIGTERM を送ってから SIGKILL へ切り替えるまでの猶予。SIGKILL は後片付けの機会を奪うので、まず SIGTERM で頼む
 const FORCE_KILL_GRACE_MS = 5000
-
-/**
- * 子プロセスの終了結果（spawnSync の戻り値、または spawnAndWaitForExit の解決値）から終了コードを取り出す。
- * シグナルで止まった場合も失敗として扱う。
- *
- * @param {{ status: number | null, signal: string | null }} result 子プロセスの終了結果
- * @returns {{ exitCode: number, signal: string | null }} 終了コードと、止めたシグナル
- */
-function readExitStatus(result) {
-  return { exitCode: result.status ?? 1, signal: result.signal ?? null }
-}
 
 /**
  * コマンドを実行し、標準出力を文字列で受け取る。
@@ -99,6 +89,99 @@ export function runStreaming(command, args, options = {}) {
   )
   if (result.error) throw result.error
   return readExitStatus(result)
+}
+
+/**
+ * コマンドを非同期に実行し、子の出力を中継しながら終了を待つ。待っている間も Node のタイマーが動くので、
+ * onTick で経過を画面に出せる。claude セッション専用（使い分けはファイル冒頭の設計意図を参照）。
+ *
+ * 子には標準入力を渡さない。子は POSIX では親と別のプロセスグループで動くので、端末の Ctrl+C や切断は子に
+ * 届かない。子を止めたいときは abortSignal を中止する（reason に入れたシグナルを子孫ごと送る）。
+ *
+ * @param {string} command 実行するコマンド
+ * @param {string[]} args 引数
+ * @param {{ cwd: string, extraEnv?: Record<string, string>, timeoutMs: number, abortSignal: AbortSignal, onTick: (elapsedMs: number) => void, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} options 実行ディレクトリ・親の環境変数に足す環境変数・打ち切るまでの時間・中止の合図・1秒ごとに経過時間を受け取る関数・子の出力の中継先
+ * @returns {Promise<{ exitCode: number, signal: string | null }>} 終了状態（打ち切られたときは signal が入る）
+ * @throws {Error} コマンドを起動できなかったとき（PATH に無い・.cmd に渡せない引数がある など）
+ */
+export async function runStreamingAsync(
+  command,
+  args,
+  { cwd, extraEnv, timeoutMs, abortSignal, onTick, onOutput }
+) {
+  const startedAt = Date.now()
+  const tickTimer = setInterval(() => onTick(Date.now() - startedAt), ELAPSED_TIME_TICK_INTERVAL_MS)
+  try {
+    // 打ち切っても error は出さず、signal を入れて返す
+    const result = await spawnWithWindowsShimFallbackAsync(
+      (resolvedCommand, resolvedArgs, extraOptions) =>
+        spawnAndWaitForExit(resolvedCommand, resolvedArgs, {
+          cwd,
+          extraEnv,
+          ...extraOptions,
+          timeoutMs,
+          abortSignal,
+          onOutput
+        }),
+      command,
+      args
+    )
+    if (result.error) throw result.error
+    return readExitStatus(result)
+  } finally {
+    clearInterval(tickTimer)
+  }
+}
+
+/**
+ * コマンドを実行し、失敗したら例外にする。
+ *
+ * @param {string} command 実行するコマンド
+ * @param {string[]} args 引数
+ * @param {{ cwd?: string }} [options] 実行ディレクトリ
+ * @returns {string} 標準出力
+ * @throws {TechnicalError} 起動できなかったとき・終了コードが 0 以外のとき（標準エラー出力をメッセージに含める）
+ */
+export function runOrThrow(command, args, options = {}) {
+  const { exitCode, signal, stdout, stderr } = runCapture(command, args, options)
+  if (exitCode !== 0) {
+    const exitStatusText = signal ? `signal ${signal}` : `exit ${exitCode}`
+    throw new TechnicalError(
+      `${command} ${args.join(' ')} が失敗しました (${exitStatusText})\n${stderr}`
+    )
+  }
+  return stdout
+}
+
+/**
+ * コマンドの標準出力を JSON として読む。
+ *
+ * @param {string} command 実行するコマンド
+ * @param {string[]} args 引数
+ * @param {{ cwd?: string }} [options] 実行ディレクトリ
+ * @returns {unknown} パースした JSON
+ * @throws {TechnicalError} コマンドが失敗したとき・出力が JSON でないとき
+ */
+export function runJson(command, args, options = {}) {
+  const stdout = runOrThrow(command, args, options)
+  try {
+    return JSON.parse(stdout)
+  } catch {
+    throw new TechnicalError(
+      `${command} ${args.join(' ')} の出力が JSON ではありません:\n${stdout}`
+    )
+  }
+}
+
+/**
+ * 子プロセスの終了結果（spawnSync の戻り値、または spawnAndWaitForExit の解決値）から終了コードを取り出す。
+ * シグナルで止まった場合も失敗として扱う。
+ *
+ * @param {{ status: number | null, signal: string | null }} result 子プロセスの終了結果
+ * @returns {{ exitCode: number, signal: string | null }} 終了コードと、止めたシグナル
+ */
+function readExitStatus(result) {
+  return { exitCode: result.status ?? 1, signal: result.signal ?? null }
 }
 
 /**
@@ -220,82 +303,4 @@ function spawnAndWaitForExit(
       })
     })
   })
-}
-
-/**
- * コマンドを非同期に実行し、子の出力を中継しながら終了を待つ。待っている間も Node のタイマーが動くので、
- * onTick で経過を画面に出せる。claude セッション専用（使い分けはファイル冒頭の設計意図を参照）。
- *
- * 子には標準入力を渡さない。子は POSIX では親と別のプロセスグループで動くので、端末の Ctrl+C や切断は子に
- * 届かない。子を止めたいときは abortSignal を中止する（reason に入れたシグナルを子孫ごと送る）。
- *
- * @param {string} command 実行するコマンド
- * @param {string[]} args 引数
- * @param {{ cwd: string, extraEnv?: Record<string, string>, timeoutMs: number, abortSignal: AbortSignal, onTick: (elapsedMs: number) => void, onOutput: (streamName: 'stdout' | 'stderr', chunk: Buffer) => void }} options 実行ディレクトリ・親の環境変数に足す環境変数・打ち切るまでの時間・中止の合図・1秒ごとに経過時間を受け取る関数・子の出力の中継先
- * @returns {Promise<{ exitCode: number, signal: string | null }>} 終了状態（打ち切られたときは signal が入る）
- * @throws {Error} コマンドを起動できなかったとき（PATH に無い・.cmd に渡せない引数がある など）
- */
-export async function runStreamingAsync(
-  command,
-  args,
-  { cwd, extraEnv, timeoutMs, abortSignal, onTick, onOutput }
-) {
-  const startedAt = Date.now()
-  const tickTimer = setInterval(() => onTick(Date.now() - startedAt), ELAPSED_TIME_TICK_INTERVAL_MS)
-  try {
-    // 打ち切っても error は出さず、signal を入れて返す
-    const result = await spawnWithWindowsShimFallbackAsync(
-      (resolvedCommand, resolvedArgs, extraOptions) =>
-        spawnAndWaitForExit(resolvedCommand, resolvedArgs, {
-          cwd,
-          extraEnv,
-          ...extraOptions,
-          timeoutMs,
-          abortSignal,
-          onOutput
-        }),
-      command,
-      args
-    )
-    if (result.error) throw result.error
-    return readExitStatus(result)
-  } finally {
-    clearInterval(tickTimer)
-  }
-}
-
-/**
- * コマンドを実行し、失敗したら例外にする。
- *
- * @param {string} command 実行するコマンド
- * @param {string[]} args 引数
- * @param {{ cwd?: string }} [options] 実行ディレクトリ
- * @returns {string} 標準出力
- * @throws {Error} 起動できなかったとき・終了コードが 0 以外のとき（標準エラー出力をメッセージに含める）
- */
-export function runOrThrow(command, args, options = {}) {
-  const { exitCode, signal, stdout, stderr } = runCapture(command, args, options)
-  if (exitCode !== 0) {
-    const exitStatusText = signal ? `signal ${signal}` : `exit ${exitCode}`
-    throw new Error(`${command} ${args.join(' ')} が失敗しました (${exitStatusText})\n${stderr}`)
-  }
-  return stdout
-}
-
-/**
- * コマンドの標準出力を JSON として読む。
- *
- * @param {string} command 実行するコマンド
- * @param {string[]} args 引数
- * @param {{ cwd?: string }} [options] 実行ディレクトリ
- * @returns {unknown} パースした JSON
- * @throws {Error} コマンドが失敗したとき・出力が JSON でないとき
- */
-export function runJson(command, args, options = {}) {
-  const stdout = runOrThrow(command, args, options)
-  try {
-    return JSON.parse(stdout)
-  } catch {
-    throw new Error(`${command} ${args.join(' ')} の出力が JSON ではありません:\n${stdout}`)
-  }
 }
