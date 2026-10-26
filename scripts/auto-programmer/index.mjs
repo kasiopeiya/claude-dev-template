@@ -47,6 +47,14 @@
 //   `/auto-resolve-conflict` に解かせてから CI を待つ（Issue #1076）。CI が通った時点で手放すので、後から衝突しても誰も気づかない。
 //   新しい Issue より先に片付けるのは、止まった PR の Issue をブロッカーに持つ Issue が、それまで拾われないためである。
 //   取り合わないよう、衝突を解かせる間も同じ Issue のロックを持つ。
+// - Issue のロックは、取った関数が戻り値（StartedIssue・ClaimedConflictedPullRequest）で持ち主に渡す。作業まで進んだロックは
+//   processIssuesUntilStopped の finally が、飛ばした候補のロックは候補を選ぶ側が、次の候補へ進む前に外す。飛ばした候補は
+//   processIssuesUntilStopped へ戻らず、選ぶ側のループが次の候補へ進むので、finally 1か所には集められない。持ち主の見えない
+//   変数に外す義務を預けると外し忘れが見えないので、変数に控えるのは、シグナルで終わる（finally に届かない）ときにリスナが外す
+//   ためだけにする。その控えは issueLockKeeper の中に閉じ、取る・外す口もそこに絞る。
+// - 終了シグナルは、受けるたびに実行中の claude セッションへ子孫ごと送る。AbortController は1度しか合図せず、Ctrl+C の後の SIGTERM は
+//   届かないので、最初の1つは abort、2つ目以降はイベントで届ける（使い分けは shell.mjs の sendSignalToWatchedChildren に閉じる）。
+//   Ctrl+C で止めた回は、セッションが打ち切られて失敗に見えるだけで、claude が壊れた兆候ではないので、連続失敗に数えない。
 // - gh の戻り値は、並び順も欠けない値も信じない。記録する PR は番号が最大のものを採り（gh は新しい順に返す）、Issue の
 //   state・ラベルが読めなければ安全側の既定値に倒さず投げる。倒すと、止まった Issue を「予定どおり閉じた」と記録して
 //   `needs-human-check` も付かず、誰も見つけられない。
@@ -97,7 +105,7 @@ import {
 } from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { readRunRecords, recordRun } from './runLog.mjs'
-import { runJson, runOrThrow } from './shell.mjs'
+import { runJson, runOrThrow, sendSignalToWatchedChildren } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
 import {
   findReasonToSkipForOpenSubIssues,
@@ -173,30 +181,37 @@ const SUB_ISSUES_QUERY = `query($owner: String!, $name: String!, $number: Int!, 
 // 待たずに次のカードを着手中へ送り、Ready のカードを PR 無しのまま使い切るため
 const MAX_CONSECUTIVE_SESSION_FAILURES = 2
 
-// Ctrl+C を「実行中の1件を記録してから止める」にする。リスナが無いと node はその場で終了し、記録が残らない。
-// reason には受けたシグナルを入れる。claude セッションは別のプロセスグループで動くので、端末のシグナルは
-// 届かず、この中止を通して同じシグナルを子孫ごと送る（shell.mjs の runStreamingAsync）
+// claude セッションは別のプロセスグループで動くので、端末のシグナルは届かない。受けたシグナルは、この controller を
+// 通して同じシグナルを子孫ごと送る（reason には最初に受けたシグナルが入る。shell.mjs の sendSignalToWatchedChildren）
 const stopController = new AbortController()
-process.on('SIGINT', () => stopController.abort('SIGINT'))
-// 端末の切断（SIGHUP）・SIGTERM・Ctrl+\（SIGQUIT）は、claude セッションへ送ってから、既定どおりこのプロセスも終わる。
-// once にするのは、送り直した同じシグナルでリスナが再び呼ばれず、既定の終了に至るようにするため
+
 // 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると runWorkAndRecord の finally に届かないので、
 // 止まった印はリスナが付ける
 let inFlightIssueNumber = null
+
 // このプロセスが取った AI 専用 clone の番号ロック（取る前と外した後は null）。シグナルで終わると main の finally に
 // 届かないので、リスナも外す
 let workspaceLock = null
-// このプロセスが着手している Issue のロック（取る前と外した後は null）。外す理由は workspaceLock と同じ
-let issueLock = null
+
+// Issue のロックを取る・外す口。シグナルで終わると外す持ち主に届かないので、リスナが releaseHeld で外す（持ち主は冒頭の設計意図）
+const issueLockKeeper = createIssueLockKeeper()
+
 // 衝突した PR ごとに、最後に出した飛ばす理由（showConflictSkipReasonOnce が同じ行を毎周出さないためのもの）
 const shownConflictSkipReasonsByPullRequestNumber = new Map()
-for (const signal of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
-  process.once(signal, () => {
-    stopController.abort(signal)
-    if (inFlightIssueNumber !== null) tryMarkAsNeedsHumanCheck(inFlightIssueNumber, {})
-    releaseIssueLock()
+
+// Ctrl+C を「実行中の1件を記録してから止める」にする。リスナが無いと node はその場で終了し、記録が残らない。
+// 2回目以降の Ctrl+C も claude へ届くよう、受けるたびに送る
+process.on('SIGINT', () => sendSignalToWatchedChildren(stopController, 'SIGINT'))
+
+// 端末の切断（SIGHUP）・SIGTERM・Ctrl+\（SIGQUIT）は、claude セッションへ送ってから、既定どおりこのプロセスも終わる。
+// once にするのは、送り直した同じシグナルでリスナが再び呼ばれず、既定の終了に至るようにするため
+for (const signalName of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
+  process.once(signalName, () => {
+    sendSignalToWatchedChildren(stopController, signalName)
+    if (inFlightIssueNumber !== null) tryMarkAsNeedsHumanCheck(inFlightIssueNumber)
+    issueLockKeeper.releaseHeld()
     releaseWorkspaceLock()
-    process.kill(process.pid, signal)
+    process.kill(process.pid, signalName)
   })
 }
 
@@ -534,58 +549,79 @@ function startIssue({ issue, branchName, workspaceDir }) {
   return existingPullRequestNumbers
 }
 
-/** @typedef {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number> }} StartedIssue 着手中へ動かした Issue。そのロックは issueLock に残り、1件を終えたら releaseIssueLock で外す */
+/** @typedef {Parameters<typeof releaseLockFile>[0]} IssueLock 取った Issue のロック。取った関数が戻り値で持ち主に渡し、持ち主が issueLockKeeper.release で外す */
+
+/** @typedef {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number>, issueLock: IssueLock }} StartedIssue 着手中へ動かした Issue。そのロックは issueLock に載り、1件を終えたら呼び出し側が外す */
 
 /**
- * 他のプロセスと取り合わないよう Issue のロックを取る。取れたら issueLock に残す。
+ * Issue のロックを取る・外す口と、シグナルのリスナが外すためのロックの控えを1つにまとめる。控えに触れられるのはこの中だけ。
  *
- * Issue の実装と衝突の解消は、同じこのロックで互いを締め出す。ロック名を片方だけ変えると、同じ Issue で両方が同時に走る。
+ * 外す口を release に絞るのは、tryReleaseLockFile を直に呼ぶと、ファイルは消えても控えが残り、次に取るたびに投げて全候補を飛ばし続けるため。
  *
- * @param {number} issueNumber Issue の番号
- * @returns {string | null} 取れなかったときの飛ばす理由（取れたら null）
- * @throws {Error} ロックファイルを読めなかった・作れなかった・消せなかったとき
+ * @returns {{ tryAcquire: (issueNumber: number) => { lock: IssueLock, skipReason: null } | { lock: null, skipReason: string }, release: (lock: IssueLock | null) => void, releaseHeld: () => void }} 取る口（取れたロックは戻り値の持ち主が外す）・外す口（取れなかったときの null を渡してよい。外せなくても投げない）・持っているロックを外す口（シグナルのリスナ用）
  */
-function tryAcquireIssueLock(issueNumber) {
-  const { lock, holderPid } = tryAcquireNamedLockFile({
-    lockDirectory: LOCK_DIRECTORY,
-    lockName: `issue-${issueNumber}`
-  })
-  if (lock === null) return `PID ${holderPid ?? '（読めず）'} のプロセスが着手中です`
-  issueLock = lock
-  return null
+function createIssueLockKeeper() {
+  let heldLock = null
+
+  const release = (lock) => {
+    if (lock === null) return
+    tryReleaseLockFile(lock)
+    if (heldLock === lock) heldLock = null
+  }
+
+  // 持ったまま次を取ると、先のロックが誰にも外されずに残る。取る前に止める。
+  // Issue の実装と衝突の解消は、同じこのロックで互いを締め出す。ロック名を片方だけ変えると、同じ Issue で両方が同時に走る
+  const tryAcquire = (issueNumber) => {
+    if (heldLock !== null) {
+      throw new TechnicalError(
+        `Issue のロックを持ったまま #${issueNumber} のロックを取ろうとしました: ${heldLock.lockFilePath}`
+      )
+    }
+    const { lock, holderPid } = tryAcquireNamedLockFile({
+      lockDirectory: LOCK_DIRECTORY,
+      lockName: `issue-${issueNumber}`
+    })
+    if (lock === null) {
+      return { lock: null, skipReason: `PID ${holderPid ?? '（読めず）'} のプロセスが着手中です` }
+    }
+    heldLock = lock
+    return { lock, skipReason: null }
+  }
+
+  return { tryAcquire, release, releaseHeld: () => release(heldLock) }
 }
 
 /**
- * 他のプロセスと取り合わないよう Issue のロックを取り、カードがまだ着手待ちかを引き直す。
+ * ロックを取った後に、カードがまだ着手待ちにあるかを引き直す。
  *
- * 着手してよいとき・投げたときは、取ったロックを issueLock に残す。カードがもう着手待ちに無いときは、外してから理由を返す。
+ * 引き直すのは、候補を1周に1回しか引かないためである（冒頭の設計意図）。
  *
- * @param {{ itemId: string, number: number }} issue 候補の Issue
- * @returns {string | null} 着手せずに飛ばす理由（他のプロセスがロックを持っている・カードがもう着手待ちに無い。着手してよければ null）
- * @throws {Error} ロックファイルを読めなかった・作れなかった・消せなかったとき・カードの Status を引けなかったとき
+ * @param {{ itemId: string }} issue 候補の Issue
+ * @returns {string | null} カードがもう着手待ちに無いときの飛ばす理由（着手待ちにあれば null）
+ * @throws {Error} カードの Status を引けなかったとき
  */
-function claimIssue(issue) {
-  const lockSkipReason = tryAcquireIssueLock(issue.number)
-  if (lockSkipReason) return lockSkipReason
-
+function findReasonCardIsNoLongerReady(issue) {
   const statusName = readCardStatusName(issue.itemId)
   if (statusName === config.board.readyStatusName) return null
-  releaseIssueLock()
   return `カードがもう ${config.board.readyStatusName} にありません（いまは ${statusName ?? 'Status なし'}）`
 }
 
 /**
  * Issue 1件の着手を試す。他のプロセスが着手している・カードがもう着手待ちに無ければ ℹ で、着手前の準備が落ちれば ⚠ で理由を出して飛ばす。
  *
- * 着手したときは、その Issue のロックを issueLock に残す。
+ * 着手したときは、取ったロックを startedIssue に載せて返す。飛ばしたときは、次の候補へ進む前にここで外す。
  *
  * @param {{ itemId: string, number: number, title: string, labelNames: string[] }} issue 候補の Issue
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {{ outcome: 'started', startedIssue: StartedIssue } | { outcome: 'skipped' } | { outcome: 'failed' }} 着手した（started）・異常ではない理由で飛ばした（skipped）・着手前の準備が落ちて飛ばした（failed）のどれか
  */
 function tryStartIssue(issue, workspaceDir) {
+  let issueLock = null
+  let isStarted = false
   try {
-    const skipReason = claimIssue(issue)
+    const lockAttempt = issueLockKeeper.tryAcquire(issue.number)
+    issueLock = lockAttempt.lock
+    const skipReason = lockAttempt.skipReason ?? findReasonCardIsNoLongerReady(issue)
     if (skipReason) {
       showInfo(`#${issue.number} を飛ばします: ${skipReason}`)
       return { outcome: 'skipped' }
@@ -597,15 +633,17 @@ function tryStartIssue(issue, workspaceDir) {
     })
     showIssueBanner({ issueNumber: issue.number, title: issue.title, branchName, workspaceDir })
     const existingPullRequestNumbers = startIssue({ issue, branchName, workspaceDir })
+    isStarted = true
     return {
       outcome: 'started',
-      startedIssue: { issue, branchName, workspaceDir, existingPullRequestNumbers }
+      startedIssue: { issue, branchName, workspaceDir, existingPullRequestNumbers, issueLock }
     }
   } catch (error) {
-    // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
-    releaseIssueLock()
     showWarning(`#${issue.number} を飛ばします: ${formatErrorMessage(error)}`)
     return { outcome: 'failed' }
+  } finally {
+    // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
+    if (!isStarted) issueLockKeeper.release(issueLock)
   }
 }
 
@@ -616,7 +654,7 @@ function tryStartIssue(issue, workspaceDir) {
  * 無いときは何も出さない（呼び出し側がアイドル中のステータス行にまとめて示す）。前者のせいだけで全件を飛ばしたときは、
  * 異常ではないので締めの警告を出さない。
  *
- * 着手した Issue のロックは issueLock に残す。外すのは呼び出し側で、1件を終えたときに releaseIssueLock を呼ぶ。
+ * 着手した Issue のロックは startedIssue に載せて返す。外すのは呼び出し側で、1件を終えたときに issueLockKeeper.release を呼ぶ。
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {Promise<{ startedIssue: StartedIssue | null, idleReason: string | null }>} 着手した Issue（着手できる Issue が無い・全部飛ばした・止められたときは null）と、着手しなかったときに待機中のステータス行へ出す理由（着手したときは null）
@@ -1037,15 +1075,14 @@ function showSubIssueHandover(record) {
 }
 
 /**
- * Issue に `needs-human-check` を付け、付けられたかを record へ書き足す。付けられなくても投げない。
+ * Issue に `needs-human-check` を付ける。付けられなくても投げない。
  *
- * runWorkAndRecord の finally から呼ぶので、投げるとその1件の記録が残らない。
+ * runWorkAndRecord の finally とシグナルのリスナから呼ぶので、投げるとその1件の記録が残らず、シグナルでの終了にも至らない。
  *
  * @param {number} issueNumber 対象 Issue の番号
- * @param {Record<string, unknown>} record 書き足す先の記録
- * @returns {void}
+ * @returns {{ isMarkedAsNeedsHumanCheck: true } | { isMarkedAsNeedsHumanCheck: false, needsHumanCheckLabelError: string }} 付けられたかと、付けられなかったときの理由（記録へ書き足す）
  */
-function tryMarkAsNeedsHumanCheck(issueNumber, record) {
+function tryMarkAsNeedsHumanCheck(issueNumber) {
   try {
     runOrThrow('gh', [
       'issue',
@@ -1056,13 +1093,13 @@ function tryMarkAsNeedsHumanCheck(issueNumber, record) {
       '--add-label',
       NEEDS_HUMAN_CHECK_LABEL
     ])
-    record.isMarkedAsNeedsHumanCheck = true
+    return { isMarkedAsNeedsHumanCheck: true }
   } catch (error) {
-    record.isMarkedAsNeedsHumanCheck = false
-    record.needsHumanCheckLabelError = formatErrorMessage(error)
+    const needsHumanCheckLabelError = formatErrorMessage(error)
     showWarning(
-      `#${issueNumber} に ${NEEDS_HUMAN_CHECK_LABEL} を付けられませんでした: ${collapseToSingleLine(record.needsHumanCheckLabelError)}`
+      `#${issueNumber} に ${NEEDS_HUMAN_CHECK_LABEL} を付けられませんでした: ${collapseToSingleLine(needsHumanCheckLabelError)}`
     )
+    return { isMarkedAsNeedsHumanCheck: false, needsHumanCheckLabelError }
   }
 }
 
@@ -1090,7 +1127,7 @@ async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
     record.pullRequestUrl = readPullRequestUrl()
     record.finishedAt = new Date().toISOString()
     if (shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)) {
-      tryMarkAsNeedsHumanCheck(record.issueNumber, record)
+      Object.assign(record, tryMarkAsNeedsHumanCheck(record.issueNumber))
     }
     recordRun(record)
     inFlightIssueNumber = null
@@ -1228,44 +1265,60 @@ function showConflictSkipReasonOnce({ pullRequestNumber, subject, reason }) {
   showInfo(`${subject}を飛ばします: ${reason}`)
 }
 
-/** @typedef {ReturnType<typeof selectConflictedOwnPullRequests>[number] & { headShaBeforeSession: string, isAutoMergeEnabled: boolean }} ClaimedConflictedPullRequest 衝突を解かせると決めた PR。その Issue のロックは issueLock に残り、解き終えたら releaseIssueLock で外す */
+/** @typedef {ReturnType<typeof selectConflictedOwnPullRequests>[number] & { headShaBeforeSession: string, isAutoMergeEnabled: boolean, issueLock: IssueLock }} ClaimedConflictedPullRequest 衝突を解かせると決めた PR。その Issue のロックは issueLock に載り、解き終えたら呼び出し側が外す */
+
+/**
+ * 呼び出し側が読み直した PR の状態と、ここで読み直す Issue の state・ラベルから、衝突を解かせずに飛ばす理由を探す。
+ *
+ * @param {{ candidate: ReturnType<typeof selectConflictedOwnPullRequests>[number], pullRequest: ReturnType<typeof readPullRequestStatus> }} params 衝突を解かせる候補と、その PR の読み直した状態
+ * @returns {string | null} 解かせない理由（解かせてよければ null）
+ * @throws {Error} Issue の state・ラベルを読めなかったとき
+ */
+function readIssueAndFindReasonNotToResolveConflict({ candidate, pullRequest }) {
+  const { issueNumber, lastWaitedHeadSha } = candidate
+  return findReasonNotToResolveConflict({
+    pullRequest,
+    issue: { number: issueNumber, ...readIssueStatus(issueNumber) },
+    lastWaitedHeadSha,
+    needsHumanCheckLabel: NEEDS_HUMAN_CHECK_LABEL
+  })
+}
 
 /**
  * 衝突した PR の Issue のロックを取り、PR と Issue を読み直して、まだ解かせてよいかを確かめる。飛ばすときは理由を出す。
  *
- * 解かせてよいときは、取ったロックを issueLock に残す。それ以外は外す。
+ * 解かせてよいときは、取ったロックを PR に載せて返す。飛ばしたときは、次の候補へ進む前にここで外す。
  *
  * @param {ReturnType<typeof selectConflictedOwnPullRequests>[number]} candidate 衝突を解かせる候補
  * @returns {ClaimedConflictedPullRequest | null} 解かせると決めた PR（飛ばしたら null）
  */
 function tryClaimConflictedPullRequest(candidate) {
-  const { issueNumber, pullRequestNumber, lastWaitedHeadSha } = candidate
+  const { issueNumber, pullRequestNumber } = candidate
   const subject = `PR #${pullRequestNumber}（#${issueNumber}）の衝突`
+  let issueLock = null
+  let isClaimed = false
   try {
-    const lockSkipReason = tryAcquireIssueLock(issueNumber)
-    if (lockSkipReason) {
-      showConflictSkipReasonOnce({ pullRequestNumber, subject, reason: lockSkipReason })
+    const lockAttempt = issueLockKeeper.tryAcquire(issueNumber)
+    issueLock = lockAttempt.lock
+    if (lockAttempt.skipReason) {
+      showConflictSkipReasonOnce({ pullRequestNumber, subject, reason: lockAttempt.skipReason })
       return null
     }
     const pullRequest = readPullRequestStatus(pullRequestNumber)
-    const reason = findReasonNotToResolveConflict({
-      pullRequest,
-      issue: { number: issueNumber, ...readIssueStatus(issueNumber) },
-      lastWaitedHeadSha,
-      needsHumanCheckLabel: NEEDS_HUMAN_CHECK_LABEL
-    })
-    if (reason === null) {
-      const { headSha, isAutoMergeEnabled } = pullRequest
-      return { ...candidate, headShaBeforeSession: headSha, isAutoMergeEnabled }
+    const reason = readIssueAndFindReasonNotToResolveConflict({ candidate, pullRequest })
+    if (reason !== null) {
+      showConflictSkipReasonOnce({ pullRequestNumber, subject, reason })
+      return null
     }
-    releaseIssueLock()
-    showConflictSkipReasonOnce({ pullRequestNumber, subject, reason })
-    return null
+    isClaimed = true
+    const { headSha, isAutoMergeEnabled } = pullRequest
+    return { ...candidate, headShaBeforeSession: headSha, isAutoMergeEnabled, issueLock }
   } catch (error) {
-    // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
-    releaseIssueLock()
     showWarning(`${subject}を飛ばします: ${formatErrorMessage(error)}`)
     return null
+  } finally {
+    // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
+    if (!isClaimed) issueLockKeeper.release(issueLock)
   }
 }
 
@@ -1467,43 +1520,43 @@ function releaseWorkspaceLock() {
   workspaceLock = null
 }
 
-/**
- * 着手している Issue のロックを外す。取っていなければ何もしない。外せなくても投げない。
- *
- * @returns {void}
- */
-function releaseIssueLock() {
-  if (issueLock === null) return
-  tryReleaseLockFile(issueLock)
-  issueLock = null
-}
+/** @typedef {{ runWork: () => Promise<boolean>, issueLock: IssueLock }} ClaimedWork 選んだ作業を走らせる関数と、その Issue のロック。走らせ終えたら呼び出し側がロックを外す */
 
 /**
  * 次にする作業を1つ選び、その Issue のロックを取る。衝突した自分の PR を、新しい Issue より先に選ぶ。
  *
- * 選んだ作業の Issue のロックは issueLock に残す。外すのは呼び出し側で、作業を終えたときに releaseIssueLock を呼ぶ。
+ * 選んだ作業の Issue のロックは claimedWork に載せて返す。外すのは呼び出し側で、作業を終えたときに issueLockKeeper.release を呼ぶ。
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
- * @returns {Promise<{ runWork: (() => Promise<boolean>) | null, idleReason: string | null }>} 作業を走らせて記録する関数（する作業が無いときは null）と、
+ * @returns {Promise<{ claimedWork: ClaimedWork | null, idleReason: string | null }>} 選んだ作業（する作業が無いときは null）と、
  *   作業が無いときに待機中のステータス行へ出す理由（作業があるときは null）
  */
 async function claimNextWork(workspaceDir) {
   const conflictedPullRequest = await claimFirstConflictedPullRequest()
   if (conflictedPullRequest) {
     return {
-      runWork: () => resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }),
+      claimedWork: {
+        runWork: () => resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }),
+        issueLock: conflictedPullRequest.issueLock
+      },
       idleReason: null
     }
   }
   try {
     const { startedIssue, idleReason } = await startFirstStartableIssue(workspaceDir)
-    if (!startedIssue) return { runWork: null, idleReason }
-    return { runWork: () => implementIssueAndRecord(startedIssue), idleReason: null }
+    if (!startedIssue) return { claimedWork: null, idleReason }
+    return {
+      claimedWork: {
+        runWork: () => implementIssueAndRecord(startedIssue),
+        issueLock: startedIssue.issueLock
+      },
+      idleReason: null
+    }
   } catch (error) {
     // 候補を引けなかった回は「着手できる Issue が無い」とは別の理由なので、待機行に書き分ける。
     // 書き分けないと、gh の失敗などで待ち続けている間も「正常に空振りしている」ように見える
     showError(`候補を引けませんでした: ${formatErrorWithStack(error)}`)
-    return { runWork: null, idleReason: '候補を引けず、次の見直しで再試行' }
+    return { claimedWork: null, idleReason: '候補を引けず、次の見直しで再試行' }
   }
 }
 
@@ -1521,8 +1574,8 @@ async function processIssuesUntilStopped(workspaceDir) {
   let isIdleWaitLimitReached = false
   while (!stopController.signal.aborted && !isIdleWaitLimitReached) {
     tryCloseIssuesOfMergedPullRequests()
-    const { runWork, idleReason } = await claimNextWork(workspaceDir)
-    if (!runWork) {
+    const { claimedWork, idleReason } = await claimNextWork(workspaceDir)
+    if (!claimedWork) {
       idlePollCount += 1
       isIdleWaitLimitReached = await waitUnlessIdleWaitLimitReached(idlePollCount, idleReason)
       continue
@@ -1531,10 +1584,12 @@ async function processIssuesUntilStopped(workspaceDir) {
 
     let isAllSessionsSucceeded
     try {
-      isAllSessionsSucceeded = await runWork()
+      isAllSessionsSucceeded = await claimedWork.runWork()
     } finally {
-      releaseIssueLock()
+      issueLockKeeper.release(claimedWork.issueLock)
     }
+    // Ctrl+C で止めた回は数えない（冒頭の設計意図）
+    if (stopController.signal.aborted) break
     consecutiveSessionFailureCount = isAllSessionsSucceeded ? 0 : consecutiveSessionFailureCount + 1
     if (consecutiveSessionFailureCount >= MAX_CONSECUTIVE_SESSION_FAILURES) {
       throw new TechnicalError(
