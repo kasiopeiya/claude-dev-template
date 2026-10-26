@@ -7,12 +7,14 @@
 //   黙って settings.json に任せると、引きずられる元の振る舞いに戻ったことに気づけない。
 // - 値の中身（モデル名・effort の段階）は検査しない。使える値は claude の版で変わるので、claude 自身に任せる。
 
+import { TechnicalError } from '../lib/errors.mjs'
+
 /**
  * モデルと effort の設定が、どちらも空でない文字列であることを確かめる。
  *
  * @param {{ sessionModel: unknown, sessionEffort: unknown }} settings config.mjs の `sessionModel`・`sessionEffort`
  * @returns {void}
- * @throws {Error} どちらかが欠けている・空文字・文字列でないとき
+ * @throws {TechnicalError} どちらかが欠けている・空文字・文字列でないとき
  */
 export function validateSessionModelSettings({ sessionModel, sessionEffort }) {
   for (const [keyName, settingText] of [
@@ -20,7 +22,7 @@ export function validateSessionModelSettings({ sessionModel, sessionEffort }) {
     ['sessionEffort', sessionEffort]
   ]) {
     if (typeof settingText === 'string' && settingText !== '') continue
-    throw new Error(
+    throw new TechnicalError(
       `scripts/auto-programmer/config.mjs の ${keyName} を空でない文字列で指定してください（いまの値: ${String(settingText)}）。無人の claude セッションに --model・--effort として渡す値です`
     )
   }
