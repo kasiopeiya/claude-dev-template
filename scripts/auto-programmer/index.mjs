@@ -111,6 +111,12 @@ import {
   shouldMarkAsNeedsHumanCheck
 } from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
+import {
+  disableAutoMerge,
+  findMergedPullRequest,
+  listPullRequests,
+  readPullRequestStatus
+} from './pullRequestQuery.mjs'
 import { readRunRecords, recordRun } from './runLog.mjs'
 import { runJson, runOrThrow, sendSignalToWatchedChildren } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
@@ -127,7 +133,13 @@ import {
   showSuccess,
   showWarning
 } from './ui.mjs'
-import { alignLabeledValues, collapseToSingleLine, formatElapsedTime } from './uiFormat.mjs'
+import {
+  alignLabeledValues,
+  collapseToSingleLine,
+  formatElapsedTime,
+  formatErrorMessage,
+  formatErrorWithStack
+} from './uiFormat.mjs'
 import { prepareTopicBranch, switchToPullRequestBranch } from './workspace.mjs'
 
 const MILLISECONDS_PER_SECOND = 1000
@@ -258,84 +270,6 @@ try {
 } catch (error) {
   showError(formatErrorWithStack(error))
   process.exitCode = 1
-}
-
-/**
- * 例外を、メッセージだけの表示用文字列にする。
- *
- * @param {unknown} error 受け取った例外
- * @returns {string} 表示する文字列
- */
-function formatErrorMessage(error) {
-  if (!(error instanceof Error)) return String(error)
-  return error.message
-}
-
-/**
- * 予期しない例外を、stack まで含む表示用の文字列にする。
- *
- * @param {unknown} error 受け取った例外
- * @returns {string} 表示する文字列（stack が無ければメッセージ）
- */
-function formatErrorWithStack(error) {
-  if (!(error instanceof Error)) return String(error)
-  return error.stack ?? error.message
-}
-
-/**
- * ブランチに紐づく PR を、閉じたものも含めて一覧で引く。
- *
- * @param {string} branchName トピックブランチ名
- * @returns {{ number: number, url: string }[]} PR の番号と URL
- * @throws {Error} gh が失敗したとき
- */
-function listPullRequests(branchName) {
-  return runJson('gh', [
-    'pr',
-    'list',
-    '--repo',
-    config.repository,
-    '--head',
-    branchName,
-    '--state',
-    'all',
-    '--json',
-    'number,url'
-  ])
-}
-
-/**
- * ブランチを head とするマージ済みの PR の番号とマージ時刻を引く。
- *
- * @param {string} branchName トピックブランチ名
- * @returns {{ number: number, mergedAt: string } | null} マージ済みの PR の番号とマージ時刻（ISO 8601。無ければ null）
- * @throws {TechnicalError} gh が返した PR の番号かマージ時刻を読めないとき
- * @throws {Error} gh が失敗したとき
- */
-function findMergedPullRequest(branchName) {
-  const [mergedPullRequest] = runJson('gh', [
-    'pr',
-    'list',
-    '--repo',
-    config.repository,
-    '--head',
-    branchName,
-    '--state',
-    'merged',
-    '--json',
-    'number,mergedAt'
-  ])
-  if (mergedPullRequest === undefined) return null
-  // 時刻を読めないまま渡すと「今回の作業の前のマージ」と取り違え、PR を出した Issue を差分なしと記録して通知も出ない
-  if (
-    !Number.isInteger(mergedPullRequest.number) ||
-    Number.isNaN(Date.parse(mergedPullRequest.mergedAt))
-  ) {
-    throw new TechnicalError(
-      `マージ済みの PR の番号かマージ時刻を読めません: ${JSON.stringify(mergedPullRequest)}`
-    )
-  }
-  return mergedPullRequest
 }
 
 /**
@@ -1247,26 +1181,6 @@ function tryListConflictedOwnPullRequests() {
 }
 
 /**
- * PR の state・mergeable・head の SHA と、auto-merge が有効かを引き直す。
- *
- * @param {number} pullRequestNumber PR の番号
- * @returns {{ state: string, mergeable: string, headSha: string, isAutoMergeEnabled: boolean }} state（'OPEN' など）・mergeable（'CONFLICTING' など）・head の SHA・auto-merge が有効か
- * @throws {Error} gh が失敗したとき
- */
-function readPullRequestStatus(pullRequestNumber) {
-  const { state, mergeable, headRefOid, autoMergeRequest } = runJson('gh', [
-    'pr',
-    'view',
-    String(pullRequestNumber),
-    '--repo',
-    config.repository,
-    '--json',
-    'state,mergeable,headRefOid,autoMergeRequest'
-  ])
-  return { state, mergeable, headSha: headRefOid, isAutoMergeEnabled: autoMergeRequest !== null }
-}
-
-/**
  * 衝突した PR を飛ばす理由を ℹ で出す。同じ PR に同じ理由を出したことがあれば出さない。
  *
  * `needs-human-check` が付いた・別の push があった PR は、人間が手を入れるまで理由が変わらず、待機中も毎周ここを通る。
@@ -1352,27 +1266,6 @@ async function claimFirstConflictedPullRequest() {
     if (conflictedPullRequest) return conflictedPullRequest
   }
   return null
-}
-
-/**
- * PR の auto-merge を外す。
- *
- * @param {number} pullRequestNumber PR の番号
- * @returns {void}
- * @throws {Error} gh が失敗したとき
- */
-function disableAutoMerge(pullRequestNumber) {
-  runOrThrow('gh', [
-    'pr',
-    'merge',
-    String(pullRequestNumber),
-    '--repo',
-    config.repository,
-    '--disable-auto'
-  ])
-  showInfo(
-    `PR #${pullRequestNumber} の auto-merge を外しました。解いた後の CI が通ると、pr-ai-triage が中身を見て付け直します`
-  )
 }
 
 /**
