@@ -57,9 +57,7 @@
 // - 終了シグナルは、受けるたびに実行中の claude セッションへ子孫ごと送る。AbortController は1度しか合図せず、Ctrl+C の後の SIGTERM は
 //   届かないので、最初の1つは abort、2つ目以降はイベントで届ける（使い分けは shell.mjs の sendSignalToWatchedChildren に閉じる）。
 //   Ctrl+C で止めた回は、セッションが打ち切られて失敗に見えるだけで、claude が壊れた兆候ではないので、連続失敗に数えない。
-// - gh の戻り値は、並び順も欠けない値も信じない。記録する PR は番号が最大のものを採り（gh は新しい順に返す）、Issue の
-//   state・ラベルが読めなければ安全側の既定値に倒さず投げる。倒すと、止まった Issue を「予定どおり閉じた」と記録して
-//   `needs-human-check` も付かず、誰も見つけられない。
+// - gh の戻り値は、並び順を信じない。記録する PR は番号が最大のものを採る（gh は新しい順に返す）。
 
 import { basename, dirname, join } from 'node:path'
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'

@@ -9,7 +9,7 @@
 // - 呼び出し側を import しない。呼び出し側からこのモジュールへの一方向にして、循環を作らない。
 
 import { TechnicalError } from '../lib/errors.mjs'
-import { findBoardStatusName } from './board.mjs'
+import { BOARD_CARD_STATUS_FIELDS, findBoardStatusName } from './board.mjs'
 import { config } from './config.mjs'
 import { runJson } from './shell.mjs'
 
@@ -34,10 +34,7 @@ const SUB_ISSUES_QUERY = `query($owner: String!, $name: String!, $number: Int!, 
           assignees(first: ${ISSUE_ASSIGNEE_LIMIT}) { nodes { login } }
           labels(first: ${GRAPHQL_CONNECTION_FETCH_LIMIT}) { nodes { name } }
           projectItems(first: ${GRAPHQL_CONNECTION_FETCH_LIMIT}) {
-            nodes {
-              project { number owner { ... on User { login } ... on Organization { login } } }
-              fieldValueByName(name: $statusFieldName) { ... on ProjectV2ItemFieldSingleSelectValue { name } }
-            }
+            nodes { ${BOARD_CARD_STATUS_FIELDS} }
           }
         }
       }
