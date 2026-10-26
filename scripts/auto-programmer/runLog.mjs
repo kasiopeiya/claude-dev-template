@@ -23,6 +23,18 @@ export function recordRun(record) {
 }
 
 /**
+ * 記録ファイルの全件を古い順に読む。
+ *
+ * 並べたプロセスが同じファイルへ追記するので、書きかけの行が混ざりうる。読めない行は飛ばす。
+ *
+ * @returns {Record<string, unknown>[]} 記録（まだ1件も記録していなければ空）
+ * @throws {Error} 記録ファイルがあるのに読めなかったとき
+ */
+export function readRunRecords() {
+  return readRunLogText().split('\n').flatMap(parseRunLogLine)
+}
+
+/**
  * 記録ファイルの中身を読む。
  *
  * @returns {string} 記録ファイルの中身（まだ1件も記録していなければ空文字）
@@ -50,16 +62,4 @@ function parseRunLogLine(line) {
   } catch {
     return []
   }
-}
-
-/**
- * 記録ファイルの全件を古い順に読む。
- *
- * 並べたプロセスが同じファイルへ追記するので、書きかけの行が混ざりうる。読めない行は飛ばす。
- *
- * @returns {Record<string, unknown>[]} 記録（まだ1件も記録していなければ空）
- * @throws {Error} 記録ファイルがあるのに読めなかったとき
- */
-export function readRunRecords() {
-  return readRunLogText().split('\n').flatMap(parseRunLogLine)
 }

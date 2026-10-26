@@ -6,6 +6,8 @@
 import { homedir } from 'node:os'
 import { basename, isAbsolute, resolve } from 'node:path'
 
+import { TechnicalError } from '../lib/errors.mjs'
+
 const repository = 'kasiopeiya/claude-dev-template'
 
 // AI 専用 clone・実行ログ・clone の番号ロック（locks/）の置き場。人間の作業ツリーと別の場所であれば、どこでもよい。
@@ -14,7 +16,9 @@ const repository = 'kasiopeiya/claude-dev-template'
 const autoProgrammerHomeDir =
   process.env.AUTO_PROGRAMMER_HOME || resolve(homedir(), 'dev/auto-programmer')
 if (!isAbsolute(autoProgrammerHomeDir)) {
-  throw new Error(`AUTO_PROGRAMMER_HOME は絶対パスで指定してください: ${autoProgrammerHomeDir}`)
+  throw new TechnicalError(
+    `AUTO_PROGRAMMER_HOME は絶対パスで指定してください: ${autoProgrammerHomeDir}`
+  )
 }
 
 export const config = {

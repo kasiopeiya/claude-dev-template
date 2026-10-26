@@ -47,11 +47,15 @@
 //   `/auto-resolve-conflict` に解かせてから CI を待つ（Issue #1076）。CI が通った時点で手放すので、後から衝突しても誰も気づかない。
 //   新しい Issue より先に片付けるのは、止まった PR の Issue をブロッカーに持つ Issue が、それまで拾われないためである。
 //   取り合わないよう、衝突を解かせる間も同じ Issue のロックを持つ。
+// - gh の戻り値は、並び順も欠けない値も信じない。記録する PR は番号が最大のものを採り（gh は新しい順に返す）、Issue の
+//   state・ラベルが読めなければ安全側の既定値に倒さず投げる。倒すと、止まった Issue を「予定どおり閉じた」と記録して
+//   `needs-human-check` も付かず、誰も見つけられない。
 
 import { basename, dirname, join } from 'node:path'
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
 import { closeIssuesOfMergedPullRequests } from '../close-issues.mjs'
+import { TechnicalError } from '../lib/errors.mjs'
 import {
   listStartableIssues,
   markCardAsStarted,
@@ -197,6 +201,44 @@ for (const signal of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
 }
 
 /**
+ * 設定を検査して AI 専用 clone を取り、Ctrl+C か着手できない周の上限で止まるまで、衝突した PR を解かせるか Issue を拾うかを1件ずつ処理する。
+ *
+ * @returns {Promise<void>}
+ * @throws {TechnicalError} 設定が欠けている・不正なとき、接頭辞と同じ名前のブランチがリモートにあるとき、claude のセッションが続けて失敗したとき
+ * @throws {Error} ロックファイルを扱えなかったとき・人間が済ませるべき準備や clone が整わなかったとき・git・gh が失敗したとき・記録ファイルへ書けなかったとき
+ */
+async function main() {
+  // 上限が欠けたまま動かさない。config.mjs はテンプレート同期の対象外で、同期した利用先では欠けうる
+  validateMaxConsecutiveIdleWaits(config.maxConsecutiveIdleWaits)
+  // 不正な接頭辞は buildBranchName が Issue ごとに投げ、catch で「飛ばします」になって全 Issue を飛ばし続ける。
+  // Issue を拾う前に止める
+  validateBranchPrefix(config.branchPrefix)
+  // 欠けたまま動かすと settings.json を継ぎ、対話の /model に引きずられる。Issue を拾う前に止める
+  validateSessionModelSettings(config)
+  // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
+  // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
+  startSleepGuard()
+  // clone を作る preflight より前に取る。後だと、同時に起動した2本が同じ clone を作り始める
+  const workspaceDir = acquireWorkspaceDir()
+  try {
+    runPreflight(workspaceDir)
+    // リモートを見るので clone ができた後に確かめる
+    ensureNoBranchNamedAsPrefix({ branchPrefix: config.branchPrefix, workspaceDir })
+    await processIssuesUntilStopped(workspaceDir)
+  } finally {
+    releaseWorkspaceLock()
+  }
+  showInfo('止めました')
+}
+
+try {
+  await main()
+} catch (error) {
+  showError(formatErrorWithStack(error))
+  process.exitCode = 1
+}
+
+/**
  * 例外を、メッセージだけの表示用文字列にする。
  *
  * @param {unknown} error 受け取った例外
@@ -245,7 +287,8 @@ function listPullRequests(branchName) {
  *
  * @param {string} branchName トピックブランチ名
  * @returns {{ number: number, mergedAt: string } | null} マージ済みの PR の番号とマージ時刻（ISO 8601。無ければ null）
- * @throws {Error} gh が失敗したとき、または返した PR の番号かマージ時刻を読めないとき
+ * @throws {TechnicalError} gh が返した PR の番号かマージ時刻を読めないとき
+ * @throws {Error} gh が失敗したとき
  */
 function findMergedPullRequest(branchName) {
   const [mergedPullRequest] = runJson('gh', [
@@ -266,7 +309,7 @@ function findMergedPullRequest(branchName) {
     !Number.isInteger(mergedPullRequest.number) ||
     Number.isNaN(Date.parse(mergedPullRequest.mergedAt))
   ) {
-    throw new Error(
+    throw new TechnicalError(
       `マージ済みの PR の番号かマージ時刻を読めません: ${JSON.stringify(mergedPullRequest)}`
     )
   }
@@ -278,7 +321,7 @@ function findMergedPullRequest(branchName) {
  *
  * @param {number} issueNumber Issue の番号
  * @returns {{ state: string, labelNames: string[] }} state（'OPEN' / 'CLOSED'）とラベル名
- * @throws {Error} gh が失敗したとき
+ * @throws {Error} gh が失敗したとき、または返した state かラベルを読めないとき
  */
 function readIssueStatus(issueNumber) {
   const { state, labels } = runJson('gh', [
@@ -290,6 +333,12 @@ function readIssueStatus(issueNumber) {
     '--json',
     'state,labels'
   ])
+  // state が欠けたまま渡すと「OPEN でない」と読まれ、閉じた・差分なしと取り違えた記録が残り、needs-human-check も付かない
+  if ((state !== 'OPEN' && state !== 'CLOSED') || !Array.isArray(labels)) {
+    throw new Error(
+      `Issue #${issueNumber} の state かラベルを読めません: ${JSON.stringify({ state, labels })}`
+    )
+  }
   return { state, labelNames: labels.map(({ name }) => name) }
 }
 
@@ -320,7 +369,8 @@ function toSubIssue({ number, url, state, repository, assignees, labels, project
  *
  * @param {number} issueNumber 親 Issue の番号
  * @returns {{ viewerLogin: string, subIssues: ReturnType<typeof toSubIssue>[] }} 自分のログイン名と sub-issue（state は 'OPEN' / 'CLOSED'）
- * @throws {Error} gh が失敗したとき・sub-issue が一度に読める件数を超えたとき
+ * @throws {TechnicalError} sub-issue が一度に読める件数を超えたとき
+ * @throws {Error} gh が失敗したとき
  */
 function listSubIssues(issueNumber) {
   const [repositoryOwner, repositoryName] = config.repository.split('/')
@@ -342,7 +392,7 @@ function listSubIssues(issueNumber) {
   ])
   const { totalCount, nodes } = repository.issue.subIssues
   if (totalCount > nodes.length) {
-    throw new Error(
+    throw new TechnicalError(
       `#${issueNumber} の sub-issue ${totalCount} 件のうち ${nodes.length} 件しか読めていません。読み落とした子を載せ損ねるため止めます`
     )
   }
@@ -355,7 +405,8 @@ function listSubIssues(issueNumber) {
  * @param {number} issueNumber 対象 Issue の番号
  * @param {Record<string, unknown>} record 書き足す先の記録
  * @returns {void} open な sub-issue が無ければ record に何も書かない
- * @throws {Error} gh が失敗したとき・sub-issue が一度に読める件数を超えたとき・ボードの表記が config.mjs と食い違うとき
+ * @throws {TechnicalError} sub-issue が一度に読める件数を超えたとき
+ * @throws {Error} gh が失敗したとき・ボードの表記が config.mjs と食い違うとき
  */
 function handOverToSubIssuesIfAny(issueNumber, record) {
   const { viewerLogin, subIssues } = listSubIssues(issueNumber)
@@ -394,6 +445,7 @@ function hasSessionSucceeded({ exitCode, signal }) {
  * セッションの後に、そのセッションが作った PR の URL を引く。
  *
  * 同じブランチ名で過去に作られた PR と見分けるため、セッション前に無かった番号だけを採る。
+ * 複数あるときは、番号が最大（最後に作られた）のものを採る。
  * PR の有無を確かめられなかったときは、「作られなかった」と取り違えないよう null を返す。
  *
  * @param {string} branchName トピックブランチ名
@@ -405,7 +457,13 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
     const created = listPullRequests(branchName).filter(
       ({ number }) => !existingPullRequestNumbers.has(number)
     )
-    return created.length > 0 ? created[created.length - 1].url : ''
+    // gh pr list は新しい順に返すが、並び順に頼らず、作られた順に増える番号で最新を選ぶ
+    const latestCreatedPullRequest = created.reduce(
+      (latestSoFar, pullRequest) =>
+        latestSoFar && latestSoFar.number > pullRequest.number ? latestSoFar : pullRequest,
+      null
+    )
+    return latestCreatedPullRequest ? latestCreatedPullRequest.url : ''
   } catch (error) {
     showWarning(`PR の有無を確かめられませんでした: ${formatErrorMessage(error)}`)
     return null
@@ -707,7 +765,8 @@ function readRemoteHeadSha({ workspaceDir, branchName }) {
  *
  * @param {{ branchPrefix: string | undefined, workspaceDir: string }} params config.mjs の `branchPrefix`（検査済み）と、origin を引く AI 専用 clone
  * @returns {void}
- * @throws {Error} 接頭辞と同じ名前のブランチがリモートにあるとき・git が失敗したとき
+ * @throws {TechnicalError} 接頭辞と同じ名前のブランチがリモートにあるとき
+ * @throws {Error} git が失敗したとき
  */
 function ensureNoBranchNamedAsPrefix({ branchPrefix, workspaceDir }) {
   if (!branchPrefix) return
@@ -719,7 +778,7 @@ function ensureNoBranchNamedAsPrefix({ branchPrefix, workspaceDir }) {
     }
   )
   if (sameNameBranch.trim() === '') return
-  throw new Error(
+  throw new TechnicalError(
     `scripts/auto-programmer/config.mjs の branchPrefix（${branchPrefix}）と同じ名前のブランチが ${config.repository} にあるため、${branchPrefix}/... のブランチを作れません。ライン名と重ならない接頭辞にしてください`
   )
 }
@@ -1453,7 +1512,8 @@ async function claimNextWork(workspaceDir) {
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
  * @returns {Promise<void>}
- * @throws {Error} claude のセッションが続けて失敗したとき・記録ファイルへ書けなかったとき
+ * @throws {TechnicalError} claude のセッションが続けて失敗したとき
+ * @throws {Error} 記録ファイルへ書けなかったとき
  */
 async function processIssuesUntilStopped(workspaceDir) {
   let consecutiveSessionFailureCount = 0
@@ -1477,41 +1537,10 @@ async function processIssuesUntilStopped(workspaceDir) {
     }
     consecutiveSessionFailureCount = isAllSessionsSucceeded ? 0 : consecutiveSessionFailureCount + 1
     if (consecutiveSessionFailureCount >= MAX_CONSECUTIVE_SESSION_FAILURES) {
-      throw new Error(
+      throw new TechnicalError(
         `claude のセッションが ${consecutiveSessionFailureCount} 回続けて失敗しました。記録の issueCheckExitCode・issueCheckSignal・autoDevExitCode・autoDevSignal・ciFixExitCode・ciFixSignal・conflictResolutionExitCode・conflictResolutionSignal・error を読んで原因を直し、もう一度打ってください`
       )
     }
     await yieldToEventLoop()
   }
-}
-
-async function main() {
-  // 上限が欠けたまま動かさない。config.mjs はテンプレート同期の対象外で、同期した利用先では欠けうる
-  validateMaxConsecutiveIdleWaits(config.maxConsecutiveIdleWaits)
-  // 不正な接頭辞は buildBranchName が Issue ごとに投げ、catch で「飛ばします」になって全 Issue を飛ばし続ける。
-  // Issue を拾う前に止める
-  validateBranchPrefix(config.branchPrefix)
-  // 欠けたまま動かすと settings.json を継ぎ、対話の /model に引きずられる。Issue を拾う前に止める
-  validateSessionModelSettings(config)
-  // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
-  // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
-  startSleepGuard()
-  // clone を作る preflight より前に取る。後だと、同時に起動した2本が同じ clone を作り始める
-  const workspaceDir = acquireWorkspaceDir()
-  try {
-    runPreflight(workspaceDir)
-    // リモートを見るので clone ができた後に確かめる
-    ensureNoBranchNamedAsPrefix({ branchPrefix: config.branchPrefix, workspaceDir })
-    await processIssuesUntilStopped(workspaceDir)
-  } finally {
-    releaseWorkspaceLock()
-  }
-  showInfo('止めました')
-}
-
-try {
-  await main()
-} catch (error) {
-  showError(formatErrorWithStack(error))
-  process.exitCode = 1
 }
