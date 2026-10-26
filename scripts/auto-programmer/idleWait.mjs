@@ -8,6 +8,8 @@
 //   どちらも気づきにくいので、起動時に検査して落とす（configuration-policy の fail-fast）。
 // - I/O を持たない層をここに切り出すことで、待機ループに触れずに単体テストできる。
 
+import { TechnicalError } from '../lib/errors.mjs'
+
 /**
  * 着手できない周が続いた回数から、次にすること（待つ・止める）を決める。
  *
@@ -23,11 +25,11 @@ export function decideAfterIdlePoll({ idlePollCount, maxConsecutiveIdleWaits }) 
  *
  * @param {unknown} maxConsecutiveIdleWaits config.mjs の `maxConsecutiveIdleWaits`
  * @returns {void}
- * @throws {Error} 上限が欠けている・1以上の整数でないとき
+ * @throws {TechnicalError} 上限が欠けている・1以上の整数でないとき
  */
 export function validateMaxConsecutiveIdleWaits(maxConsecutiveIdleWaits) {
   if (Number.isInteger(maxConsecutiveIdleWaits) && maxConsecutiveIdleWaits >= 1) return
-  throw new Error(
+  throw new TechnicalError(
     `scripts/auto-programmer/config.mjs の maxConsecutiveIdleWaits は1以上の整数で指定してください（いまの値: ${String(maxConsecutiveIdleWaits)}）。着手できない周が続いたとき、待ってよい回数の上限です`
   )
 }
