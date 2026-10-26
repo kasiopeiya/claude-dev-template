@@ -92,6 +92,11 @@ import {
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { listSubIssues, readIssueStatus } from './issueQuery.mjs'
+import {
+  handOverToHuman,
+  removeNeedsHumanCheckLabel,
+  tryMarkAsNeedsHumanCheck
+} from './issueWrite.mjs'
 import { decideAfterCiRun, describeCiOutcome, readCiRunState } from './ciRun.mjs'
 import { listCiRuns, tryListCiRuns } from './ciRunQuery.mjs'
 import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
@@ -669,28 +674,6 @@ async function waitForCiRun(headSha) {
 }
 
 /**
- * 上限まで直させても CI が落ちている Issue に、`/auto-dev` の離脱と同じく、人間へ回す理由をコメントする。
- * `needs-human-check` は、記録を残す前に runWorkAndRecord が付ける。
- *
- * @param {number} issueNumber 対象 Issue の番号
- * @param {{ url: string | null }} lastRun 最後に落ちた run
- * @returns {void}
- * @throws {Error} gh が失敗したとき
- */
-function handOverToHuman(issueNumber, lastRun) {
-  const body = `CI（${config.ci.workflowFile}）が、/auto-fix-ci で ${config.ci.maxFixAttempts} 回直させても通りませんでした。最後に落ちた run: ${lastRun.url}\n\n専用のセッションでこの Issue に着手してください。`
-  runOrThrow('gh', [
-    'issue',
-    'comment',
-    String(issueNumber),
-    '--repo',
-    config.repository,
-    '--body',
-    body
-  ])
-}
-
-/**
  * CI 待ちを終える。直させずに終える run の結果を record へ書き足し、上限まで直させても落ちていれば、書き足す前に人間へ回すコメントを Issue に付ける。
  *
  * @param {{ issueNumber: number, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null }, record: Record<string, unknown> }} params 対象 Issue の番号・decideAfterCiRun の結果（直させる 'fix' は渡さない）・待ち終えた run の状態・書き足す先の記録
@@ -845,54 +828,6 @@ function showSubIssueHandover(record) {
   showHandover(
     `実装せず子へ引き継ぎます: ${reason}。${config.board.readyStatusName} に載せた子は ${putOnReadySubIssueNumbers.length} 件です`
   )
-}
-
-/**
- * Issue から `needs-human-check` を外す。付いていなくても失敗しない（付いているかを確かめずに呼べる）。
- *
- * @param {number} issueNumber 対象 Issue の番号
- * @returns {void}
- * @throws {Error} gh が失敗したとき
- */
-function removeNeedsHumanCheckLabel(issueNumber) {
-  runOrThrow('gh', [
-    'issue',
-    'edit',
-    String(issueNumber),
-    '--repo',
-    config.repository,
-    '--remove-label',
-    NEEDS_HUMAN_CHECK_LABEL
-  ])
-}
-
-/**
- * Issue に `needs-human-check` を付ける。付けられなくても投げない。
- *
- * runWorkAndRecord の finally とシグナルのリスナから呼ぶので、投げるとその1件の記録が残らず、シグナルでの終了にも至らない。
- *
- * @param {number} issueNumber 対象 Issue の番号
- * @returns {{ isMarkedAsNeedsHumanCheck: true } | { isMarkedAsNeedsHumanCheck: false, needsHumanCheckLabelError: string }} 付けられたかと、付けられなかったときの理由（記録へ書き足す）
- */
-function tryMarkAsNeedsHumanCheck(issueNumber) {
-  try {
-    runOrThrow('gh', [
-      'issue',
-      'edit',
-      String(issueNumber),
-      '--repo',
-      config.repository,
-      '--add-label',
-      NEEDS_HUMAN_CHECK_LABEL
-    ])
-    return { isMarkedAsNeedsHumanCheck: true }
-  } catch (error) {
-    const needsHumanCheckLabelError = formatErrorMessage(error)
-    showWarning(
-      `#${issueNumber} に ${NEEDS_HUMAN_CHECK_LABEL} を付けられませんでした: ${collapseToSingleLine(needsHumanCheckLabelError)}`
-    )
-    return { isMarkedAsNeedsHumanCheck: false, needsHumanCheckLabelError }
-  }
 }
 
 /**
