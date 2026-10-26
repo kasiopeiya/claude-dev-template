@@ -13,6 +13,8 @@ import { execFileSync } from 'child_process'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
+import { BusinessError } from '../lib/errors.mjs'
+
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 // pr-review-policy のサイズ区分「大」の下限。この行数以上を NG とする
@@ -48,12 +50,12 @@ function main() {
  *
  * @param {string | undefined} argument コマンドライン引数
  * @returns {string} PR 番号
- * @throws {Error} 引数が数字でないとき、または引数が無く現ブランチに紐づく PR が無いとき
+ * @throws {BusinessError} 引数が数字でないとき、または引数が無く現ブランチに紐づく PR が無いとき
  */
 function resolvePrNumber(argument) {
   if (argument !== undefined) {
     if (!/^\d+$/.test(argument)) {
-      throw new Error(`PR 番号は数字で渡してください: ${argument}`)
+      throw new BusinessError(`PR 番号は数字で渡してください: ${argument}`)
     }
     return argument
   }
@@ -61,7 +63,7 @@ function resolvePrNumber(argument) {
   try {
     return runGhCommand(['pr', 'view', '--json', 'number', '--jq', '.number']).trim()
   } catch {
-    throw new Error(
+    throw new BusinessError(
       '現ブランチに紐づく PR が見つかりません。PR 番号を引数で渡すか、push して PR ができてから実行してください。'
     )
   }

@@ -63,7 +63,7 @@ const CLOSING_KEYWORD_PATTERN =
  *   repository: 対象リポジトリ（`owner/repo`）。省略するとカレントディレクトリのリポジトリ /
  *   onClosed: Issue を1件 close するたびに呼ばれる。close を利用者へどう知らせるかは呼び出し側が決める
  * @returns {{ scannedPullRequestCount: number, closedIssueCount: number }} 確認したマージ済み PR の件数と、close した Issue の件数
- * @throws {Error} gh が失敗したとき（未ログイン・ネットワーク断など）。それまでに close した分は戻さない
+ * @throws {TechnicalError} gh が失敗したとき（未ログイン・ネットワーク断など）。それまでに close した分は戻さない
  */
 export function closeIssuesOfMergedPullRequests({ repository, onClosed }) {
   const openIssueNumbers = listOpenIssueNumbers(repository)
@@ -80,6 +80,24 @@ export function closeIssuesOfMergedPullRequests({ repository, onClosed }) {
   return {
     scannedPullRequestCount: mergedPullRequests.length,
     closedIssueCount: closeTargets.length
+  }
+}
+
+/**
+ * CLI として実行したときの本体。close した Issue を1件ごとに出力し、何も無ければその旨を出力する。
+ *
+ * @returns {void}
+ * @throws {TechnicalError} gh が失敗したとき（未ログイン・ネットワーク断など）
+ */
+function runCli() {
+  const { scannedPullRequestCount, closedIssueCount } = closeIssuesOfMergedPullRequests({
+    onClosed: ({ issueNumber, pullRequestNumber }) =>
+      console.log(`#${issueNumber} を close しました（PR #${pullRequestNumber}）`)
+  })
+  if (closedIssueCount === 0) {
+    console.log(
+      `close する Issue はありません（直近 ${scannedPullRequestCount} 件のマージ済み PR を確認）`
+    )
   }
 }
 
@@ -203,7 +221,7 @@ function listMergedPullRequests(repository) {
  *   issueNumber: 調べる Issue / mergedAt: 根拠の PR がマージされた日時（ISO 8601, UTC） /
  *   repository: 対象リポジトリ（省略するとカレントディレクトリのリポジトリ）
  * @returns {boolean} マージ日時以降に close されていれば true
- * @throws {Error} gh が失敗したとき（未ログイン・ネットワーク断など）
+ * @throws {TechnicalError} gh が失敗したとき（未ログイン・ネットワーク断など）
  */
 function wasClosedAfterMerge({ issueNumber, mergedAt, repository }) {
   const closedAtLines = runOrThrow('gh', [
@@ -255,24 +273,6 @@ function toRepositoryOption(repository) {
  */
 function toRepositoryApiPath(repository) {
   return `repos/${repository ?? '{owner}/{repo}'}`
-}
-
-/**
- * CLI として実行したときの本体。close した Issue を1件ごとに出力し、何も無ければその旨を出力する。
- *
- * @returns {void}
- * @throws {Error} gh が失敗したとき（未ログイン・ネットワーク断など）
- */
-function runCli() {
-  const { scannedPullRequestCount, closedIssueCount } = closeIssuesOfMergedPullRequests({
-    onClosed: ({ issueNumber, pullRequestNumber }) =>
-      console.log(`#${issueNumber} を close しました（PR #${pullRequestNumber}）`)
-  })
-  if (closedIssueCount === 0) {
-    console.log(
-      `close する Issue はありません（直近 ${scannedPullRequestCount} 件のマージ済み PR を確認）`
-    )
-  }
 }
 
 if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {

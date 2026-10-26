@@ -15,6 +15,7 @@
 //   動かせたか、動かせなかった理由を1行で返す
 
 import { runJson } from './auto-programmer/shell.mjs'
+import { TechnicalError } from './lib/errors.mjs'
 
 const USAGE_MESSAGE = 'Issue 番号を渡してください（例: npm run move-issue-card -- 123）'
 
@@ -25,7 +26,7 @@ const MISSING_SCOPE_PATTERN = /missing required scopes/i
  * CLI として実行したときの本体。結果を1行で出す。
  *
  * @returns {Promise<void>}
- * @throws {Error} 設定を読み込めないとき・gh が失敗したとき
+ * @throws {TechnicalError} 設定を読み込めないとき・gh が失敗したとき
  */
 async function runCli() {
   const issueNumber = process.argv[2]
@@ -67,11 +68,11 @@ function isIssueNumber(rawIssueNumberArgument) {
  * 今いるリポジトリを `owner/repo` で引く。
  *
  * @returns {string} 今いるリポジトリ
- * @throws {Error} gh が失敗したとき（未ログイン・git の外・ネットワーク断など）
+ * @throws {TechnicalError} gh が失敗したとき（未ログイン・git の外・ネットワーク断など）
  */
 function readCurrentRepository() {
   const { nameWithOwner } = runJson('gh', ['repo', 'view', '--json', 'nameWithOwner'])
-  if (!nameWithOwner) throw new Error('gh repo view の出力に nameWithOwner がありません')
+  if (!nameWithOwner) throw new TechnicalError('gh repo view の出力に nameWithOwner がありません')
   return nameWithOwner
 }
 

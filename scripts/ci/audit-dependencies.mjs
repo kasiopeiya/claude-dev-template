@@ -7,6 +7,8 @@ import { execFileSync } from 'child_process'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
+import { TechnicalError } from '../lib/errors.mjs'
+
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
 
 // 脆弱性は「どこを変更したか」ではなく「このリポジトリが危ういか」の事実なので、階層を分けず全部舐める
@@ -92,7 +94,7 @@ function auditDirectory(directory) {
  *
  * @param {string} directory リポジトリ相対のディレクトリ
  * @returns {{ vulnerabilities: Record<string, object> }} 監査レポート
- * @throws {Error} npm audit が脆弱性の一覧を返さなかったとき
+ * @throws {TechnicalError} npm audit が脆弱性の一覧を返さなかったとき
  */
 function runAudit(directory) {
   const report = parseAuditOutput(directory, readAuditOutput(directory))
@@ -100,7 +102,7 @@ function runAudit(directory) {
     const reason = report?.error
       ? `${report.error.code}: ${report.error.summary}`
       : '脆弱性の一覧が無い'
-    throw new Error(`${directory}: npm audit が監査結果を返しませんでした（${reason}）`)
+    throw new TechnicalError(`${directory}: npm audit が監査結果を返しませんでした（${reason}）`)
   }
   return report
 }
@@ -132,13 +134,13 @@ function readAuditOutput(directory) {
  * @param {string} directory リポジトリ相対のディレクトリ（失敗の報告に使う）
  * @param {string} auditOutput 標準出力
  * @returns {{ error?: { code: string, summary: string }, vulnerabilities?: Record<string, object> }} 読んだ JSON
- * @throws {Error} JSON として読めないとき（途中で切れた出力や、npm の警告が混じった出力）
+ * @throws {TechnicalError} JSON として読めないとき（途中で切れた出力や、npm の警告が混じった出力）
  */
 function parseAuditOutput(directory, auditOutput) {
   try {
     return JSON.parse(auditOutput)
   } catch (error) {
-    throw new Error(
+    throw new TechnicalError(
       `${directory}: npm audit の出力を JSON として読めませんでした（${error.message}）`,
       {
         cause: error
