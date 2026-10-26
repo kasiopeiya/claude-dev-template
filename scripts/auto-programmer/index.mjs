@@ -1288,6 +1288,9 @@ async function resolveConflictAndWatchCi(
   // 外したことを記録に残す。push されずに終わると pr-ai-triage が走らず、外れたまま残るので、人間が記録から気づけるようにする
   if (isAutoMergeEnabled) {
     disableAutoMerge(pullRequestNumber)
+    showInfo(
+      `PR #${pullRequestNumber} の auto-merge を外しました。解いた後の CI が通ると、pr-ai-triage が中身を見て付け直します`
+    )
     record.isAutoMergeDisabled = true
   }
   // リモートの最新ではなく、確かめた commit へ切り替える。確かめた後に入った push の中身を、無人セッションで走らせない

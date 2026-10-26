@@ -1,16 +1,16 @@
-// 責務: PR を gh で読み書きする口だけを担う（ブランチの PR の一覧・マージ済みの PR・PR の状態の読み取りと、auto-merge を外す書き込み）。
-//   どの PR をいつ読むか・読んだ結果で何をするかは index.mjs が決める。
+// 責務: PR を gh で読み書きする口を担う。どの PR をいつ読むか・読んだ結果で何をするかは呼び出し側が決める。
 //
 // 設計意図（WHY）:
-// - gh の引数と戻り値の読み方をここに集める。PR の読み書きを直すたびに、周回・ロック・衝突解消の混ざった index.mjs を開かずに済む。
+// - gh の引数と戻り値の読み方を、PR 1件・1ブランチ単位の口としてここに置く。直すたびに、周回・ロック・衝突解消の混ざった
+//   index.mjs を開かずに済む。衝突解消の流れに組み込まれた open な PR の一覧の取得は、その流れと一緒に扱うため index.mjs にある。
 // - 中身を判断せず、gh が返した値の形だけを整える。マージ済みの PR の番号と時刻のように、読めない値を安全側へ倒すと
-//   記録が嘘になるものは、倒さず投げる（index.mjs の冒頭「gh の戻り値は、並び順も欠けない値も信じない」）。
-// - index.mjs を import しない。呼び出し側からこのモジュールへの一方向にして、循環を作らない。
+//   記録が嘘になるものは、倒さず投げる。
+// - 画面への表示は持たない。表示する文面は、呼び出された場面で決まるため、呼び出し側が持つ。
+// - 呼び出し側を import しない。呼び出し側からこのモジュールへの一方向にして、循環を作らない。
 
 import { TechnicalError } from '../lib/errors.mjs'
 import { config } from './config.mjs'
 import { runJson, runOrThrow } from './shell.mjs'
-import { showInfo } from './ui.mjs'
 
 /**
  * ブランチに紐づく PR を、閉じたものも含めて一覧で引く。
@@ -104,7 +104,4 @@ export function disableAutoMerge(pullRequestNumber) {
     config.repository,
     '--disable-auto'
   ])
-  showInfo(
-    `PR #${pullRequestNumber} の auto-merge を外しました。解いた後の CI が通ると、pr-ai-triage が中身を見て付け直します`
-  )
 }
