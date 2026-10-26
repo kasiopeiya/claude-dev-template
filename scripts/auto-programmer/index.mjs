@@ -9,7 +9,7 @@
 //   Issue の数だけ打ち直すことになる（Issue #481）。ただし着手できない周が続いて maxConsecutiveIdleWaits 回
 //   待っても、次の周でまだ着手できなければ止まる。放置したまま見に行き続けると、gh の呼び出しが積み上がって GitHub API の
 //   レート制限に触れ、ほかの gh 操作まで失敗するからである（Issue #834）。例外がもう1つあり、
-//   claude のセッションが続けて失敗したときも止める。続けるほどカードを空振りで着手中へ送るためである。
+//   claude のセッションが続けて失敗したときも止まる（MAX_CONSECUTIVE_SESSION_FAILURES）。
 // - 着手前に落ちた Issue は飛ばして次の候補へ進む。カードは着手待ちに残るので、原因を直せば
 //   次の巡回で拾われる。飛ばさずに止まると、先頭の1件が詰まっただけで後ろの全件が止まる。
 // - 落ちうるローカルの準備（clone の巻き戻し・依存）をすべて済ませてから、カードを「着手中」へ動かす。
@@ -118,8 +118,7 @@ import { prepareTopicBranch, switchToPullRequestBranch } from './workspace.mjs'
 const MILLISECONDS_PER_SECOND = 1000
 const MILLISECONDS_PER_MINUTE = 60 * MILLISECONDS_PER_SECOND
 
-// 候補が無かったときに、ボードを見直すまで待つ時間
-const POLL_INTERVAL_MS = config.pollIntervalMinutes * MILLISECONDS_PER_MINUTE
+const IDLE_BOARD_POLL_INTERVAL_MS = config.pollIntervalMinutes * MILLISECONDS_PER_MINUTE
 
 const CI_POLL_INTERVAL_MS = config.ci.pollIntervalSeconds * MILLISECONDS_PER_SECOND
 const CI_RUN_WAIT_LIMIT_MS = config.ci.runWaitLimitMinutes * MILLISECONDS_PER_MINUTE
@@ -235,20 +234,30 @@ async function main() {
 try {
   await main()
 } catch (error) {
-  showError(formatError(error, { withStack: true }))
+  showError(formatErrorWithStack(error))
   process.exitCode = 1
 }
 
 /**
- * 例外を表示用の文字列にする。
+ * 例外を、メッセージだけの表示用文字列にする。
  *
  * @param {unknown} error 受け取った例外
- * @param {{ withStack?: boolean }} [options] 予期しない例外として stack まで出すか
  * @returns {string} 表示する文字列
  */
-function formatError(error, { withStack = false } = {}) {
+function formatErrorMessage(error) {
   if (!(error instanceof Error)) return String(error)
-  return withStack ? (error.stack ?? error.message) : error.message
+  return error.message
+}
+
+/**
+ * 予期しない例外を、stack まで含む表示用の文字列にする。
+ *
+ * @param {unknown} error 受け取った例外
+ * @returns {string} 表示する文字列（stack が無ければメッセージ）
+ */
+function formatErrorWithStack(error) {
+  if (!(error instanceof Error)) return String(error)
+  return error.stack ?? error.message
 }
 
 /**
@@ -456,7 +465,7 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
     )
     return latestCreatedPullRequest ? latestCreatedPullRequest.url : ''
   } catch (error) {
-    showWarning(`PR の有無を確かめられませんでした: ${formatError(error)}`)
+    showWarning(`PR の有無を確かめられませんでした: ${formatErrorMessage(error)}`)
     return null
   }
 }
@@ -595,7 +604,7 @@ function tryStartIssue(issue, workspaceDir) {
   } catch (error) {
     // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
     releaseIssueLock()
-    showWarning(`#${issue.number} を飛ばします: ${formatError(error)}`)
+    showWarning(`#${issue.number} を飛ばします: ${formatErrorMessage(error)}`)
     return { outcome: 'failed' }
   }
 }
@@ -807,7 +816,7 @@ function tryListCiRuns(headSha) {
   try {
     return listCiRuns(headSha)
   } catch (error) {
-    showWarning(`CI の run を引けませんでした。引き直します: ${formatError(error)}`)
+    showWarning(`CI の run を引けませんでした。引き直します: ${formatErrorMessage(error)}`)
     return null
   }
 }
@@ -1050,7 +1059,7 @@ function tryMarkAsNeedsHumanCheck(issueNumber, record) {
     record.isMarkedAsNeedsHumanCheck = true
   } catch (error) {
     record.isMarkedAsNeedsHumanCheck = false
-    record.needsHumanCheckLabelError = formatError(error)
+    record.needsHumanCheckLabelError = formatErrorMessage(error)
     showWarning(
       `#${issueNumber} に ${NEEDS_HUMAN_CHECK_LABEL} を付けられませんでした: ${collapseToSingleLine(record.needsHumanCheckLabelError)}`
     )
@@ -1074,8 +1083,8 @@ async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
     isAllSessionsSucceeded = await runWork(record, workStartedAt)
   } catch (error) {
     // 無人実行の画面はセッションの出力で流れるため、スタックを出すと原因の1行が埋もれる（Issue #780）
-    record.error = formatError(error)
-    record.errorStack = formatError(error, { withStack: true })
+    record.error = formatErrorMessage(error)
+    record.errorStack = formatErrorWithStack(error)
     showError(`#${record.issueNumber} の処理が落ちました: ${collapseToSingleLine(record.error)}`)
   } finally {
     record.pullRequestUrl = readPullRequestUrl()
@@ -1177,7 +1186,9 @@ function tryListConflictedOwnPullRequests() {
   try {
     return listConflictedOwnPullRequests()
   } catch (error) {
-    showWarning(`衝突した PR を探せませんでした。Issue の着手へ進みます: ${formatError(error)}`)
+    showWarning(
+      `衝突した PR を探せませんでした。Issue の着手へ進みます: ${formatErrorMessage(error)}`
+    )
     return []
   }
 }
@@ -1253,7 +1264,7 @@ function tryClaimConflictedPullRequest(candidate) {
   } catch (error) {
     // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
     releaseIssueLock()
-    showWarning(`${subject}を飛ばします: ${formatError(error)}`)
+    showWarning(`${subject}を飛ばします: ${formatErrorMessage(error)}`)
     return null
   }
 }
@@ -1379,7 +1390,7 @@ function tryCloseIssuesOfMergedPullRequests() {
         showInfo(`#${issueNumber} を close しました（PR #${pullRequestNumber}）`)
     })
   } catch (error) {
-    showWarning(`マージ済み PR の Issue を閉じられませんでした: ${formatError(error)}`)
+    showWarning(`マージ済み PR の Issue を閉じられませんでした: ${formatErrorMessage(error)}`)
   }
 }
 
@@ -1405,7 +1416,7 @@ async function waitUnlessIdleWaitLimitReached(idlePollCount, idleReason) {
     return true
   }
   showStatusLine(`待機中（${idleReason}）· ${idlePollCount}/${maxConsecutiveIdleWaits}回目`)
-  await sleepUnlessStopped(POLL_INTERVAL_MS)
+  await sleepUnlessStopped(IDLE_BOARD_POLL_INTERVAL_MS)
   return false
 }
 
@@ -1441,7 +1452,7 @@ function tryReleaseLockFile(lock) {
   try {
     releaseLockFile(lock)
   } catch (error) {
-    showWarning(`ロック ${lock.lockFilePath} を外せませんでした: ${formatError(error)}`)
+    showWarning(`ロック ${lock.lockFilePath} を外せませんでした: ${formatErrorMessage(error)}`)
   }
 }
 
@@ -1477,7 +1488,6 @@ function releaseIssueLock() {
  *   作業が無いときに待機中のステータス行へ出す理由（作業があるときは null）
  */
 async function claimNextWork(workspaceDir) {
-  // 止まった PR を先に片付ける。後回しにすると、その Issue をブロッカーに持つ Issue がいつまでも拾われない
   const conflictedPullRequest = await claimFirstConflictedPullRequest()
   if (conflictedPullRequest) {
     return {
@@ -1492,7 +1502,7 @@ async function claimNextWork(workspaceDir) {
   } catch (error) {
     // 候補を引けなかった回は「着手できる Issue が無い」とは別の理由なので、待機行に書き分ける。
     // 書き分けないと、gh の失敗などで待ち続けている間も「正常に空振りしている」ように見える
-    showError(`候補を引けませんでした: ${formatError(error, { withStack: true })}`)
+    showError(`候補を引けませんでした: ${formatErrorWithStack(error)}`)
     return { runWork: null, idleReason: '候補を引けず、次の見直しで再試行' }
   }
 }
