@@ -66,6 +66,35 @@ const BRANCH_RUN_LIST_LIMIT = 100
 // 起こすときの exit code（Claude Code の hook 契約：asyncRewake は exit 2 でセッションを起こし、標準エラー出力を渡す）
 const REWAKE_EXIT_CODE = 2
 
+async function main() {
+  const pushToWatch = findPushToWatch(JSON.parse(readFileSync(0, 'utf8')))
+  if (!pushToWatch) return
+  const { worktreeRoot, defaultBranchName, pushedBranch } = pushToWatch
+
+  // 静的 import にしない。config.mjs が無い・読み込みで throw すると、モジュールの読み込みで落ちて末尾の catch に届かず、
+  // push 以外も含む Bash の実行のたびに、この hook がエラーで終わってしまうため
+  const { config } = await import('../../scripts/auto-programmer/config.mjs')
+  const ciSettings = pickCiSettings(config)
+  if (!ciSettings) return
+
+  const runState = await waitForCiRunState(ciSettings, pushedBranch.headSha)
+  if (!runState || runState.state === 'success') return
+  // 待っている間に同じブランチへ push されたら、その push の hook が見張る。古い commit の結果では起こさない。
+  // リモートの先頭を引けなかったときは追い越されたと見なさず、起こす側に倒す（知らせが消えるより、空振りの方が安い）
+  const remoteSha = readRemoteBranchSha(worktreeRoot, pushedBranch.branchName)
+  if (remoteSha !== null && remoteSha !== pushedBranch.headSha) return
+
+  const { nextStep, pastFixAttemptCount } = decideWakeStep(ciSettings, runState, pushToWatch)
+  const issueNumber = readIssueNumber(worktreeRoot, {
+    defaultBranchName,
+    headSha: pushedBranch.headSha
+  })
+  const facts = { ciSettings, pushedBranch, runState }
+  const failureCount = pastFixAttemptCount + 1
+  process.stderr.write(`${buildWakeMessage({ nextStep, issueNumber, facts, failureCount })}\n`)
+  process.exitCode = REWAKE_EXIT_CODE
+}
+
 /**
  * 外部コマンドを実行して、前後の空白を除いた標準出力を返す。失敗したら例外を投げる。
  *
@@ -451,35 +480,6 @@ function decideWakeStep(ciSettings, runState, pushToWatch) {
     maxFixAttempts: ciSettings.maxFixAttempts
   })
   return { nextStep, pastFixAttemptCount }
-}
-
-async function main() {
-  const pushToWatch = findPushToWatch(JSON.parse(readFileSync(0, 'utf8')))
-  if (!pushToWatch) return
-  const { worktreeRoot, defaultBranchName, pushedBranch } = pushToWatch
-
-  // 静的 import にしない。config.mjs が無い・読み込みで throw すると、モジュールの読み込みで落ちて末尾の catch に届かず、
-  // push 以外も含む Bash の実行のたびに、この hook がエラーで終わってしまうため
-  const { config } = await import('../../scripts/auto-programmer/config.mjs')
-  const ciSettings = pickCiSettings(config)
-  if (!ciSettings) return
-
-  const runState = await waitForCiRunState(ciSettings, pushedBranch.headSha)
-  if (!runState || runState.state === 'success') return
-  // 待っている間に同じブランチへ push されたら、その push の hook が見張る。古い commit の結果では起こさない。
-  // リモートの先頭を引けなかったときは追い越されたと見なさず、起こす側に倒す（知らせが消えるより、空振りの方が安い）
-  const remoteSha = readRemoteBranchSha(worktreeRoot, pushedBranch.branchName)
-  if (remoteSha !== null && remoteSha !== pushedBranch.headSha) return
-
-  const { nextStep, pastFixAttemptCount } = decideWakeStep(ciSettings, runState, pushToWatch)
-  const issueNumber = readIssueNumber(worktreeRoot, {
-    defaultBranchName,
-    headSha: pushedBranch.headSha
-  })
-  const facts = { ciSettings, pushedBranch, runState }
-  const failureCount = pastFixAttemptCount + 1
-  process.stderr.write(`${buildWakeMessage({ nextStep, issueNumber, facts, failureCount })}\n`)
-  process.exitCode = REWAKE_EXIT_CODE
 }
 
 try {
