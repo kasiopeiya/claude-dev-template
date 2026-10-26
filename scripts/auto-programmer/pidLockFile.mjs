@@ -36,6 +36,55 @@ const MAX_TAKEOVER_DEPTH = 3
 const TAKEOVER_MARK_DIGEST_HEX_LENGTH = 16
 
 /**
+ * 1番から順に、一番小さい空き番号のロックを取る。ロックファイルは `<lockDirectory>/<lockFileNamePrefix>-<番号>.lock` に置く。
+ *
+ * @param {{ lockDirectory: string, lockFileNamePrefix: string }} params ロックファイルの置き場（無ければ作る）と、ファイル名の頭
+ * @returns {{ lockNumber: number, lock: AcquiredLockFile }} 取った番号とロック
+ * @throws {Error} ファイルを読めなかった・作れなかった・消せなかったとき
+ */
+export function acquireLowestFreeNumberedLockFile({ lockDirectory, lockFileNamePrefix }) {
+  mkdirSync(lockDirectory, { recursive: true })
+  const occupiedNumbers = new Set()
+  for (;;) {
+    const lockNumber = selectLowestFreeNumber(occupiedNumbers)
+    const lock = tryAcquireLockFile(join(lockDirectory, `${lockFileNamePrefix}-${lockNumber}.lock`))
+    if (lock !== null) return { lockNumber, lock }
+    occupiedNumbers.add(lockNumber)
+  }
+}
+
+/**
+ * 名前で指したロックを1つ取る。ロックファイルは `<lockDirectory>/<lockName>.lock` に置く。
+ *
+ * @param {{ lockDirectory: string, lockName: string }} params ロックファイルの置き場（無ければ作る）と、拡張子を除いた名前
+ * @returns {{ lock: AcquiredLockFile | null, holderPid: number | null }} 取ったロック（取れなければ null）と、取れなかったときのいまの持ち主の PID（取れた・持ち主を読めなかったときは null）
+ * @throws {Error} ファイルを読めなかった・作れなかった・消せなかったとき
+ */
+export function tryAcquireNamedLockFile({ lockDirectory, lockName }) {
+  mkdirSync(lockDirectory, { recursive: true })
+  const lockFilePath = join(lockDirectory, `${lockName}.lock`)
+  const lock = tryAcquireLockFile(lockFilePath)
+  if (lock !== null) return { lock, holderPid: null }
+  const holderLockFileContent = readFileIfExists(lockFilePath)
+  return {
+    lock: null,
+    holderPid: holderLockFileContent === null ? null : readLockHolderPid(holderLockFileContent)
+  }
+}
+
+/**
+ * 取ったロックを外す。中身が取ったときと違えば（死んだとみなされて取り直された後なら）、他のプロセスのロックなので消さない。
+ *
+ * @param {AcquiredLockFile} lock acquireLowestFreeNumberedLockFile・tryAcquireNamedLockFile が返したロック
+ * @returns {void}
+ * @throws {Error} ファイルを読めなかった・消せなかったとき
+ */
+export function releaseLockFile({ lockFilePath, lockFileContent }) {
+  if (readFileIfExists(lockFilePath) !== lockFileContent) return
+  unlinkSync(lockFilePath)
+}
+
+/**
  * ファイルの中身を読む。
  *
  * @param {string} filePath 読むファイル
@@ -171,53 +220,4 @@ function tryAcquireLockFile(lockFilePath) {
     if (!tryRemoveDeadLockFile(lockFilePath, 0)) return null
   }
   return null
-}
-
-/**
- * 1番から順に、一番小さい空き番号のロックを取る。ロックファイルは `<lockDirectory>/<lockFileNamePrefix>-<番号>.lock` に置く。
- *
- * @param {{ lockDirectory: string, lockFileNamePrefix: string }} params ロックファイルの置き場（無ければ作る）と、ファイル名の頭
- * @returns {{ lockNumber: number, lock: AcquiredLockFile }} 取った番号とロック
- * @throws {Error} ファイルを読めなかった・作れなかった・消せなかったとき
- */
-export function acquireLowestFreeNumberedLockFile({ lockDirectory, lockFileNamePrefix }) {
-  mkdirSync(lockDirectory, { recursive: true })
-  const occupiedNumbers = new Set()
-  for (;;) {
-    const lockNumber = selectLowestFreeNumber(occupiedNumbers)
-    const lock = tryAcquireLockFile(join(lockDirectory, `${lockFileNamePrefix}-${lockNumber}.lock`))
-    if (lock !== null) return { lockNumber, lock }
-    occupiedNumbers.add(lockNumber)
-  }
-}
-
-/**
- * 名前で指したロックを1つ取る。ロックファイルは `<lockDirectory>/<lockName>.lock` に置く。
- *
- * @param {{ lockDirectory: string, lockName: string }} params ロックファイルの置き場（無ければ作る）と、拡張子を除いた名前
- * @returns {{ lock: AcquiredLockFile | null, holderPid: number | null }} 取ったロック（取れなければ null）と、取れなかったときのいまの持ち主の PID（取れた・持ち主を読めなかったときは null）
- * @throws {Error} ファイルを読めなかった・作れなかった・消せなかったとき
- */
-export function tryAcquireNamedLockFile({ lockDirectory, lockName }) {
-  mkdirSync(lockDirectory, { recursive: true })
-  const lockFilePath = join(lockDirectory, `${lockName}.lock`)
-  const lock = tryAcquireLockFile(lockFilePath)
-  if (lock !== null) return { lock, holderPid: null }
-  const holderLockFileContent = readFileIfExists(lockFilePath)
-  return {
-    lock: null,
-    holderPid: holderLockFileContent === null ? null : readLockHolderPid(holderLockFileContent)
-  }
-}
-
-/**
- * 取ったロックを外す。中身が取ったときと違えば（死んだとみなされて取り直された後なら）、他のプロセスのロックなので消さない。
- *
- * @param {AcquiredLockFile} lock acquireLowestFreeNumberedLockFile・tryAcquireNamedLockFile が返したロック
- * @returns {void}
- * @throws {Error} ファイルを読めなかった・消せなかったとき
- */
-export function releaseLockFile({ lockFilePath, lockFileContent }) {
-  if (readFileIfExists(lockFilePath) !== lockFileContent) return
-  unlinkSync(lockFilePath)
 }
