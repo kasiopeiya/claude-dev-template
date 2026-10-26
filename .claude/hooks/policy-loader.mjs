@@ -29,24 +29,6 @@ const policyDir = resolve(projectRoot, 'docs/policy')
 const RULES_RELATIVE_DIR = '.claude/rules'
 const rulesDir = resolve(projectRoot, RULES_RELATIVE_DIR)
 
-/**
- * 適用される Rule のファイル名一覧を、重複なしで返す。
- *
- * Rule の探索に失敗しても []。ここで投げると main() 全体が catch に抜け、
- * 既に見つかっているポリシーの指し示しまで道連れで失われるため。
- */
-function collectRuleNames(targetAbsolutePath, targetRelativePath) {
-  try {
-    const matchedByAppliesTo = collectRulesByAppliesTo(targetRelativePath, rulesDir)
-    const matchedByPaths = existsSync(targetAbsolutePath)
-      ? []
-      : collectMatchingRules(targetRelativePath, rulesDir)
-    return [...new Set([...matchedByAppliesTo, ...matchedByPaths])]
-  } catch {
-    return []
-  }
-}
-
 function main() {
   // Claude Code の hook 契約（外部仕様）：type: "command" の PreToolUse フックは、
   // イベント情報（tool_input 等）を JSON として子プロセスの標準入力（fd 0）経由で渡す。
@@ -78,6 +60,24 @@ function main() {
       hookSpecificOutput: { hookEventName: 'PreToolUse', additionalContext }
     })
   )
+}
+
+/**
+ * 適用される Rule のファイル名一覧を、重複なしで返す。
+ *
+ * Rule の探索に失敗しても []。ここで投げると main() 全体が catch に抜け、
+ * 既に見つかっているポリシーの指し示しまで道連れで失われるため。
+ */
+function collectRuleNames(targetAbsolutePath, targetRelativePath) {
+  try {
+    const matchedByAppliesTo = collectRulesByAppliesTo(targetRelativePath, rulesDir)
+    const matchedByPaths = existsSync(targetAbsolutePath)
+      ? []
+      : collectMatchingRules(targetRelativePath, rulesDir)
+    return [...new Set([...matchedByAppliesTo, ...matchedByPaths])]
+  } catch {
+    return []
+  }
 }
 
 try {

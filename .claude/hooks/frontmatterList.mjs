@@ -5,20 +5,6 @@
 //   ここに集約し、policyMatcher.mjs と ruleMatcher.mjs が重複した実装を持たないようにする。
 
 /**
- * `*` で始まるワイルドカードを1つ読み、対応する正規表現の断片と、読み終えた位置を返す。
- *
- * @param {string} glob 変換中の glob 全体
- * @param {number} index `*` がある位置
- * @returns {{ fragment: string, lastIndex: number }}
- */
-function readWildcard(glob, index) {
-  if (glob[index + 1] !== '*') return { fragment: '[^/]*', lastIndex: index }
-  // `**/` はディレクトリごと省略可能にする（`a/**/b` が `a/b` にも当たるようにする）
-  if (glob[index + 2] === '/') return { fragment: '(?:.*/)?', lastIndex: index + 2 }
-  return { fragment: '.*', lastIndex: index + 1 }
-}
-
-/**
  * glob を行頭〜行末アンカーの正規表現へ変換する。`**` はディレクトリ跨ぎ、`*` は単一階層内。
  * `?`・`{a,b}`・`[...]` は解釈せず、文字どおりにマッチさせる（未対応）。
  */
@@ -82,6 +68,20 @@ export function parseFrontmatterList(frontmatter, key) {
     items.push(stripQuotes(itemMatch[1]))
   }
   return items
+}
+
+/**
+ * `*` で始まるワイルドカードを1つ読み、対応する正規表現の断片と、読み終えた位置を返す。
+ *
+ * @param {string} glob 変換中の glob 全体
+ * @param {number} index `*` がある位置
+ * @returns {{ fragment: string, lastIndex: number }}
+ */
+function readWildcard(glob, index) {
+  if (glob[index + 1] !== '*') return { fragment: '[^/]*', lastIndex: index }
+  // `**/` はディレクトリごと省略可能にする（`a/**/b` が `a/b` にも当たるようにする）
+  if (glob[index + 2] === '/') return { fragment: '(?:.*/)?', lastIndex: index + 2 }
+  return { fragment: '.*', lastIndex: index + 1 }
 }
 
 /** startLineIndex 行から `]` の行までを連結し、角括弧の内側テキストを返す。閉じ括弧が無ければ末尾まで。 */
