@@ -6,7 +6,7 @@
 // - 上限は config.mjs の設定値だが、config.mjs はテンプレート同期の対象外なので、利用先では欠けたまま
 //   動くことがある。欠けたままだと上限が undefined になり、止まらないか最初の空振りで止まる。
 //   どちらも気づきにくいので、起動時に検査して落とす（configuration-policy の fail-fast）。
-// - I/O を持たない層をここに切り出すことで、待機ループに触れずに単体テストできる。
+// - I/O を持たない層をここに切り出すことで、待機ループに触れずに確かめられる。
 
 import { TechnicalError } from '../lib/errors.mjs'
 

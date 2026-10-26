@@ -1,7 +1,7 @@
 // 責務: Issue のラベルと番号、設定の接頭辞からトピックブランチ名を決める純粋関数（接頭辞の検査を含む）だけを担う。
 //
 // 設計意図（WHY）:
-// - I/O を持たない層をここに切り出すことで、GitHub にも clone にも触れずに単体テストできる。
+// - I/O を持たない層をここに切り出すことで、GitHub にも clone にも触れずに確かめられる。
 // - 種類（feat・fix など）の語彙は .claude/skills/git-commit/SKILL.md「ブランチ命名規則」が正。pipeline.yml の
 //   push トリガもこの7つだけを受けるため、ここに無い種類を作ると CI が1つも走らない PR ができる。
 // - 種類の前に付ける接頭辞（config.mjs の branchPrefix。例 st2）は、ライン（main・main2 など）ごとに CI を
