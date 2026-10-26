@@ -39,6 +39,10 @@ const OUTPUT_DRAIN_GRACE_MS = 5000
 // 時間切れで SIGTERM を送ってから SIGKILL へ切り替えるまでの猶予。SIGKILL は後片付けの機会を奪うので、まず SIGTERM で頼む
 const FORCE_KILL_GRACE_MS = 5000
 
+// 中止の合図（AbortSignal）に載せて、2つ目以降のシグナルを子へ中継するイベントの名前。abort が通知するのは最初の1回だけで、
+// 中止の後に来たシグナル（Ctrl+C の後の SIGTERM など）は、これで知らせないと子へ届かない
+const RELAY_SIGNAL_EVENT_NAME = 'relay-signal'
+
 /**
  * コマンドを実行し、標準出力を文字列で受け取る。
  *
@@ -96,7 +100,7 @@ export function runStreaming(command, args, options = {}) {
  * onTick で経過を画面に出せる。claude セッション専用（使い分けはファイル冒頭の設計意図を参照）。
  *
  * 子には標準入力を渡さない。子は POSIX では親と別のプロセスグループで動くので、端末の Ctrl+C や切断は子に
- * 届かない。子を止めたいときは abortSignal を中止する（reason に入れたシグナルを子孫ごと送る）。
+ * 届かない。子を止めたいときは、abortSignal の持ち主を sendSignalToWatchedChildren に渡してシグナルを送る（子孫ごと届く）。
  *
  * @param {string} command 実行するコマンド
  * @param {string[]} args 引数
@@ -229,11 +233,32 @@ function spawnProcessTree(command, args, { cwd, shell, extraEnv }) {
 }
 
 /**
+ * 親が受けた終了シグナルを、見張っている子へ子孫ごと送る。受けるたびに呼んでよい。
+ *
+ * 最初の1つは controller を中止して送り（reason に入る）、2つ目以降は中止済みで abort が何も通知しないので、
+ * イベントで送る。どちらで送るかはここが決める。呼び出し側が使い分けると、最初のシグナルが子へ2回届いたり、届かなかったりする。
+ *
+ * @param {AbortController} stopController runStreamingAsync に渡す abortSignal の持ち主（その signal を包まずにそのまま渡すこと。包むと、中止は伝わるがイベントは伝わらない）
+ * @param {NodeJS.Signals} signalName 子のグループへ送るシグナル
+ * @returns {void}
+ */
+export function sendSignalToWatchedChildren(stopController, signalName) {
+  if (!stopController.signal.aborted) {
+    stopController.abort(signalName)
+    return
+  }
+  stopController.signal.dispatchEvent(
+    new CustomEvent(RELAY_SIGNAL_EVENT_NAME, { detail: signalName })
+  )
+}
+
+/**
  * 子への打ち切り（時間切れ・呼び出し側からの中止）を見張り、子孫ごと止める。見張りは子が終わると自分で片付ける。
  *
  * 時間切れでは SIGTERM を送り、FORCE_KILL_GRACE_MS を過ぎても子が終わらなければ SIGKILL を送る。
- * 中止の合図は AbortSignal で受け、reason に入ったシグナルをそのまま子のグループへ送る。親が受けたシグナルを
- * どう扱うか（中継するか・親も終わるか）は入口の index.mjs が決め、ここはプロセス全体のシグナルに触れない。
+ * 中止の合図は AbortSignal で受け、reason に入ったシグナルをそのまま子のグループへ送る。中止の後に来たシグナルは
+ * sendSignalToWatchedChildren のイベントで受けて送る。親が受けたシグナルをどう扱うか（中継するか・親も終わるか）は
+ * 入口の index.mjs が決め、ここはプロセス全体のシグナルに触れない。
  *
  * @param {{ child: import('node:child_process').ChildProcess, killTree: (signal: NodeJS.Signals) => void }} processTree 見張る子プロセスと、子孫ごと止める関数
  * @param {{ timeoutMs: number, abortSignal: AbortSignal }} triggers 打ち切るまでの時間と、中止の合図（reason に送るシグナル名。シグナル名でなければ SIGTERM）
@@ -252,12 +277,15 @@ function watchForTermination({ child, killTree }, { timeoutMs, abortSignal }) {
     // 理由なしの abort() では reason が DOMException になる。シグナル名でなければ SIGTERM で止める
     killTree(typeof reason === 'string' && reason in constants.signals ? reason : 'SIGTERM')
   }
+  const killOnRelayedSignal = (event) => killTree(event.detail)
   if (abortSignal.aborted) killOnAbort()
   abortSignal.addEventListener('abort', killOnAbort, { once: true })
+  abortSignal.addEventListener(RELAY_SIGNAL_EVENT_NAME, killOnRelayedSignal)
   const stopWatching = () => {
     clearTimeout(timeoutTimer)
     clearTimeout(forceKillTimer)
     abortSignal.removeEventListener('abort', killOnAbort)
+    abortSignal.removeEventListener(RELAY_SIGNAL_EVENT_NAME, killOnRelayedSignal)
   }
   child.once('exit', stopWatching)
   child.once('error', stopWatching)
