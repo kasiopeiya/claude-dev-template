@@ -21,8 +21,9 @@
 // - `issue:checked` が付いた Issue は監査し直さない。人間がローカルでまとめて監査してから Ready へ積む
 //   運用が多く、毎回の再監査は同じ判定を繰り返すだけになる。監査後に前提が崩れていれば `/auto-dev` が離脱する。
 // - open な sub-issue を持つ Issue は実装せず、子を着手待ちに載せて拾わせる（どの子を載せるかは subIssueHandover.mjs）。
-//   確かめるのは `/issue-check` の前と後で、前は割り済みの親に監査の費用を掛けないため、後は今回の監査が割った分を
-//   拾うため。親のカードは着手中のまま残す。子が進んでいる間、親は作業中である。
+//   確かめるのは `/issue-check` の前・後と `/auto-dev` の後である。前は割り済みの親に監査の費用を掛けないため。
+//   `/issue-check` の後は今回の監査が割った分を、`/auto-dev` の後は実装フローの `/issue-split` が割った分を拾うため。
+//   親のカードは着手中のまま残す。子が進んでいる間、親は作業中である。
 // - PR を作った後は、CI の結果が出るまで次の Issue へ進まない。落ちていれば `/auto-fix-ci` を
 //   別プロセスで起こして直させ、上限まで直させても落ちていれば人間へ回す。待たずに次へ進むと、落ちた PR が
 //   誰にも直されずに残る。CI が落ちたこと自体はセッションの失敗に数えない（claude が壊れている兆候ではない）。
@@ -579,7 +580,8 @@ async function startFirstStartableIssue(workspaceDir) {
 
 /**
  * open な sub-issue を持つなら子を着手待ちに載せて終える。そうでなければ `issue:checked` が無いときだけ `/issue-check` を通し、
- * 監査が割っていれば子を着手待ちに載せ、止める理由も子も無ければ `/auto-dev` を走らせる。結果は record へ書き足す。
+ * 監査が割っていれば子を着手待ちに載せ、止める理由も子も無ければ `/auto-dev` を走らせる。`/auto-dev` が commit せずに
+ * 正常終了した後も、実装フローの `/issue-split` で子ができていれば子を着手待ちに載せる。結果は record へ書き足す。
  *
  * record を引数で受けるのは、途中で例外が出ても、そこまでの結果を呼び出し側が記録できるようにするため。
  *
@@ -632,6 +634,7 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
     '--remove-label',
     NEEDS_HUMAN_CHECK_LABEL
   ])
+  const headShaBeforeAutoDev = readLocalHeadSha(workspaceDir)
   const autoDevStatus = await runAutoDevSession({
     issueNumber,
     workspaceDir,
@@ -639,7 +642,13 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
   })
   record.autoDevExitCode = autoDevStatus.exitCode
   record.autoDevSignal = autoDevStatus.signal
-  return hasSessionSucceeded(autoDevStatus)
+  if (!hasSessionSucceeded(autoDevStatus)) return false
+  // /auto-dev が /issue-split で割った親は、差分も commit も無いまま終わる。ここで拾わないと、作られた子が誰にも載せられない。
+  // commit した回は PR の CI を待たせる。引き継ぐと shouldWatchCi が false になり、落ちた PR が直されずに残る
+  if (readLocalHeadSha(workspaceDir) === headShaBeforeAutoDev) {
+    handOverToSubIssuesIfAny(issueNumber, record)
+  }
+  return true
 }
 
 /**
@@ -654,6 +663,17 @@ async function sleepUnlessStopped(milliseconds) {
   } catch (error) {
     if (!(error instanceof Error && error.name === 'AbortError')) throw error
   }
+}
+
+/**
+ * AI 専用 clone の HEAD が指している commit の SHA を引く。
+ *
+ * @param {string} workspaceDir HEAD を引く AI 専用 clone
+ * @returns {string} commit の SHA
+ * @throws {Error} git が失敗したとき
+ */
+function readLocalHeadSha(workspaceDir) {
+  return runOrThrow('git', ['rev-parse', 'HEAD'], { cwd: workspaceDir }).trim()
 }
 
 /**
@@ -824,7 +844,7 @@ function readHeadShaAndDecisionNotToWait({
   workStartedAt
 }) {
   const remoteHeadSha = readRemoteHeadSha({ workspaceDir, branchName })
-  const localHeadSha = runOrThrow('git', ['rev-parse', 'HEAD'], { cwd: workspaceDir }).trim()
+  const localHeadSha = readLocalHeadSha(workspaceDir)
   const { state, labelNames } = readIssueStatus(issueNumber)
   // マージで消えたブランチを、差分が出ずに閉じた Issue と見分けるためだけに引く。ブランチが残っていれば要らない
   const mergedPullRequest = remoteHeadSha ? null : findMergedPullRequest(branchName)
