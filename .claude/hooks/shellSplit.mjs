@@ -34,68 +34,6 @@ const SINGLE_QUOTE = "'"
 const DOUBLE_QUOTE = '"'
 
 /**
- * その位置から始まる区切り文字を返す。区切りとして働かない `&` は除く。
- *
- * @param {string} text 分割対象のテキスト
- * @param {{ index: number, separators: string[] }} position 判定する位置と、候補の区切り文字
- * @returns {string | undefined} 見つかった区切り文字。無ければ undefined
- */
-function findSeparatorAt(text, { index, separators }) {
-  const separator = separators.find((candidate) => text.startsWith(candidate, index))
-  if (separator !== '&') return separator
-
-  // `&>` `>&`（出力のリダイレクト）の `&` はコマンドの区切りではない
-  if (text[index + 1] === '>' || text[index - 1] === '>') return undefined
-  return separator
-}
-
-/**
- * 引用符の内側を区切らずに、指定した区切り文字でテキストを分割する。
- *
- * @param {string} text 分割対象のテキスト
- * @param {string[]} separators 区切り文字（長いものを先に並べる）
- * @returns {string[]} 前後の空白を除いた、空でない断片の配列
- */
-function splitOutsideQuotes(text, separators) {
-  const segments = []
-  let current = ''
-  let openQuote = null
-  let index = 0
-
-  while (index < text.length) {
-    const char = text[index]
-
-    // シングルクォートの内側を除き、バックスラッシュは次の1文字を無効化する
-    if (openQuote !== SINGLE_QUOTE && char === '\\') {
-      current += char + (text[index + 1] ?? '')
-      index += 2
-      continue
-    }
-
-    // 区切り文字はクォートの外側だけで効く。クォート記号そのものは区切り文字に含まれないので、先に見てよい
-    const separator = openQuote === null ? findSeparatorAt(text, { index, separators }) : null
-    if (separator) {
-      segments.push(current)
-      current = ''
-      index += separator.length
-      continue
-    }
-
-    if (openQuote === null && (char === SINGLE_QUOTE || char === DOUBLE_QUOTE)) {
-      openQuote = char
-    } else if (openQuote === char) {
-      openQuote = null
-    }
-
-    current += char
-    index++
-  }
-
-  segments.push(current)
-  return segments.map((segment) => segment.trim()).filter(Boolean)
-}
-
-/**
  * ヒアドキュメントの中身を、すべてコマンド本体から切り離す。
  *
  * 中身は実行されない入力データであり、区切り文字も禁止コマンド名も含みうるので、
@@ -242,4 +180,66 @@ export function normalizeCommandStart(tokens) {
     while (index < tokens.length && tokens[index].startsWith('-')) index++
   }
   return stripGlobalOptions(tokens.slice(index))
+}
+
+/**
+ * その位置から始まる区切り文字を返す。区切りとして働かない `&` は除く。
+ *
+ * @param {string} text 分割対象のテキスト
+ * @param {{ index: number, separators: string[] }} position 判定する位置と、候補の区切り文字
+ * @returns {string | undefined} 見つかった区切り文字。無ければ undefined
+ */
+function findSeparatorAt(text, { index, separators }) {
+  const separator = separators.find((candidate) => text.startsWith(candidate, index))
+  if (separator !== '&') return separator
+
+  // `&>` `>&`（出力のリダイレクト）の `&` はコマンドの区切りではない
+  if (text[index + 1] === '>' || text[index - 1] === '>') return undefined
+  return separator
+}
+
+/**
+ * 引用符の内側を区切らずに、指定した区切り文字でテキストを分割する。
+ *
+ * @param {string} text 分割対象のテキスト
+ * @param {string[]} separators 区切り文字（長いものを先に並べる）
+ * @returns {string[]} 前後の空白を除いた、空でない断片の配列
+ */
+function splitOutsideQuotes(text, separators) {
+  const segments = []
+  let current = ''
+  let openQuote = null
+  let index = 0
+
+  while (index < text.length) {
+    const char = text[index]
+
+    // シングルクォートの内側を除き、バックスラッシュは次の1文字を無効化する
+    if (openQuote !== SINGLE_QUOTE && char === '\\') {
+      current += char + (text[index + 1] ?? '')
+      index += 2
+      continue
+    }
+
+    // 区切り文字はクォートの外側だけで効く。クォート記号そのものは区切り文字に含まれないので、先に見てよい
+    const separator = openQuote === null ? findSeparatorAt(text, { index, separators }) : null
+    if (separator) {
+      segments.push(current)
+      current = ''
+      index += separator.length
+      continue
+    }
+
+    if (openQuote === null && (char === SINGLE_QUOTE || char === DOUBLE_QUOTE)) {
+      openQuote = char
+    } else if (openQuote === char) {
+      openQuote = null
+    }
+
+    current += char
+    index++
+  }
+
+  segments.push(current)
+  return segments.map((segment) => segment.trim()).filter(Boolean)
 }

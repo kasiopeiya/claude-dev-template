@@ -23,25 +23,6 @@ const LIST_ITEM_PATTERN = /^\s*(?:[-*+]|\d+\.)\s/
 const STAGE_NUMBER_PATTERN = /^(\d+)(?:〜\d+)?\.\s/
 
 /**
- * 本文から、コードブロックの外にある `## ブロッカー` 節の行だけを取り出す。
- *
- * @param {string} body Issue 本文
- * @returns {string[] | null} 節の見出しより後、次の節より前の行（節が無ければ null）
- */
-function readBlockerSectionLines(body) {
-  let isInCodeBlock = false
-  let sectionLines = null
-  for (const line of body.split('\n')) {
-    if (line.trimStart().startsWith('```')) isInCodeBlock = !isInCodeBlock
-    if (isInCodeBlock) continue
-    if (sectionLines && line.startsWith('## ')) break
-    if (sectionLines) sectionLines.push(line)
-    else if (line.trim() === BLOCKER_SECTION_HEADING) sectionLines = []
-  }
-  return sectionLines
-}
-
-/**
  * Issue 本文の `## ブロッカー` 節から、ブロッカーの Issue 番号を取り出す。
  *
  * 節の中に番号を読めない箇条書きの行があれば null を返す。読めないブロッカーを
@@ -65,17 +46,6 @@ export function extractBlockerIssueNumbers(body) {
 }
 
 /**
- * タイトル先頭の段番号を読む。
- *
- * @param {string} title Issue タイトル
- * @returns {number} 段番号（無ければ Infinity で、段番号のある Issue より後に並ぶ）
- */
-function readStageNumber(title) {
-  const matched = STAGE_NUMBER_PATTERN.exec(title)
-  return matched ? Number(matched[1]) : Infinity
-}
-
-/**
  * 未解消のブロッカーが残っておらず、ブロッカー節を読める候補だけを、段番号昇順 → Issue 番号昇順に並べて返す。
  *
  * @template {{ number: number, title: string, body?: string }} Candidate
@@ -93,4 +63,34 @@ export function selectStartableIssues(candidates, unresolvedBlockerNumbers) {
       )
     })
     .sort((a, b) => readStageNumber(a.title) - readStageNumber(b.title) || a.number - b.number)
+}
+
+/**
+ * 本文から、コードブロックの外にある `## ブロッカー` 節の行だけを取り出す。
+ *
+ * @param {string} body Issue 本文
+ * @returns {string[] | null} 節の見出しより後、次の節より前の行（節が無ければ null）
+ */
+function readBlockerSectionLines(body) {
+  let isInCodeBlock = false
+  let sectionLines = null
+  for (const line of body.split('\n')) {
+    if (line.trimStart().startsWith('```')) isInCodeBlock = !isInCodeBlock
+    if (isInCodeBlock) continue
+    if (sectionLines && line.startsWith('## ')) break
+    if (sectionLines) sectionLines.push(line)
+    else if (line.trim() === BLOCKER_SECTION_HEADING) sectionLines = []
+  }
+  return sectionLines
+}
+
+/**
+ * タイトル先頭の段番号を読む。
+ *
+ * @param {string} title Issue タイトル
+ * @returns {number} 段番号（無ければ Infinity で、段番号のある Issue より後に並ぶ）
+ */
+function readStageNumber(title) {
+  const matched = STAGE_NUMBER_PATTERN.exec(title)
+  return matched ? Number(matched[1]) : Infinity
 }

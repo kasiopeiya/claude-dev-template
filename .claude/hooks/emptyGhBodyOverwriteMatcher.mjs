@@ -64,6 +64,32 @@ const OVERWRITE_TARGETS = [
   }
 ]
 
+/**
+ * bashコマンド文字列を検査し、既存の本文を空で上書きする gh 呼び出しがあれば
+ * その説明文字列を返す。該当しなければ null。
+ *
+ * @param {string} command
+ * @returns {string | null}
+ */
+export function detectEmptyGhBodyOverwrite(command) {
+  if (typeof command !== 'string' || command.trim() === '') return null
+
+  const { commandText, heredocBodies } = splitHeredoc(command)
+  let heredocIndex = 0
+
+  for (const statement of splitStatements(commandText)) {
+    // ヒアドキュメントの中身は書かれた順に並ぶので、演算子を数えた順番で対応づける
+    const operatorCount = countHeredocOperators(statement)
+    const statementHeredocBody = operatorCount === 0 ? null : (heredocBodies[heredocIndex] ?? null)
+    heredocIndex += operatorCount
+
+    const violation = inspectStatement(statement, statementHeredocBody)
+    if (violation) return violation
+  }
+
+  return null
+}
+
 // `<` は入力リダイレクト、`<<<` はヒアストリング。どちらも標準入力に中身を与えるので通す。
 // `<<`（ヒアドキュメント）だけは中身が空かどうかまで見るため、ここでは扱わない。
 function hasInputRedirect(stage) {
@@ -145,31 +171,5 @@ function inspectStatement(statement, heredocBody) {
     })
     if (violation) return `${violation}: ${stage.trim()}`
   }
-  return null
-}
-
-/**
- * bashコマンド文字列を検査し、既存の本文を空で上書きする gh 呼び出しがあれば
- * その説明文字列を返す。該当しなければ null。
- *
- * @param {string} command
- * @returns {string | null}
- */
-export function detectEmptyGhBodyOverwrite(command) {
-  if (typeof command !== 'string' || command.trim() === '') return null
-
-  const { commandText, heredocBodies } = splitHeredoc(command)
-  let heredocIndex = 0
-
-  for (const statement of splitStatements(commandText)) {
-    // ヒアドキュメントの中身は書かれた順に並ぶので、演算子を数えた順番で対応づける
-    const operatorCount = countHeredocOperators(statement)
-    const statementHeredocBody = operatorCount === 0 ? null : (heredocBodies[heredocIndex] ?? null)
-    heredocIndex += operatorCount
-
-    const violation = inspectStatement(statement, statementHeredocBody)
-    if (violation) return violation
-  }
-
   return null
 }
