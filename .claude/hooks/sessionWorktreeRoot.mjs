@@ -22,23 +22,6 @@ const GIT_QUERY_TIMEOUT_MS = 1000
 const trustedWorkingDirectory = dirname(fileURLToPath(import.meta.url))
 
 /**
- * `git rev-parse` の出力を返す。git が無い・git の外などで失敗したら例外を投げる。
- *
- * @param {string} directory 実行するディレクトリ
- * @param {string[]} options `git rev-parse` に渡すオプション
- * @returns {string} 前後の空白を除いた出力
- */
-function readGitRevParse(directory, options) {
-  return execFileSync('git', ['-C', directory, 'rev-parse', ...options], {
-    cwd: trustedWorkingDirectory,
-    encoding: 'utf8',
-    // 失敗は呼び出し元が代わりの基準へ戻る通常の経路なので、git の標準エラーを出さない
-    stdio: ['ignore', 'pipe', 'ignore'],
-    timeout: GIT_QUERY_TIMEOUT_MS
-  }).trim()
-}
-
-/**
  * セッションの作業ツリーのルートを返す。
  * セッションの cwd が、この hook と同じリポジトリの作業ツリー（別の worktree を含む）にあれば
  * そのルート。cwd が無い・git の外・別のリポジトリ・問い合わせの失敗なら undefined。
@@ -62,4 +45,21 @@ export function findSessionWorktreeRoot(sessionWorkingDirectory, hookProjectRoot
   } catch {
     return undefined
   }
+}
+
+/**
+ * `git rev-parse` の出力を返す。git が無い・git の外などで失敗したら例外を投げる。
+ *
+ * @param {string} directory 実行するディレクトリ
+ * @param {string[]} options `git rev-parse` に渡すオプション
+ * @returns {string} 前後の空白を除いた出力
+ */
+function readGitRevParse(directory, options) {
+  return execFileSync('git', ['-C', directory, 'rev-parse', ...options], {
+    cwd: trustedWorkingDirectory,
+    encoding: 'utf8',
+    // 失敗は呼び出し元が代わりの基準へ戻る通常の経路なので、git の標準エラーを出さない
+    stdio: ['ignore', 'pipe', 'ignore'],
+    timeout: GIT_QUERY_TIMEOUT_MS
+  }).trim()
 }

@@ -20,6 +20,16 @@ import {
   parseFrontmatterList
 } from './frontmatterList.mjs'
 
+/** `paths` にマッチする Rule のファイル名配列を返す（標準ロードの肩代わり）。 */
+export function collectMatchingRules(targetRelativePath, rulesDir) {
+  return collectRuleNamesMatching(targetRelativePath, rulesDir, 'paths')
+}
+
+/** `hook.applies-to` にマッチする Rule のファイル名配列を返す（名指しのパスへの編集時注入）。 */
+export function collectRulesByAppliesTo(targetRelativePath, rulesDir) {
+  return collectRuleNamesMatching(targetRelativePath, rulesDir, 'applies-to')
+}
+
 /** rulesDir 配下（サブディレクトリを含む）の *.md を走査し、frontmatter の frontmatterKey が targetRelativePath にマッチする Rule のファイル名配列を返す。 */
 function collectRuleNamesMatching(targetRelativePath, rulesDir, frontmatterKey) {
   const matchedRuleNames = []
@@ -32,14 +42,4 @@ function collectRuleNamesMatching(targetRelativePath, rulesDir, frontmatterKey) 
     }
   }
   return matchedRuleNames
-}
-
-/** `paths` にマッチする Rule のファイル名配列を返す（標準ロードの肩代わり）。 */
-export function collectMatchingRules(targetRelativePath, rulesDir) {
-  return collectRuleNamesMatching(targetRelativePath, rulesDir, 'paths')
-}
-
-/** `hook.applies-to` にマッチする Rule のファイル名配列を返す（名指しのパスへの編集時注入）。 */
-export function collectRulesByAppliesTo(targetRelativePath, rulesDir) {
-  return collectRuleNamesMatching(targetRelativePath, rulesDir, 'applies-to')
 }
