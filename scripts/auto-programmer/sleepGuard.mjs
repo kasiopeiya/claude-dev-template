@@ -17,24 +17,6 @@ import { resolveSleepGuardLaunch } from './sleepGuardLaunch.mjs'
 import { showWarning } from './ui.mjs'
 
 /**
- * スリープ抑止の子プロセスが終わったとき、警告として出す文面を決める。
- *
- * 実際にプロセスを起動せずに検証できるよう、純粋関数にしてある。
- *
- * @param {number | null} exitCode 子の終了コード（シグナルで終わったときは null）
- * @param {string | null} terminationSignal 子を終わらせたシグナル名（自分で終わったときは null）
- * @returns {string | null} 警告の文面（正常終了＝見張る pid が消えたときは null）
- */
-export function describeSleepGuardExit(exitCode, terminationSignal) {
-  if (exitCode === 0) return null
-  // シグナルで終わった子は exitCode が null になる。「終了コード null」と出さないよう文面を分ける
-  if (exitCode === null) {
-    return `スリープ抑止が途中で終わりました（シグナル ${terminationSignal} で終了。続行します）`
-  }
-  return `スリープ抑止が途中で終わりました（終了コード ${exitCode}。続行します）`
-}
-
-/**
  * `index.mjs` が生きている間、OS のアイドルスリープを止める。対象外の OS では何もしない。
  *
  * 起動に失敗しても、起動した後に落ちても例外にしない。これが無くても auto-programmer 自体は動くので、
@@ -70,4 +52,20 @@ export function startSleepGuard() {
     if (message) warnOnce(message)
   })
   child.unref()
+}
+
+/**
+ * スリープ抑止の子プロセスが終わったとき、警告として出す文面を決める。
+ *
+ * @param {number | null} exitCode 子の終了コード（シグナルで終わったときは null）
+ * @param {string | null} terminationSignal 子を終わらせたシグナル名（自分で終わったときは null）
+ * @returns {string | null} 警告の文面（正常終了＝見張る pid が消えたときは null）
+ */
+function describeSleepGuardExit(exitCode, terminationSignal) {
+  if (exitCode === 0) return null
+  // シグナルで終わった子は exitCode が null になる。「終了コード null」と出さないよう文面を分ける
+  if (exitCode === null) {
+    return `スリープ抑止が途中で終わりました（シグナル ${terminationSignal} で終了。続行します）`
+  }
+  return `スリープ抑止が途中で終わりました（終了コード ${exitCode}。続行します）`
 }
