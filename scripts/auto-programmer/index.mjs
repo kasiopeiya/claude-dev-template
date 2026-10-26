@@ -92,12 +92,8 @@ import {
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { listSubIssues, readIssueStatus } from './issueQuery.mjs'
-import {
-  CI_RUN_STATE_FIELDS,
-  decideAfterCiRun,
-  describeCiOutcome,
-  readCiRunState
-} from './ciRun.mjs'
+import { decideAfterCiRun, describeCiOutcome, readCiRunState } from './ciRun.mjs'
+import { listCiRuns, tryListCiRuns } from './ciRunQuery.mjs'
 import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
 import {
   acquireLowestFreeNumberedLockFile,
@@ -638,44 +634,6 @@ function ensureNoBranchNamedAsPrefix({ branchPrefix, workspaceDir }) {
   throw new TechnicalError(
     `scripts/auto-programmer/config.mjs の branchPrefix（${branchPrefix}）と同じ名前のブランチが ${config.repository} にあるため、${branchPrefix}/... のブランチを作れません。ライン名と重ならない接頭辞にしてください`
   )
-}
-
-/**
- * commit に紐づく CI の run を一覧で引く。
- *
- * @param {string} headSha commit の SHA
- * @returns {{ databaseId: number, status: string, conclusion: string, headSha: string, url: string }[]} run の一覧
- * @throws {Error} gh が失敗したとき
- */
-function listCiRuns(headSha) {
-  // --branch は付けない。--commit と併せると、該当する run があっても空で返る
-  return runJson('gh', [
-    'run',
-    'list',
-    '--repo',
-    config.repository,
-    '--workflow',
-    config.ci.workflowFile,
-    '--commit',
-    headSha,
-    '--json',
-    CI_RUN_STATE_FIELDS
-  ])
-}
-
-/**
- * commit の CI の run を1回引く。失敗しても投げず、理由を出して null を返す。
- *
- * @param {string} headSha 引く commit の SHA
- * @returns {ReturnType<typeof listCiRuns> | null} run の一覧（引けなければ null）
- */
-function tryListCiRuns(headSha) {
-  try {
-    return listCiRuns(headSha)
-  } catch (error) {
-    showWarning(`CI の run を引けませんでした。引き直します: ${formatErrorMessage(error)}`)
-    return null
-  }
 }
 
 /**
