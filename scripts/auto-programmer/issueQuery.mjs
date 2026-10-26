@@ -5,9 +5,11 @@
 //   index.mjs を開かずに済む。
 // - 中身を判断せず、gh が返した値の形だけを整える。Issue の state・ラベルのように、読めない値を安全側へ倒すと
 //   記録が嘘になるものは、倒さず投げる。
+// - どのカードがこのボードのものかの見分けは board.mjs の知識なので、ここでは持たず board.mjs に聞く。
 // - 呼び出し側を import しない。呼び出し側からこのモジュールへの一方向にして、循環を作らない。
 
 import { TechnicalError } from '../lib/errors.mjs'
+import { findBoardStatusName } from './board.mjs'
 import { config } from './config.mjs'
 import { runJson } from './shell.mjs'
 
@@ -48,7 +50,8 @@ const SUB_ISSUES_QUERY = `query($owner: String!, $name: String!, $number: Int!, 
  *
  * @param {number} issueNumber Issue の番号
  * @returns {{ state: string, labelNames: string[] }} state（'OPEN' / 'CLOSED'）とラベル名
- * @throws {Error} gh が失敗したとき、または返した state かラベルを読めないとき
+ * @throws {TechnicalError} gh が返した state かラベルを読めないとき
+ * @throws {Error} gh が失敗したとき
  */
 export function readIssueStatus(issueNumber) {
   const { state, labels } = runJson('gh', [
@@ -62,7 +65,7 @@ export function readIssueStatus(issueNumber) {
   ])
   // state が欠けたまま渡すと「OPEN でない」と読まれ、閉じた・差分なしと取り違えた記録が残り、needs-human-check も付かない
   if ((state !== 'OPEN' && state !== 'CLOSED') || !Array.isArray(labels)) {
-    throw new Error(
+    throw new TechnicalError(
       `Issue #${issueNumber} の state かラベルを読めません: ${JSON.stringify({ state, labels })}`
     )
   }
@@ -111,10 +114,6 @@ export function listSubIssues(issueNumber) {
  * @returns {{ number: number, url: string, state: string, repository: string, labelNames: string[], assigneeLogins: string[], boardStatusName: string | null }} 子（boardStatusName は config.mjs のボードに無ければ null）
  */
 function toSubIssue({ number, url, state, repository, assignees, labels, projectItems }) {
-  const boardItem = projectItems.nodes.find(
-    ({ project }) =>
-      project?.number === config.board.number && project.owner.login === config.board.owner
-  )
   return {
     number,
     url,
@@ -122,6 +121,6 @@ function toSubIssue({ number, url, state, repository, assignees, labels, project
     repository: repository.nameWithOwner,
     labelNames: labels.nodes.map((label) => label.name),
     assigneeLogins: assignees.nodes.map((assignee) => assignee.login),
-    boardStatusName: boardItem?.fieldValueByName?.name ?? null
+    boardStatusName: findBoardStatusName(projectItems.nodes)
   }
 }
