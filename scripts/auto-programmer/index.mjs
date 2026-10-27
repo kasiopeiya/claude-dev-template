@@ -93,11 +93,16 @@ import {
 } from './issueCheckVerdict.mjs'
 import { listSubIssues, readIssueStatus } from './issueQuery.mjs'
 import {
-  handOverToHuman,
+  commentOnIssue,
   removeNeedsHumanCheckLabel,
   tryMarkAsNeedsHumanCheck
 } from './issueWrite.mjs'
-import { decideAfterCiRun, describeCiOutcome, readCiRunState } from './ciRun.mjs'
+import {
+  buildHandOverComment,
+  decideAfterCiRun,
+  describeCiOutcome,
+  readCiRunState
+} from './ciRun.mjs'
 import { listCiRuns, tryListCiRuns } from './ciRunQuery.mjs'
 import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
 import {
@@ -681,7 +686,16 @@ async function waitForCiRun(headSha) {
  * @throws {Error} 人間へ回すときに gh が失敗したとき
  */
 function finishCiWatch({ issueNumber, nextStep, runState, record }) {
-  if (nextStep === 'hand-over') handOverToHuman(issueNumber, runState)
+  if (nextStep === 'hand-over') {
+    commentOnIssue(
+      issueNumber,
+      buildHandOverComment({
+        workflowFile: config.ci.workflowFile,
+        maxFixAttempts: config.ci.maxFixAttempts,
+        lastRunUrl: runState.url
+      })
+    )
+  }
   record.ciOutcome = describeCiOutcome({
     nextStep,
     conclusion: runState.conclusion,
