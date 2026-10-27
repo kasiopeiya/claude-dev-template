@@ -1,4 +1,4 @@
-// 責務: Issue へのコメントとラベルの書き込みを gh で行う口を担う。どの Issue にいつ書くか・書いた結果で何をするかは呼び出し側が決める。
+// 責務: Issue へのコメントとラベルの書き込みを gh で行う口を担う。どの Issue にいつ何を書くか（コメントの本文を含む）・書いた結果で何をするかは呼び出し側が決める。
 //
 // 設計意図（WHY）:
 // - gh の引数とラベル名の扱いを、Issue 1件への書き込み単位の口としてここに置く。直すたびに、CI 待ちや実行記録の混ざった
@@ -7,6 +7,8 @@
 //   呼ばれ、投げると記録が残らず終了にも至らないため、失敗を戻り値で返す。
 // - 画面への表示は、tryMarkAsNeedsHumanCheck が付けられなかったときの警告1行だけを持つ。投げずに握る代わりに、
 //   握った事実をその場で見せる必要があるため。それ以外の表示する文面は、呼び出された場面で決まるので呼び出し側が持つ。
+// - コメントの本文は決めず、渡された文字列をそのまま書く。文面は書く場面の知識に属するので、ここで決めると、
+//   場面ごとの文面や、文面に入れる設定を変えるたびに、このモジュールまで直すことになる。
 // - 呼び出し側を import しない。呼び出し側からこのモジュールへの一方向にして、循環を作らない。
 
 import { config } from './config.mjs'
@@ -16,16 +18,14 @@ import { showWarning } from './ui.mjs'
 import { collapseToSingleLine, formatErrorMessage } from './uiFormat.mjs'
 
 /**
- * 上限まで直させても CI が落ちている Issue に、`/auto-dev` の離脱と同じく、人間へ回す理由をコメントする。
- * `needs-human-check` は付けない（付けるのは呼び出し側）。
+ * Issue に、受け取った本文をコメントする。ラベルは付けない。
  *
  * @param {number} issueNumber 対象 Issue の番号
- * @param {{ url: string | null }} lastRun 最後に落ちた run
+ * @param {string} body コメントの本文
  * @returns {void}
  * @throws {Error} gh が失敗したとき
  */
-export function handOverToHuman(issueNumber, lastRun) {
-  const body = `CI（${config.ci.workflowFile}）が、/auto-fix-ci で ${config.ci.maxFixAttempts} 回直させても通りませんでした。最後に落ちた run: ${lastRun.url}\n\n専用のセッションでこの Issue に着手してください。`
+export function commentOnIssue(issueNumber, body) {
   runOrThrow('gh', [
     'issue',
     'comment',
