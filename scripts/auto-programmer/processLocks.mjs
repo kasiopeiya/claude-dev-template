@@ -1,5 +1,5 @@
 // 責務: このプロセスが持つ2種類のロック（AI 専用 clone の番号ロックと、Issue ごとのロック）の置き場・取り方・外し方と、シグナルのリスナが外すための控えを担う。
-//   いつ取り、いつ外すか（周回・シグナルでの終わり方）は呼び出し側の index.mjs が決める。
+//   いつ取り、いつ外すかは呼び出し側が決める（周回で取る・外すのは index.mjs、シグナルで終わるときに外すのは stopSignals.mjs）。
 //
 // 設計意図（WHY）:
 // - 2種類を1つのモジュールに置くのは、置き場（LOCK_DIRECTORY）と、外せなくても投げない外し方（tryReleaseLockFile）を共有し、
@@ -29,10 +29,10 @@ import { formatErrorMessage } from './uiFormat.mjs'
 const LOCK_DIRECTORY = join(dirname(config.workspaceDir), 'locks', basename(config.workspaceDir))
 
 // このプロセスが取った AI 専用 clone の番号ロック（取る前と外した後は null）。シグナルで終わると index.mjs の main の finally に
-// 届かないので、index.mjs のシグナルのリスナも releaseWorkspaceLock で外す
+// 届かないので、stopSignals.mjs のシグナルのリスナも releaseWorkspaceLock で外す
 let workspaceLock = null
 
-// Issue のロックを取る・外す口。シグナルで終わると外す持ち主に届かないので、リスナが releaseHeld で外す（持ち主は index.mjs 冒頭の設計意図）
+// Issue のロックを取る・外す口。シグナルで終わると外す持ち主に届かないので、stopSignals.mjs のリスナが releaseHeld で外す（持ち主は index.mjs 冒頭の設計意図）
 export const issueLockKeeper = createIssueLockKeeper()
 
 /**
