@@ -7,6 +7,7 @@ paths:
   - 'docs/project-context/**/*.md'
   - 'docs/reference/**/*.md'
   - 'docs/requirements.md'
+  - 'docs/requirements-appendix/**/*.md'
   - 'samples/**/*.md'
   - 'app/**/*.md'
   - 'infra/**/*.md'

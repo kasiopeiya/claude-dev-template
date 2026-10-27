@@ -41,13 +41,13 @@ stateDiagram-v2
     Issues --> [*] : 各Issue単位の開発フローへ
 ```
 
-| #   | ステップ                  | input                              | output                                                            | プロンプト例                                                     |
-| --- | ------------------------- | ---------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1   | 記載段階 Issue を起票する | 顧客からのインプット資料（RFC等）  | 記載段階ごとの Issue（ルート「要件定義」の下）。記載段階1が始まる | `/elicit-requirements <入力資料>`（パスか要求テキスト）          |
-| 2   | 記載段階ごとに書く        | 記載段階 Issue（記載段階1〜5）     | `requirements.md` の該当節と仕分け台帳。段階ごとに PR             | `/elicit-requirements <Issue番号>`（その段階の Issue）           |
-| 3   | 凍結する                  | 記載段階6の Issue                  | 凍結済 `requirements.md`（合否判定が凍結可）                      | `/elicit-requirements <Issue番号>`（記載段階6の Issue）          |
-| 4   | 基盤技術を決める          | `requirements.md`                  | 初期技術スタックADR（`docs/adr/NNN-*.md`）                        | `/decide-tech-stack docs/requirements.md`                        |
-| 5   | 起点Issue を作る          | `requirements.md`＋技術スタックADR | 起点Issue群（GitHub・依存順つき）                                 | `新規開発ガイドの「起票する起点Issue」に従って起点Issueを作って` |
+| #   | ステップ                  | input                              | output                                                                      | プロンプト例                                                     |
+| --- | ------------------------- | ---------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 1   | 記載段階 Issue を起票する | 顧客からのインプット資料（RFC等）  | 記載段階ごとの Issue（ルート「要件定義」の下）。記載段階1が始まる           | `/elicit-requirements <入力資料>`（パスか要求テキスト）          |
+| 2   | 記載段階ごとに書く        | 記載段階 Issue（記載段階1〜5）     | `requirements.md` の該当節と仕分け台帳（仮決めがあれば別紙）。段階ごとに PR | `/elicit-requirements <Issue番号>`（その段階の Issue）           |
+| 3   | 凍結する                  | 記載段階6の Issue                  | 凍結済 `requirements.md`（合否判定が凍結可）                                | `/elicit-requirements <Issue番号>`（記載段階6の Issue）          |
+| 4   | 基盤技術を決める          | `requirements.md`                  | 初期技術スタックADR（`docs/adr/NNN-*.md`）                                  | `/decide-tech-stack docs/requirements.md`                        |
+| 5   | 起点Issue を作る          | `requirements.md`＋技術スタックADR | 起点Issue群（GitHub・依存順つき）                                           | `新規開発ガイドの「起票する起点Issue」に従って起点Issueを作って` |
 
 - **ステップ2は記載段階ごとに繰り返す**：1段階は、その段階の項目だけのインタビュー、`/requirements-review --stage` による判定、PR 作成までを同じセッションで進める。PR がマージされて Issue が閉じたら、次の段階の Issue 番号で打ち直す。
 - **レビューで要修正なら**：記載段階の途中の指摘は、その段階で直す。前の段階で下した判定（制約と前提の判定・スコープ外の区分など）を変える指摘は、前の記載段階の Issue を開き直して直す。凍結可になってから基盤技術の決定へ進む（判定基準は [requirements-doc-policy](../policy/requirements-doc-policy.md)）。
