@@ -14,8 +14,10 @@
 - `docs/guide/`：GUIDE
 - `docs/design/`：DESIGN
 - `docs/project-context/`：GENERAL
+- `docs/requirements-appendix/`：GENERAL
 - `docs/runbook/`：GUIDE
 - `.claude/rules/`：GUIDELINE
+- `.claude/rule-bodies/`：GUIDELINE
 - `.claude/skills/`：GUIDELINE
 - `.claude/agents/`：GUIDELINE
 
