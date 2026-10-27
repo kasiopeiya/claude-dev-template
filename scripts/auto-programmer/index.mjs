@@ -54,10 +54,13 @@
 //   processIssuesUntilStopped へ戻らず、選ぶ側のループが次の候補へ進むので、finally 1か所には集められない。持ち主の見えない
 //   変数に外す義務を預けると外し忘れが見えないので、変数に控えるのは、シグナルで終わる（finally に届かない）ときにリスナが外す
 //   ためだけにする。その控えは issueLockKeeper の中に閉じ、取る・外す口もそこに絞る。
-// - ロックの定義（置き場・取り方・外し方・控え）は processLocks.mjs が持つ。ここが決めるのは、いつ取り・外すか（周回・シグナルでの終わり方）である。
+// - ロックの定義（置き場・取り方・外し方・控え）は processLocks.mjs が持つ。ここが決めるのは、周回でいつ取り・外すかである（シグナルで終わるときに外すのは stopSignals.mjs のリスナ）。
 // - 終了シグナルは、受けるたびに実行中の claude セッションへ子孫ごと送る。AbortController は1度しか合図せず、Ctrl+C の後の SIGTERM は
 //   届かないので、最初の1つは abort、2つ目以降はイベントで届ける（使い分けは shell.mjs の sendSignalToWatchedChildren に閉じる）。
 //   Ctrl+C で止めた回は、セッションが打ち切られて失敗に見えるだけで、claude が壊れた兆候ではないので、連続失敗に数えない。
+// - 終了シグナルのリスナと、リスナが中止する stopController・着手中の Issue の番号は、stopSignals.mjs が持つ。ここが決めるのは、リスナを
+//   いつ付けるか（main の先頭）、いつ着手中の番号を控え・外すか（runWorkAndRecord）、stopSignal をどのセッション・待機に渡し、どこで
+//   見て周回を抜けるかである。
 // - gh の戻り値は、並び順を信じない。記録する PR は番号が最大のものを採る（gh は新しい順に返す）。
 
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
@@ -119,8 +122,14 @@ import {
   readPullRequestStatus
 } from './pullRequestQuery.mjs'
 import { readRunRecords, recordRun } from './runLog.mjs'
-import { runJson, runOrThrow, sendSignalToWatchedChildren } from './shell.mjs'
+import { runJson, runOrThrow } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
+import {
+  clearInFlightIssueNumber,
+  installStopSignalListeners,
+  setInFlightIssueNumber,
+  stopSignal
+} from './stopSignals.mjs'
 import {
   findReasonToSkipForOpenSubIssues,
   selectSubIssuesToPutOnReady
@@ -165,32 +174,8 @@ const OPEN_PULL_REQUEST_FETCH_LIMIT = 200
 // 待たずに次のカードを着手中へ送り、Ready のカードを PR 無しのまま使い切るため
 const MAX_CONSECUTIVE_SESSION_FAILURES = 2
 
-// claude セッションは別のプロセスグループで動くので、端末のシグナルは届かない。受けたシグナルは、この controller を
-// 通して同じシグナルを子孫ごと送る（reason には最初に受けたシグナルが入る。shell.mjs の sendSignalToWatchedChildren）
-const stopController = new AbortController()
-
-// 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると runWorkAndRecord の finally に届かないので、
-// 止まった印はリスナが付ける
-let inFlightIssueNumber = null
-
 // 衝突した PR ごとに、最後に出した飛ばす理由（showConflictSkipReasonOnce が同じ行を毎周出さないためのもの）
 const shownConflictSkipReasonsByPullRequestNumber = new Map()
-
-// Ctrl+C を「実行中の1件を記録してから止める」にする。リスナが無いと node はその場で終了し、記録が残らない。
-// 2回目以降の Ctrl+C も claude へ届くよう、受けるたびに送る
-process.on('SIGINT', () => sendSignalToWatchedChildren(stopController, 'SIGINT'))
-
-// 端末の切断（SIGHUP）・SIGTERM・Ctrl+\（SIGQUIT）は、claude セッションへ送ってから、既定どおりこのプロセスも終わる。
-// once にするのは、送り直した同じシグナルでリスナが再び呼ばれず、既定の終了に至るようにするため
-for (const signalName of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
-  process.once(signalName, () => {
-    sendSignalToWatchedChildren(stopController, signalName)
-    if (inFlightIssueNumber !== null) tryMarkAsNeedsHumanCheck(inFlightIssueNumber)
-    issueLockKeeper.releaseHeld()
-    releaseWorkspaceLock()
-    process.kill(process.pid, signalName)
-  })
-}
 
 /**
  * 設定を検査して AI 専用 clone を取り、Ctrl+C か着手できない周の上限で止まるまで、衝突した PR を解かせるか Issue を拾うかを1件ずつ処理する。
@@ -200,6 +185,8 @@ for (const signalName of ['SIGHUP', 'SIGTERM', 'SIGQUIT']) {
  * @throws {Error} ロックファイルを扱えなかったとき・人間が済ませるべき準備や clone が整わなかったとき・git・gh が失敗したとき・記録ファイルへ書けなかったとき
  */
 async function main() {
+  // clone の番号ロックを取る前に付ける。リスナが、取ったロックを外す
+  installStopSignalListeners()
   // 上限が欠けたまま動かさない。config.mjs はテンプレート同期の対象外で、同期した利用先では欠けうる
   validateMaxConsecutiveIdleWaits(config.maxConsecutiveIdleWaits)
   // 不正な接頭辞は buildBranchName が Issue ごとに投げ、catch で「飛ばします」になって全 Issue を飛ばし続ける。
@@ -445,7 +432,7 @@ async function startFirstStartableIssue(workspaceDir) {
   for (const issue of issues) {
     // 同期処理の合間にイベントループを回し、Ctrl+C を受け取る
     await yieldToEventLoop()
-    if (stopController.signal.aborted) {
+    if (stopSignal.aborted) {
       return { startedIssue: null, idleReason: NO_STARTABLE_ISSUE_IDLE_REASON }
     }
 
@@ -487,7 +474,7 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
     const issueCheckStatus = await runIssueCheckSession({
       issueNumber,
       workspaceDir,
-      abortSignal: stopController.signal
+      abortSignal: stopSignal
     })
     record.issueCheckExitCode = issueCheckStatus.exitCode
     record.issueCheckSignal = issueCheckStatus.signal
@@ -515,7 +502,7 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
   const autoDevStatus = await runAutoDevSession({
     issueNumber,
     workspaceDir,
-    abortSignal: stopController.signal
+    abortSignal: stopSignal
   })
   record.autoDevExitCode = autoDevStatus.exitCode
   record.autoDevSignal = autoDevStatus.signal
@@ -536,7 +523,7 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
  */
 async function sleepUnlessStopped(milliseconds) {
   try {
-    await sleep(milliseconds, undefined, { signal: stopController.signal })
+    await sleep(milliseconds, undefined, { signal: stopSignal })
   } catch (error) {
     if (!(error instanceof Error && error.name === 'AbortError')) throw error
   }
@@ -608,7 +595,7 @@ async function waitForCiRun(headSha) {
     minAppendIntervalMs: CI_WAIT_PROGRESS_APPEND_INTERVAL_MS
   })
   for (;;) {
-    const isLastTry = Date.now() >= deadline || stopController.signal.aborted
+    const isLastTry = Date.now() >= deadline || stopSignal.aborted
     // 待つ時間が長いほど瞬断や GitHub の一時障害に当たりやすい。1回の失敗でやめると、落ちた PR が誰にも直されずに残る。
     // 最後の1回だけは握らず、引けなかったこと自体を呼び出し元へ伝える
     const runs = isLastTry ? listCiRuns(headSha) : tryListCiRuns(headSha)
@@ -724,7 +711,7 @@ async function watchCiAndFix(
     showInfo(`CI を待ちます: ${config.ci.workflowFile} @ ${headSha.slice(0, 7)}`)
     const runState = await waitForCiRun(headSha)
     record.ciRuns.push({ headSha, ...runState })
-    if (stopController.signal.aborted) {
+    if (stopSignal.aborted) {
       record.ciOutcome = 'CI を待つ途中で止めました'
       return true
     }
@@ -768,7 +755,7 @@ async function fixFailedCi({ issueNumber, workspaceDir, runState, attemptNumber,
     issueNumber,
     runId: runState.runId,
     workspaceDir,
-    abortSignal: stopController.signal
+    abortSignal: stopSignal
   })
   record.ciFixExitCode = fixStatus.exitCode
   record.ciFixSignal = fixStatus.signal
@@ -802,7 +789,7 @@ function showSubIssueHandover(record) {
 async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
   const workStartedAt = new Date().toISOString()
   record.sessionStartedAt = workStartedAt
-  inFlightIssueNumber = record.issueNumber
+  setInFlightIssueNumber(record.issueNumber)
   let isAllSessionsSucceeded = false
   try {
     isAllSessionsSucceeded = await runWork(record, workStartedAt)
@@ -818,7 +805,7 @@ async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
       Object.assign(record, tryMarkAsNeedsHumanCheck(record.issueNumber))
     }
     recordRun(record)
-    inFlightIssueNumber = null
+    clearInFlightIssueNumber()
     showRunSummary(record, isAllSessionsSucceeded)
   }
   return isAllSessionsSucceeded
@@ -999,7 +986,7 @@ async function claimFirstConflictedPullRequest() {
   for (const candidate of tryListConflictedOwnPullRequests()) {
     // 同期処理の合間にイベントループを回し、Ctrl+C を受け取る
     await yieldToEventLoop()
-    if (stopController.signal.aborted) return null
+    if (stopSignal.aborted) return null
     const conflictedPullRequest = tryClaimConflictedPullRequest(candidate)
     if (conflictedPullRequest) return conflictedPullRequest
   }
@@ -1037,7 +1024,7 @@ async function resolveConflictAndWatchCi(
   const resolveStatus = await runAutoResolveConflictSession({
     issueNumber,
     workspaceDir,
-    abortSignal: stopController.signal
+    abortSignal: stopSignal
   })
   record.conflictResolutionExitCode = resolveStatus.exitCode
   record.conflictResolutionSignal = resolveStatus.signal
@@ -1107,7 +1094,7 @@ function tryCloseIssuesOfMergedPullRequests() {
  * @returns {Promise<boolean>} 上限を超えたので止めるなら true
  */
 async function waitUnlessIdleWaitLimitReached(idlePollCount, idleReason) {
-  if (stopController.signal.aborted) return false
+  if (stopSignal.aborted) return false
   const maxConsecutiveIdleWaits = config.maxConsecutiveIdleWaits
   if (decideAfterIdlePoll({ idlePollCount, maxConsecutiveIdleWaits }) === 'stop') {
     // pollIntervalMinutes は利用先が小数で書き換えるので、掛け算の誤差（3.3000000000000003 など）を丸める
@@ -1175,7 +1162,7 @@ async function processIssuesUntilStopped(workspaceDir) {
   let consecutiveSessionFailureCount = 0
   let idlePollCount = 0
   let isIdleWaitLimitReached = false
-  while (!stopController.signal.aborted && !isIdleWaitLimitReached) {
+  while (!stopSignal.aborted && !isIdleWaitLimitReached) {
     tryCloseIssuesOfMergedPullRequests()
     const { claimedWork, idleReason } = await claimNextWork(workspaceDir)
     if (!claimedWork) {
@@ -1192,7 +1179,7 @@ async function processIssuesUntilStopped(workspaceDir) {
       issueLockKeeper.release(claimedWork.issueLock)
     }
     // Ctrl+C で止めた回は数えない（冒頭の設計意図）
-    if (stopController.signal.aborted) break
+    if (stopSignal.aborted) break
     consecutiveSessionFailureCount = isAllSessionsSucceeded ? 0 : consecutiveSessionFailureCount + 1
     if (consecutiveSessionFailureCount >= MAX_CONSECUTIVE_SESSION_FAILURES) {
       throw new TechnicalError(

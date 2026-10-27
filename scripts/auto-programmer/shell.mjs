@@ -14,7 +14,7 @@
 // - runStreamingAsync の打ち切りはプロセスツリーごと止める。spawn の timeout は直下の子しか殺さず、孫（Windows の
 //   .cmd 経由なら本体の claude）が AI 専用 clone を書き換え続けて次の Issue とぶつかる（Issue #791）。
 //   時間切れで SIGTERM が効かない子が居ると exit が来ず待ちが終わらないので、猶予の後に SIGKILL へ切り替える。
-//   POSIX では子を別のプロセスグループで起動するので、端末のシグナルは子に届かず、index.mjs が中継する。
+//   POSIX では子を別のプロセスグループで起動するので、端末のシグナルは子に届かず、stopSignals.mjs のリスナが中継する。
 //   中継できない SIGKILL で親を止めると子は残る。Ctrl+Z（SIGTSTP）も中継しないので、止まるのは親だけで子は動き続ける。
 
 import { spawn, spawnSync } from 'node:child_process'
@@ -258,7 +258,7 @@ export function sendSignalToWatchedChildren(stopController, signalName) {
  * 時間切れでは SIGTERM を送り、FORCE_KILL_GRACE_MS を過ぎても子が終わらなければ SIGKILL を送る。
  * 中止の合図は AbortSignal で受け、reason に入ったシグナルをそのまま子のグループへ送る。中止の後に来たシグナルは
  * sendSignalToWatchedChildren のイベントで受けて送る。親が受けたシグナルをどう扱うか（中継するか・親も終わるか）は
- * 入口の index.mjs が決め、ここはプロセス全体のシグナルに触れない。
+ * stopSignals.mjs のリスナが決め、ここはプロセス全体のシグナルに触れない。
  *
  * @param {{ child: import('node:child_process').ChildProcess, killTree: (signal: NodeJS.Signals) => void }} processTree 見張る子プロセスと、子孫ごと止める関数
  * @param {{ timeoutMs: number, abortSignal: AbortSignal }} triggers 打ち切るまでの時間と、中止の合図（reason に送るシグナル名。シグナル名でなければ SIGTERM）
