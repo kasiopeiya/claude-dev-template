@@ -78,7 +78,7 @@ export const config = {
     maxFixAttempts: 2
   },
 
-  // AI が実装に使う clone の1番。並べて動かすと、2番以降はこの後ろに -<番号> を付ける（index.mjs の acquireWorkspaceDir）。
+  // AI が実装に使う clone の1番。並べて動かすと、2番以降はこの後ろに -<番号> を付ける（processLocks.mjs の acquireWorkspaceDir）。
   // リポジトリ名から導くので、repository を変えれば別の clone になる
   workspaceDir: resolve(autoProgrammerHomeDir, basename(repository)),
 

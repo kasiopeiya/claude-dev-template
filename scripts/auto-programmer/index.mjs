@@ -54,12 +54,12 @@
 //   processIssuesUntilStopped へ戻らず、選ぶ側のループが次の候補へ進むので、finally 1か所には集められない。持ち主の見えない
 //   変数に外す義務を預けると外し忘れが見えないので、変数に控えるのは、シグナルで終わる（finally に届かない）ときにリスナが外す
 //   ためだけにする。その控えは issueLockKeeper の中に閉じ、取る・外す口もそこに絞る。
+// - ロックの定義（置き場・取り方・外し方・控え）は processLocks.mjs が持つ。ここが決めるのは、いつ取り・外すか（周回・シグナルでの終わり方）である。
 // - 終了シグナルは、受けるたびに実行中の claude セッションへ子孫ごと送る。AbortController は1度しか合図せず、Ctrl+C の後の SIGTERM は
 //   届かないので、最初の1つは abort、2つ目以降はイベントで届ける（使い分けは shell.mjs の sendSignalToWatchedChildren に閉じる）。
 //   Ctrl+C で止めた回は、セッションが打ち切られて失敗に見えるだけで、claude が壊れた兆候ではないので、連続失敗に数えない。
 // - gh の戻り値は、並び順を信じない。記録する PR は番号が最大のものを採る（gh は新しい順に返す）。
 
-import { basename, dirname, join } from 'node:path'
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
 
 import { closeIssuesOfMergedPullRequests } from '../close-issues.mjs'
@@ -106,16 +106,12 @@ import {
 import { listCiRuns, tryListCiRuns } from './ciRunQuery.mjs'
 import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
 import {
-  acquireLowestFreeNumberedLockFile,
-  releaseLockFile,
-  tryAcquireNamedLockFile
-} from './pidLockFile.mjs'
-import {
   isSubIssueHandoverEmpty,
   NEEDS_HUMAN_CHECK_LABEL,
   shouldMarkAsNeedsHumanCheck
 } from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
+import { acquireWorkspaceDir, issueLockKeeper, releaseWorkspaceLock } from './processLocks.mjs'
 import {
   disableAutoMerge,
   findMergedPullRequest,
@@ -159,10 +155,6 @@ const CI_RUN_WAIT_LIMIT_MS = config.ci.runWaitLimitMinutes * MILLISECONDS_PER_MI
 // 上限（runWaitLimitMinutes）いっぱい待つ実行で数十行に膨らむ
 const CI_WAIT_PROGRESS_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
 
-// AI 専用 clone の番号ロックと、Issue ごとのロックの置き場。config.mjs はテンプレート同期の対象外で、同期した利用先では古い形のまま
-// 動くので、キーを足さずに既存の workspaceDir から導く。置き場は clone の親（AUTO_PROGRAMMER_HOME）の下で、clone の名前ごとに分ける
-const LOCK_DIRECTORY = join(dirname(config.workspaceDir), 'locks', basename(config.workspaceDir))
-
 // 着手できる Issue が無い周に、待機中のステータス行へ出す理由
 const NO_STARTABLE_ISSUE_IDLE_REASON = '着手できる Issue なし'
 
@@ -180,13 +172,6 @@ const stopController = new AbortController()
 // 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると runWorkAndRecord の finally に届かないので、
 // 止まった印はリスナが付ける
 let inFlightIssueNumber = null
-
-// このプロセスが取った AI 専用 clone の番号ロック（取る前と外した後は null）。シグナルで終わると main の finally に
-// 届かないので、リスナも外す
-let workspaceLock = null
-
-// Issue のロックを取る・外す口。シグナルで終わると外す持ち主に届かないので、リスナが releaseHeld で外す（持ち主は冒頭の設計意図）
-const issueLockKeeper = createIssueLockKeeper()
 
 // 衝突した PR ごとに、最後に出した飛ばす理由（showConflictSkipReasonOnce が同じ行を毎周出さないためのもの）
 const shownConflictSkipReasonsByPullRequestNumber = new Map()
@@ -381,47 +366,9 @@ function startIssue({ issue, branchName, workspaceDir }) {
   return existingPullRequestNumbers
 }
 
-/** @typedef {Parameters<typeof releaseLockFile>[0]} IssueLock 取った Issue のロック。取った関数が戻り値で持ち主に渡し、持ち主が issueLockKeeper.release で外す */
+/** @typedef {import('./processLocks.mjs').IssueLock} IssueLock */
 
 /** @typedef {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number>, issueLock: IssueLock }} StartedIssue 着手中へ動かした Issue。そのロックは issueLock に載り、1件を終えたら呼び出し側が外す */
-
-/**
- * Issue のロックを取る・外す口と、シグナルのリスナが外すためのロックの控えを1つにまとめる。控えに触れられるのはこの中だけ。
- *
- * 外す口を release に絞るのは、tryReleaseLockFile を直に呼ぶと、ファイルは消えても控えが残り、次に取るたびに投げて全候補を飛ばし続けるため。
- *
- * @returns {{ tryAcquire: (issueNumber: number) => { lock: IssueLock, skipReason: null } | { lock: null, skipReason: string }, release: (lock: IssueLock | null) => void, releaseHeld: () => void }} 取る口（取れたロックは戻り値の持ち主が外す）・外す口（取れなかったときの null を渡してよい。外せなくても投げない）・持っているロックを外す口（シグナルのリスナ用）
- */
-function createIssueLockKeeper() {
-  let heldLock = null
-
-  const release = (lock) => {
-    if (lock === null) return
-    tryReleaseLockFile(lock)
-    if (heldLock === lock) heldLock = null
-  }
-
-  // 持ったまま次を取ると、先のロックが誰にも外されずに残る。取る前に止める。
-  // Issue の実装と衝突の解消は、同じこのロックで互いを締め出す。ロック名を片方だけ変えると、同じ Issue で両方が同時に走る
-  const tryAcquire = (issueNumber) => {
-    if (heldLock !== null) {
-      throw new TechnicalError(
-        `Issue のロックを持ったまま #${issueNumber} のロックを取ろうとしました: ${heldLock.lockFilePath}`
-      )
-    }
-    const { lock, holderPid } = tryAcquireNamedLockFile({
-      lockDirectory: LOCK_DIRECTORY,
-      lockName: `issue-${issueNumber}`
-    })
-    if (lock === null) {
-      return { lock: null, skipReason: `PID ${holderPid ?? '（読めず）'} のプロセスが着手中です` }
-    }
-    heldLock = lock
-    return { lock, skipReason: null }
-  }
-
-  return { tryAcquire, release, releaseHeld: () => release(heldLock) }
-}
 
 /**
  * ロックを取った後に、カードがまだ着手待ちにあるかを引き直す。
@@ -1174,53 +1121,6 @@ async function waitUnlessIdleWaitLimitReached(idlePollCount, idleReason) {
   showStatusLine(`待機中（${idleReason}）· ${idlePollCount}/${maxConsecutiveIdleWaits}回目`)
   await sleepUnlessStopped(IDLE_BOARD_POLL_INTERVAL_MS)
   return false
-}
-
-/**
- * 一番小さい空き番号の AI 専用 clone をロックで取り、その clone のパスを返す。1番は config.workspaceDir をそのまま、
- * 2番以降はその後ろに `-<番号>` を付けたパスにする。取ったロックは releaseWorkspaceLock で外す。
- *
- * @returns {string} このプロセスが使う AI 専用 clone（まだ無ければ preflight が作る）
- * @throws {Error} ロックファイルを読めなかった・作れなかった・消せなかったとき
- */
-function acquireWorkspaceDir() {
-  const { lockNumber, lock } = acquireLowestFreeNumberedLockFile({
-    lockDirectory: LOCK_DIRECTORY,
-    lockFileNamePrefix: 'workspace'
-  })
-  workspaceLock = lock
-  const workspaceDir =
-    lockNumber === 1 ? config.workspaceDir : `${config.workspaceDir}-${lockNumber}`
-  showInfo(`AI 専用 clone の ${lockNumber} 番を使います: ${workspaceDir}`)
-  return workspaceDir
-}
-
-/**
- * ロックを外す。外せなくても投げない。
- *
- * シグナルのリスナからも呼ぶので、投げるとシグナルでの終了に至らない。外せずに残ったロックは、PID のプロセスが
- * いなくなった時点で、次に取ろうとしたプロセスが死んだとみなして取り直す。
- *
- * @param {Parameters<typeof releaseLockFile>[0]} lock 外すロック
- * @returns {void}
- */
-function tryReleaseLockFile(lock) {
-  try {
-    releaseLockFile(lock)
-  } catch (error) {
-    showWarning(`ロック ${lock.lockFilePath} を外せませんでした: ${formatErrorMessage(error)}`)
-  }
-}
-
-/**
- * 取った AI 専用 clone の番号ロックを外す。取っていなければ何もしない。外せなくても投げない。
- *
- * @returns {void}
- */
-function releaseWorkspaceLock() {
-  if (workspaceLock === null) return
-  tryReleaseLockFile(workspaceLock)
-  workspaceLock = null
 }
 
 /** @typedef {{ runWork: () => Promise<boolean>, issueLock: IssueLock }} ClaimedWork 選んだ作業を走らせる関数と、その Issue のロック。走らせ終えたら呼び出し側がロックを外す */
