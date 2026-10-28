@@ -132,18 +132,27 @@ fix: ログイン失敗時のエラーメッセージを修正
 
 同じ作業ツリーを別の Claude セッションが編集していると、既定スコープは無関係な変更まで巻き込む。巻き込まれた側は自分の作業が別 Issue のコミットに紛れたことに気づけない。そこで、範囲を決めたらまず同じ作業ツリーで動いている claude セッションの数を数える。Skill の本文に `$` と数字を続けて書くと、呼び出し時の引数の語に置き換わって読み込まれるため、このコマンドには `$` と数字を続けて書かない。
 
+数えるのは2回に分けて打つ。worktree に入ったセッションでは、Claude Code が「git を含む複合コマンド」と「実行時に決まる値を渡す `if` の中の `$(...)`」を止めるため、1回にまとめると動かない。まず作業ツリーのルートを引く。
+
 ```bash
-top=$(git rev-parse --show-toplevel)
+git rev-parse --show-toplevel
+```
+
+出た値を、次のコマンドの `<作業ツリーのルート>`（2か所）にそのまま書いて打つ。シェル変数は Bash ツールの呼び出しをまたいで残らない。
+
+```bash
+claudePids=$(ps -eo comm=,pid= 2>/dev/null | awk '$(NF-1) == "claude" { printf "%s ", $NF }')
 if command -v lsof >/dev/null 2>&1; then
-  ps -eo pid=,comm= | while read -r pid comm; do
-    [ "$comm" = claude ] || continue
-    cwd=$(lsof -a -p "$pid" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')
-    [ -n "$cwd" ] && [ "$(git -C "$cwd" rev-parse --show-toplevel 2>/dev/null)" = "$top" ] && echo "$pid"
-  done | wc -l
+  lsof -d cwd -Fpn 2>/dev/null | awk -F '\n' -v pids=" $claudePids" -v top='<作業ツリーのルート>' '
+    /^p/ { pid = substr($NF, 2); next }
+    /^n/ { cwd = substr($NF, 2); if (index(pids, " " pid " ") && (cwd == top || index(cwd, top "/") == 1)) count++ }
+    END { print count + 0 }'
 else
-  npm run -s --prefix "$top" count-registered-worktree-sessions
+  npm run -s --prefix '<作業ツリーのルート>' count-registered-worktree-sessions
 fi
 ```
+
+作業フォルダがルートの下にあるセッションを数えるので、ルートの中に置いた別の作業ツリー（`.claude/worktrees/` など）のセッションも数える。数えすぎても絞り込みが効くだけで、数え落とすより害が小さい。
 
 2以上なら並行セッションがある。0 は判定できなかったことを示すので、2以上と同じく扱う。**このとき既定スコープを「このセッションで自分が Edit/Write したファイルのみ」に切り替える**（引数 `work` / `stage` の指定も、この絞り込みの中で適用する）。切り替えたことと、除外したファイルのパスを Phase 5 の出力に列挙する。
 
