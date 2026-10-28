@@ -1,6 +1,5 @@
 #!/usr/bin/env node
-// 責務: ボードの着手待ちのカードから Issue を1件ずつ拾い、AI 専用 clone で実装させ、CI の通った PR まで到達させる唯一の入口。
-//   衝突して止まった自分の PR も解かせ直す。
+// 責務: ボードの着手待ちのカードの Issue と、衝突して止まった自分の PR を1件ずつ拾い、AI 専用 clone で CI の通った PR まで到達させる唯一の入口。
 //
 // 設計意図（WHY）:
 // - 拾う・順序を決める・記録するはすべてここで決定論的に行う。AI に任せると、同じ盤面から毎回
@@ -48,7 +47,7 @@
 // - 毎周、Issue を選ぶ前に、このツールが作った PR のうち、先にマージされた別の PR と衝突して止まったものを探し、1件ずつ
 //   `/auto-resolve-conflict` に解かせてから CI を待つ（Issue #1076）。CI が通った時点で手放すので、後から衝突しても誰も気づかない。
 //   新しい Issue より先に片付けるのは、止まった PR の Issue をブロッカーに持つ Issue が、それまで拾われないためである。
-//   取り合わないよう、衝突を解かせる間も同じ Issue のロックを持つ。
+//   取り合わないよう、衝突を解かせる間も同じ Issue のロックを持つ。解かせる処理は conflictResolution.mjs が持つ。
 // - Issue のロックは、取った関数が戻り値（StartedIssue・ClaimedConflictedPullRequest）で持ち主に渡す。作業まで進んだロックは
 //   processIssuesUntilStopped の finally が、飛ばした候補のロックは候補を選ぶ側が、次の候補へ進む前に外す。飛ばした候補は
 //   processIssuesUntilStopped へ戻らず、選ぶ側のループが次の候補へ進むので、finally 1か所には集められない。持ち主の見えない
@@ -60,7 +59,7 @@
 //   Ctrl+C で止めた回は、セッションが打ち切られて失敗に見えるだけで、claude が壊れた兆候ではないので、連続失敗に数えない。
 // - 終了シグナルのリスナと、リスナが中止する stopController・着手中の Issue の番号は、stopSignals.mjs が持つ。ここが決めるのは、リスナを
 //   いつ付けるか（main の先頭）、いつ着手中の番号を控え・外すか（runWorkAndRecord）、stopSignal をどのセッション・待機に渡し、どこで
-//   見て周回を抜けるかである。
+//   見て周回を抜けるかである（衝突を解かせるセッションへ渡すのは conflictResolution.mjs）。
 // - gh の戻り値は、並び順を信じない。記録する PR は番号が最大のものを採る（gh は新しい順に返す）。
 
 import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
@@ -75,13 +74,14 @@ import {
 } from './board.mjs'
 import { buildBranchName, validateBranchPrefix } from './branchName.mjs'
 import {
+  hasSessionSucceeded,
   runAutoDevSession,
   runAutoFixCiSession,
-  runAutoResolveConflictSession,
   runIssueCheckSession
 } from './claudeSession.mjs'
 import { config } from './config.mjs'
 import { claimFirstConflictedPullRequest } from './conflictedPullRequestClaim.mjs'
+import { resolveConflictAndRecord } from './conflictResolution.mjs'
 import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait.mjs'
 import { validateSessionModelSettings } from './sessionModel.mjs'
 import {
@@ -107,7 +107,7 @@ import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
 import { isSubIssueHandoverEmpty, shouldMarkAsNeedsHumanCheck } from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { acquireWorkspaceDir, issueLockKeeper, releaseWorkspaceLock } from './processLocks.mjs'
-import { disableAutoMerge, findMergedPullRequest, listPullRequests } from './pullRequestQuery.mjs'
+import { findMergedPullRequest, listPullRequests } from './pullRequestQuery.mjs'
 import { recordRun } from './runLog.mjs'
 import { decideRunOutcome } from './runOutcome.mjs'
 import { runOrThrow } from './shell.mjs'
@@ -138,7 +138,7 @@ import {
   formatErrorMessage,
   formatErrorWithStack
 } from './uiFormat.mjs'
-import { prepareTopicBranch, switchToPullRequestBranch } from './workspace.mjs'
+import { prepareTopicBranch } from './workspace.mjs'
 
 const MILLISECONDS_PER_SECOND = 1000
 const MILLISECONDS_PER_MINUTE = 60 * MILLISECONDS_PER_SECOND
@@ -232,16 +232,6 @@ function handOverToSubIssuesIfAny(issueNumber, record) {
 }
 
 /**
- * claude プロセスが正常終了したか。
- *
- * @param {{ exitCode: number, signal: string | null }} status 終了状態
- * @returns {boolean} 終了コード 0 で、シグナルで止められていなければ true
- */
-function hasSessionSucceeded({ exitCode, signal }) {
-  return exitCode === 0 && signal === null
-}
-
-/**
  * セッションの後に、そのセッションが作った PR の URL を引く。
  *
  * 同じブランチ名で過去に作られた PR と見分けるため、セッション前に無かった番号だけを採る。
@@ -331,8 +321,6 @@ function startIssue({ issue, branchName, workspaceDir }) {
 }
 
 /** @typedef {import('./processLocks.mjs').IssueLock} IssueLock */
-
-/** @typedef {import('./conflictedPullRequestClaim.mjs').ClaimedConflictedPullRequest} ClaimedConflictedPullRequest */
 
 /** @typedef {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number>, issueLock: IssueLock }} StartedIssue 着手中へ動かした Issue。そのロックは issueLock に載り、1件を終えたら呼び出し側が外す */
 
@@ -842,81 +830,6 @@ function implementIssueAndRecord(startedIssue) {
 }
 
 /**
- * 衝突した PR のブランチへ切り替えて `/auto-resolve-conflict` に解かせ、push されたら CI が通るまで直させる。結果は record へ書き足す。
- *
- * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string }} params 解かせると決めた PR と、このプロセスが使う AI 専用 clone
- * @param {Record<string, unknown>} record 書き足す先の記録
- * @param {string} workStartedAt 今回の作業を始めた時刻（ISO 8601）
- * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
- * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
- */
-async function resolveConflictAndWatchCi(
-  { conflictedPullRequest, workspaceDir },
-  record,
-  workStartedAt
-) {
-  const { issueNumber, pullRequestNumber, branchName, headShaBeforeSession, isAutoMergeEnabled } =
-    conflictedPullRequest
-  // 外さずに解くと、解いた push の CI が通った瞬間、pr-ai-triage が中身を見る前にマージされうる。
-  // 外したことを記録に残す。push されずに終わると pr-ai-triage が走らず、外れたまま残るので、人間が記録から気づけるようにする
-  if (isAutoMergeEnabled) {
-    disableAutoMerge(pullRequestNumber)
-    showInfo(
-      `PR #${pullRequestNumber} の auto-merge を外しました。解いた後の CI が通ると、pr-ai-triage が中身を見て付け直します`
-    )
-    record.isAutoMergeDisabled = true
-  }
-  // リモートの最新ではなく、確かめた commit へ切り替える。確かめた後に入った push の中身を、無人セッションで走らせない
-  switchToPullRequestBranch({ workspaceDir, branchName, headSha: headShaBeforeSession })
-  ensureDependencies(workspaceDir)
-  const resolveStatus = await runAutoResolveConflictSession({
-    issueNumber,
-    workspaceDir,
-    abortSignal: stopSignal
-  })
-  record.conflictResolutionExitCode = resolveStatus.exitCode
-  record.conflictResolutionSignal = resolveStatus.signal
-  if (!hasSessionSucceeded(resolveStatus)) return false
-  return watchCiAndFix(
-    {
-      issueNumber,
-      branchName,
-      workspaceDir,
-      headShaBeforeSession,
-      sessionName: '/auto-resolve-conflict',
-      workStartedAt
-    },
-    record
-  )
-}
-
-/**
- * 衝突した PR 1件を解かせて CI まで見届け、結果を記録する（記録の決まりは runWorkAndRecord）。
- *
- * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string }} params 解かせると決めた PR と、このプロセスが使う AI 専用 clone
- * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
- * @throws {Error} 記録ファイルへ書けなかったとき
- */
-function resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }) {
-  const { issueNumber, pullRequestNumber, pullRequestUrl, branchName } = conflictedPullRequest
-  showIssueBanner({
-    issueNumber,
-    title: `PR #${pullRequestNumber} の衝突を解く`,
-    branchName,
-    workspaceDir
-  })
-  return runWorkAndRecord({
-    record: { issueNumber, branchName, workspaceDir, isConflictResolution: true },
-    runWork: (record, workStartedAt) =>
-      resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }, record, workStartedAt),
-    // 解いた後も PR の URL を記録に残し、次に衝突したときもこのツールの PR として見分ける
-    readPullRequestUrl: () => pullRequestUrl
-    // speakRunOutcome は渡さず、読み上げない。衝突した PR を解くのは Issue を終えることではなく、読み上げの範囲は
-    // 「Issue を1件終えるたび」だから。この回の記録にはタイトルも無い
-  })
-}
-
-/**
  * 自動マージされた PR が閉じ損ねた Issue を閉じる。失敗しても投げない。close した Issue は
  * 状態変化として1件ごとに表示するが、何も無かったときは何も出さない（アイドル中の連投を避ける）。
  *
@@ -976,7 +889,13 @@ async function claimNextWork(workspaceDir) {
   if (conflictedPullRequest) {
     return {
       claimedWork: {
-        runWork: () => resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }),
+        runWork: () =>
+          resolveConflictAndRecord({
+            conflictedPullRequest,
+            workspaceDir,
+            runWorkAndRecord,
+            watchCiAndFix
+          }),
         issueLock: conflictedPullRequest.issueLock
       },
       idleReason: null

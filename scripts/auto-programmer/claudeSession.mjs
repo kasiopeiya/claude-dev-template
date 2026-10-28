@@ -1,4 +1,4 @@
-// 責務: AI 専用 clone の中で `claude` を起動し、Issue 1件ぶんの Skill を1つずつ無人セッションとして走らせる。
+// 責務: AI 専用 clone の中で `claude` を起動し、Issue 1件ぶんの Skill を1つずつ無人セッションとして走らせ、終了状態が正常終了かを判定する。
 //
 // 設計意図（WHY）:
 // - Issue ごと・Skill ごとにプロセスを作り直す。1つのセッションで何件も処理すると文脈が積もり、品質が
@@ -92,6 +92,16 @@ export function runAutoResolveConflictSession({ issueNumber, workspaceDir, abort
     workspaceDir,
     abortSignal
   })
+}
+
+/**
+ * claude プロセスが正常終了したか。
+ *
+ * @param {{ exitCode: number, signal: string | null }} status 終了状態
+ * @returns {boolean} 終了コード 0 で、シグナルで止められていなければ true
+ */
+export function hasSessionSucceeded({ exitCode, signal }) {
+  return exitCode === 0 && signal === null
 }
 
 /**
