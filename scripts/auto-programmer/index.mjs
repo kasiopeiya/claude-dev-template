@@ -81,12 +81,8 @@ import {
   runIssueCheckSession
 } from './claudeSession.mjs'
 import { config } from './config.mjs'
-import {
-  collectOwnPullRequestsByUrl,
-  CONFLICT_CHECK_PULL_REQUEST_FIELDS,
-  findReasonNotToResolveConflict,
-  selectConflictedOwnPullRequests
-} from './conflictedPullRequest.mjs'
+import { findReasonNotToResolveConflict } from './conflictedPullRequest.mjs'
+import { tryListConflictedOwnPullRequests } from './conflictedPullRequestClaim.mjs'
 import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait.mjs'
 import { validateSessionModelSettings } from './sessionModel.mjs'
 import {
@@ -121,8 +117,8 @@ import {
   listPullRequests,
   readPullRequestStatus
 } from './pullRequestQuery.mjs'
-import { readRunRecords, recordRun } from './runLog.mjs'
-import { runJson, runOrThrow } from './shell.mjs'
+import { recordRun } from './runLog.mjs'
+import { runOrThrow } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
 import {
   clearInFlightIssueNumber,
@@ -166,9 +162,6 @@ const CI_WAIT_PROGRESS_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
 
 // 着手できる Issue が無い周に、待機中のステータス行へ出す理由
 const NO_STARTABLE_ISSUE_IDLE_REASON = '着手できる Issue なし'
-
-// 衝突した PR を探すときに引く open な PR の上限。gh pr list の既定の30件では、人間のレビュー待ちが溜まると取りこぼす
-const OPEN_PULL_REQUEST_FETCH_LIMIT = 200
 
 // セッションがこの回数続けて失敗したら止める。claude 側が壊れている（ログイン切れ・利用上限など）と、
 // 待たずに次のカードを着手中へ送り、Ready のカードを PR 無しのまま使い切るため
@@ -859,53 +852,6 @@ function implementIssueAndRecord(startedIssue) {
 }
 
 /**
- * このツールが作った open な PR のうち、衝突しているものを引く。
- *
- * @returns {ReturnType<typeof selectConflictedOwnPullRequests>} 衝突を解かせる候補（PR 番号の小さい順）
- * @throws {Error} 記録ファイルを読めなかった・gh が失敗したとき
- */
-function listConflictedOwnPullRequests() {
-  const ownPullRequestsByUrl = collectOwnPullRequestsByUrl(readRunRecords())
-  // 待機中も毎周ここを通るので、まだ PR を作っていなければ gh を呼ばない
-  if (ownPullRequestsByUrl.size === 0) return []
-  const openPullRequests = runJson('gh', [
-    'pr',
-    'list',
-    '--repo',
-    config.repository,
-    '--state',
-    'open',
-    '--limit',
-    String(OPEN_PULL_REQUEST_FETCH_LIMIT),
-    '--json',
-    CONFLICT_CHECK_PULL_REQUEST_FIELDS
-  ])
-  // gh は新しい PR から返すので、上限で切れると、長く止まっている古い PR から読み落とす
-  if (openPullRequests.length >= OPEN_PULL_REQUEST_FETCH_LIMIT) {
-    showWarning(
-      `open な PR が ${OPEN_PULL_REQUEST_FETCH_LIMIT} 件以上あります。古い PR の衝突を読み落としているかもしれません`
-    )
-  }
-  return selectConflictedOwnPullRequests({ openPullRequests, ownPullRequestsByUrl })
-}
-
-/**
- * 衝突した PR を引く。引けなくても投げず、理由を出して空にする（Issue の着手へ進む）。
- *
- * @returns {ReturnType<typeof listConflictedOwnPullRequests>} 衝突を解かせる候補（引けなければ空）
- */
-function tryListConflictedOwnPullRequests() {
-  try {
-    return listConflictedOwnPullRequests()
-  } catch (error) {
-    showWarning(
-      `衝突した PR を探せませんでした。Issue の着手へ進みます: ${formatErrorMessage(error)}`
-    )
-    return []
-  }
-}
-
-/**
  * 衝突した PR を飛ばす理由を ℹ で出す。同じ PR に同じ理由を出したことがあれば出さない。
  *
  * `needs-human-check` が付いた・別の push があった PR は、人間が手を入れるまで理由が変わらず、待機中も毎周ここを通る。
@@ -920,12 +866,12 @@ function showConflictSkipReasonOnce({ pullRequestNumber, subject, reason }) {
   showInfo(`${subject}を飛ばします: ${reason}`)
 }
 
-/** @typedef {ReturnType<typeof selectConflictedOwnPullRequests>[number] & { headShaBeforeSession: string, isAutoMergeEnabled: boolean, issueLock: IssueLock }} ClaimedConflictedPullRequest 衝突を解かせると決めた PR。その Issue のロックは issueLock に載り、解き終えたら呼び出し側が外す */
+/** @typedef {ReturnType<typeof tryListConflictedOwnPullRequests>[number] & { headShaBeforeSession: string, isAutoMergeEnabled: boolean, issueLock: IssueLock }} ClaimedConflictedPullRequest 衝突を解かせると決めた PR。その Issue のロックは issueLock に載り、解き終えたら呼び出し側が外す */
 
 /**
  * 呼び出し側が読み直した PR の状態と、ここで読み直す Issue の state・ラベルから、衝突を解かせずに飛ばす理由を探す。
  *
- * @param {{ candidate: ReturnType<typeof selectConflictedOwnPullRequests>[number], pullRequest: ReturnType<typeof readPullRequestStatus> }} params 衝突を解かせる候補と、その PR の読み直した状態
+ * @param {{ candidate: ReturnType<typeof tryListConflictedOwnPullRequests>[number], pullRequest: ReturnType<typeof readPullRequestStatus> }} params 衝突を解かせる候補と、その PR の読み直した状態
  * @returns {string | null} 解かせない理由（解かせてよければ null）
  * @throws {Error} Issue の state・ラベルを読めなかったとき
  */
@@ -944,7 +890,7 @@ function readIssueAndFindReasonNotToResolveConflict({ candidate, pullRequest }) 
  *
  * 解かせてよいときは、取ったロックを PR に載せて返す。飛ばしたときは、次の候補へ進む前にここで外す。
  *
- * @param {ReturnType<typeof selectConflictedOwnPullRequests>[number]} candidate 衝突を解かせる候補
+ * @param {ReturnType<typeof tryListConflictedOwnPullRequests>[number]} candidate 衝突を解かせる候補
  * @returns {ClaimedConflictedPullRequest | null} 解かせると決めた PR（飛ばしたら null）
  */
 function tryClaimConflictedPullRequest(candidate) {
