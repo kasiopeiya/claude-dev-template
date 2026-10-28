@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 責務: PR がマージ済みで取り込み済みのローカルブランチを消し、それを抱える stale worktree もフォルダごと消す。
-//   AI が Issue の着手時に打つ（いつ・なぜ打つかは CLAUDE.md「Issue 作業の共通ルール」）。人間が手で打ってもよい。
+//   AI が Issue の着手時に打つ（いつ打つかは CLAUDE.md「Issue 作業の共通ルール」）。人間が手で打ってもよい。
 //
 // 使い方:
 //   npm run prune-merged-branches-and-worktrees                消したブランチを標準出力に返す（外した worktree があれば、その行も返す）
@@ -9,6 +9,7 @@
 //   デフォルトブランチと PR は GitHub のリポジトリから引く（gh が要る。引き方は githubDefaultBranch.mjs）
 //
 // 設計意図（WHY）:
+// - 次の Issue の着手時に打つ。自動マージは後から起き、ブランチを作ったセッションは片付けに戻らないため
 // - 消すのは、デフォルトブランチへマージ済みの PR の作業と確かめたブランチだけ（判定は isCoveredByMergedPullRequest）。
 //   PR の無いブランチ・PR がマージされていないブランチは、取り込み済みでも消す対象にしない（出力もしない）
 // - 取り込み済みかの基準は `--merged origin/<デフォルトブランチ>`。引数なしの --merged は HEAD 基準になり、
