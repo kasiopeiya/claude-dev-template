@@ -91,6 +91,7 @@ import {
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { listSubIssues, readIssueStatus } from './issueQuery.mjs'
+import { speakIssueResult } from './issueResultSpeech.mjs'
 import {
   commentOnIssue,
   removeNeedsHumanCheckLabel,
@@ -118,6 +119,7 @@ import {
   readPullRequestStatus
 } from './pullRequestQuery.mjs'
 import { recordRun } from './runLog.mjs'
+import { decideRunOutcome } from './runOutcome.mjs'
 import { runOrThrow } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
 import {
@@ -284,24 +286,19 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
 /**
  * Issue 1件の締めとして、所要時間・CI の結果・PR・記録先をまとめて表示する。
  *
- * 締めの記号は、例外の有無だけでなく「人間の手当てが要るか」で決める。実装が失敗しても例外は出ない
- * （セッションが 0 以外で終わるだけ）ので、例外だけで決めると失敗した実行に ✓ が出て、異常が埋もれる。
+ * 締めの記号は、結果の分類（decideRunOutcome）で決める。✗ は失敗、⚠ は人間の手当てが要る回、それ以外は ✓ である。
  *
- * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, isClosedWithoutChanges?: boolean, reasonNotToImplement?: string | null, isSkippedByIssueCheckVerdict?: boolean, subIssueHandover?: { reason: string, putOnReadySubIssueNumbers: number[] }, error?: string }} record 記録した内容
- * @param {boolean} isAllSessionsSucceeded 走らせた claude セッションがすべて正常終了したか
+ * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, isClosedWithoutChanges?: boolean }} record 記録した内容
+ * @param {'failed' | 'needs-human-attention' | 'handed-over-to-sub-issues' | 'completed'} runOutcome decideRunOutcome が決めた結果の分類
  * @returns {void}
  */
-function showRunSummary(record, isAllSessionsSucceeded) {
+function showRunSummary(record, runOutcome) {
   const elapsedTime = formatElapsedTime(
     Date.parse(record.finishedAt) - Date.parse(record.sessionStartedAt)
   )
   const headline = `#${record.issueNumber} を終えました（${elapsedTime}）`
-  // /issue-check の判定で止めた Issue は予定した終わり方だが、人間判断・close を見てほしいので警告で出す
-  const needsHumanAttention =
-    Boolean(record.reasonNotToImplement) ||
-    shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)
-  if (record.error) showError(headline)
-  else if (needsHumanAttention) showWarning(headline)
+  if (runOutcome === 'failed') showError(headline)
+  else if (runOutcome === 'needs-human-attention') showWarning(headline)
   else showSuccess(headline)
 
   // 値が同じ桁から始まるよう、項目名の幅を揃えてから行ごとのレベルで出す
@@ -775,11 +772,11 @@ function showSubIssueHandover(record) {
  * Issue 1件ぶんの作業を走らせ、途中で落ちても結果を記録する。予定した終わり方以外で終えたら、記録の前に `needs-human-check` を付ける
  * （付けられなくても投げない）。
  *
- * @param {{ record: Record<string, unknown> & { issueNumber: number }, runWork: (record: Record<string, unknown>, workStartedAt: string) => Promise<boolean>, readPullRequestUrl: () => string | null }} params 記録の初期値・作業（受け取った記録へ結果を書き足し、作業を始めた時刻（ISO 8601。記録の `sessionStartedAt` と同じ値）を受け取り、走らせた claude セッションがすべて正常終了したら true を返す）・記録に残す PR の URL を引く関数（作業の後に呼ぶ）
+ * @param {{ record: Record<string, unknown> & { issueNumber: number }, runWork: (record: Record<string, unknown>, workStartedAt: string) => Promise<boolean>, readPullRequestUrl: () => string | null, speakRunOutcome?: (runOutcome: 'failed' | 'needs-human-attention' | 'handed-over-to-sub-issues' | 'completed') => void }} params 記録の初期値・作業（受け取った記録へ結果を書き足し、作業を始めた時刻（ISO 8601。記録の `sessionStartedAt` と同じ値）を受け取り、走らせた claude セッションがすべて正常終了したら true を返す）・記録に残す PR の URL を引く関数（作業の後に呼ぶ）・締めの結果の分類を読み上げる関数（画面の締めの後に呼ぶ。省けば読み上げない）
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true（起動できなかった・打ち切られた・0 以外で終わった・途中で例外が出たら false）
  * @throws {Error} 記録ファイルへ書けなかったとき
  */
-async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
+async function runWorkAndRecord({ record, runWork, readPullRequestUrl, speakRunOutcome }) {
   const workStartedAt = new Date().toISOString()
   record.sessionStartedAt = workStartedAt
   setInFlightIssueNumber(record.issueNumber)
@@ -799,7 +796,9 @@ async function runWorkAndRecord({ record, runWork, readPullRequestUrl }) {
     }
     recordRun(record)
     clearInFlightIssueNumber()
-    showRunSummary(record, isAllSessionsSucceeded)
+    const runOutcome = decideRunOutcome(record, isAllSessionsSucceeded)
+    showRunSummary(record, runOutcome)
+    speakRunOutcome?.(runOutcome)
   }
   return isAllSessionsSucceeded
 }
@@ -847,7 +846,9 @@ function implementIssueAndRecord(startedIssue) {
     // 記録ファイルは全プロセスで共有するので、どの clone で作業したかを載せる。途中で消えた変更の stash を探す先になる
     record: { issueNumber: issue.number, issueTitle: issue.title, branchName, workspaceDir },
     runWork: (record, workStartedAt) => implementAndWatchCi(startedIssue, record, workStartedAt),
-    readPullRequestUrl: () => findCreatedPullRequestUrl(branchName, existingPullRequestNumbers)
+    readPullRequestUrl: () => findCreatedPullRequestUrl(branchName, existingPullRequestNumbers),
+    speakRunOutcome: (runOutcome) =>
+      speakIssueResult({ issueNumber: issue.number, issueTitle: issue.title, runOutcome })
   })
 }
 
@@ -1009,6 +1010,8 @@ function resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }) {
       resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }, record, workStartedAt),
     // 解いた後も PR の URL を記録に残し、次に衝突したときもこのツールの PR として見分ける
     readPullRequestUrl: () => pullRequestUrl
+    // speakRunOutcome は渡さず、読み上げない。衝突した PR を解くのは Issue を終えることではなく、読み上げの範囲は
+    // 「Issue を1件終えるたび」だから。この回の記録にはタイトルも無い
   })
 }
 

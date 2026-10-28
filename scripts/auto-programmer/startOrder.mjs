@@ -19,8 +19,9 @@ const NO_BLOCKER_LINE_PATTERN = /^\s*(?:[-*+]\s+)?なし（すぐ着手できる
 const LIST_ITEM_PATTERN = /^\s*(?:[-*+]|\d+\.)\s/
 
 // タイトル先頭の段番号。`N〜M. ` は open な子を持つ親の範囲で、子のうち最も早い段 N から
-// 並行して着手できる。親を子と同じ段に並べるため、小さいほうの N を採る
-const STAGE_NUMBER_PATTERN = /^(\d+)(?:〜\d+)?\.\s/
+// 並行して着手できる。親を子と同じ段に並べるため、小さいほうの N を採る。
+// 読み上げ（issueResultSpeech.mjs）がタイトルから段番号を外すのにも使う
+export const STAGE_NUMBER_PATTERN = /^(\d+)(?:〜\d+)?\.\s/
 
 /**
  * Issue 本文の `## ブロッカー` 節から、ブロッカーの Issue 番号を取り出す。
