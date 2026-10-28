@@ -107,8 +107,8 @@
         <mxCell id="itxQyYia459H8tUcrtp4-1" parent="FyGJfU2ifQTK040_GAB6-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=30;" value="実案件の開発フロー" vertex="1">
           <mxGeometry height="30" width="320" x="63" y="269" as="geometry" />
         </mxCell>
-        <mxCell id="pjBtEsn35uAxKZkSsxUW-0" parent="FyGJfU2ifQTK040_GAB6-1" style="text;whiteSpace=wrap;html=1;fontSize=35;fillColor=none;" value="ただの「AIを使った開発」との違い&lt;br&gt;AIが開発の一連のサイクルを自律的まわし、構築を推進する" vertex="1">
-          <mxGeometry height="113" width="972" x="564" y="1055" as="geometry" />
+        <mxCell id="pjBtEsn35uAxKZkSsxUW-0" parent="FyGJfU2ifQTK040_GAB6-1" style="text;whiteSpace=wrap;html=1;fontSize=35;fillColor=none;" value="ただの「AIを使った開発」との違い&lt;br&gt;&lt;b&gt;AIが開発の一連のサイクルを自律的まわし、問題があれば自己修正し、構築を推進&lt;/b&gt;" vertex="1">
+          <mxGeometry height="113" width="1356" x="190" y="1058" as="geometry" />
         </mxCell>
         <mxCell id="-uslsSbUK5gyhFl4kafp-0" parent="FyGJfU2ifQTK040_GAB6-1" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#000000;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.robotics;" value="&lt;font style=&quot;font-size: 36px;&quot;&gt;AI&lt;/font&gt;" vertex="1">
           <mxGeometry height="121" width="121" x="975" y="401" as="geometry" />
@@ -137,11 +137,11 @@
     </mxGraphModel>
   </diagram>
   <diagram name="review-bottle-neck" id="YOQiNSW3BdJJE3ZxxAnX">
-    <mxGraphModel dx="1251" dy="752" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1555" dy="1221" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="B1hv-0MndP3tPqB3LhuA-0" />
         <mxCell id="B1hv-0MndP3tPqB3LhuA-1" parent="B1hv-0MndP3tPqB3LhuA-0" />
-        <mxCell id="B1hv-0MndP3tPqB3LhuA-4" parent="B1hv-0MndP3tPqB3LhuA-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="レビューを制するものがAI駆動開発を制する" vertex="1">
+        <mxCell id="B1hv-0MndP3tPqB3LhuA-4" parent="B1hv-0MndP3tPqB3LhuA-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="実務でのAI駆動開発失敗の経験" vertex="1">
           <mxGeometry height="64" width="1383" x="37" y="124" as="geometry" />
         </mxCell>
         <mxCell id="B1hv-0MndP3tPqB3LhuA-5" connectable="0" parent="B1hv-0MndP3tPqB3LhuA-1" style="group" value="" vertex="1">
