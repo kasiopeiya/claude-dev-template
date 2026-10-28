@@ -111,7 +111,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           claude_args: |
-            --model claude-sonnet-5
+            --model claude-sonnet-5-5
             --allowedTools "Read,Grep,Glob,Write,Bash(gh pr diff:*),Bash(gh pr edit:*),Bash(gh pr view:*),Bash(gh pr comment:*),Bash(gh label list:*),Bash(gh label create:*)"
           prompt: |
             あなたはこのリポジトリの CI 上で動く advisory エージェントです。
