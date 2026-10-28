@@ -8,6 +8,8 @@
 //   メインループを止めてまで守る価値が無いベストエフォートの保険である（sleepGuard.mjs と同じ扱い）。
 //   並べて動かした複数のプロセスの声が重なることは許す。
 // - 声は指定せず、OS の既定の声に任せる。指定すると、その声が無い PC で鳴らなくなる。
+// - Windows では、読む文を環境変数で渡し、`-Command` の文字列はタイトルによらず固定にする。タイトルは GitHub から来る
+//   外部が書ける文字列で、`-Command` に埋め込むと、`"` や `;` を含むタイトルが PowerShell のコマンドとして実行されてしまう。
 // - detached にするのは Ctrl+C 対策でもある。端末の Ctrl+C が読み上げの子プロセスにも届くと、締めの読み上げが途中で切れる。
 
 import { spawn } from 'node:child_process'
@@ -22,6 +24,9 @@ const RESULT_WORD_BY_RUN_OUTCOME = {
   'handed-over-to-sub-issues': '子の issue に引き継ぎました',
   completed: '完了しました'
 }
+
+const WINDOWS_SPEECH_SENTENCE_ENV_NAME = 'AUTO_PROGRAMMER_SPEECH_SENTENCE'
+const WINDOWS_SPEECH_SCRIPT = `Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak($Env:${WINDOWS_SPEECH_SENTENCE_ENV_NAME})`
 
 /**
  * Issue 1件を終えたことと結果を、読み上げで知らせる。対象外の OS では何もしない。
@@ -57,20 +62,27 @@ function buildSentence({ issueNumber, resultWord, issueTitle }) {
  * OS ごとに、読み上げコマンドの起動内容を決める。
  *
  * @param {{ platform: string, sentence: string }} params `process.platform` の値と、読む文
- * @returns {{ command: string, args: string[] } | null} 起動するコマンドと引数（対象外の OS なら null）
+ * @returns {{ command: string, args: string[], env?: Record<string, string> } | null} 起動するコマンドと引数、親の環境変数に足す環境変数（対象外の OS なら null）
  */
 function resolveSpeechLaunch({ platform, sentence }) {
   // 文は引数でそのまま渡す（シェルを通さないので、`"` や `;` を含んでもコマンドとして解釈されない）。
   // 先頭が `issue` なので、`say` のオプションと取り違えられない
   if (platform === 'darwin') return { command: 'say', args: [sentence] }
-  // TODO(#1375): Windows の読み上げを足す
+  if (platform === 'win32') {
+    // `-Command` は最後の引数にする（後ろに続く引数は、すべて実行するコマンドの一部として解釈される）
+    return {
+      command: 'powershell.exe',
+      args: ['-NoProfile', '-Command', WINDOWS_SPEECH_SCRIPT],
+      env: { [WINDOWS_SPEECH_SENTENCE_ENV_NAME]: sentence }
+    }
+  }
   return null
 }
 
 /**
  * 読み上げコマンドを detached で起動し、終わりを待たずに戻る。失敗は警告にして例外にしない。
  *
- * @param {{ command: string, args: string[] }} launch `resolveSpeechLaunch` が決めた起動内容
+ * @param {{ command: string, args: string[], env?: Record<string, string> }} launch `resolveSpeechLaunch` が決めた起動内容
  * @returns {void}
  */
 function launchSpeech(launch) {
@@ -82,7 +94,13 @@ function launchSpeech(launch) {
     showWarning(message)
   }
   try {
-    const child = spawn(launch.command, launch.args, { detached: true, stdio: 'ignore' })
+    const child = spawn(launch.command, launch.args, {
+      detached: true,
+      stdio: 'ignore',
+      env: { ...process.env, ...launch.env },
+      // Windows で、読み上げのたびにコンソール窓が開くのを防ぐ（sleepGuard.mjs と同じ）
+      windowsHide: true
+    })
     // 'error' はリスナが無いと例外として投げられ、無人のメインループごと落としてしまう。
     // 読み上げコマンドが万一無くても、警告だけ出して続行する
     child.on('error', (error) => {
