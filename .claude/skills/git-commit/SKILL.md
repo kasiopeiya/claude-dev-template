@@ -149,6 +149,15 @@ fi
 
 1なら単独セッションなので、既定スコープをそのまま使う。
 
+CLAUDE.md に従って着手時（編集を始める前）に数えたときは、2以上（0 を含む）なら専用の worktree を切って入る。
+
+```bash
+git worktree add --no-track ../cdt-<Issue番号> -b <ブランチ> origin/<デフォルトブランチ>
+cd ../cdt-<Issue番号> && npm ci
+```
+
+`<デフォルトブランチ>` は `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` で引く。切ったら `EnterWorktree`（`path` 指定）で入って作業する。`cd` ではセッションが移らず、ターン末ゲートも worktree を見ない。マージ後の worktree は、着手時に打つ `npm run prune-merged-branches-and-worktrees` が消す。
+
 範囲を決めたら現在の状態を把握する。**スコープに不要なコマンドは実行しない**（`work` なら staged 側、`stage` なら worktree 側は取得不要）。依存関係のないコマンドは1回の Bash 呼び出しにまとめる：
 
 ```bash
