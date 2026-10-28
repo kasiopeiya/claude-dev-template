@@ -1,5 +1,5 @@
 // 責務: このプロセスが持つ2種類のロック（AI 専用 clone の番号ロックと、Issue ごとのロック）の置き場・取り方・外し方と、シグナルのリスナが外すための控えを担う。
-//   いつ取り、いつ外すかは呼び出し側が決める（周回で取る・外すのは index.mjs、シグナルで終わるときに外すのは stopSignals.mjs）。
+//   いつ取り、いつ外すかは呼び出し側が決める（Issue の着手を試すときに取り、飛ばしたとき・作業を終えたときに外すのは index.mjs、衝突した PR の Issue のロックを取る・飛ばしたときに外すのは conflictedPullRequestClaim.mjs、シグナルで終わるときに外すのは stopSignals.mjs）。
 //
 // 設計意図（WHY）:
 // - 2種類を1つのモジュールに置くのは、置き場（LOCK_DIRECTORY）と、外せなくても投げない外し方（tryReleaseLockFile）を共有し、
