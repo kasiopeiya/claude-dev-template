@@ -54,7 +54,7 @@
 //   processIssuesUntilStopped へ戻らず、選ぶ側のループが次の候補へ進むので、finally 1か所には集められない。持ち主の見えない
 //   変数に外す義務を預けると外し忘れが見えないので、変数に控えるのは、シグナルで終わる（finally に届かない）ときにリスナが外す
 //   ためだけにする。その控えは issueLockKeeper の中に閉じ、取る・外す口もそこに絞る。
-// - ロックの定義（置き場・取り方・外し方・控え）は processLocks.mjs が持つ。ここが決めるのは、周回でいつ取り・外すかである（シグナルで終わるときに外すのは stopSignals.mjs のリスナ）。
+// - ロックの定義（置き場・取り方・外し方・控え）は processLocks.mjs が持つ。ここが決めるのは、周回で Issue の着手を試すときにいつ取り、飛ばしたとき・作業を終えたときにいつ外すかである（衝突した PR の Issue のロックを取り、飛ばすときに外すのは conflictedPullRequestClaim.mjs、シグナルで終わるときに外すのは stopSignals.mjs のリスナ）。
 // - 終了シグナルは、受けるたびに実行中の claude セッションへ子孫ごと送る。AbortController は1度しか合図せず、Ctrl+C の後の SIGTERM は
 //   届かないので、最初の1つは abort、2つ目以降はイベントで届ける（使い分けは shell.mjs の sendSignalToWatchedChildren に閉じる）。
 //   Ctrl+C で止めた回は、セッションが打ち切られて失敗に見えるだけで、claude が壊れた兆候ではないので、連続失敗に数えない。
@@ -81,8 +81,7 @@ import {
   runIssueCheckSession
 } from './claudeSession.mjs'
 import { config } from './config.mjs'
-import { findReasonNotToResolveConflict } from './conflictedPullRequest.mjs'
-import { tryListConflictedOwnPullRequests } from './conflictedPullRequestClaim.mjs'
+import { claimFirstConflictedPullRequest } from './conflictedPullRequestClaim.mjs'
 import { decideAfterIdlePoll, validateMaxConsecutiveIdleWaits } from './idleWait.mjs'
 import { validateSessionModelSettings } from './sessionModel.mjs'
 import {
@@ -105,19 +104,10 @@ import {
 } from './ciRun.mjs'
 import { listCiRuns, tryListCiRuns } from './ciRunQuery.mjs'
 import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
-import {
-  isSubIssueHandoverEmpty,
-  NEEDS_HUMAN_CHECK_LABEL,
-  shouldMarkAsNeedsHumanCheck
-} from './needsHumanCheck.mjs'
+import { isSubIssueHandoverEmpty, shouldMarkAsNeedsHumanCheck } from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { acquireWorkspaceDir, issueLockKeeper, releaseWorkspaceLock } from './processLocks.mjs'
-import {
-  disableAutoMerge,
-  findMergedPullRequest,
-  listPullRequests,
-  readPullRequestStatus
-} from './pullRequestQuery.mjs'
+import { disableAutoMerge, findMergedPullRequest, listPullRequests } from './pullRequestQuery.mjs'
 import { recordRun } from './runLog.mjs'
 import { decideRunOutcome } from './runOutcome.mjs'
 import { runOrThrow } from './shell.mjs'
@@ -168,9 +158,6 @@ const NO_STARTABLE_ISSUE_IDLE_REASON = '着手できる Issue なし'
 // セッションがこの回数続けて失敗したら止める。claude 側が壊れている（ログイン切れ・利用上限など）と、
 // 待たずに次のカードを着手中へ送り、Ready のカードを PR 無しのまま使い切るため
 const MAX_CONSECUTIVE_SESSION_FAILURES = 2
-
-// 衝突した PR ごとに、最後に出した飛ばす理由（showConflictSkipReasonOnce が同じ行を毎周出さないためのもの）
-const shownConflictSkipReasonsByPullRequestNumber = new Map()
 
 /**
  * 設定を検査して AI 専用 clone を取り、Ctrl+C か着手できない周の上限で止まるまで、衝突した PR を解かせるか Issue を拾うかを1件ずつ処理する。
@@ -344,6 +331,8 @@ function startIssue({ issue, branchName, workspaceDir }) {
 }
 
 /** @typedef {import('./processLocks.mjs').IssueLock} IssueLock */
+
+/** @typedef {import('./conflictedPullRequestClaim.mjs').ClaimedConflictedPullRequest} ClaimedConflictedPullRequest */
 
 /** @typedef {{ issue: { itemId: string, number: number, title: string }, branchName: string, workspaceDir: string, existingPullRequestNumbers: Set<number>, issueLock: IssueLock }} StartedIssue 着手中へ動かした Issue。そのロックは issueLock に載り、1件を終えたら呼び出し側が外す */
 
@@ -850,94 +839,6 @@ function implementIssueAndRecord(startedIssue) {
     speakRunOutcome: (runOutcome) =>
       speakIssueResult({ issueNumber: issue.number, issueTitle: issue.title, runOutcome })
   })
-}
-
-/**
- * 衝突した PR を飛ばす理由を ℹ で出す。同じ PR に同じ理由を出したことがあれば出さない。
- *
- * `needs-human-check` が付いた・別の push があった PR は、人間が手を入れるまで理由が変わらず、待機中も毎周ここを通る。
- * 毎周出すと、待機中の出力が同じ行で埋まり、新しく起きた異常を見つけにくくなる。
- *
- * @param {{ pullRequestNumber: number, subject: string, reason: string }} params PR の番号・行の頭に出す対象・飛ばす理由
- * @returns {void}
- */
-function showConflictSkipReasonOnce({ pullRequestNumber, subject, reason }) {
-  if (shownConflictSkipReasonsByPullRequestNumber.get(pullRequestNumber) === reason) return
-  shownConflictSkipReasonsByPullRequestNumber.set(pullRequestNumber, reason)
-  showInfo(`${subject}を飛ばします: ${reason}`)
-}
-
-/** @typedef {ReturnType<typeof tryListConflictedOwnPullRequests>[number] & { headShaBeforeSession: string, isAutoMergeEnabled: boolean, issueLock: IssueLock }} ClaimedConflictedPullRequest 衝突を解かせると決めた PR。その Issue のロックは issueLock に載り、解き終えたら呼び出し側が外す */
-
-/**
- * 呼び出し側が読み直した PR の状態と、ここで読み直す Issue の state・ラベルから、衝突を解かせずに飛ばす理由を探す。
- *
- * @param {{ candidate: ReturnType<typeof tryListConflictedOwnPullRequests>[number], pullRequest: ReturnType<typeof readPullRequestStatus> }} params 衝突を解かせる候補と、その PR の読み直した状態
- * @returns {string | null} 解かせない理由（解かせてよければ null）
- * @throws {Error} Issue の state・ラベルを読めなかったとき
- */
-function readIssueAndFindReasonNotToResolveConflict({ candidate, pullRequest }) {
-  const { issueNumber, lastWaitedHeadSha } = candidate
-  return findReasonNotToResolveConflict({
-    pullRequest,
-    issue: { number: issueNumber, ...readIssueStatus(issueNumber) },
-    lastWaitedHeadSha,
-    needsHumanCheckLabel: NEEDS_HUMAN_CHECK_LABEL
-  })
-}
-
-/**
- * 衝突した PR の Issue のロックを取り、PR と Issue を読み直して、まだ解かせてよいかを確かめる。飛ばすときは理由を出す。
- *
- * 解かせてよいときは、取ったロックを PR に載せて返す。飛ばしたときは、次の候補へ進む前にここで外す。
- *
- * @param {ReturnType<typeof tryListConflictedOwnPullRequests>[number]} candidate 衝突を解かせる候補
- * @returns {ClaimedConflictedPullRequest | null} 解かせると決めた PR（飛ばしたら null）
- */
-function tryClaimConflictedPullRequest(candidate) {
-  const { issueNumber, pullRequestNumber } = candidate
-  const subject = `PR #${pullRequestNumber}（#${issueNumber}）の衝突`
-  let issueLock = null
-  let isClaimed = false
-  try {
-    const lockAttempt = issueLockKeeper.tryAcquire(issueNumber)
-    issueLock = lockAttempt.lock
-    if (lockAttempt.skipReason) {
-      showConflictSkipReasonOnce({ pullRequestNumber, subject, reason: lockAttempt.skipReason })
-      return null
-    }
-    const pullRequest = readPullRequestStatus(pullRequestNumber)
-    const reason = readIssueAndFindReasonNotToResolveConflict({ candidate, pullRequest })
-    if (reason !== null) {
-      showConflictSkipReasonOnce({ pullRequestNumber, subject, reason })
-      return null
-    }
-    isClaimed = true
-    const { headSha, isAutoMergeEnabled } = pullRequest
-    return { ...candidate, headShaBeforeSession: headSha, isAutoMergeEnabled, issueLock }
-  } catch (error) {
-    showWarning(`${subject}を飛ばします: ${formatErrorMessage(error)}`)
-    return null
-  } finally {
-    // 持ったまま飛ばすと、このプロセスが動いている間、他のプロセスもこの Issue を試せない
-    if (!isClaimed) issueLockKeeper.release(issueLock)
-  }
-}
-
-/**
- * 衝突している自分の PR を PR 番号の小さい順に試し、最初に解かせると決めた1件を返す。
- *
- * @returns {Promise<ClaimedConflictedPullRequest | null>} 解かせると決めた PR（無い・全部飛ばした・止められたときは null）
- */
-async function claimFirstConflictedPullRequest() {
-  for (const candidate of tryListConflictedOwnPullRequests()) {
-    // 同期処理の合間にイベントループを回し、Ctrl+C を受け取る
-    await yieldToEventLoop()
-    if (stopSignal.aborted) return null
-    const conflictedPullRequest = tryClaimConflictedPullRequest(candidate)
-    if (conflictedPullRequest) return conflictedPullRequest
-  }
-  return null
 }
 
 /**
