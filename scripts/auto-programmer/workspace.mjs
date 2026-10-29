@@ -1,5 +1,6 @@
 // 責務: AI 専用 clone をデフォルトブランチ（GitHub のリポジトリ設定）の最新の姿に戻し、そこからトピックブランチを作る。
 //   衝突を解かせるときは、既にある PR のブランチの、このツールが最後に CI を待った姿へ切り替える。
+//   clone の HEAD の commit も引く（index.mjs と watchCiAndFix.mjs の両方が読むので、どちらにも置かない）。
 //
 // 設計意図（WHY）:
 // - ブランチ作成を決定論的なこちら側で行うことで、AI 側はすでにトピックブランチの上にいる状態で
@@ -73,6 +74,17 @@ export function switchToPullRequestBranch({ workspaceDir, branchName, headSha })
   runGitInWorkspace(workspaceDir, ['checkout', '--force', '-B', branchName, headSha])
   runGitInWorkspace(workspaceDir, ['branch', '--set-upstream-to', `origin/${branchName}`])
   runGitInWorkspace(workspaceDir, ['clean', '-fd'])
+}
+
+/**
+ * AI 専用 clone の HEAD が指している commit の SHA を引く。
+ *
+ * @param {string} workspaceDir HEAD を引く AI 専用 clone
+ * @returns {string} commit の SHA
+ * @throws {TechnicalError} clone が渡されなかったとき・git が失敗したとき
+ */
+export function readLocalHeadSha(workspaceDir) {
+  return runGitInWorkspace(workspaceDir, ['rev-parse', 'HEAD']).trim()
 }
 
 /**
