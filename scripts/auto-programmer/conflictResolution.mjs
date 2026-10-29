@@ -3,35 +3,27 @@
 // 設計意図（WHY）:
 // - 解かせると決めた PR（ClaimedConflictedPullRequest）を受け取るところから始める。PR を拾って Issue のロックを取るのは
 //   conflictedPullRequestClaim.mjs で、このモジュールは拾った後の「解かせる」だけを持つ。
-// - 記録の決まり（runWorkAndRecord）と CI を待って直させる処理（watchCiAndFix）は index.mjs が持つ。Issue の実装にも同じものを
-//   使うので、ここへ移さない。呼び出し側を import すると循環するので、引数で受ける。呼び出し側からこのモジュールへの一方向にする。
+// - 記録の決まりは runWorkAndRecord.mjs、CI を待って直させる処理は watchCiAndFix.mjs が持つ（Issue の実装と共有する）。
 
 import { hasSessionSucceeded, runAutoResolveConflictSession } from './claudeSession.mjs'
 import { ensureDependencies } from './preflight.mjs'
 import { disableAutoMerge } from './pullRequestQuery.mjs'
+import { runWorkAndRecord } from './runWorkAndRecord.mjs'
 import { stopSignal } from './stopSignals.mjs'
 import { showInfo, showIssueBanner } from './ui.mjs'
+import { watchCiAndFix } from './watchCiAndFix.mjs'
 import { switchToPullRequestBranch } from './workspace.mjs'
 
 /** @typedef {import('./conflictedPullRequestClaim.mjs').ClaimedConflictedPullRequest} ClaimedConflictedPullRequest */
 
-/** @typedef {(params: { record: Record<string, unknown> & { issueNumber: number }, runWork: (record: Record<string, unknown>, workStartedAt: string) => Promise<boolean>, readPullRequestUrl: () => string | null }) => Promise<boolean>} RunWorkAndRecord 作業を走らせ、途中で落ちても結果を記録する */
-
-/** @typedef {(target: { issueNumber: number, branchName: string, workspaceDir: string, headShaBeforeSession: string | null, sessionName: string, workStartedAt: string }, record: Record<string, unknown>) => Promise<boolean>} WatchCiAndFix push した commit の CI を待ち、落ちていれば直させる */
-
 /**
  * 衝突した PR 1件を解かせて CI まで見届け、結果を記録する（記録の決まりは runWorkAndRecord）。
  *
- * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string, runWorkAndRecord: RunWorkAndRecord, watchCiAndFix: WatchCiAndFix }} params 解かせると決めた PR・このプロセスが使う AI 専用 clone・記録の決まり・CI を待って直させる処理
+ * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string }} params 解かせると決めた PR・このプロセスが使う AI 専用 clone
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
  * @throws {Error} 記録ファイルへ書けなかったとき
  */
-export function resolveConflictAndRecord({
-  conflictedPullRequest,
-  workspaceDir,
-  runWorkAndRecord,
-  watchCiAndFix
-}) {
+export function resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }) {
   const { issueNumber, pullRequestNumber, pullRequestUrl, branchName } = conflictedPullRequest
   showIssueBanner({
     issueNumber,
@@ -42,11 +34,7 @@ export function resolveConflictAndRecord({
   return runWorkAndRecord({
     record: { issueNumber, branchName, workspaceDir, isConflictResolution: true },
     runWork: (record, workStartedAt) =>
-      resolveConflictAndWatchCi(
-        { conflictedPullRequest, workspaceDir, watchCiAndFix },
-        record,
-        workStartedAt
-      ),
+      resolveConflictAndWatchCi({ conflictedPullRequest, workspaceDir }, record, workStartedAt),
     // 解いた後も PR の URL を記録に残し、次に衝突したときもこのツールの PR として見分ける
     readPullRequestUrl: () => pullRequestUrl
     // speakRunOutcome は渡さず、読み上げない。衝突した PR を解くのは Issue を終えることではなく、読み上げの範囲は
@@ -57,14 +45,14 @@ export function resolveConflictAndRecord({
 /**
  * 衝突した PR のブランチへ切り替えて `/auto-resolve-conflict` に解かせ、push されたら CI が通るまで直させる。結果は record へ書き足す。
  *
- * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string, watchCiAndFix: WatchCiAndFix }} params 解かせると決めた PR・このプロセスが使う AI 専用 clone・CI を待って直させる処理
+ * @param {{ conflictedPullRequest: ClaimedConflictedPullRequest, workspaceDir: string }} params 解かせると決めた PR・このプロセスが使う AI 専用 clone
  * @param {Record<string, unknown>} record 書き足す先の記録
  * @param {string} workStartedAt 今回の作業を始めた時刻（ISO 8601）
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
  * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
  */
 async function resolveConflictAndWatchCi(
-  { conflictedPullRequest, workspaceDir, watchCiAndFix },
+  { conflictedPullRequest, workspaceDir },
   record,
   workStartedAt
 ) {

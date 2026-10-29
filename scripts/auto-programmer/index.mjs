@@ -28,14 +28,15 @@
 // - PR を作った後は、CI の結果が出るまで次の Issue へ進まない。落ちていれば `/auto-fix-ci` を
 //   別プロセスで起こして直させ、上限まで直させても落ちていれば人間へ回す。待たずに次へ進むと、落ちた PR が
 //   誰にも直されずに残る。CI が落ちたこと自体はセッションの失敗に数えない（claude が壊れている兆候ではない）。
+//   CI を待って直させる処理は watchCiAndFix.mjs、作業を走らせて記録する決まりは runWorkAndRecord.mjs が持つ（衝突の解消と共有する）。
+//   ここが決めるのは、Issue の実装でそれらをいつ呼ぶか（implementIssueAndRecord・implementAndWatchCi）である。
 // - カードを「レビュー待ち」へは動かさない。PR が Issue に紐づいた時点で、ボードの組み込みワークフロー
 //   「Pull request linked to issue」が動かす（Issue #995）。CI の通過を待って動かすと、同じ移動が二重になる。
 // - 毎周、Issue を選ぶ前に、自動マージされた PR が閉じ損ねた Issue を閉じる（Issue #744）。起動時の1回だけだと、
 //   回っている間にマージされた PR の Issue が閉じず、それを「ブロッカー」に持つ Issue がいつまでも拾われない。
 //   閉じられなくても次の Issue は選べるので、失敗しても周回は止めない。
-// - 予定した終わり方以外で終えた Issue には、記録を残す前に `needs-human-check` を付ける（どれを予定とするかは
-//   needsHumanCheck.mjs）。カードの列だけでは止まった Issue を引けない（Issue #1000）。このツールが付けるのは記録の直前と、
-//   シグナルで終わる直前（finally に届かない）の2か所だけにする。止まり方ごとに付けると、例外で落ちた経路が付け漏れる。
+// - 予定した終わり方以外で終えた Issue には `needs-human-check` を付ける（付け方は runWorkAndRecord.mjs）。
+//   カードの列だけでは止まった Issue を引けない（Issue #1000）。
 // - 同じマシンで何本も動かせるよう、起動時に一番小さい空き番号の AI 専用 clone をロックで取り、終わるまでその clone だけを使う。
 //   1つの clone を共有すると、一方の作業中にもう一方が stash・reset --hard・clean を走らせる。clone ごと分ければ
 //   workspace.mjs の巻き戻しの手順を変えずに済む。番号を自動で取るのは、人間に番号を選ばせず、clone の数を同時に動かした数の最大値で止めるため。
@@ -58,11 +59,11 @@
 //   届かないので、最初の1つは abort、2つ目以降はイベントで届ける（使い分けは shell.mjs の sendSignalToWatchedChildren に閉じる）。
 //   Ctrl+C で止めた回は、セッションが打ち切られて失敗に見えるだけで、claude が壊れた兆候ではないので、連続失敗に数えない。
 // - 終了シグナルのリスナと、リスナが中止する stopController・着手中の Issue の番号は、stopSignals.mjs が持つ。ここが決めるのは、リスナを
-//   いつ付けるか（main の先頭）、いつ着手中の番号を控え・外すか（runWorkAndRecord）、stopSignal をどのセッション・待機に渡し、どこで
-//   見て周回を抜けるかである（衝突を解かせるセッションへ渡すのは conflictResolution.mjs）。
+//   いつ付けるか（main の先頭）、stopSignal をどのセッション・待機に渡し、どこで見て周回を抜けるかである
+//   （着手中の番号を控え・外すのは runWorkAndRecord.mjs、CI 待ちに渡すのは watchCiAndFix.mjs、衝突を解かせるセッションへ渡すのは conflictResolution.mjs）。
 // - gh の戻り値は、並び順を信じない。記録する PR は番号が最大のものを採る（gh は新しい順に返す）。
 
-import { setImmediate as yieldToEventLoop, setTimeout as sleep } from 'node:timers/promises'
+import { setImmediate as yieldToEventLoop } from 'node:timers/promises'
 
 import { closeIssuesOfMergedPullRequests } from '../close-issues.mjs'
 import { TechnicalError } from '../lib/errors.mjs'
@@ -73,12 +74,7 @@ import {
   readCardStatusName
 } from './board.mjs'
 import { buildBranchName, validateBranchPrefix } from './branchName.mjs'
-import {
-  hasSessionSucceeded,
-  runAutoDevSession,
-  runAutoFixCiSession,
-  runIssueCheckSession
-} from './claudeSession.mjs'
+import { hasSessionSucceeded, runAutoDevSession, runIssueCheckSession } from './claudeSession.mjs'
 import { config } from './config.mjs'
 import { claimFirstConflictedPullRequest } from './conflictedPullRequestClaim.mjs'
 import { resolveConflictAndRecord } from './conflictResolution.mjs'
@@ -91,66 +87,28 @@ import {
 } from './issueCheckVerdict.mjs'
 import { listSubIssues, readIssueStatus } from './issueQuery.mjs'
 import { speakIssueResult } from './issueResultSpeech.mjs'
-import {
-  commentOnIssue,
-  removeNeedsHumanCheckLabel,
-  tryMarkAsNeedsHumanCheck
-} from './issueWrite.mjs'
-import {
-  buildHandOverComment,
-  decideAfterCiRun,
-  describeCiOutcome,
-  readCiRunState
-} from './ciRun.mjs'
-import { listCiRuns, tryListCiRuns } from './ciRunQuery.mjs'
-import { findDecisionNotToWaitForCi } from './ciWaitDecision.mjs'
-import { isSubIssueHandoverEmpty, shouldMarkAsNeedsHumanCheck } from './needsHumanCheck.mjs'
+import { removeNeedsHumanCheckLabel } from './issueWrite.mjs'
+import { isSubIssueHandoverEmpty } from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
 import { acquireWorkspaceDir, issueLockKeeper, releaseWorkspaceLock } from './processLocks.mjs'
-import { findMergedPullRequest, listPullRequests } from './pullRequestQuery.mjs'
-import { recordRun } from './runLog.mjs'
-import { decideRunOutcome } from './runOutcome.mjs'
+import { listPullRequests } from './pullRequestQuery.mjs'
+import { runWorkAndRecord } from './runWorkAndRecord.mjs'
 import { runOrThrow } from './shell.mjs'
 import { startSleepGuard } from './sleepGuard.mjs'
-import {
-  clearInFlightIssueNumber,
-  installStopSignalListeners,
-  setInFlightIssueNumber,
-  stopSignal
-} from './stopSignals.mjs'
+import { installStopSignalListeners, sleepUnlessStopped, stopSignal } from './stopSignals.mjs'
 import {
   findReasonToSkipForOpenSubIssues,
   selectSubIssuesToPutOnReady
 } from './subIssueHandover.mjs'
-import {
-  createThrottledStatusLine,
-  showError,
-  showInfo,
-  showIssueBanner,
-  showStatusLine,
-  showSuccess,
-  showWarning
-} from './ui.mjs'
-import {
-  alignLabeledValues,
-  collapseToSingleLine,
-  formatElapsedTime,
-  formatErrorMessage,
-  formatErrorWithStack
-} from './uiFormat.mjs'
-import { prepareTopicBranch } from './workspace.mjs'
+import { showError, showInfo, showIssueBanner, showStatusLine, showWarning } from './ui.mjs'
+import { formatErrorMessage, formatErrorWithStack } from './uiFormat.mjs'
+import { watchCiAndFix } from './watchCiAndFix.mjs'
+import { prepareTopicBranch, readLocalHeadSha } from './workspace.mjs'
 
 const MILLISECONDS_PER_SECOND = 1000
 const MILLISECONDS_PER_MINUTE = 60 * MILLISECONDS_PER_SECOND
 
 const IDLE_BOARD_POLL_INTERVAL_MS = config.pollIntervalMinutes * MILLISECONDS_PER_MINUTE
-
-const CI_POLL_INTERVAL_MS = config.ci.pollIntervalSeconds * MILLISECONDS_PER_SECOND
-const CI_RUN_WAIT_LIMIT_MS = config.ci.runWaitLimitMinutes * MILLISECONDS_PER_MINUTE
-
-// 非TTY で CI 待ちの経過を追記する間隔。CI_POLL_INTERVAL_MS のまま追記すると、
-// 上限（runWaitLimitMinutes）いっぱい待つ実行で数十行に膨らむ
-const CI_WAIT_PROGRESS_APPEND_INTERVAL_MS = 5 * MILLISECONDS_PER_MINUTE
 
 // 着手できる Issue が無い周に、待機中のステータス行へ出す理由
 const NO_STARTABLE_ISSUE_IDLE_REASON = '着手できる Issue なし'
@@ -258,49 +216,6 @@ function findCreatedPullRequestUrl(branchName, existingPullRequestNumbers) {
     showWarning(`PR の有無を確かめられませんでした: ${formatErrorMessage(error)}`)
     return null
   }
-}
-
-/**
- * Issue 1件の締めとして、所要時間・CI の結果・PR・記録先をまとめて表示する。
- *
- * 締めの記号は、結果の分類（decideRunOutcome）で決める。✗ は失敗、⚠ は人間の手当てが要る回、それ以外は ✓ である。
- *
- * @param {{ issueNumber: number, sessionStartedAt: string, finishedAt: string, pullRequestUrl: string | null, ciOutcome?: string, isCiPassed?: boolean, isClosedWithoutChanges?: boolean }} record 記録した内容
- * @param {'failed' | 'needs-human-attention' | 'handed-over-to-sub-issues' | 'completed'} runOutcome decideRunOutcome が決めた結果の分類
- * @returns {void}
- */
-function showRunSummary(record, runOutcome) {
-  const elapsedTime = formatElapsedTime(
-    Date.parse(record.finishedAt) - Date.parse(record.sessionStartedAt)
-  )
-  const headline = `#${record.issueNumber} を終えました（${elapsedTime}）`
-  if (runOutcome === 'failed') showError(headline)
-  else if (runOutcome === 'needs-human-attention') showWarning(headline)
-  else showSuccess(headline)
-
-  // 値が同じ桁から始まるよう、項目名の幅を揃えてから行ごとのレベルで出す
-  /* eslint-disable id-denylist -- { label, value } は「項目名と値の組」で、value が正しい語（#900） */
-  const details = []
-  if (record.ciOutcome) {
-    details.push({
-      label: 'CI',
-      value: record.ciOutcome,
-      show: record.isCiPassed || record.isClosedWithoutChanges ? showInfo : showWarning
-    })
-  }
-  if (record.pullRequestUrl === null) {
-    details.push({ label: 'PR', value: '有無は GitHub で確かめてください', show: showWarning })
-  } else {
-    details.push({
-      label: 'PR',
-      value: record.pullRequestUrl || '作られませんでした',
-      show: showInfo
-    })
-  }
-  details.push({ label: '記録', value: config.runLogPath, show: showInfo })
-  /* eslint-enable id-denylist */
-  const lines = alignLabeledValues(details)
-  details.forEach(({ show }, index) => show(lines[index]))
 }
 
 /**
@@ -483,45 +398,6 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
 }
 
 /**
- * Ctrl+C が来ない限り、指定した時間だけ待つ。Ctrl+C が来たら待たずに戻る。
- *
- * @param {number} milliseconds 待つ時間
- * @returns {Promise<void>}
- */
-async function sleepUnlessStopped(milliseconds) {
-  try {
-    await sleep(milliseconds, undefined, { signal: stopSignal })
-  } catch (error) {
-    if (!(error instanceof Error && error.name === 'AbortError')) throw error
-  }
-}
-
-/**
- * AI 専用 clone の HEAD が指している commit の SHA を引く。
- *
- * @param {string} workspaceDir HEAD を引く AI 専用 clone
- * @returns {string} commit の SHA
- * @throws {Error} git が失敗したとき
- */
-function readLocalHeadSha(workspaceDir) {
-  return runOrThrow('git', ['rev-parse', 'HEAD'], { cwd: workspaceDir }).trim()
-}
-
-/**
- * リモートのトピックブランチが指している commit の SHA を引く。
- *
- * @param {{ workspaceDir: string, branchName: string }} params origin を引く AI 専用 clone と、トピックブランチ名
- * @returns {string} commit の SHA（ブランチが push されていなければ空文字）
- * @throws {Error} git が失敗したとき
- */
-function readRemoteHeadSha({ workspaceDir, branchName }) {
-  const output = runOrThrow('git', ['ls-remote', 'origin', `refs/heads/${branchName}`], {
-    cwd: workspaceDir
-  })
-  return output.trim().split(/\s+/)[0] ?? ''
-}
-
-/**
  * 接頭辞と同じ名前のブランチがリモートに無いことを確かめる。
  *
  * git は refs/heads/<接頭辞> があると refs/heads/<接頭辞>/... を作れない。ライン名（main2 など）をそのまま接頭辞に
@@ -548,190 +424,6 @@ function ensureNoBranchNamedAsPrefix({ branchPrefix, workspaceDir }) {
 }
 
 /**
- * commit の CI の run が終わるまで待つ。待ち時間の上限を使い切るか、Ctrl+C が来たら、その時点の状態で戻る。
- * run を引けなかったときは、待ち時間の上限までは引き直す。
- *
- * @param {string} headSha 待つ commit の SHA
- * @returns {Promise<ReturnType<typeof readCiRunState>>} run の状態（終わらなかったときは pending）
- * @throws {Error} 上限まで引き直しても gh が失敗したとき
- */
-async function waitForCiRun(headSha) {
-  const deadline = Date.now() + CI_RUN_WAIT_LIMIT_MS
-  const startedAt = Date.now()
-  const showCiWaitProgress = createThrottledStatusLine({
-    minAppendIntervalMs: CI_WAIT_PROGRESS_APPEND_INTERVAL_MS
-  })
-  for (;;) {
-    const isLastTry = Date.now() >= deadline || stopSignal.aborted
-    // 待つ時間が長いほど瞬断や GitHub の一時障害に当たりやすい。1回の失敗でやめると、落ちた PR が誰にも直されずに残る。
-    // 最後の1回だけは握らず、引けなかったこと自体を呼び出し元へ伝える
-    const runs = isLastTry ? listCiRuns(headSha) : tryListCiRuns(headSha)
-    if (runs === null) {
-      await sleepUnlessStopped(CI_POLL_INTERVAL_MS)
-      continue
-    }
-    const runState = readCiRunState(runs, headSha)
-    if (runState.state !== 'pending' || isLastTry) return runState
-    showCiWaitProgress(
-      `CI 待ち… 経過 ${formatElapsedTime(Date.now() - startedAt)} / 上限${config.ci.runWaitLimitMinutes}分`
-    )
-    await sleepUnlessStopped(CI_POLL_INTERVAL_MS)
-  }
-}
-
-/**
- * CI 待ちを終える。直させずに終える run の結果を record へ書き足し、上限まで直させても落ちていれば、書き足す前に人間へ回すコメントを Issue に付ける。
- *
- * @param {{ issueNumber: number, nextStep: 'finish-passed' | 'hand-over' | 'stop-timed-out' | 'stop-unfixable', runState: { conclusion: string | null, url: string | null }, record: Record<string, unknown> }} params 対象 Issue の番号・decideAfterCiRun の結果（直させる 'fix' は渡さない）・待ち終えた run の状態・書き足す先の記録
- * @returns {void}
- * @throws {Error} 人間へ回すときに gh が失敗したとき
- */
-function finishCiWatch({ issueNumber, nextStep, runState, record }) {
-  if (nextStep === 'hand-over') {
-    commentOnIssue(
-      issueNumber,
-      buildHandOverComment({
-        workflowFile: config.ci.workflowFile,
-        maxFixAttempts: config.ci.maxFixAttempts,
-        lastRunUrl: runState.url
-      })
-    )
-  }
-  record.ciOutcome = describeCiOutcome({
-    nextStep,
-    conclusion: runState.conclusion,
-    runWaitLimitMinutes: config.ci.runWaitLimitMinutes,
-    maxFixAttempts: config.ci.maxFixAttempts
-  })
-  record.isCiPassed = nextStep === 'finish-passed'
-}
-
-/**
- * リモートのブランチ・clone の HEAD・Issue を引き、CI を待っても意味が無い理由を探す。
- *
- * @param {{ issueNumber: number, branchName: string, workspaceDir: string, previousHeadSha: string | null, lastSessionName: string, workStartedAt: string }} params 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・push されなかったとみなす SHA と直前に走らせたセッションの名前・今回の作業を始めた時刻（findDecisionNotToWaitForCi を参照）
- * @returns {{ headSha: string, decisionNotToWait: ReturnType<typeof findDecisionNotToWaitForCi> }} リモートのブランチの SHA と、記録にそのまま書く待たない理由（待ってよければ null）
- * @throws {Error} git・gh が失敗したとき
- */
-function readHeadShaAndDecisionNotToWait({
-  issueNumber,
-  branchName,
-  workspaceDir,
-  previousHeadSha,
-  lastSessionName,
-  workStartedAt
-}) {
-  const remoteHeadSha = readRemoteHeadSha({ workspaceDir, branchName })
-  const localHeadSha = readLocalHeadSha(workspaceDir)
-  const { state, labelNames } = readIssueStatus(issueNumber)
-  // マージで消えたブランチを、差分が出ずに閉じた Issue と見分けるためだけに引く。ブランチが残っていれば要らない
-  const mergedPullRequest = remoteHeadSha ? null : findMergedPullRequest(branchName)
-  return {
-    headSha: remoteHeadSha,
-    decisionNotToWait: findDecisionNotToWaitForCi({
-      state,
-      labelNames,
-      remoteHeadSha,
-      localHeadSha,
-      previousHeadSha,
-      lastSessionName,
-      mergedPullRequest,
-      workStartedAt
-    })
-  }
-}
-
-/**
- * push した commit の CI を待ち、落ちていれば `/auto-fix-ci` に直させる。通るか、直させるのをやめるまで戻らない。
- * 結果は record へ書き足す。
- *
- * @param {{ issueNumber: number, branchName: string, workspaceDir: string, headShaBeforeSession: string | null, sessionName: string, workStartedAt: string }} target 対象 Issue の番号・トピックブランチ名・作業している AI 専用 clone・セッションの前のリモートのブランチの SHA（これと同じなら push されなかったとみなす。新しく作ったブランチなら null）・CI を待つ前に走らせたセッションの名前・今回の作業を始めた時刻（ISO 8601）
- * @param {Record<string, unknown>} record 書き足す先の記録
- * @returns {Promise<boolean>} `/auto-fix-ci` を走らせなかったか、すべて正常終了したら true
- * @throws {Error} git・gh・claude を起動できなかった／失敗したとき
- */
-async function watchCiAndFix(
-  { issueNumber, branchName, workspaceDir, headShaBeforeSession, sessionName, workStartedAt },
-  record
-) {
-  record.ciRuns = []
-  // CI が通ったとき（PR がマージ済みのときを含む）だけ true にする。通らずに戻る経路（離脱・未 push・打ち切り）は、
-  // 差分が出ずに閉じた場合を除いて人間の手当てが要る
-  record.isCiPassed = false
-  let fixAttemptCount = 0
-  // 衝突を解かせた後は、push されなかった古い SHA の CI（通った後に衝突したもの）を、解けた印と取り違えない
-  const pushCheck = { previousHeadSha: headShaBeforeSession, lastSessionName: sessionName }
-  for (;;) {
-    const { headSha, decisionNotToWait } = readHeadShaAndDecisionNotToWait({
-      issueNumber,
-      branchName,
-      workspaceDir,
-      workStartedAt,
-      ...pushCheck
-    })
-    if (decisionNotToWait) {
-      Object.assign(record, decisionNotToWait)
-      return true
-    }
-    pushCheck.previousHeadSha = headSha
-
-    showInfo(`CI を待ちます: ${config.ci.workflowFile} @ ${headSha.slice(0, 7)}`)
-    const runState = await waitForCiRun(headSha)
-    record.ciRuns.push({ headSha, ...runState })
-    if (stopSignal.aborted) {
-      record.ciOutcome = 'CI を待つ途中で止めました'
-      return true
-    }
-
-    const nextStep = decideAfterCiRun({
-      state: runState.state,
-      fixAttemptCount,
-      maxFixAttempts: config.ci.maxFixAttempts
-    })
-    if (nextStep !== 'fix') {
-      finishCiWatch({ issueNumber, nextStep, runState, record })
-      return true
-    }
-
-    fixAttemptCount += 1
-    pushCheck.lastSessionName = '/auto-fix-ci'
-    const hasFixSessionSucceeded = await fixFailedCi({
-      issueNumber,
-      workspaceDir,
-      runState,
-      attemptNumber: fixAttemptCount,
-      record
-    })
-    if (!hasFixSessionSucceeded) return false
-  }
-}
-
-/**
- * 落ちた CI を `/auto-fix-ci` に直させる。結果は record へ書き足す。
- *
- * @param {{ issueNumber: number, workspaceDir: string, runState: { runId: number, url: string }, attemptNumber: number, record: Record<string, unknown> }} params 対象 Issue の番号・セッションを動かす AI 専用 clone・落ちた CI の run・今回が何回目か・書き足す先の記録
- * @returns {Promise<boolean>} `/auto-fix-ci` のセッションが正常終了したら true
- * @throws {Error} claude を起動できなかったとき
- */
-async function fixFailedCi({ issueNumber, workspaceDir, runState, attemptNumber, record }) {
-  record.ciFixAttemptCount = attemptNumber
-  showWarning(
-    `CI が落ちました。/auto-fix-ci に直させます（${attemptNumber} 回目）: ${runState.url}`
-  )
-  const fixStatus = await runAutoFixCiSession({
-    issueNumber,
-    runId: runState.runId,
-    workspaceDir,
-    abortSignal: stopSignal
-  })
-  record.ciFixExitCode = fixStatus.exitCode
-  record.ciFixSignal = fixStatus.signal
-  if (hasSessionSucceeded(fixStatus)) return true
-  record.ciOutcome = '/auto-fix-ci のセッションが失敗しました'
-  return false
-}
-
-/**
  * 子への引き継ぎの結果を出す。1件も載せられなければ、人間に見てほしいこととして出す。
  *
  * @param {{ subIssueHandover: { reason: string, putOnReadySubIssueNumbers: number[] } }} record 記録した内容
@@ -743,41 +435,6 @@ function showSubIssueHandover(record) {
   showHandover(
     `実装せず子へ引き継ぎます: ${reason}。${config.board.readyStatusName} に載せた子は ${putOnReadySubIssueNumbers.length} 件です`
   )
-}
-
-/**
- * Issue 1件ぶんの作業を走らせ、途中で落ちても結果を記録する。予定した終わり方以外で終えたら、記録の前に `needs-human-check` を付ける
- * （付けられなくても投げない）。
- *
- * @param {{ record: Record<string, unknown> & { issueNumber: number }, runWork: (record: Record<string, unknown>, workStartedAt: string) => Promise<boolean>, readPullRequestUrl: () => string | null, speakRunOutcome?: (runOutcome: 'failed' | 'needs-human-attention' | 'handed-over-to-sub-issues' | 'completed') => void }} params 記録の初期値・作業（受け取った記録へ結果を書き足し、作業を始めた時刻（ISO 8601。記録の `sessionStartedAt` と同じ値）を受け取り、走らせた claude セッションがすべて正常終了したら true を返す）・記録に残す PR の URL を引く関数（作業の後に呼ぶ）・締めの結果の分類を読み上げる関数（画面の締めの後に呼ぶ。省けば読み上げない）
- * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true（起動できなかった・打ち切られた・0 以外で終わった・途中で例外が出たら false）
- * @throws {Error} 記録ファイルへ書けなかったとき
- */
-async function runWorkAndRecord({ record, runWork, readPullRequestUrl, speakRunOutcome }) {
-  const workStartedAt = new Date().toISOString()
-  record.sessionStartedAt = workStartedAt
-  setInFlightIssueNumber(record.issueNumber)
-  let isAllSessionsSucceeded = false
-  try {
-    isAllSessionsSucceeded = await runWork(record, workStartedAt)
-  } catch (error) {
-    // 無人実行の画面はセッションの出力で流れるため、スタックを出すと原因の1行が埋もれる（Issue #780）
-    record.error = formatErrorMessage(error)
-    record.errorStack = formatErrorWithStack(error)
-    showError(`#${record.issueNumber} の処理が落ちました: ${collapseToSingleLine(record.error)}`)
-  } finally {
-    record.pullRequestUrl = readPullRequestUrl()
-    record.finishedAt = new Date().toISOString()
-    if (shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)) {
-      Object.assign(record, tryMarkAsNeedsHumanCheck(record.issueNumber))
-    }
-    recordRun(record)
-    clearInFlightIssueNumber()
-    const runOutcome = decideRunOutcome(record, isAllSessionsSucceeded)
-    showRunSummary(record, runOutcome)
-    speakRunOutcome?.(runOutcome)
-  }
-  return isAllSessionsSucceeded
 }
 
 /**
@@ -889,13 +546,7 @@ async function claimNextWork(workspaceDir) {
   if (conflictedPullRequest) {
     return {
       claimedWork: {
-        runWork: () =>
-          resolveConflictAndRecord({
-            conflictedPullRequest,
-            workspaceDir,
-            runWorkAndRecord,
-            watchCiAndFix
-          }),
+        runWork: () => resolveConflictAndRecord({ conflictedPullRequest, workspaceDir }),
         issueLock: conflictedPullRequest.issueLock
       },
       idleReason: null
