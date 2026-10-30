@@ -95,6 +95,8 @@ Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転�
 
 同ポリシーの「`opus` を付ける条件」の条件B・Cに当たる Issue には、`opus` も重ねる。条件Aは `add-opus-label.yml` が付けるので、判定しない。
 
+同ポリシーの「Issue に付けるラベル」表の `customer-question` の付ける条件に当たる Issue には、`customer-question` も重ねる。
+
 「タスク一覧」「完了条件」は、登録前に該当するポリシー・rules（`docs/policy-hub.md`・`.claude/rules/`）と照合する。ポリシーに反する作業を指示していたら、タスク側を直してから登録する。実装時はポリシーが優先されるため、反したまま登録すると手戻りになる。
 
 環境依存の識別子（アカウント名・プロジェクト番号・リソース ID・URL・エンドポイント）を本文に書くなら、[configuration-policy](../../../docs/policy/configuration-policy.md) を読み、値そのものではなく置き場所（どの設定ファイルに集約するか）をタスクに書く。
