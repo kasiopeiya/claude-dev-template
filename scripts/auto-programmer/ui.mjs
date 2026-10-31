@@ -9,6 +9,9 @@
 // - 色は行全体でなく、時刻を薄く・レベル記号を色付きにする。本文まで色を付けるのは警告と異常だけにし、
 //   見落とせない行だけが目立つようにする。
 // - 警告と異常は stderr へ出す。画面をファイルへ流したときに、異常だけを分けて拾える。
+// - ステータス行は、書く間だけ端末の自動折り返しを止め、端末より長い分を切り捨てる。折り返すと、次の更新の
+//   `\r\x1b[K` は最後の物理行しか消せず、更新のたびに行が増える（Issue #1416）。端末幅に合わせて切り詰めないのは、
+//   バーの █░ が曖昧幅で、端末によって表示幅が変わり数えられないため。
 // - 行の組み立ては uiFormat.mjs の純粋関数に寄せ、ここは「どちらのストリームへどう書くか（色・その場更新）」
 //   だけを持つ。
 
@@ -26,6 +29,10 @@ import {
 // ステータス行の TTY 判定・消去・書き込みは、同じストリームを見ないと消し残しが起きる
 const STATUS_LINE_STREAM = process.stdout
 const ERASE_CURRENT_LINE = '\r\x1b[K'
+
+// 端末の自動折り返し（DECAWM）を止める・戻す制御文字
+const DISABLE_LINE_WRAP = '\x1b[?7l'
+const ENABLE_LINE_WRAP = '\x1b[?7h'
 
 // 行の種類ごとの見た目と行き先。symbolStyle・textStyle は util.styleText に渡す書式（レベル記号用・本文用。
 // textStyle が null なら本文は素のまま）
@@ -76,7 +83,7 @@ export function showStatusLine(message, { symbol = LINE_STYLES.status.symbol } =
     }),
     message
   })
-  STATUS_LINE_STREAM.write(`${ERASE_CURRENT_LINE}${line}`)
+  STATUS_LINE_STREAM.write(`${ERASE_CURRENT_LINE}${DISABLE_LINE_WRAP}${line}${ENABLE_LINE_WRAP}`)
   activeStatusLine = { message, symbol }
 }
 
