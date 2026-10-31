@@ -1,6 +1,6 @@
 # レビューレポートフォーマット
 
-`/actions-review` が Phase 3 で、各レンズの結果を統合して出すときの書式。観点の判定基準・severity の定義・合否の計算方法は SKILL.md と review-criteria.md に置く。
+`/actions-review` が Phase 3 で、各レンズの結果を統合して出すときの書式。観点の判定基準・severity の定義・合否の計算方法は `.claude/rule-bodies/review-integration.md` と review-criteria.md に置く。
 
 点数・総合評価・良い点は、どの欄にも書かない。結果を使う側は指摘の有無と severity だけで直すかを決めており、良い点を求めると、見る観点の少ないレビューでは良い点のでっち上げを招く。
 
@@ -34,7 +34,7 @@
 
 ### 🚦 合否
 
-<!-- 判定基準・数え方は SKILL.md「Phase 3: 統合してレポートを出す」の「合否を判定する」のとおり -->
+<!-- 判定基準・数え方は `.claude/rule-bodies/review-integration.md` の手順7のとおり -->
 
 - **判定**: <🚫 要修正 / ✅ 合格>
 - **Critical残数**: <「合否を判定する」の計算による件数>
@@ -97,7 +97,7 @@ spec レンズを起動しなかったとき、spec の担当観点の行は「�
 
 ### 🚀 次のステップ（優先度付き）
 
-<!-- 優先度は SKILL.md「Phase 3」の「次のステップ」の優先度の手順で決める。指摘が無ければ「なし」と書く -->
+<!-- 優先度は `.claude/rule-bodies/review-integration.md` の手順5で決める。指摘が無ければ「なし」と書く -->
 
 1. **[高] <Critical の指摘の観点名>**: <具体的なアクション>
 2. **[中] <High の指摘の観点名>**: <具体的なアクション>

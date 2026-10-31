@@ -1,6 +1,6 @@
 # レビューレポートフォーマット
 
-`/cdk-review` が Phase 3 で、各レンズの結果を統合して出すときの書式。観点の判定基準・severity の定義・合否の計算方法は SKILL.md と review-criteria.md に置く（本ファイルには転記しない）。
+`/cdk-review` が Phase 3 で、各レンズの結果を統合して出すときの書式。観点の判定基準・severity の定義・合否の計算方法は `.claude/rule-bodies/review-integration.md` と review-criteria.md に置く（本ファイルには転記しない）。
 
 点数・総合評価・良い点は、どの欄にも書かない。結果を使う側（`/cdk-dev` など）は指摘の有無と severity だけで直すかを決めており、良い点を求めると、見る観点の少ないレビューでは良い点のでっち上げを招く。
 
@@ -27,10 +27,10 @@
 
 ### 🚦 合否
 
-<!-- 判定基準・数え方は SKILL.md「Phase 3: 統合してレポートを出す」手順7のとおり -->
+<!-- 判定基準・数え方は `.claude/rule-bodies/review-integration.md` の手順7のとおり -->
 
 - **判定**: <🚫 要修正 / ✅ 合格>
-- **Critical残数**: <手順7の計算による件数>
+- **Critical残数**: <共通手順の手順7の計算による件数>
 - **Issue にして残す Critical**: <needs-human-decision として起票した Issue 番号と概要。無ければ「なし」>
 
 ---
