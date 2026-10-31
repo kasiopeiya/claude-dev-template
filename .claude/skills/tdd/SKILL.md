@@ -316,16 +316,7 @@ Skill({
 
 #### ステップ 9-1: GitHub Issueのタスクチェックリスト更新
 
-Bash ツールで実装・テストに関連するタスクを完了マークに更新:
-
-```bash
-BODY=$(gh issue view {番号} --json body --jq '.body')
-# 実装・テスト完了に関連するタスクを完了マークに更新
-UPDATED_BODY=$(echo "$BODY" | sed 's/- \[ \] \(.*実装.*\)/- [x] \1/g' | sed 's/- \[ \] \(.*テスト.*\)/- [x] \1/g')
-gh issue edit {番号} --body "$UPDATED_BODY"
-```
-
-該当するタスクが見つからない場合はスキップ（エラーにしない）。
+[issue-update](../../rule-bodies/issue-update.md) を Read して、「本文を取得して書き戻す」に従い、実装・テストに関するタスクの `- [ ]` を `- [x]` に直す。
 
 #### ステップ 9-2: TDDサイクル完了レポート
 
