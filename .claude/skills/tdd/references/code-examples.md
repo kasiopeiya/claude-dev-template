@@ -1,63 +1,10 @@
 # テスト・実装・リファクタリングの生成例
 
-`/tdd` がテスト・実装・リファクタリングのコードを書き起こすときに読む。何を書くかの基準は Phase 2 の冒頭で読み込んだテスト方針そのもので、ここはその適用例を示す。
+`/tdd` がテスト・実装・リファクタリングのコードを書き起こすときに読む。何を書くかの基準は Phase 2 の冒頭で読み込んだテスト方針そのもので、ここは Rule に無い適用例だけを置く。
 
 ## テストコード（バックエンド: Lambda handler）
 
-```typescript
-// test/handlers/authorize.test.ts
-import { handler } from '../../src/handlers/authorize'
-
-// Object Mother: APIGatewayイベントのファクトリ関数
-const createApiGatewayEvent = (overrides?: Partial<APIGatewayProxyEvent>) => ({
-  httpMethod: 'GET',
-  path: '/authorize',
-  headers: {},
-  pathParameters: null,
-  queryStringParameters: null,
-  body: null,
-  ...overrides
-})
-
-describe('認可エンドポイント', () => {
-  const sut = handler
-
-  it('正常なリクエストの場合に認可URLへのリダイレクトを返す', async () => {
-    const event = createApiGatewayEvent()
-
-    const result = await sut(event, context)
-
-    expect(result.statusCode).toBe(302)
-    expect(result.headers?.Location).toContain('https://auth.example.com/authorize')
-  })
-
-  it.each(['', 'invalid', '@no-local', 'no-domain@'])(
-    'メールアドレス「%s」が不正な場合に400を返す',
-    async (email) => {
-      const event = createApiGatewayEvent({ body: JSON.stringify({ email }) })
-
-      const result = await sut(event, context)
-
-      expect(result.statusCode).toBe(400)
-    }
-  )
-
-  it('必須パラメータが欠落している場合に400を返す', async () => {
-    // Arrange
-    const event = createApiGatewayEvent({
-      queryStringParameters: {}
-    })
-
-    // Act
-    const result = await sut(event, context)
-
-    // Assert
-    const body = JSON.parse(result.body)
-    expect(result.statusCode).toBe(400)
-    expect(body.error).toBe('invalid_request')
-  })
-})
-```
+コード例は [unit-test.md](../../../rules/unit-test.md)（Rule）の各節にある。ファイルの置き方・レイヤーの切り方の手本は `samples/app/backend/`。
 
 ## テストコード（フロントエンド: コンポーネント）
 
