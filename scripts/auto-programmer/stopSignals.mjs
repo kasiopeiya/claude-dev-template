@@ -1,5 +1,6 @@
 // 責務: 終了シグナル（SIGINT・SIGHUP・SIGTERM・SIGQUIT）のリスナと、リスナが中止する stopController・リスナが読む着手中の Issue の番号を担う。
-//   リスナは installStopSignalListeners で付ける。いつ付けるか・いつ着手中の番号を控え・外すかは呼び出し側の index.mjs が決める。
+//   リスナは installStopSignalListeners で付ける。いつ付けるか（index.mjs の main）・いつ着手中の番号を控え・外すか（runWorkAndRecord.mjs）は呼び出し側が決める。
+//   止める合図が来たら待たずに戻る sleepUnlessStopped も持つ（index.mjs の待機と watchCiAndFix.mjs の CI 待ちが共有する）。
 //
 // 設計意図（WHY）:
 // - SIGINT は claude セッションへ送るだけで、後始末は index.mjs の finally に任せる。SIGHUP・SIGTERM・SIGQUIT は finally に届かないので、
@@ -14,6 +15,8 @@
 //   読み出しの関数は作らない。
 // - 呼び出し側を import しない。呼び出し側からこのモジュールへの一方向にして、循環を作らない。
 
+import { setTimeout as sleep } from 'node:timers/promises'
+
 import { tryMarkAsNeedsHumanCheck } from './issueWrite.mjs'
 import { issueLockKeeper, releaseWorkspaceLock } from './processLocks.mjs'
 import { sendSignalToWatchedChildren } from './shell.mjs'
@@ -26,7 +29,7 @@ const stopController = new AbortController()
 // （包むと、中止は伝わるが sendSignalToWatchedChildren が送る中継のイベントは伝わらない）
 export const stopSignal = stopController.signal
 
-// 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると index.mjs の runWorkAndRecord の finally に届かないので、
+// 着手中の Issue の番号（着手中でなければ null）。シグナルで終わると runWorkAndRecord.mjs の runWorkAndRecord の finally に届かないので、
 // 止まった印はリスナが付ける
 let inFlightIssueNumber = null
 
@@ -52,6 +55,20 @@ export function installStopSignalListeners() {
       releaseWorkspaceLock()
       process.kill(process.pid, signalName)
     })
+  }
+}
+
+/**
+ * Ctrl+C が来ない限り、指定した時間だけ待つ。Ctrl+C が来たら待たずに戻る。
+ *
+ * @param {number} milliseconds 待つ時間
+ * @returns {Promise<void>}
+ */
+export async function sleepUnlessStopped(milliseconds) {
+  try {
+    await sleep(milliseconds, undefined, { signal: stopSignal })
+  } catch (error) {
+    if (!(error instanceof Error && error.name === 'AbortError')) throw error
   }
 }
 
