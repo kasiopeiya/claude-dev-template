@@ -114,25 +114,13 @@ Issue が触れる領域の設計書（`docs/design-hub.md` 経由）とポリ�
 
 ## Phase 5: sub-issue として紐付ける
 
-GraphQL の形は worktree で動くセッションのガードに拒否されるので、子ごとに REST で紐づける。
-
-```bash
-gh api repos/<owner>/<repo>/issues/<子の番号> --jq .id
-```
-
-```bash
-gh api --method POST repos/<owner>/<repo>/issues/<親の番号>/sub_issues -F sub_issue_id=<子のデータベース ID>
-```
+[`/link-root-issue`](../link-root-issue/SKILL.md) の SKILL.md を Read して、「2-3. 紐づける」のコマンドで、子ごとに紐づける。
 
 紐付けに失敗した子があれば、その番号を報告に残す。**成功した分をロールバックしない**——親本文のリンク一覧（Phase 6）があれば、紐付けが無くても親子は辿れる。
 
 ## Phase 6: 親を umbrella に作り替える
 
-`gh issue view <番号> --json body --jq .body` でスクラッチパッドに書き出し、Read → Edit で該当セクションだけを差し替えてから反映する。
-
-```bash
-gh issue edit <番号> --body-file <スクラッチパッド>/issue-<番号>.md
-```
+[issue-update](../../rule-bodies/issue-update.md) を Read して、「本文を取得して書き戻す」に従い、該当セクションだけを差し替える。
 
 - **タスク一覧**：sub-issue へのリンク一覧（`- [ ] #123 タイトル`）
 - **完了条件**：「すべての sub-issue が close されていること」
