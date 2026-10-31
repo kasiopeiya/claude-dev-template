@@ -43,7 +43,7 @@ readonly LABELS=(
   'needs-human-review|d93f0b|人間がレビューすべきPR'
   'needs-manual-triage|e99695|レビュー要否を自動判定できなかった。人間が分類すること'
   # workflow: 実行時にも自己作成するが、初回の権限差を気にしなくて済むよう先に作っておく
-  'doc-consistency-weekly|5319E7|週次の docs/ 横断整合性チェック Issue'
+  'doc-consistency-weekly|5319E7|週次の docs/ と .claude/ の横断整合性チェック Issue'
   'code-policy-weekly|B60205|週次のコード Policy 準拠チェック Issue'
   'dev-deploy-failure|B60205|dev への deploy が失敗した'
 )
