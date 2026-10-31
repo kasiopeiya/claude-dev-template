@@ -27,10 +27,10 @@
 
 ### 🚦 合否
 
-<!-- 判定基準・数え方は SKILL.md「Phase 3: 統合してレポートを出す」手順7のとおり -->
+<!-- 判定基準・数え方は `.claude/rule-bodies/review-integration.md` の手順7のとおり -->
 
 - **判定**: <🚫 要修正 / ✅ 合格>
-- **Critical残数**: <手順7の計算による件数>
+- **Critical残数**: <共通手順の手順7の計算による件数>
 - **Issue にして残す Critical**: <needs-human-decision として起票した Issue 番号と概要。無ければ「なし」>
 
 ---
