@@ -1,6 +1,6 @@
 ---
 name: doc-consistency
-description: docs/ 配下を横断的に走査し、文書間の重複（DRY違反）と矛盾を検出する。週次の定期チェック Issue と人間の指示で起動する。通常開発の Issue の実装フローには入れない。ただし文書の分割・統合・規定の移動そのものが作業である Issue は例外として入れてよい。「doc-consistency」「ドキュメントの整合性を見て」と指示されたとき。単一文書の品質レビューは /doc-review。
+description: docs/ 配下と、.claude/ の Skill・agent・Rule（`.claude/skills`・`.claude/agents`・`.claude/rules`・`.claude/rule-bodies`）を横断的に走査し、文書間の重複（DRY違反）と矛盾を検出する。週次の定期チェック Issue と人間の指示で起動する。通常開発の Issue の実装フローには入れない。ただし文書の分割・統合・規定の移動そのものが作業である Issue は例外として入れてよい。「doc-consistency」「ドキュメントの整合性を見て」と指示されたとき。単一文書の品質レビューは /doc-review。
 argument-hint: '[file-path（複数可・空白区切り） | hub]'
 context: fork
 agent: doc-consistency-reviewer-agent
@@ -8,7 +8,7 @@ agent: doc-consistency-reviewer-agent
 
 ドキュメント横断の整合性レビュー（重複・矛盾の検出）を実行してください。ファイルパスは空白区切りで複数渡せます。渡した各ファイルをそれぞれ起点として扱います。
 
-通常開発の Issue の実装フローに入れないのは、Issue ごとに docs/ 全体を横断すると、週次チェックと同じファイルを毎回二重に見ることになるためです。文書の分割・統合・規定の移動そのものが作業の Issue だけは、重複・矛盾が生まれていないことの確認が完了確認になるので、実装フローに入れてかまいません。
+通常開発の Issue の実装フローに入れないのは、Issue ごとに docs/ と .claude/ の全体を横断すると、週次チェックと同じファイルを毎回二重に見ることになるためです。文書の分割・統合・規定の移動そのものが作業の Issue だけは、重複・矛盾が生まれていないことの確認が完了確認になるので、実装フローに入れてかまいません。
 
 ## レビュー結果の起票
 

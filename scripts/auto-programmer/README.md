@@ -88,14 +88,14 @@ auto-merge を外すのは、残っていると、解いた push の CI が通�
 
 | スクリプト                                    | 対象                                                               | 起票ラベル               |
 | --------------------------------------------- | ------------------------------------------------------------------ | ------------------------ |
-| `scripts/ci/doc-consistency-weekly-issue.mjs` | `docs/` 全体（`/doc-consistency`）                                 | `doc-consistency-weekly` |
+| `scripts/ci/doc-consistency-weekly-issue.mjs` | `docs/` と `.claude/` の Skill・agent・Rule（`/doc-consistency`）  | `doc-consistency-weekly` |
 | `scripts/ci/code-policy-weekly-issue.mjs`     | `app/`（`/code-review` の「決まりどおりか」「設計の形」の2レンズ） | `code-policy-weekly`     |
 
 `scripts/ci/doc-consistency-weekly-issue.mjs` の設計判断：
 
 - **起票だけを GitHub Actions（`doc-consistency-weekly.yml`）が行い、実行そのものは人間か Auto Programmer が行う**：このテンプレートは、GitHub Actions で Claude Code を使えないプロジェクトへの配布も前提にしている。実行そのものを Actions に持たせると、そうしたプロジェクトでは仕組みごと動かない。
 - **専用ラベル（`doc-consistency-weekly`）が付いた open な Issue が既にあれば起票しない**：処理待ちの週次 Issue は1件で足りる。起点を前回処理以降の変更に絞れば、処理が1週遅れても次回でその分を追いつけるため、未処理のまま複数積み上げる必要が無い。
-- **起点は、実行結果コメントが付いた直近の週次 Issue の HEAD SHA から今回の HEAD までに変わった `docs/**/*.md` にする**：2文書間の重複・矛盾は、どちらかが変わったときにしか生まれない。最初に1回全体を見て、以後の変更を途切れずに起点へつなげれば、すべての組み合わせを一度は見たことになる。該当する週次 Issue が無い、または SHA を読み取れない場合だけ、これまでどおり `docs/` 全体を対象にする。
+- **起点は、実行結果コメントが付いた直近の週次 Issue の HEAD SHA から今回の HEAD までに変わった `docs/**/*.md` と、`.claude/` の4つ（`skills`・`agents`・`rules`・`rule-bodies`）の `*.md` にする**：2文書間の重複・矛盾は、どちらかが変わったときにしか生まれない。最初に1回全体を見て、以後の変更を途切れずに起点へつなげれば、すべての組み合わせを一度は見たことになる。該当する週次 Issue が無い、または SHA を読み取れない場合だけ、その範囲の全体を対象にする。`.claude/` を加えたのは、同じ行が3ファイル以上に写った箇所の多くが `.claude/` にあったためである。
 
 `scripts/ci/code-policy-weekly-issue.mjs` の設計判断：
 

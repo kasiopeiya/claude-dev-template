@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// 責務: open な週次 docs/ 横断整合性チェック Issue が無いときだけ、その Issue を起票する。
+// 責務: open な週次 docs/ と .claude/ の横断整合性チェック Issue が無いときだけ、その Issue を起票する。
 //   起点は、実行結果コメントが付いた直近の週次 Issue の HEAD SHA から今回の HEAD までに
-//   変わった docs/**/*.md に絞る（設計判断は scripts/auto-programmer/README.md
-//   「週次スクリプトが Issue を供給する」を参照）。
+//   変わった、docs/ と .claude/ の Skill・agent・Rule の *.md に絞る（設計判断は
+//   scripts/auto-programmer/README.md 「週次スクリプトが Issue を供給する」を参照）。
 //   ラベルの作成から起票まで自分で行い、呼び出し側の GitHub Actions
 //   （.github/workflows/doc-consistency-weekly.yml）にはこのファイルを1回呼ぶことだけを残す
 //   （判定に使うラベルと起票時に付けるラベルを分けて持つと、一致を呼び出し側の約束に頼ることになるため）。
@@ -10,7 +10,7 @@
 // 使い方:
 //   node scripts/ci/doc-consistency-weekly-issue.mjs   起票したら、その URL を標準出力に返す。
 //                                                     次のどちらかに当たるときは起票せず、その理由を標準出力に返す：
-//                                                     open な週次 Issue がある／前回処理以降に docs/ の変更が無い
+//                                                     open な週次 Issue がある／前回処理以降に走査範囲の変更が無い
 
 import { execFileSync } from 'child_process'
 import { dirname, resolve } from 'path'
@@ -27,17 +27,31 @@ import {
 } from './weekly-issue-filing.mjs'
 
 // git はこのディレクトリを基準に実行する（カレントディレクトリに依存させない。
-// 依存させると、リポジトリ直下以外から起動したとき docs/ の変更が見つからず、黙って起票しない）
+// 依存させると、リポジトリ直下以外から起動したとき走査範囲の変更が見つからず、黙って起票しない）
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
 const WEEKLY_ISSUE_LABEL = 'doc-consistency-weekly'
+
+// 週次チェックの走査範囲。差分の起点を集める `git diff` のパスと、起点が無いときに Issue 本文へ書く
+// 「全体」の表示が、ともにこの一覧になる（別々に持つと、広げたときに片方だけ漏れる）。
+// /doc-consistency が実際に走査する範囲は doc-consistency-reviewer-agent.md の「走査範囲」が別に持つので、
+// 変えるときは両方を直す。.claude/ の hooks・settings.json は文書ではないので入れない
+const CHECK_TARGET_PATHS = [
+  'docs',
+  '.claude/skills',
+  '.claude/agents',
+  '.claude/rules',
+  '.claude/rule-bodies'
+]
+
+const CHECK_TARGET_PATHS_LABEL = CHECK_TARGET_PATHS.map((path) => `\`${path}/\``).join('・')
 
 const AI_FIXABLE_LABEL = 'ai-fixable'
 
 const WEEKLY_ISSUE_TITLE = '週次: docs/ 横断の重複・矛盾チェック (/doc-consistency)'
 
 // タスク一覧・完了条件に書く見出しと、処理済みの週次 Issue を見分ける目印を1か所で持つ
-// （ずれると処理済みの Issue が見つからず、毎回 docs/ 全体が起点に戻る）
+// （ずれると処理済みの Issue が見つからず、毎回走査範囲の全体が起点に戻る）
 const RESULT_COMMENT_HEADING = '## 実行結果'
 
 // 公開リポジトリでは誰でもコメントできるため、権限を持つ人の実行結果コメントだけを「処理済み」の目印にする
@@ -48,7 +62,7 @@ const HEAD_SHA_LINE_PREFIX = '起票時点の既定ブランチの HEAD は'
 const HEAD_SHA_LINE_PATTERN = new RegExp(`${HEAD_SHA_LINE_PREFIX} \`([0-9a-f]{7,40})\``)
 
 // 処理済みの週次 Issue を探して遡る最大件数。週次頻度なら約2年分で、これを超えて未処理のまま
-// 閉じた Issue が続くと docs/ 全体へ静かにフォールバックする
+// 閉じた Issue が続くと走査範囲の全体へ静かにフォールバックする
 const WEEKLY_ISSUE_LOOKUP_LIMIT = 100
 
 function main() {
@@ -58,7 +72,7 @@ function main() {
   }
   ensureLabelExists({
     name: WEEKLY_ISSUE_LABEL,
-    description: '週次の docs/ 横断整合性チェック Issue',
+    description: '週次の docs/ と .claude/ の横断整合性チェック Issue',
     color: '5319E7'
   })
   ensureLabelExists({
@@ -70,7 +84,7 @@ function main() {
   const headSha = getCurrentHeadSha()
   const scope = decideCheckScope(headSha)
   if (!scope) {
-    console.log('起票しない（前回処理以降に docs/ の変更が無い）')
+    console.log('起票しない（前回処理以降に走査範囲の変更が無い）')
     return
   }
   const issueUrl = createIssue({
@@ -94,7 +108,7 @@ function getCurrentHeadSha() {
  * 今回の週次チェックの対象範囲を決める。
  *
  * 処理済みの週次 Issue が無い・本文から SHA を読み取れない・SHA がこのリポジトリに無い
- * （履歴の書き換えなど）場合は docs/ 全体を対象にする。前回処理以降に docs/ の変更が無い
+ * （履歴の書き換えなど）場合は走査範囲の全体を対象にする。前回処理以降に走査範囲の変更が無い
  * 場合は null を返し、起票しないと呼び出し側に判断させる。
  *
  * @param {string} headSha 今回のチェックの終点にする HEAD SHA
@@ -165,7 +179,7 @@ function isCommitAvailable(sha) {
 }
 
 /**
- * 指定した2つの SHA の間で変わった `docs/**\/*.md` の一覧を返す。
+ * 指定した2つの SHA の間で変わった、走査範囲（`CHECK_TARGET_PATHS`）の `*.md` の一覧を返す。
  * 削除されたファイルは除き、リネームは新しいパスにする。
  *
  * @param {string} fromSha 起点にするコミット SHA
@@ -177,7 +191,7 @@ function computeChangedDocFilesBetween(fromSha, toSha) {
   // 拡張子判定（.endsWith('.md')）に一致しなくなる
   const nameStatusOutput = execFileSync(
     'git',
-    ['diff', '--name-status', '-z', '-M', fromSha, toSha, '--', 'docs'],
+    ['diff', '--name-status', '-z', '-M', fromSha, toSha, '--', ...CHECK_TARGET_PATHS],
     { cwd: repoRoot, encoding: 'utf8' }
   )
   const fields = nameStatusOutput.split('\0').filter((field) => field.length > 0)
@@ -198,7 +212,7 @@ function computeChangedDocFilesBetween(fromSha, toSha) {
 
 /**
  * 週次 Issue の本文を組み立てる。長さが GitHub の Issue 本文の上限を超える場合は、
- * 対象範囲を docs/ 全体に落として作り直す。
+ * 対象範囲を走査範囲の全体に落として作り直す。
  *
  * @param {string} headSha 起票時点の HEAD の SHA
  * @param {{ kind: 'all' } | { kind: 'changedFiles', files: string[] }} scope 対象範囲
@@ -220,7 +234,7 @@ function buildWeeklyIssueBody(headSha, scope) {
 function renderWeeklyIssueBody(headSha, scope) {
   const isFullScope = scope.kind === 'all'
   const targetDocsSection = isFullScope
-    ? 'docs/ 全体'
+    ? `${CHECK_TARGET_PATHS_LABEL} の全体`
     : scope.files.map((path) => `  - \`${path}\``).join('\n')
   const docConsistencyCommand = isFullScope
     ? '/doc-consistency'
@@ -228,7 +242,7 @@ function renderWeeklyIssueBody(headSha, scope) {
 
   return `## この変更が必要な理由
 
-docs/ 配下の文書は、差分レビューでは変更行しか見ないため、文書をまたぐ重複・矛盾を拾えない。
+docs/ 配下の文書と、.claude/ の Skill・agent・Rule は、差分レビューでは変更行しか見ないため、文書をまたぐ重複・矛盾を拾えない。
 このIssueは、週1回そのギャップを埋めるために自動起票された定期チェックである。
 放置すると、劣化した文書を手本に AI が横展開し、重複・矛盾が加速度的に増える。
 
