@@ -550,18 +550,7 @@ options: [
 
 #### ステップ 6-2: GitHub Issueのタスクチェックリスト更新
 
-Bash ツールで実装・テスト・CDK合成に関するタスクを完了マークに更新:
-
-```bash
-BODY=$(gh issue view {番号} --json body --jq '.body')
-# CDK実装・テスト・synth完了に関連するタスクを完了マークに更新
-UPDATED_BODY=$(echo "$BODY" | sed 's/- \[ \] \(.*実装.*\)/- [x] \1/g' \
-  | sed 's/- \[ \] \(.*テスト.*\)/- [x] \1/g' \
-  | sed 's/- \[ \] \(.*synth.*\)/- [x] \1/g')
-gh issue edit {番号} --body "$UPDATED_BODY"
-```
-
-該当するタスクが見つからない場合はスキップ（エラーにしない）。
+[issue-update](../../rule-bodies/issue-update.md) を Read して、「本文を取得して書き戻す」に従い、実装・テスト・CDK合成に関するタスクの `- [ ]` を `- [x]` に直す。
 
 ## 参照
 
