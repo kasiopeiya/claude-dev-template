@@ -8,7 +8,7 @@
 //   （判定に使うラベルと起票時に付けるラベルを分けて持つと、一致を呼び出し側の約束に頼ることになるため）。
 //
 // 使い方:
-//   node scripts/ci/doc-consistency-weekly-issue.mjs   起票したら、その URL を標準出力に返す。
+//   node scripts/ci/doc-audit-weekly-issue.mjs         起票したら、その URL を標準出力に返す。
 //                                                     次のどちらかに当たるときは起票せず、その理由を標準出力に返す：
 //                                                     open な週次 Issue がある／前回処理以降に走査範囲の変更が無い
 
@@ -30,7 +30,7 @@ import {
 // 依存させると、リポジトリ直下以外から起動したとき走査範囲の変更が見つからず、黙って起票しない）
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
-const WEEKLY_ISSUE_LABEL = 'doc-consistency-weekly'
+const WEEKLY_ISSUE_LABEL = 'doc-audit-weekly'
 
 // 週次チェックの走査範囲。差分の起点を集める `git diff` のパスと、起点が無いときに Issue 本文へ書く
 // 「全体」の表示が、ともにこの一覧になる（別々に持つと、広げたときに片方だけ漏れる）。

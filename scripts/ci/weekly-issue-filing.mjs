@@ -1,4 +1,4 @@
-// 責務: 週次 Issue を起票する2本のスクリプト（code-policy-weekly-issue.mjs・doc-consistency-weekly-issue.mjs）に
+// 責務: 週次 Issue を起票する2本のスクリプト（code-policy-weekly-issue.mjs・doc-audit-weekly-issue.mjs）に
 //   共通の、gh による起票の手順と、本文に埋め込んでよいパスの条件をまとめる。
 //   gh の癖への対処（検索 API の結果整合の遅れ・ラベル数の上限・引数長の上限）を1か所に集め、
 //   片方のスクリプトにだけ修正が入る状態を防ぐ。
