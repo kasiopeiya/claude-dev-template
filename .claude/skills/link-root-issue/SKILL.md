@@ -1,6 +1,6 @@
 ---
 name: link-root-issue
-description: 起票した Issue をルート Issue（Issue 階層の最上位の常設 Issue）の下に紐づける。起票前にルートを決める段と、起票後に紐づける段を持つ。Issue を起票する Skill が、起票の前後に Read して手順に従う。「link-root-issue」「ルート Issue に紐づけて」と指示されたとき。
+description: 起票した Issue をルート Issue（Issue 階層の最上位の常設 Issue）の下に紐づける。「link-root-issue」「ルート Issue に紐づけて」と指示されたとき。
 argument-hint: '<Issue番号> [ルート名]'
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: cdk-reviewer-agent
-description: AWS CDK インフラコードを、指定されたレンズ（誤設定探し／セキュリティ／設計の形／決まりどおりか／設計書の内容）でレビューする専門エージェント。レンズが担当する観点だけを判定し、統合は呼び出し側（/cdk-review）が行う。
+description: AWS CDK インフラコードを、指定されたレンズ（誤設定探し／セキュリティ／設計の形／決まりどおりか／設計書の内容）でレビューする専門エージェント。統合は呼び出し側（/cdk-review）が行う。
 tools: Glob, Grep, Read, Bash
 model: opus
 effort: xhigh

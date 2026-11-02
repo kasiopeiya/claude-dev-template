@@ -1,6 +1,6 @@
 ---
 name: actions-reviewer-agent
-description: GitHub Actions の workflow（.github/workflows/）を、指定されたレンズ（security／spec）でレビューする専門エージェント。レンズが担当する観点だけを判定し、統合は呼び出し側（/actions-review）が行う。
+description: GitHub Actions の workflow（.github/workflows/）を、指定されたレンズ（security／spec）でレビューする専門エージェント。統合は呼び出し側（/actions-review）が行う。
 tools: Read, Grep, Glob, WebSearch, WebFetch
 model: opus
 effort: medium

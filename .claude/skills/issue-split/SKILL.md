@@ -1,6 +1,6 @@
 ---
 name: issue-split
-description: 大きすぎる／複数の関心事を含む既存 GitHub Issue を sub-issue に割り、親を umbrella に作り替える。「issue-split」「issueを分割して」「issueをsub-issueに割って」と指示されたとき。
+description: 大きすぎる／複数の関心事を含む既存 GitHub Issue を sub-issue に割る。「issue-split」「issueを分割して」「issueをsub-issueに割って」と指示されたとき。
 argument-hint: '<Issue番号> [--from-issue-check]'
 allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
 ---

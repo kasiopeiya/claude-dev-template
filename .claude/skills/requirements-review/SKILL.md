@@ -1,6 +1,6 @@
 ---
 name: requirements-review
-description: 要件定義書（docs/requirements.md）を requirements-doc-policy の基準でレビューし、凍結してよい品質か（--stage のときは、その記載段階までの項目が合格か）を合否判定する。「requirements-review」「要件定義書をレビューして」と指示されたとき。
+description: 要件定義書（docs/requirements.md）をレビューし、凍結してよい品質かを合否判定する。「requirements-review」「要件定義書をレビューして」と指示されたとき。
 argument-hint: '[--stage <記載段階の番号>] [file-path] [input-materials...]（省略時は docs/requirements.md を文書全体・全レンズで判定する。--stage で、その記載段階までの項目だけを判定する。入力資料パスを追加で渡せる）'
 allowed-tools: Task, Bash, Read, Edit
 ---

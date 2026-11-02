@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Agrees the interview's scope in one sentence first and refuses to walk outside it. Use for "grill me", 「仕様を詰めたい」「壁打ちして」。Pass --small to require that the agreed sentence be the thinnest end-to-end slice.
+description: Interview the user relentlessly about a plan or design until reaching shared understanding, within a scope agreed in one sentence first. Use for "grill me", 「仕様を詰めたい」「壁打ちして」。
 ---
 
 ## Agree the scope first — always

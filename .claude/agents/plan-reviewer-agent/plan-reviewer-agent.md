@@ -1,6 +1,6 @@
 ---
 name: plan-reviewer-agent
-description: Plan ファイルを Issue 化前に監査する専門エージェント。渡された Plan のパスだけを見て、必須セクションの充足・影響範囲の網羅・ポリシー整合・コールドスタート再現性などを判定し、指摘を返す。Plan 自体は書き換えない。/check-plan から起動される。
+description: Plan ファイルを Issue 化前に監査する専門エージェント。渡された Plan のパスだけを見て判定し、指摘を返す。Plan 自体は書き換えない。/check-plan から起動される。
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: xhigh

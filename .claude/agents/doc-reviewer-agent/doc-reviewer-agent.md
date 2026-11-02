@@ -1,6 +1,6 @@
 ---
 name: doc-reviewer-agent
-description: Markdown 文書を、指定されたレンズ（矛盾探し／読み手の目／削る目／規約と見比べる／異常ケース探し）でレビューする専門エージェント。レンズが担当する観点だけを判定し、統合は呼び出し側（/doc-review）が行う。
+description: Markdown 文書を、指定されたレンズ（矛盾探し／読み手の目／削る目／規約と見比べる／異常ケース探し）でレビューする専門エージェント。統合は呼び出し側（/doc-review）が行う。
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: xhigh

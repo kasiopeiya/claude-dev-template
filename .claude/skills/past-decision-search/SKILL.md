@@ -1,6 +1,6 @@
 ---
 name: past-decision-search
-description: 仕組み・ファイルのパス・論点のキーワードを受け取り、それについて過去に決めたこと（決定・理由・却下した案）を、仕組みの本文・ADR・決定記録のコミット・close 済み Issue から出典付きで引く。計画・検討・Issue 監査の決まった手順から呼ばれる。「past-decision-search」「過去の決定を調べて」「設計意図を調べて」と指示されたとき。
+description: 仕組み・ファイルのパス・論点のキーワードについて、過去に決めたこと（決定・理由・却下した案）を出典付きで引く。「past-decision-search」「過去の決定を調べて」「設計意図を調べて」と指示されたとき。
 ---
 
 # Past Decision Search（過去の決定を引く）

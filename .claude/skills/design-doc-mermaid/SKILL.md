@@ -1,6 +1,6 @@
 ---
 name: design-doc-mermaid
-description: Create Mermaid diagrams from text or source code, selecting the diagram type from the shape of the information (flowchart is the last resort). Use for "create a diagram", "generate mermaid", "code to diagram", 「図を描く」「図にする」「アーキテクチャ図」。
+description: Create Mermaid diagrams from text or source code, choosing the diagram type by the shape of the information. Use for "create a diagram", "generate mermaid", "code to diagram", 「図を描く」「図にする」「アーキテクチャ図」。
 ---
 
 # Mermaid Architect - Hierarchical Diagram and Documentation Skill

@@ -1,6 +1,6 @@
 ---
 name: premise-check
-description: 計画・設計などの文書に名前が出た外部の製品・サービスの制約を、決まった調査項目に沿って一次資料で調べ、報告したうえで、計画を見直す必要がある制約を人間に選ばせる。「premise-check」と名指しされたとき、または /to-plan・/decide-tech-stack で人間が実行を選んだとき。
+description: 計画・設計などの文書に名前が出た外部の製品・サービスの制約を一次資料で調べ、計画を見直す必要がある制約を人間に選ばせる。「premise-check」と名指しされたとき、または /to-plan・/decide-tech-stack で人間が実行を選んだとき。
 argument-hint: '<計画のパス | 計画の文章>'
 ---
 

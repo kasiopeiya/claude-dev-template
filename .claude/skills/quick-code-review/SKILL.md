@@ -1,6 +1,6 @@
 ---
 name: quick-code-review
-description: scripts/・.claude/hooks/・eslint-rules/・.claude/skills/ 配下のスクリプトを編集した直後の軽量レビュー。バグ・セキュリティ・ESLint で落とせない決まりの3観点だけをメインの会話で見て、その場で直す。「quick-code-review」「軽くコードチェックして」と指示されたとき。app/・infra/ は /code-review・/cdk-review。
+description: scripts/・.claude/hooks/・eslint-rules/・.claude/skills/ 配下のスクリプトを編集した直後の軽量レビュー。バグ・セキュリティ・ESLint で落とせない決まりの3観点だけを見る。「quick-code-review」「軽くコードチェックして」と指示されたとき。app/・infra/ は /code-review・/cdk-review。
 argument-hint: '[file-path]'
 ---
 
