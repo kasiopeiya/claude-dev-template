@@ -89,6 +89,8 @@ AI の提案が違うと思ったら、「`/grill-me` で始めて」「直接�
 - **「issue N 対応して」と直接指示する**：その場で `/doc-consistency` を実行させる
 - **ボードで Ready に動かし、Auto Programmer に拾わせる**（手順は次節）
 
+毎回読まれる文書（`CLAUDE.md`・各ハブなど）が前回処理以降に変わった週は、同じ Issue に `/slim-always-loaded-docs`（その減量候補を Issue に起票する Skill）も載る。どちらの結果も、同じ「実行結果」コメントに書く。
+
 open な週次 Issue が残っている間は、次の週のワークフローは新しく起票しない（未処理が積み上がるのを防ぐため）。実行そのものを GitHub Actions が行わない理由を含む設計判断は [auto-programmer の README](../../scripts/auto-programmer/README.md#週次スクリプトが-issue-を供給する)を参照。
 
 ## 週次のコード Policy 準拠チェック Issue が届く
