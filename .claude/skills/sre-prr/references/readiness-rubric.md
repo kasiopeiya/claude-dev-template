@@ -17,7 +17,7 @@ PRR で審査する領域と、各領域の pass / warn / fail / N-A の判定�
 ### ① ドキュメント整備
 
 - **基準の出どころ**：`docs/policy/documentation-policy.md`・`docs/policy/runbook-policy.md`・`/doc-review`（参照）。
-- **見るもの**：本番運用に必要なドキュメントが揃い、`docs/design-hub.md` から辿れるか。とくに運用手順書／障害対応 Runbook（`runbook-policy` の再現性7条件を満たすか）と、運用に必要な設計書。
+- **見るもの**：本番運用に必要なドキュメントが揃い、`docs/design-hub.md` から辿れるか。とくに運用手順書／障害対応 Runbook（`runbook-policy` の再現性の条件を満たすか）と、運用に必要な設計書。
 - **判定**：
   - `pass`：運用に必要な設計書・手順書が揃い、ハブから辿れる。
   - `warn`：一部の運用ドキュメントが欠落 or 鮮度が切れている。
@@ -40,7 +40,7 @@ PRR で審査する領域と、各領域の pass / warn / fail / N-A の判定�
 ### ③ 監視・アラート
 
 - **基準の出どころ**：`docs/policy/monitoring-policy.md` の「レビューチェックリスト」（参照・**転記しない**）。同ファイルの各問いを、組み上がったシステム全体に対して適用する。
-- **見るもの**：SLI/SLO の計装・外形監視（Synthetics）・症状ベースのアラート・actionable・Runbook 紐付け・severity レベル。CDK 等のコードでアラーム定義を静的に確認する。
+- **見るもの**：チェックリストの各問い。CDK 等のコードでアラーム定義を静的に確認する。
 - **判定**：
   - `pass`：`monitoring-policy` のチェックリストを実質満たす。
   - `warn`：一部不足（severity 未付与・Runbook 未リンク・ホワイトボックス指標の直接ページングなど）。
