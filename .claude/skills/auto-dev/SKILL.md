@@ -39,11 +39,10 @@ state が `OPEN` でなければ、何もせず理由を表示して終了する
 - タスクを1つ終えるごとに `gh issue edit $ARGUMENTS` でチェックリストを更新する（CLAUDE.md の厳守ルール）
 - 本文の「今回作らないこと」に挙がっているものには手を出さない
 
-実行する Skill がレビュー（`/doc-review`・`/code-review`・`/cdk-review`・`/arch-review`・`/actions-review`・`/requirements-review`）のときは、合否・再レビューの回数・修正範囲を [ai-review-gate-policy](../../../docs/policy/ai-review-gate-policy.md) に従って決める（自律型ワークフロー）。
+実行する Skill がレビュー（`/doc-review`・`/code-review`・`/cdk-review`・`/arch-review`・`/actions-review`・`/requirements-review`）のときは、[review-fix-loop](../../rule-bodies/review-fix-loop.md) を Read し、「ループ」に従う。この Skill の違いは次のとおり。
 
-- 指摘があれば、severity にかかわらずすべて直す（例外は同ポリシー「直す範囲は毎回すべて」の残してよい例外だけ）。その回に残してよい例外以外の Critical があったときだけ、直したあと同じレビュー Skill を再実行する。**再レビューには前回の指摘を渡さない**
-- レビューは同じ Skill ごとに最大2回（初回を含む）。「タスク一覧」の作業として動作確認のために回したものも回数に数える。残してよい例外以外の Critical が0件になった回で合格とし、その回に出た High・Medium もその場で直してから次へ進む
-- 2回目のレビューで指摘が出たら、直したうえで再レビューせずに Phase 3 へ進む
+- 「タスク一覧」の作業として動作確認のために回したレビューも、回数に数える
+- 次へ進む先は、実装フローの次の Skill。最後の Skill なら Phase 3
 
 ### Phase 3: 検証
 
