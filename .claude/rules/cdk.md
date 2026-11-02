@@ -36,7 +36,7 @@ const amiId = ssm.StringParameter.valueFromLookup(this, '/my/ami')
 
 ### DON'T: CloudFormation `Parameters` の利用
 
-実行時に外部から値を注入する `CfnParameter` は使わない。代わりに、CDK の Context（`cdk.json`）や TypeScript のプロパティを使い、Synth 時に値を固定する。
+実行時に外部から値を注入する `CfnParameter` は使わない。代わりに、環境ごとの値は `parameter.ts` に置き、props で受け取って Synth 時に固定する。
 
 ```typescript
 // ❌ デプロイ時に外部から差し込まれるためSynth時に値が定まらない
@@ -66,7 +66,7 @@ const isProd = new CfnCondition(this, 'IsProd', { expression: Fn.conditionEquals
 
 ### DON'T: 物理ID（Physical Name）の動的生成
 
-Synth のたびに物理名が変わると `cdk diff` で毎回「リソースの削除→再作成」として検知され、意図しないダウンタイムやデータ消失につながる。また、CloudFormation はリソースの同一性を物理名で追跡するため、名前が変わると既存リソースを削除して新規作成しようとし、削除保護が機能しない場合は実データが失われる。
+Synth のたびに物理名が変わると、`cdk diff` で毎回「削除→再作成」として検知される。
 
 実行時評価に依存する物理名生成や、動的な変数での名前指定は避ける。リソース名は CDK の論理 ID 管理に任せるか、`PhysicalName.GENERATE_IF_NEEDED` を使う。
 

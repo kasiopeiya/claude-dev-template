@@ -6,7 +6,7 @@ paths:
 
 # React 実装ルール
 
-[typescript.md](typescript.md) を継承し、ここでは **React / JSX / Hooks / TailwindCSS / Testing Library 固有の差分だけ**を定める。命名・規模の上限などの共通ルールは typescript.md に、コメント規約は [code-comment-policy](../../docs/policy/code-comment-policy.md) に従う。設計の判断軸は [frontend-design-policy.md](../../docs/policy/frontend-design-policy.md) が定める——**コンポーネントの責務は1つ**（ロジックはカスタムフックへ逃がす）・**状態は使う場所に置く**（持ち上げ・グローバル化は必要になってから）・**Props は誤用が型で弾かれる形にする**（フラグの組み合わせではなく判別可能ユニオン）。
+[typescript.md](typescript.md) を継承し、ここでは **React / JSX / Hooks / TailwindCSS / Testing Library 固有の差分だけ**を定める。命名・規模の上限などの共通ルールは typescript.md に、コメント規約は [code-comment-policy](../../docs/policy/code-comment-policy.md) に従う。設計の判断軸は [frontend-design-policy.md](../../docs/policy/frontend-design-policy.md) が定める。
 
 ## 対象読者
 
@@ -21,18 +21,14 @@ AIエージェントが、React コンポーネント・カスタムフック・
 ## Props
 
 - Props は型（`type` または `interface`）で明示する。`any`・暗黙の `object` を使わない
-- **boolean / フラグ Props で振る舞いを切り替えない。** これは [application-design-policy](../../docs/policy/application-design-policy.md) が禁ずるブーリアン引数アンチパターンの UI 適用である。状態が割れるなら**コンポーネントを分ける**
+- **boolean / フラグ Props で切り替えない。** 見た目の選択肢は、必須の判別ユニオン `variant` にまとめる。フラグでデータ取得や処理そのものが変わるなら、責務が割れているので**コンポーネントを分ける**（理由は frontend-design-policy の「Props はインターフェースである」が定める）
 
 ```tsx
-// ❌ フラグ Props で2つの責務を1つに詰め込む
-<Button primary={true} />
-<Button primary={false} />
+// ❌ フラグの組み合わせは、無効な状態（primary かつ danger）を作れてしまう
+type ButtonProps = { primary?: boolean; danger?: boolean }
 
-// ✅ 役割ごとに分ける（名前が振る舞いを語る）。または variant を必須の判別ユニオンにする
-<PrimaryButton />
-<SecondaryButton />
-// もしくは
-type ButtonProps = { variant: 'primary' | 'secondary' }
+// ✅ 見た目は variant にまとめ、無効な組み合わせを型で弾く
+type ButtonProps = { variant: 'primary' | 'danger' }
 ```
 
 - 子へ渡すだけの中継 Props を多段に増やさない。3段以上バケツリレーするなら Context か構造の見直しを検討する
@@ -60,9 +56,7 @@ const fullName = `${first} ${last}`
 
 ## 状態管理
 
-- **ローカル state を既定**にし、使う場所の近くに置く（colocation）
-- **state の持ち上げ（lifting up）は必要になってから**行う（先回りしない。共有要求が現れた瞬間に持ち上げる）
-- 横断的に共有する state はまず Context を使う。専用のグローバル状態ライブラリ（Redux/Zustand 等）の導入は ADR で判断する
+- **ローカル state を既定**にし、持ち上げ・Context・グローバル化は必要になってから行う（どの順に広げるかと、グローバル状態ライブラリの導入判断は frontend-design-policy が定める）
 
 ## TailwindCSS / スタイリング
 
@@ -87,7 +81,7 @@ const fullName = `${first} ${last}`
 
 ## テスト実装ルール（Testing Library）
 
-テストの**思想**（ユーザー視点で振る舞いを検証する・内部 state や props を直接検証しない・どの層に書くか）は [unit-test-policy.md](../../docs/policy/unit-test-policy.md) と [test-strategy-policy.md](../../docs/policy/test-strategy-policy.md)（フロントは統合テスト厚めのトロフィー型）に従う。書き方の共通部分（AAA・命名・SUT等）は [unit-test.md](unit-test.md) が定める。ここでは Testing Library 固有の**実装戦術**だけを定める。
+テストの**思想**は [unit-test-policy.md](../../docs/policy/unit-test-policy.md) と [test-strategy-policy.md](../../docs/policy/test-strategy-policy.md)（フロントは統合テスト厚めのトロフィー型）に従う。書き方の共通部分は [unit-test.md](unit-test.md) が定める。
 
 - **クエリの優先順位**：`getByRole` → `getByLabelText` → `getByText` → （最終手段）`getByTestId`。アクセシブルな属性で取得できるなら `data-testid` を増やさない
 - ユーザー操作は **`userEvent` を `fireEvent` より優先**する（実際の操作に近く、フォーカス・入力の副作用まで再現する）

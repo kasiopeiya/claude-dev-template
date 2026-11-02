@@ -14,7 +14,7 @@ AIエージェントが、TypeScript（および `scripts/`・`.claude/hooks/` �
 
 ## コーディングスタイル
 
-- doc comment は JSDoc 形式で書き、契約（引数・戻り値・スローする例外）を明記する
+- doc comment は JSDoc 形式で書く（何を書くかは「コメント」節）
 - `export` は外部から参照されるものだけに付ける。モジュール内でのみ使う関数・変数・型には `export` を付けない（`export` が付いていれば「外部で使われるもの」と即座に判断できる）
 - 動的 `import()` は遅延読み込みが必要な場合だけ関数内で使い、なぜ静的 import にしないかを WHY コメントで明記する
 
@@ -35,9 +35,7 @@ AIエージェントが、TypeScript（および `scripts/`・`.claude/hooks/` �
 
 ## ネスト制限は「設計を見直せ」というシグナル（数だけ消さない）
 
-深いネストは責務過多・制御フロー過多の code smell である。違反したら数を減らすのではなく、まず設計を見直す（責務の抽出・早期 return・分岐の単純化）。詳細は [application-design-policy](../../docs/policy/application-design-policy.md) を参照。
-
-複雑さを温存したままネストの「数」だけ消す小手先の回避は禁止（レビューでも違反扱い）。典型は、ネスト逃れの `.then` / `.catch` チェーン化や多段三項など「制御構文の見た目だけ消す」変形である。
+上限を超えたら、数を減らす前に設計を見直す（理由と見直し方は [application-design-policy](../../docs/policy/application-design-policy.md) が定める）。複雑さを温存したまま数だけ消す回避は禁止。典型は、ネスト逃れの `.then` / `.catch` チェーン化や多段三項など「制御構文の見た目だけ消す」変形である。
 
 ```typescript
 // ❌ ネスト逃れのための .catch（複雑さは残り、エラーの流れも追いにくい）
@@ -62,7 +60,7 @@ const user = await loadUser()
   - 値オブジェクトの `#value`・`get value()` は設計ポリシーが定める形なので、`domain/` 配下は設定が許している
 - 真偽値は `is` / `has` / `should` / `can` などのプレフィックスで意図を明示する
 - 関数名は動詞で始める（`getUser`、`validateInput`、`createSession`）
-- クラス名は目的（担う一つの責務）が分かる狭い名前にする。`Money`・`Manager`・`Util` のような広い名前は、あらゆる処理を招き入れて神クラス化する。設計上の根拠と判断基準は [application-design-policy](../../docs/policy/application-design-policy.md) が定める（神クラスアンチパターン）
+- クラス名は目的（担う一つの責務）が分かる狭い名前にする（根拠と判断基準は application-design-policy の神クラスアンチパターンが定める）
 - 定数は目的が伝わる名前にする（`3000` → `REQUEST_TIMEOUT_MS`）
 - ファイル名はそのファイルが担う責務を表す名前にする（`utils.ts` → `dateFormatter.ts`、`helpers.ts` → `tokenValidator.ts`）
 
@@ -98,4 +96,4 @@ async findById(id: UserId): Promise<User | null> {
 
 ## コメント
 
-コメントの規約は言語に依らないため、基準は [code-comment-policy](../../docs/policy/code-comment-policy.md)、記法は [code-comment.md](code-comment.md) が定める。要点は、実装コメントは WHY・doc comment は契約（投げる例外は `@throws {型}`）・ファイル冒頭は責務と前提・TODO は Issue 番号を併記・重要箇所バナーは1ファイル1個。
+コメントの規約は言語に依らないため、基準は [code-comment-policy](../../docs/policy/code-comment-policy.md)、記法は [code-comment.md](code-comment.md) が定める。

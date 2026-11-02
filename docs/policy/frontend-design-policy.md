@@ -15,7 +15,7 @@ AIエージェントが、React コンポーネント・カスタムフックを
 
 ## 基盤との関係：application-design-policy を継承し、UI 固有の差分だけを足す
 
-フロントエンドのコードも、まずアプリケーション設計の普遍原則（責務の単一性・正しく使うのが一番易しいインターフェース・引数＝責務の鏡）に従う。本ポリシーはそれらを再掲せず、**React／UI コンポーネント領域に固有の差分だけ**を上乗せする。コード内部設計の普遍原則は [application-design-policy.md](application-design-policy.md) を、判断に迷ったときの上位基準は [refined-engineer-judgment-principles.md](refined-engineer-judgment-principles.md) を参照する。実装の機械的ルール（JSX 記法・Hooks・Tailwind・Testing Library 戦術）は [.claude/rules/react.md](../../.claude/rules/react.md) に置く。
+フロントエンドのコードも、まずアプリケーション設計の普遍原則（責務の単一性・正しく使うのが一番易しいインターフェース・引数＝責務の鏡）に従う。本ポリシーはそれらを再掲せず、**React／UI コンポーネント領域に固有の差分だけ**を上乗せする。コード内部設計の普遍原則は [application-design-policy.md](application-design-policy.md) を、判断に迷ったときの上位基準は [refined-engineer-judgment-principles.md](refined-engineer-judgment-principles.md) を参照する。実装の機械的ルールは [.claude/rules/react.md](../../.claude/rules/react.md) に置く。
 
 > [!IMPORTANT]
 > **TL;DR（このポリシーの決定事項）**
