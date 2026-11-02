@@ -5,6 +5,9 @@ description: ADR（Architecture Decision Record）を作成、またはADR対象
 
 # ADR 作成スキル
 
+> [!IMPORTANT]
+> **（AI・必須）** 本 Skill か `docs/adr/adr-template.md` を改訂したら、`.claude/skills/doc-review/references/review-criteria.md` の観点一覧（ADR のみ対象の行）の追従要否を判断すること。観点一覧は速度のため判定基準を書き下した派生コピーであり、追従しないと**どのゲートも通らない規約が生まれる**。
+
 ## フロー
 
 1. ADR対象かどうかを判定する（[adr-policy](../../../docs/policy/adr-policy.md) を Read し、その判定手順を上から当てる）
