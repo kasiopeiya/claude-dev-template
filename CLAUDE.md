@@ -57,7 +57,7 @@
 
 - Issue 番号の無い作業指示は、小さくても着手前に起票する（相談を経たものは `/to-issues`、その場の指示は `/quick-issue`）
 - **相談の承認は実装の許可ではない**：`/grill-me`・Plan モードを経た作業では、`ExitPlanMode` などの承認を「Issue にしてよい」承認として扱う。同じセッションで実装に進むのは人間が指示したときだけ
-- **着手したら `npm run close-issues`・`npm run prune-merged-branches-and-worktrees`・`npm run move-issue-card -- <Issue番号>` を打つ**：着手とは、実装フローの Skill の起動直前と、その場で起票した Issue の編集を始める直前をいう。Issue を読むだけの Skill（`/issue-check`・`/issue-decide`・`/issue-split`・`/issue-deps`）では打たない。失敗しても作業は続ける
+- **着手したら `npm run close-issues`・`npm run prune-merged-branches-and-worktrees`・`npm run move-issue-card -- <Issue番号>` を打つ**：着手とは、Issue 番号だけで対応を頼まれた直後（最初の Skill を起動する前。最初の Skill が読むだけでも、頼まれた時点で作業は始まっている）、実装フローの Skill の起動直前、その場で起票した Issue の編集を始める直前をいう。人間が単体で打つ Issue を読むだけの Skill（`/issue-check`・`/issue-decide`・`/issue-split`・`/issue-deps`）では打たない。失敗しても作業は続ける
 - **（厳守）** Issue の「タスク一覧」を1つずつ進め、完了ごとに `gh issue edit` でチェックを付ける
 - タスク一覧がポリシーに反していたら従わない。着手前に、どのポリシーのどの規定に反するかを `gh issue comment` で書き、タスクを訂正してから進める
 - **PR を経由する作業では Issue を閉じない**：マージで閉じる。片付けた Issue はすべて `/pr-body` に渡して `Closes` 行に載せる。push を人間に任せるときは、push 後に `/pr-body <Issue番号>` が要ると伝える。リポジトリに差分が出ない作業だけ、完了時に確認なしで `gh issue close` する。push・close の直前に `git status` で未コミットの変更が無いか確かめ、あればコミットする
