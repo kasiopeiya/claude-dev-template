@@ -86,7 +86,7 @@ import {
   HUMAN_ONLY_LABELS
 } from './issueCheckVerdict.mjs'
 import { listSubIssues, readIssueStatus } from './issueQuery.mjs'
-import { speakIssueResult } from './issueResultSpeech.mjs'
+import { isSpeechEnabled, speakIssueResult } from './issueResultSpeech.mjs'
 import { removeNeedsHumanCheckLabel } from './issueWrite.mjs'
 import { isSubIssueHandoverEmpty } from './needsHumanCheck.mjs'
 import { ensureDependencies, runPreflight } from './preflight.mjs'
@@ -134,6 +134,8 @@ async function main() {
   validateBranchPrefix(config.branchPrefix)
   // 欠けたまま動かすと settings.json を継ぎ、対話の /model に引きずられる。Issue を拾う前に止める
   validateSessionModelSettings(config)
+  // config.mjs は例外を投げられない（キーのコメントを見る）ので、使えない値の検査はここで、Issue を拾う前に行う
+  const shouldSpeakIssueResult = isSpeechEnabled(config.enableSpeechEnvValue)
   // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く
   // 効いてしまう（Issue #651）のを防ぐ。index.mjs の生存期間全体に掛かるよう、ここで1回だけ呼ぶ
   startSleepGuard()
@@ -143,7 +145,7 @@ async function main() {
     runPreflight(workspaceDir)
     // リモートを見るので clone ができた後に確かめる
     ensureNoBranchNamedAsPrefix({ branchPrefix: config.branchPrefix, workspaceDir })
-    await processIssuesUntilStopped(workspaceDir)
+    await processIssuesUntilStopped(workspaceDir, shouldSpeakIssueResult)
   } finally {
     releaseWorkspaceLock()
   }
@@ -471,18 +473,22 @@ async function implementAndWatchCi(startedIssue, record, workStartedAt) {
  * 着手中へ動かした Issue 1件を実装させて CI まで見届け、結果を記録する（記録の決まりは runWorkAndRecord）。
  *
  * @param {StartedIssue} startedIssue startFirstStartableIssue の結果
+ * @param {boolean} shouldSpeakIssueResult 締めの結果を読み上げるなら true（環境変数 AUTO_PROGRAMMER_ENABLE_SPEECH=1 のとき）
  * @returns {Promise<boolean>} 走らせた claude セッションがすべて正常終了したら true
  * @throws {Error} 記録ファイルへ書けなかったとき
  */
-function implementIssueAndRecord(startedIssue) {
+function implementIssueAndRecord(startedIssue, shouldSpeakIssueResult) {
   const { issue, branchName, workspaceDir, existingPullRequestNumbers } = startedIssue
   return runWorkAndRecord({
     // 記録ファイルは全プロセスで共有するので、どの clone で作業したかを載せる。途中で消えた変更の stash を探す先になる
     record: { issueNumber: issue.number, issueTitle: issue.title, branchName, workspaceDir },
     runWork: (record, workStartedAt) => implementAndWatchCi(startedIssue, record, workStartedAt),
     readPullRequestUrl: () => findCreatedPullRequestUrl(branchName, existingPullRequestNumbers),
-    speakRunOutcome: (runOutcome) =>
-      speakIssueResult({ issueNumber: issue.number, issueTitle: issue.title, runOutcome })
+    // 渡さなければ読み上げない（runWorkAndRecord の決まり）
+    speakRunOutcome: shouldSpeakIssueResult
+      ? (runOutcome) =>
+          speakIssueResult({ issueNumber: issue.number, issueTitle: issue.title, runOutcome })
+      : undefined
   })
 }
 
@@ -538,10 +544,11 @@ async function waitUnlessIdleWaitLimitReached(idlePollCount, idleReason) {
  * 選んだ作業の Issue のロックは claimedWork に載せて返す。外すのは呼び出し側で、作業を終えたときに issueLockKeeper.release を呼ぶ。
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
+ * @param {boolean} shouldSpeakIssueResult Issue を終えたときに結果を読み上げるなら true
  * @returns {Promise<{ claimedWork: ClaimedWork | null, idleReason: string | null }>} 選んだ作業（する作業が無いときは null）と、
  *   作業が無いときに待機中のステータス行へ出す理由（作業があるときは null）
  */
-async function claimNextWork(workspaceDir) {
+async function claimNextWork(workspaceDir, shouldSpeakIssueResult) {
   const conflictedPullRequest = await claimFirstConflictedPullRequest()
   if (conflictedPullRequest) {
     return {
@@ -557,7 +564,7 @@ async function claimNextWork(workspaceDir) {
     if (!startedIssue) return { claimedWork: null, idleReason }
     return {
       claimedWork: {
-        runWork: () => implementIssueAndRecord(startedIssue),
+        runWork: () => implementIssueAndRecord(startedIssue, shouldSpeakIssueResult),
         issueLock: startedIssue.issueLock
       },
       idleReason: null
@@ -574,17 +581,18 @@ async function claimNextWork(workspaceDir) {
  * Ctrl+C が来るか、着手できない周が上限を超えるまで、衝突した PR を解かせるか Issue を拾うかを1件ずつ処理する。
  *
  * @param {string} workspaceDir このプロセスが使う AI 専用 clone
+ * @param {boolean} shouldSpeakIssueResult Issue を終えたときに結果を読み上げるなら true
  * @returns {Promise<void>}
  * @throws {TechnicalError} claude のセッションが続けて失敗したとき
  * @throws {Error} 記録ファイルへ書けなかったとき
  */
-async function processIssuesUntilStopped(workspaceDir) {
+async function processIssuesUntilStopped(workspaceDir, shouldSpeakIssueResult) {
   let consecutiveSessionFailureCount = 0
   let idlePollCount = 0
   let isIdleWaitLimitReached = false
   while (!stopSignal.aborted && !isIdleWaitLimitReached) {
     tryCloseIssuesOfMergedPullRequests()
-    const { claimedWork, idleReason } = await claimNextWork(workspaceDir)
+    const { claimedWork, idleReason } = await claimNextWork(workspaceDir, shouldSpeakIssueResult)
     if (!claimedWork) {
       idlePollCount += 1
       isIdleWaitLimitReached = await waitUnlessIdleWaitLimitReached(idlePollCount, idleReason)

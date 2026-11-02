@@ -203,7 +203,19 @@ AI 専用 clone と実行記録は `~/dev/auto-programmer/` の下に置かれ�
 
 ## 1件を終えたときの読み上げ
 
-Issue 1件の締めの表示に合わせて、macOS では `say`、Windows では `powershell.exe -NoProfile` から System.Speech（Windows 標準の音声合成）の `SpeechSynthesizer` で、次の1文を読み上げる。声は指定せず、OS の既定の声に任せる。
+既定ではオフで、鳴らない。環境変数 `AUTO_PROGRAMMER_ENABLE_SPEECH=1` を付けたときだけ、Issue 1件の締めの表示に合わせて、macOS では `say`、Windows では `powershell.exe -NoProfile` から System.Speech（Windows 標準の音声合成）の `SpeechSynthesizer` で、次の1文を読み上げる。声は指定せず、OS の既定の声に任せる。
+
+鳴らしたいかは人によって違い、git で追跡する `config.mjs` には書けないので、環境変数で切り替える。
+
+```bash
+# 毎回付ける
+AUTO_PROGRAMMER_ENABLE_SPEECH=1 npm run auto-programmer
+
+# シェルの設定（~/.zshrc など）に書く
+export AUTO_PROGRAMMER_ENABLE_SPEECH=1
+```
+
+使える値は `1` だけ（付けない・空はオフ）。`true` など別の値を付けると、鳴らない理由に気づけないまま終わるのを防ぐため、Issue を拾う前にエラーで止まる。
 
 ```
 issue <番号>、<結果の言葉>。<タイトル>
@@ -220,6 +232,7 @@ issue <番号>、<結果の言葉>。<タイトル>
 
 次の場合は読み上げない。
 
+- 環境変数 `AUTO_PROGRAMMER_ENABLE_SPEECH` を付けていない
 - macOS と Windows 以外の OS
 - 衝突した PR を解かせる流れ。Issue を終えることではないため
 
@@ -253,7 +266,7 @@ tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 
 直すのは次のものだけ。
 
-- **`config.mjs`**：上の表の値をその環境のものへ書き換える。書き換えないと `npm run move-issue-card` はボード未設定とみなして何もしない。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい。clone の番号とロックの置き場は既存の `workspaceDir` から導くので、同期した後も古い `config.mjs` のまま、キーを足さずに並べて動かせる
+- **`config.mjs`**：上の表の値をその環境のものへ書き換える。書き換えないと `npm run move-issue-card` はボード未設定とみなして何もしない。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい。clone の番号とロックの置き場は既存の `workspaceDir` から導くので、同期した後も古い `config.mjs` のまま、キーを足さずに並べて動かせる。読み上げのキー `enableSpeechEnvValue` も同期では届かず、古い `config.mjs` のままではオフで動く（`AUTO_PROGRAMMER_ENABLE_SPEECH=1` を付けても鳴らない）。オンにしたいときは、`config.mjs` の `config` に `enableSpeechEnvValue: process.env.AUTO_PROGRAMMER_ENABLE_SPEECH,` を手で足す
 - **`package.json`**：`auto-programmer`・`move-issue-card`・`close-issues` のスクリプトを写す
 - **`ci.workflowFile` のワークフロー**：`branchPrefix` を設定したときだけ、push トリガー（`on.push.branches`）に同じ接頭辞を足す（例：`'st2/**'`）。足さないと CI が走らず、PR も作られない。接頭辞は既存のブランチ（`main2` など）と同じ名前にできない（git がその下にブランチを作れないので、起動時に止まる）
 - **`.claude/skills/auto-dev/`・`.claude/skills/auto-fix-ci/`・`.claude/skills/auto-resolve-conflict/`・`.claude/skills/issue-check/`**：そのリポジトリの `.claude/skills/` へ写す（`/auto-dev`・`/auto-fix-ci`・`/auto-resolve-conflict` が無いと手順が無い。`/issue-check` は `.claude/agents/issue-auditor-agent/` と、割るときに使う `.claude/skills/issue-split/` も要る。`/issue-split` は正典として `.claude/skills/to-issues/`・`.claude/skills/quick-issue/` を参照するので、これも写す。初回の検査で外部依存の制約を調べるために `.claude/agents/premise-checker-agent/` も要る。これは一次資料の定義を `.claude/skills/origin-search/` から読むので、これも写す。`issue-auditor-agent` は過去の決定を引く手順を `.claude/skills/past-decision-search/` から読むので、これも写す）
