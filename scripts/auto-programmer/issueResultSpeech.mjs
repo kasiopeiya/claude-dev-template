@@ -11,9 +11,13 @@
 // - Windows では、読む文を環境変数で渡し、`-Command` の文字列はタイトルによらず固定にする。タイトルは GitHub から来る
 //   外部が書ける文字列で、`-Command` に埋め込むと、`"` や `;` を含むタイトルが PowerShell のコマンドとして実行されてしまう。
 // - detached にするのは Ctrl+C 対策でもある。端末の Ctrl+C が読み上げの子プロセスにも届くと、締めの読み上げが途中で切れる。
+// - 既定はオフで、環境変数 AUTO_PROGRAMMER_ENABLE_SPEECH=1 のときだけ鳴らす。鳴らしたいかは人によって違い、git で追跡する
+//   config.mjs に true/false を書くと全員が同じになるため。`=true` のような使えない値は、鳴らない理由に気づけないまま
+//   終わらないよう、起動直後に止める（isSpeechEnabled）。
 
 import { spawn } from 'node:child_process'
 
+import { TechnicalError } from '../lib/errors.mjs'
 import { STAGE_NUMBER_PATTERN } from './startOrder.mjs'
 import { showWarning } from './ui.mjs'
 
@@ -27,6 +31,21 @@ const RESULT_WORD_BY_RUN_OUTCOME = {
 
 const WINDOWS_SPEECH_SENTENCE_ENV_NAME = 'AUTO_PROGRAMMER_SPEECH_SENTENCE'
 const WINDOWS_SPEECH_SCRIPT = `Add-Type -AssemblyName System.Speech; (New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak($Env:${WINDOWS_SPEECH_SENTENCE_ENV_NAME})`
+
+/**
+ * 読み上げをオンにするかを、環境変数 AUTO_PROGRAMMER_ENABLE_SPEECH の値から決める。
+ *
+ * @param {string | undefined} enableSpeechEnvValue config.mjs の `enableSpeechEnvValue`（環境変数の値そのまま。キーが無い config.mjs では undefined）
+ * @returns {boolean} `1` ならオン、未設定・空ならオフ
+ * @throws {TechnicalError} `1` でも空でもない値のとき
+ */
+export function isSpeechEnabled(enableSpeechEnvValue) {
+  if (enableSpeechEnvValue === '1') return true
+  if (enableSpeechEnvValue === undefined || enableSpeechEnvValue === '') return false
+  throw new TechnicalError(
+    `環境変数 AUTO_PROGRAMMER_ENABLE_SPEECH に使えない値が付いています: ${enableSpeechEnvValue}。読み上げをオンにするときは 1、オフにするときは付けない（または空）にしてください`
+  )
+}
 
 /**
  * Issue 1件を終えたことと結果を、読み上げで知らせる。対象外の OS では何もしない。

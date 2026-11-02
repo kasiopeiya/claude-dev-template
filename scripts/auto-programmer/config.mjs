@@ -2,6 +2,8 @@
 //   別のリポジトリ・別のボードで使うときに直すのはこのファイルだけにする（configuration-policy「環境で変わる
 //   値はコードに直書きしない」）。例外は branchPrefix（キーのコメントを見る）。ID ではなく人間が読める表記を持たせ、
 //   ID は実行時に解決する。
+//   git で追跡するこのファイルには人ごとに変える好みを書けないので、置き場（AUTO_PROGRAMMER_HOME）と読み上げの
+//   オン・オフ（AUTO_PROGRAMMER_ENABLE_SPEECH）は環境変数から読む。
 
 import { homedir } from 'node:os'
 import { basename, isAbsolute, resolve } from 'node:path'
@@ -49,6 +51,12 @@ export const config = {
 
   // claude セッション1回（Skill 1つぶん）を打ち切るまでの時間。無人で固まったまま止まらない事態を防ぐ
   sessionTimeoutMinutes: 60,
+
+  // 環境変数 AUTO_PROGRAMMER_ENABLE_SPEECH の値をそのまま載せる（未設定なら undefined）。Issue 1件を終えたときの読み上げは、
+  // これが '1' のときだけ鳴る。ここでは検査も例外もしない。このファイルは CI 待ちの hook（.claude/hooks/wake-on-ci-failure.mjs）と
+  // scripts/move-issue-card.mjs も読み込むので、読み込みで例外が出ると hook が何も言わずに止まる。値の検査は
+  // index.mjs の起動直後が行う。キーが無い config.mjs（同期した利用先の古いもの）では、オフと同じに動く
+  enableSpeechEnvValue: process.env.AUTO_PROGRAMMER_ENABLE_SPEECH,
 
   // claude セッションのモデルと effort。`claude --model`・`--effort` にそのまま渡す。
   // Issue の `opus` ラベルは読まない。`opus` の Issue を回すときは、ここを最上位モデルに変えるか、人間が対話で回す。
