@@ -51,7 +51,7 @@ effort: high
 
 ### 走査範囲
 
-次を走査範囲とする（`scripts/ci/doc-consistency-weekly-issue.mjs` の `CHECK_TARGET_PATHS` と同じ）。
+次を走査範囲とする（`scripts/ci/doc-audit-weekly-issue.mjs` の `CHECK_TARGET_PATHS` と同じ）。
 
 - `docs/`
 - `.claude/skills/`・`.claude/agents/`・`.claude/rules/`・`.claude/rule-bodies/`
