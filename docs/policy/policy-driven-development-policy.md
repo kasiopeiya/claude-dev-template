@@ -6,13 +6,14 @@ hook:
       '.claude/rules/*.md',
       'eslint.config.mjs',
       '**/CLAUDE.md',
-      '.claude/agents/**/*.md'
+      '.claude/agents/**/*.md',
+      '.claude/skills/**/SKILL.md'
     ]
 ---
 
 # ポリシー駆動開発ポリシー
 
-AIエージェントが、新しい決まりや仕組みを作ろうとして、それを CLAUDE.md・Policy・Rule・Skill・SubAgent・hooks・ガードレールのどこに置くべきか迷ったときに参照する。既存の規定が守られていない状態を見つけ、それを防ぐ仕組みを新設すべきか迷ったとき、Policy の本文に何を書くか迷ったとき、Rule の `paths` を書くとき、SubAgent を新設・編集するときも参照する。
+AIエージェントが、新しい決まりや仕組みを作ろうとして、それを CLAUDE.md・Policy・Rule・Skill・SubAgent・hooks・ガードレールのどこに置くべきか迷ったときに参照する。既存の規定が守られていない状態を見つけ、それを防ぐ仕組みを新設すべきか迷ったとき、Policy の本文に何を書くか迷ったとき、Rule の `paths` を書くとき、SubAgent を新設・編集するとき、Skill・agent の description を書くときも参照する。
 
 > [!IMPORTANT]
 > **TL;DR（このポリシーの決定事項）**
@@ -349,6 +350,25 @@ pre-push は、1ターンで push まで終えるフローでターン末ゲー�
 守らせる手段が文章しか残らない決まりはある（例：課題管理システムに起票するときのラベルの付け方）。ここで無理に hook を作れば、上の代償だけを払うことになる。
 
 判定は損害で決める。**守られなかったときに後から直せるなら、文章（Skill・CLAUDE.md）に置き、守られない回があることを受け入れる。** 直せないなら、それは「阻止」に当たるので hook にする。ただし、hook にできないことは、どこにも書かない理由にはならない。
+
+## Skill・agent の description にも文字数の上限を置く
+
+Skill・agent の `description` は一覧として毎セッション読み込まれるので、文字数がそのまま毎回のコンテキスト消費になる。上限は合計と1件の2本で、値は `scripts/ci/check-description-size.mjs` の定数が正典である。書き足す前に `npm run check:descriptions` で、いまの合計・最長と上限を見る。
+
+数えるのは、一覧に載る Skill（`disable-model-invocation: true` を除く）と全 agent の frontmatter の `description` の値である。囲む引用符を除き、コードポイント単位（`wc -m` と同じ）で数える。`when_to_use` があれば合算する（分けて数えると上限の抜け道になるため）。
+
+> [!IMPORTANT]
+> **（AI・必須）** 上限を超えたら、文章を圧縮して詰め込んではならない。次の順に試す。
+>
+> 1. 呼ぶか呼ばないかの判別に要らない内容を、本文（SKILL.md・agent 本文）へ移す
+> 2. リポジトリのどこ（CLAUDE.md・Rule・他の Skill・agent・hook・週次スクリプトが書く Issue 本文など）からも名指しで呼び出しを指示されていない人間専用の Skill に、`disable-model-invocation: true` を付ける。名指しで呼ばれている Skill に付けると、その呼び出しが壊れる
+> 3. それでも超えるなら、どの Skill・agent を消すかを `AskUserQuestion` で人間に問う。起動回数だけで決めない
+
+3 を AI が決めないのは、何を捨てるかが重要度の比較で、機械にも AI にも裁定できないためである（上の「文字数に上限を置き、超えたら圧縮ではなく移す」と同じ理由）。
+
+### Rule に値を置かない
+
+「ガードレール化したら Rule から消す」は数値上限と直し方を Rule にも残すと定めるが、description の上限には当てない。根拠は Issue #1484 の対話での人間の指示（上限の値はスクリプトの定数だけに置く。ポリシーにも具体値は書かない。保守性の問題）である。あわせて、description を書く場面に効く Rule が無いこと、超えたときの手戻りが数行の書き直しで小さいことも理由になる。
 
 ## SubAgent 定義には model と effort を両方書く
 
