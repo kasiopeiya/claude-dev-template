@@ -8,7 +8,8 @@ hook:
       '.claude/skills/code-dev/SKILL.md',
       '.claude/skills/cdk-dev/SKILL.md',
       '.claude/skills/design/SKILL.md',
-      '.claude/skills/auto-dev/SKILL.md'
+      '.claude/skills/auto-dev/SKILL.md',
+      '.claude/rule-bodies/review-fix-loop.md'
     ]
 ---
 
