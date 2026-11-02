@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// 責務: open な週次 docs/ と .claude/ の横断整合性チェック Issue が無いときだけ、その Issue を起票する。
+// 責務: open な週次 docs/・.claude/・CLAUDE.md の横断整合性チェック Issue が無いときだけ、その Issue を起票する。
 //   起点は、実行結果コメントが付いた直近の週次 Issue の HEAD SHA から今回の HEAD までに
-//   変わった、docs/ と .claude/ の Skill・agent・Rule の *.md に絞る（設計判断は
+//   変わった、docs/ と .claude/ の Skill・agent・Rule とルートの CLAUDE.md の *.md に絞る（設計判断は
 //   scripts/auto-programmer/README.md 「週次スクリプトが Issue を供給する」を参照）。
 //   ラベルの作成から起票まで自分で行い、呼び出し側の GitHub Actions
 //   （.github/workflows/doc-consistency-weekly.yml）にはこのファイルを1回呼ぶことだけを残す
 //   （判定に使うラベルと起票時に付けるラベルを分けて持つと、一致を呼び出し側の約束に頼ることになるため）。
 //
 // 使い方:
-//   node scripts/ci/doc-consistency-weekly-issue.mjs   起票したら、その URL を標準出力に返す。
+//   node scripts/ci/doc-audit-weekly-issue.mjs         起票したら、その URL を標準出力に返す。
 //                                                     次のどちらかに当たるときは起票せず、その理由を標準出力に返す：
 //                                                     open な週次 Issue がある／前回処理以降に走査範囲の変更が無い
 
@@ -30,7 +30,7 @@ import {
 // 依存させると、リポジトリ直下以外から起動したとき走査範囲の変更が見つからず、黙って起票しない）
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 
-const WEEKLY_ISSUE_LABEL = 'doc-consistency-weekly'
+const WEEKLY_ISSUE_LABEL = 'doc-audit-weekly'
 
 // 週次チェックの走査範囲。差分の起点を集める `git diff` のパスと、起点が無いときに Issue 本文へ書く
 // 「全体」の表示が、ともにこの一覧になる（別々に持つと、広げたときに片方だけ漏れる）。
@@ -41,14 +41,18 @@ const CHECK_TARGET_PATHS = [
   '.claude/skills',
   '.claude/agents',
   '.claude/rules',
-  '.claude/rule-bodies'
+  '.claude/rule-bodies',
+  'CLAUDE.md'
 ]
 
-const CHECK_TARGET_PATHS_LABEL = CHECK_TARGET_PATHS.map((path) => `\`${path}/\``).join('・')
+// ディレクトリには末尾の `/` を付けて表示する（ファイルの CLAUDE.md には付けない）
+const CHECK_TARGET_PATHS_LABEL = CHECK_TARGET_PATHS.map((path) =>
+  path.endsWith('.md') ? `\`${path}\`` : `\`${path}/\``
+).join('・')
 
 const AI_FIXABLE_LABEL = 'ai-fixable'
 
-const WEEKLY_ISSUE_TITLE = '週次: docs/ 横断の重複・矛盾チェック (/doc-consistency)'
+const WEEKLY_ISSUE_TITLE = '週次: 文書横断の重複・矛盾チェック (/doc-consistency)'
 
 // タスク一覧・完了条件に書く見出しと、処理済みの週次 Issue を見分ける目印を1か所で持つ
 // （ずれると処理済みの Issue が見つからず、毎回走査範囲の全体が起点に戻る）
@@ -72,7 +76,7 @@ function main() {
   }
   ensureLabelExists({
     name: WEEKLY_ISSUE_LABEL,
-    description: '週次の docs/ と .claude/ の横断整合性チェック Issue',
+    description: '週次の docs/・.claude/・CLAUDE.md の横断整合性チェック Issue',
     color: '5319E7'
   })
   ensureLabelExists({
@@ -242,7 +246,7 @@ function renderWeeklyIssueBody(headSha, scope) {
 
   return `## この変更が必要な理由
 
-docs/ 配下の文書と、.claude/ の Skill・agent・Rule は、差分レビューでは変更行しか見ないため、文書をまたぐ重複・矛盾を拾えない。
+docs/ 配下の文書と、.claude/ の Skill・agent・Rule と、ルートの CLAUDE.md は、差分レビューでは変更行しか見ないため、文書をまたぐ重複・矛盾を拾えない。
 このIssueは、週1回そのギャップを埋めるために自動起票された定期チェックである。
 放置すると、劣化した文書を手本に AI が横展開し、重複・矛盾が加速度的に増える。
 

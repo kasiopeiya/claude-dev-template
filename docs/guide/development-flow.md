@@ -82,7 +82,7 @@ AI の提案が違うと思ったら、「`/grill-me` で始めて」「直接�
 
 ## 週次の docs 整合性チェック Issue が届く
 
-`doc-consistency-weekly` ワークフローが週1回、`/doc-consistency`（文書間の重複・矛盾を横断的に探す Skill）の実行を依頼する Issue を自動起票する（ラベル：`doc-consistency-weekly` と `ai-fixable`）。差分レビューでは変更行しか見ないため、既にある重複・矛盾はこの週次チェックでしか拾えない。
+`doc-audit-weekly` ワークフローが週1回、`/doc-consistency`（文書間の重複・矛盾を横断的に探す Skill）の実行を依頼する Issue を自動起票する（ラベル：`doc-audit-weekly` と `ai-fixable`）。差分レビューでは変更行しか見ないため、既にある重複・矛盾はこの週次チェックでしか拾えない。
 
 届いたら次のどちらかで捌く。
 

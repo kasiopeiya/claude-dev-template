@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // 責務: `.claude/rules/*.md`（Rule）が文字数上限に収まっているかを検査する。
-//   上限と「超えたらどうするか」は docs/policy/policy-driven-development-policy.md が正典で、
-//   ここはその判定だけを担う。Rule は対象ファイルを Read するたびに全文が読み込まれるため、
-//   文字数がそのまま毎回のコンテキスト消費になる（Issue #543）。
+//   上限の値はこのファイルの CHARACTER_LIMIT が正典。超えたらどうするかは
+//   docs/policy/policy-driven-development-policy.md が正典で、ここはその判定だけを担う。
+//   Rule は対象ファイルを Read するたびに全文が読み込まれるため、文字数がそのまま毎回の
+//   コンテキスト消費になる（Issue #543）。
 //
 // 判定ロジックはこのファイル1ヶ所にしか置かない。ターン末ゲートと CI の2経路から呼ばれる。
 
