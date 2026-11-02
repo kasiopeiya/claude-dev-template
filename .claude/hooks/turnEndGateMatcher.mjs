@@ -77,11 +77,26 @@ function isWorkflowTarget(normalizedPath) {
   return normalizedPath.endsWith('.yml') || normalizedPath.endsWith('.yaml')
 }
 
+/**
+ * 変更パスが Skill の `SKILL.md`・agent の定義、またはそれらを含みうる畳まれたディレクトリかを判定する。
+ *
+ * @param {string} normalizedPath スラッシュ区切りに正規化した、プロジェクトルート相対パス
+ * @returns {boolean} description 検査ゲートの対象なら true
+ */
+function isDescriptionTarget(normalizedPath) {
+  // 畳まれたディレクトリ（理由は isWorkflowTarget と同じ）は、`.claude/`・`.claude/skills/`・
+  // `.claude/agents/`、およびそれぞれの直下のディレクトリ（新しい Skill・agent を足したとき）
+  if (/^\.claude\/(?:(?:skills|agents)\/(?:[^/]+\/)?)?$/.test(normalizedPath)) return true
+  if (/^\.claude\/skills\/[^/]+\/SKILL\.md$/.test(normalizedPath)) return true
+  return normalizedPath.startsWith('.claude/agents/') && normalizedPath.endsWith('.md')
+}
+
 // ゲートの定義そのものは package.json が持つ。ここが持つのは「どの変更で走らせるか」だけ。
 const GATES = [
   { npmScript: 'check:static', isTarget: isStaticGateTarget },
   { npmScript: 'format:check', isTarget: isStaticGateTarget },
   { npmScript: 'check:claude-md', isTarget: isClaudeMdTarget },
   { npmScript: 'check:rules', isTarget: isRuleTarget },
+  { npmScript: 'check:descriptions', isTarget: isDescriptionTarget },
   { npmScript: 'check:workflows', isTarget: isWorkflowTarget }
 ]

@@ -11,6 +11,7 @@ import { readFileSync } from 'fs'
 import { dirname, join } from 'path'
 import { fileURLToPath } from 'url'
 
+import { countCharacters } from './count-characters.mjs'
 import { listWorkingTreeFiles } from './list-working-tree-files.mjs'
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..')
@@ -68,16 +69,6 @@ function measureRule(rulePath) {
     path: rulePath,
     characters: countCharacters(readFileSync(join(repoRoot, rulePath), 'utf8'))
   }
-}
-
-/**
- * `wc -m` と同じ数え方で文字数を返す（コードポイント単位。UTF-16 の符号単位ではない）。
- *
- * @param {string} text 数える対象の全文
- * @returns {number} 文字数
- */
-function countCharacters(text) {
-  return [...text].length
 }
 
 main()
