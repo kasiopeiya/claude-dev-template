@@ -23,8 +23,8 @@
 stateDiagram-v2
     state "📄 インプット資料（RFC等）" as Input
     state "🗂️ 記載段階ごとの Issue" as Staged
-    state "📝 requirements.md 執筆中（記載段階1〜5）" as Writing
-    state "🔍 凍結判定（記載段階6）" as Judge
+    state "📝 requirements.md 執筆中（記載段階1〜7）" as Writing
+    state "🔍 凍結判定（記載段階8）" as Judge
     state "🔒 凍結済 requirements.md" as Frozen
     state "⚙️ 技術スタックADR" as Adr
     state "🚩 起点Issue群" as Issues
@@ -33,7 +33,7 @@ stateDiagram-v2
     Input --> Staged : /elicit-requirements 入力資料
     Staged --> Writing : 記載段階1から始まる
     Writing --> Writing : /elicit-requirements Issue番号（1段階ずつ、PRのマージで次へ）
-    Writing --> Judge : 記載段階5のPRがマージされる
+    Writing --> Judge : 記載段階7のPRがマージされる
     Judge --> Writing : 前の段階の判定を変える指摘は、その段階のIssueを開き直す
     Judge --> Frozen : 凍結条件を満たす
     Frozen --> Adr : /decide-tech-stack
@@ -44,8 +44,8 @@ stateDiagram-v2
 | #   | ステップ                  | input                              | output                                                                      | プロンプト例                                                     |
 | --- | ------------------------- | ---------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | 1   | 記載段階 Issue を起票する | 顧客からのインプット資料（RFC等）  | 記載段階ごとの Issue（ルート「要件定義」の下）。記載段階1が始まる           | `/elicit-requirements <入力資料>`（パスか要求テキスト）          |
-| 2   | 記載段階ごとに書く        | 記載段階 Issue（記載段階1〜5）     | `requirements.md` の該当節と仕分け台帳（仮決めがあれば別紙）。段階ごとに PR | `/elicit-requirements <Issue番号>`（その段階の Issue）           |
-| 3   | 凍結する                  | 記載段階6の Issue                  | 凍結済 `requirements.md`（合否判定が凍結可）                                | `/elicit-requirements <Issue番号>`（記載段階6の Issue）          |
+| 2   | 記載段階ごとに書く        | 記載段階 Issue（記載段階1〜7）     | `requirements.md` の該当節と仕分け台帳（仮決めがあれば別紙）。段階ごとに PR | `/elicit-requirements <Issue番号>`（その段階の Issue）           |
+| 3   | 凍結する                  | 記載段階8の Issue                  | 凍結済 `requirements.md`（合否判定が凍結可）                                | `/elicit-requirements <Issue番号>`（記載段階8の Issue）          |
 | 4   | 基盤技術を決める          | `requirements.md`                  | 初期技術スタックADR（`docs/adr/NNN-*.md`）                                  | `/decide-tech-stack docs/requirements.md`                        |
 | 5   | 起点Issue を作る          | `requirements.md`＋技術スタックADR | 起点Issue群（GitHub・依存順つき）                                           | `新規開発ガイドの「起票する起点Issue」に従って起点Issueを作って` |
 
