@@ -1,6 +1,6 @@
 ---
 name: auto-fix-ci
-description: push した後に落ちた CI を、人間への確認なしに直して push し直す。無人では `npm run auto-programmer` が AI 専用 clone の中で起動する。対話では、CI の失敗を知らせる hook（wake-on-ci-failure）に起こされたセッションが、その文面の指示で実行する。
+description: push した後に落ちた CI を、人間への確認なしに直して push し直す。`npm run auto-programmer` か、CI の失敗を知らせる hook（wake-on-ci-failure）から起動する。
 argument-hint: '<Issue番号> <run ID>'
 ---
 

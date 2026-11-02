@@ -1,6 +1,6 @@
 ---
 name: check-plan
-description: Plan ファイルを Issue 化前に監査し、必須セクションの充足と影響範囲の網羅をチェックする。監査は会話を持たない plan-reviewer-agent に任せ、会話との突き合わせと Plan の修正をここで行う。「check-plan」「plan をチェック」と指示されたとき。
+description: Plan ファイルを Issue 化前に監査し、必須セクションの充足と影響範囲の網羅をチェックする。「check-plan」「plan をチェック」と指示されたとき。
 ---
 
 # Check Plan

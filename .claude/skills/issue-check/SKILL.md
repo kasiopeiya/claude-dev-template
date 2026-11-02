@@ -1,6 +1,6 @@
 ---
 name: issue-check
-description: broken-window ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。1つの PR に収まらず割れる Issue は sub-issue に割り、AI の作業と人間しかできない作業が混ざる Issue は人間の作業を別 Issue に切り出す。初回の検査では、本文に新しい技術要素が出た Issue の外部依存の制約も調べる。着手する前に打つ。人間が打つほか、「issue N 対応して」では AI が番号指定の1件だけ打つ。Auto Programmer も着手前に、issue:checked の無い Issue へ1件ずつ打つ。「issue-check」「issueを検査して」と指示されたとき。
+description: broken-window ラベルの open Issue を「やる価値があるか」「対応方針がポリシーに合っているか」で判定し、タイトル・本文・ラベルを直す。大きすぎる Issue は sub-issue に割る。着手する前に打つ。「issue-check」「issueを検査して」と指示されたとき。
 argument-hint: '[件数 or #Issue番号（省略可・複数可）]'
 allowed-tools: Task, Skill, Bash, Read, Edit, Write
 ---

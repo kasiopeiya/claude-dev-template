@@ -1,6 +1,6 @@
 ---
 name: code-reviewer-agent
-description: TypeScript アプリケーションコードを、指定されたレンズ（バグ探し／セキュリティ／設計の形／決まりどおりか／テスト）でレビューする専門エージェント。レンズが担当する観点だけを判定し、統合は呼び出し側（/code-review）が行う。
+description: TypeScript アプリケーションコードを、指定されたレンズ（バグ探し／セキュリティ／設計の形／決まりどおりか／テスト）でレビューする専門エージェント。統合は呼び出し側（/code-review）が行う。
 tools: Glob, Grep, Read, Bash
 model: opus
 effort: xhigh

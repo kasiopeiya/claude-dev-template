@@ -1,6 +1,6 @@
 ---
 name: architecture-reviewer-agent
-description: アプリの設計・アーキテクチャの「質」を、渡されたレンズ1つ分の観点だけでレビューする専門エージェント（ペルソナ：世界一流のソフトウェアアーキテクト）。設計が変更容易か＝詳細（UI/DB/外部サービス/言語/FW）を差し替え可能に保てているかを、application-architecture-policy 等の正典に照らして検査する。レンズが担当する観点だけを判定し、統合は呼び出し側（/arch-review）が行う。
+description: アプリの設計・アーキテクチャの「質」を、渡されたレンズ1つ分の観点でレビューする専門エージェント。詳細（UI/DB/外部サービス/言語/FW）を差し替え可能に保てているかを検査する。統合は呼び出し側（/arch-review）が行う。
 tools: Glob, Grep, Read, Bash
 model: opus
 effort: xhigh

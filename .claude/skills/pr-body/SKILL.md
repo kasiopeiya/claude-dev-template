@@ -1,6 +1,6 @@
 ---
 name: pr-body
-description: 今のブランチの PR のタイトルと本文を差し替え、何を・なぜ変えたかと、マージで Issue を閉じる `Closes` 行（open な sub-issue を持つ Issue は閉じない `Refs` 行）を書く。push した後に使う。「pr-body」「PR本文を書いて」と指示されたとき。
+description: 今のブランチの PR のタイトルと本文を差し替え、何を・なぜ変えたかと、Issue を閉じる `Closes` 行を書く。push した後に使う。「pr-body」「PR本文を書いて」と指示されたとき。
 argument-hint: '<Issue番号> [<Issue番号>...]'
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: to-plan
-description: grill-me の対話や事前調査の結果を Plan ファイルに構造化して書き出し、続けて /check-plan で監査する（新しい技術要素が入るときは、先に /premise-check の実行を提案する）。「to-plan」「plan ファイルにして」と指示されたとき。
+description: grill-me の対話や事前調査の結果を Plan ファイルに構造化して書き出し、続けて /check-plan で監査する。「to-plan」「plan ファイルにして」と指示されたとき。
 ---
 
 # To Plan

@@ -1,6 +1,6 @@
 ---
 name: actions-review
-description: .github/workflows/ 配下の GitHub Actions workflow を、セキュリティと仕様（新しいトリガー・権限・API が書かれたとおりに動くか）の観点でレビューする。「actions-review」「workflow をレビューして」と指示されたとき。
+description: .github/workflows/ 配下の GitHub Actions workflow を、セキュリティと仕様（書かれたとおりに動くか）の観点でレビューする。「actions-review」「workflow をレビューして」と指示されたとき。
 argument-hint: '[--full] [ファイルパス]'
 allowed-tools: Task, Glob, Bash, Read
 ---
