@@ -23,6 +23,7 @@ hook:
       '.claude/skills/issue-regroup/**/*.md',
       '.claude/skills/issue-deps/**/*.md',
       '.claude/skills/doc-consistency/**/*.md',
+      '.claude/skills/slim-always-loaded-docs/**/*.md',
       '.claude/skills/sre-prr/**/*.md',
       '.claude/skills/auto-dev/**/*.md',
       '.claude/skills/auto-fix-ci/**/*.md',
