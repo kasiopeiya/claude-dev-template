@@ -123,9 +123,21 @@ async function runUnattendedSession({ slashCommand, workspaceDir, abortSignal })
   // この形は .claude/hooks/forbiddenCommandMatcher.mjs が「ゲートの迂回」として禁じているが、
   // それは Bash ツールへ渡すコマンドへの禁止であり、ローカルのファイルへの影響は AI 専用 clone の中に閉じる。
   // clone の中でも .claude/hooks/ のガードは効き続け、このツール自体の起動も AI には禁じている。
+  // 無人セッションは完了通知で進むので、予約系のツールは要らない。ScheduleWakeup・CronCreate は
+  // 「あとで自分に指示を送り直す」ツールで、使われると Skill が同じ作業を繰り返し、打ち切りまで
+  // 止まらない（#1119・#1497：/issue-check #1497 が約11分おきに6回走った）。Skill 本文に「使うな」と
+  // 書く方法は書き漏らしで再発するので、起動時にツールを外す。deny は権限確認を飛ばすモードでも効く。
   const exitStatus = await runStreamingAsync(
     'claude',
-    ['-p', slashCommand, '--dangerously-skip-permissions', ...buildSessionModelArgs(config)],
+    [
+      '-p',
+      slashCommand,
+      '--dangerously-skip-permissions',
+      '--disallowedTools',
+      'ScheduleWakeup',
+      'CronCreate',
+      ...buildSessionModelArgs(config)
+    ],
     {
       cwd: workspaceDir,
       // 中で動く hook と Skill が無人だと見分けるため（読み手と理由は unattendedSessionEnv.mjs）
