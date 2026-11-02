@@ -1,6 +1,6 @@
 ---
 name: slim-always-loaded-docs
-description: 毎回読まれる文書（CLAUDE.md・project-claude.md・policy-hub.md・design-hub.md）を全文で見て、置き場所・削除・言い換えの減量候補を2件の Issue に分けて起票する。「slim-always-loaded-docs」「毎回読まれる文書を減量して」と指示されたとき。
+description: 毎回読まれる文書（CLAUDE.md・ハブ）の減量候補を出し、Issue に起票する。「毎回読まれる文書を減量して」と指示されたとき。
 argument-hint: '[file-path（複数可・空白区切り）]'
 ---
 
