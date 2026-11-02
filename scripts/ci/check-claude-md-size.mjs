@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // 責務: リポジトリ内の各 CLAUDE.md が文字数上限に収まっているかを検査する。
-//   上限と「超えたらどうするか」は docs/policy/policy-driven-development-policy.md が正典で、
-//   ここはその判定だけを担う。CLAUDE.md は毎セッション全文が読まれるため、文字数がそのまま
-//   恒久的なコンテキスト消費になる（Issue #247）。
+//   上限の値はこのファイルの CHARACTER_LIMIT が正典。超えたらどうするかは
+//   docs/policy/policy-driven-development-policy.md が正典で、ここはその判定だけを担う。
+//   CLAUDE.md は毎セッション全文が読まれるため、文字数がそのまま恒久的なコンテキスト消費になる
+//   （Issue #247）。
 //
 // 判定ロジックはこのファイル1ヶ所にしか置かない。ターン末ゲート（.claude/hooks/turn-end-gate.mjs）と CI の2経路から呼ばれる。
 
