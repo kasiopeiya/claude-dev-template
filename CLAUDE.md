@@ -55,7 +55,7 @@
 
 ## Issue 作業の共通ルール
 
-- Issue 番号の無い作業指示は、小さくても着手前に起票する（相談を経たものは `/to-issues`、その場の指示は `/quick-issue`）。**例外は、人間が `/no-issue` を打った会話だけ**で、その会話が終わるまで起票せずに着手する（`/to-issues` も使わない）
+- Issue 番号の無い作業指示は、小さくても着手前に起票する（相談を経たものは `/to-issues`、その場の指示は `/quick-issue`）
 - **相談の承認は実装の許可ではない**：`/grill-me`・Plan モードを経た作業では、`ExitPlanMode` などの承認を「Issue にしてよい」承認として扱う。同じセッションで実装に進むのは人間が指示したときだけ
 - **着手したら `npm run close-issues`・`npm run prune-merged-branches-and-worktrees`・`npm run move-issue-card -- <Issue番号>` を打つ**：着手とは、実装フローの Skill の起動直前と、その場で起票した Issue の編集を始める直前をいう。Issue を読むだけの Skill（`/issue-check`・`/issue-decide`・`/issue-split`・`/issue-deps`）では打たない。失敗しても作業は続ける
 - **（厳守）** Issue の「タスク一覧」を1つずつ進め、完了ごとに `gh issue edit` でチェックを付ける
