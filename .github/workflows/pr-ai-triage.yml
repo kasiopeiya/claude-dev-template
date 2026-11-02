@@ -1,4 +1,4 @@
-# 責務: pipeline 完了後に、その PR へ判断基準（Policy・CLAUDE.md）と CI 定義の変更の決定論ラベル付与と、
+# 責務: pipeline 完了後に、その PR へ判断基準（Policy・CLAUDE.md）・CI 定義・要件定義書の変更の決定論ラベル付与と、
 #       advisory な AI 処理（pr-label）、サイズ判定（pr-check）、auto-merge を行う。PR 本文には触れない。
 #       マージ可否の判定（cicd-gate）には一切関与しない。
 # なぜこの構成なのかは samples/docs/design/cicd-design.md を参照する。
@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # 対象 PR に対し ⓪policy パスの決定論ラベル付与 ①pr-label
+  # 対象 PR に対し ⓪policy・cicd・要件定義書のパスの決定論ラベル付与 ①pr-label
   # ②（needs-human-review が付いていれば）スクリプトでのサイズ判定 ③同じくレビュー用 Issue の起票を行う。
   # 権限は prompt injection 前提で設計する——contents: read 固定・Bash は gh 限定
   pr-triage:
@@ -101,6 +101,27 @@ jobs:
           grep -qx 'needs-human-review' <<< "$existing" ||
             gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
           gh pr edit "$PR" --add-label cicd,needs-human-review
+
+      # 要件定義書の本体（docs/requirements.md）に触れた PR も同じく人間レビューへ寄せる。理由は上の policy と同じ。
+      # 別紙（docs/requirements-appendix/）や samples/ の要件定義書には当てない。
+      # 対象パスの正は docs/policy/pr-review-policy.md の「docs/requirements.md を変える docs」行で、ここはその写し。
+      - name: Label requirements changes for human review
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          if ! gh pr diff "$PR" --name-only | grep -qxF 'docs/requirements.md'; then
+            echo "no requirements path touched; skipping"
+            exit 0
+          fi
+          # ラベルが未作成のリポジトリでも動くよう、無ければ作る（既存なら何もしない）。
+          existing=$(gh label list --limit 200 --json name --jq '.[].name')
+          grep -qx 'docs' <<< "$existing" ||
+            gh label create docs --description "ドキュメント変更" --color 0E8A16
+          grep -qx 'needs-human-review' <<< "$existing" ||
+            gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
+          gh pr edit "$PR" --add-label docs,needs-human-review
 
       # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet
       - name: Run AI advisory (pr-label)
