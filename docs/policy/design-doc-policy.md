@@ -14,6 +14,9 @@ hook:
 > - What（振る舞い）か設計かで迷ったら、項目を「振る舞い・構造と理由・具体値」の3層に割ってから振り分ける。設計書に残すのは構造・流れ・なぜだけ
 > - 却下案（なぜBでなくAか）と経緯は設計書に書かない（書き先は [adr-policy](adr-policy.md)）。まだ無いものは書かない
 
+> [!IMPORTANT]
+> **（AI・必須）** 本ポリシーか Rule `design-doc.md` を改訂したら、`.claude/skills/quick-doc-review/SKILL.md` と `.claude/skills/doc-review/references/review-criteria.md` の観点一覧の追従要否を判断すること。どちらも速度のため判定基準を書き下した派生コピーであり、追従しないと**どのゲートも通らない規約が生まれる**。載せないと判断した場合は、その理由を quick-doc-review の「チェック項目に載せない規約と理由」に書く。
+
 ## 基盤との関係：documentation-policy を継承し、差分だけを足す
 
 設計書も文書なので、**まず [documentation-policy](documentation-policy.md) と、人間が画面で読む文書に上乗せする [documentation-policy-for-humans](documentation-policy-for-humans.md) の全原則に従う**。本ポリシーはそれを再掲せず、**設計書という種別に固有の指針だけ**を上乗せする。runbook-policy が documentation-policy に対して持つ関係と同じ、独立・単体完結の専用ポリシー。
