@@ -82,6 +82,7 @@ flowchart LR
 
 - PRの変更ファイルを見て変更種別ラベルをつける（AI）
 - pr-review-policy をもとにPRの人間レビューが必要かを判定する（AI。`needs-human-review` ラベルをつける）
+- pr-review-policy でパスだけで方針が決まる行に当たる PR には、AI より前に決定論のステップでも `needs-human-review` ラベルをつける
 - 人間レビューが必要なPRのサイズを判定し、結果をコメントする（スクリプト。NG でもマージは止めない）
 - 人間レビューが必要なPRには、レビュー用の Issue を1件起票する。PR が閉じたら、別ワークフロー `close-human-review-issue.yml` がその Issue を閉じる
 
@@ -90,7 +91,7 @@ flowchart LR
     Start([🎯 cicd-gate 成功<br/>＝pipeline 完了])
 
     subgraph Triage["🤖 pr-triage ジョブ（merge 権限なし）"]
-        Det["⓪ パス判定（決定論）<br/>Policy・CLAUDE.md に変更があれば policy、<br/>.github/・scripts/ci/ なら cicd も付与"]
+        Det["⓪ パス判定（決定論）<br/>pr-review-policy でパスだけで方針が決まる行に当たれば、<br/>種類ラベルと needs-human-review を付与"]
         Ai["① AI advisory<br/>pr-label"]
         Chk["② サイズ判定（決定論）<br/>needs-human-review が付いていれば<br/>scripts/ci/pr-check.mjs を実行しコメント"]
         Iss["③ Issue 起票（決定論）<br/>needs-human-review が付いていれば<br/>PR 番号だけの Issue を1件"]
@@ -109,6 +110,7 @@ flowchart LR
 
     Start --> Det
     Triage ==> AutoJob
+    Det -. 付与 .-> Label
     Ai -. 付与 .-> Label
     Ai -. 振る舞い変更判定不能 .-> Triage2
     Label -. 判定材料 .-> Judge
