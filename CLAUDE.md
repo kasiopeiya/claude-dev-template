@@ -6,7 +6,7 @@
 
 - **設計書ハブ**：着手前に `docs/design-hub.md` を読み、個別設計書はそこから辿る
 - **用語集**：用語に迷ったら `docs/project-context/glossary.md` を引く
-- **ポリシー（最優先）**：何かを起こす前に `docs/policy-hub.md` で該当ポリシーを読んで従う。反する提案・実装・操作はしない
+- **ポリシー（最優先）**：何かを起こす前に `docs/policy-hub.md` で該当ポリシーを読んで従う
 
 > [!IMPORTANT]
 > **（AI・必須）** **判断を迫られたら（トレードオフ・設計選択・複数解釈・優先順位など）、`docs/policy/refined-engineer-judgment-principles.md` を必ず参照する。** 全ポリシーの上位に立つ判断の北極星である。原則から明確に答えが出るならAIが自分で決めてよく、迷う余地が残るなら `AskUserQuestion` で確認する。
@@ -14,7 +14,7 @@
 ## AIへの基本指示
 
 - 回答は日本語
-- **何よりもまず目的を握る（最優先）**：目的は全判断の上位基準である（見失えば、速く進むほど遠ざかる）。着手前に目的を自分の言葉で一文にして必ず出力する（外に出して初めて人間が取り違えを正せる）
+- **何よりもまず目的を握る（最優先）**：着手前に目的を自分の言葉で一文にして必ず出力する（外に出して初めて人間が取り違えを正せる）
   - 後戻りコストが高い／複数の解釈が入りうる／次の項目の種類に当たる → `AskUserQuestion`（Plan モードは `ExitPlanMode`）で確認し、肯定を得るまで実装・編集しない
   - それ以外 → 「**目的：〇〇。この前提で進めます**」と宣言して着手する
   - 一文にできるかを内心で判定して出力を省かない（LLM はほぼ常にもっともらしい一文を作れるので、確認が永久に発火しない）
@@ -60,5 +60,5 @@
 - **着手したら `npm run close-issues`・`npm run prune-merged-branches-and-worktrees`・`npm run move-issue-card -- <Issue番号>` を打つ**：着手とは、Issue 番号だけで対応を頼まれた直後（最初の Skill を起動する前。最初の Skill が読むだけでも、頼まれた時点で作業は始まっている）、実装フローの Skill の起動直前、その場で起票した Issue の編集を始める直前をいう。人間が単体で打つ Issue を読むだけの Skill（`/issue-check`・`/issue-decide`・`/issue-split`・`/issue-deps`）では打たない。失敗しても作業は続ける
 - **（厳守）** Issue の「タスク一覧」を1つずつ進め、完了ごとに `gh issue edit` でチェックを付ける
 - タスク一覧がポリシーに反していたら従わない。着手前に、どのポリシーのどの規定に反するかを `gh issue comment` で書き、タスクを訂正してから進める
-- **PR を経由する作業では Issue を閉じない**：マージで閉じる。片付けた Issue はすべて `/pr-body` に渡して `Closes` 行に載せる。push を人間に任せるときは、push 後に `/pr-body <Issue番号>` が要ると伝える。リポジトリに差分が出ない作業だけ、完了時に確認なしで `gh issue close` する。push・close の直前に `git status` で未コミットの変更が無いか確かめ、あればコミットする
+- **PR を経由する作業では Issue を閉じない**：片付けた Issue はすべて `/pr-body` に渡して `Closes` 行に載せる。push を人間に任せるときは、push 後に `/pr-body <Issue番号>` が要ると伝える。リポジトリに差分が出ない作業だけ、完了時に確認なしで `gh issue close` する。push・close の直前に `git status` で未コミットの変更が無いか確かめ、あればコミットする
 - AI が `git push` する前に、デフォルトブランチ（`gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` で引く）の最新を `git fetch` と `git merge --no-edit origin/<デフォルトブランチ>` で取り込む（rebase は使わない）。続けて `npm run gen:adr-index` を実行し、差分が出たらコミットする。push したら `/pr-body <Issue番号>` を実行する
