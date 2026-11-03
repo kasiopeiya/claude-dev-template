@@ -140,7 +140,7 @@
 
 ### [dependency-policy.md](policy/dependency-policy.md)
 
-**参照タイミング**: `package.json` に依存を追加する前（hook が package.json 編集時に自動で促す）
+**参照タイミング**: `package.json` に依存を追加する前
 
 ---
 
