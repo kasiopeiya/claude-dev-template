@@ -14,6 +14,7 @@ hook:
       '.github/workflows/add-opus-label.yml',
       '.claude/agents/issue-auditor-agent/*.md',
       '.claude/skills/quick-issue/**/*.md',
+      '.claude/skills/broken-window-issue/**/*.md',
       '.claude/skills/link-root-issue/**/*.md',
       'docs/project-context/issue-destinations.md',
       '.claude/skills/to-issues/**/*.md',
@@ -231,7 +232,7 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 ## 3択の例外は、専用のラベルで扱いが決まっている Issue に限る
 
-**3択**とは、`ai-fixable`・`needs-human-decision`・`ready-for-human` の3つをいう。起票する Issue には、このうちどれか1つだけを必ず付ける（AI が見つけた問題を `/quick-issue` で起票するときは、加えて `broken-window` を付ける）。どれも付かない Issue は、AI の着手からも、人間の判断や作業からも漏れて、誰の目にも触れなくなる。
+**3択**とは、`ai-fixable`・`needs-human-decision`・`ready-for-human` の3つをいう。起票する Issue には、このうちどれか1つだけを必ず付ける（AI が本筋外の問題を見つけて起票するときは、加えて `broken-window` を付ける）。どれも付かない Issue は、AI の着手からも、人間の判断や作業からも漏れて、誰の目にも触れなくなる。
 
 例外は、3択のどれも（`broken-window` も）付けない Issue で、**専用のラベルで扱いが決まっているものだけ**である。
 
