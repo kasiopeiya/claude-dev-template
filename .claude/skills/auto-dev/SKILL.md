@@ -33,7 +33,7 @@ state が `OPEN` でなければ、何もせず理由を表示して終了する
 
 ### Phase 2: 実装
 
-本文に「実装フロー（使用するSkill）」があれば、そこに並ぶ Skill を**記載順に** Skill ツールで実行する。無ければ CLAUDE.md「変更種別ごとの使用Skill」で決める。
+本文に「実装フロー（使用するSkill）」があれば、そこに並ぶ Skill を**記載順に** Skill ツールで実行する。無ければ、変更するパスで `npm run --silent select-flow-skills -- <パス>` を打ち、その出力で決める。
 
 - `AskUserQuestion` が要る場面は、最初の選択肢（既定）を選んで進む
 - タスクを1つ終えるごとに `gh issue edit $ARGUMENTS` でチェックリストを更新する（CLAUDE.md の厳守ルール）
