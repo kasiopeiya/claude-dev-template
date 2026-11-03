@@ -3,7 +3,9 @@ name: broken-window-issue
 description: 作業の途中で見つけた割れ窓と人間の指摘を、別コンテキストで起票する。
 argument-hint: '<起票する内容。会話にしか無い事実を書き写す>'
 context: fork
-background: false
+background: true
+model: sonnet
+effort: high
 ---
 
 作業の途中で見つかった本筋外の問題（割れ窓・人間の指摘）を、Issue として起票してください。起票のための読み込みを本筋の文脈に入れないよう、別コンテキストで走ります。
@@ -34,7 +36,8 @@ background: false
 <summary>この Skill をこう作った理由</summary>
 
 - **なぜ fork か**：`/quick-issue` は起票のたびに、issue-policy と `/link-root-issue` を含む長い文書を読み込む。本筋の Skill がそのまま呼ぶと、別タスクの読み込みと、ラベル・書き先・段番号の判定が本筋の文脈に混ざり、本筋の精度を下げうる。fork なら、読み込みが別コンテキストで済む
-- **なぜ `background: false` か**：本筋が起票の完了を待てる。裏で走ると、起票できたかを確かめる前に本筋が先へ進み、「起票できなかった」を受け取れない
+- **なぜ `background: true` か**：起票の間も、本筋が人間に応えられる。結果は完了の通知として後のターンに届くので、「起票できなかった」も受け取れる。`-p` と Agent SDK では値に関係なく待つので、無人実行の振る舞いは変わらない（https://code.claude.com/docs/en/sub-agents ）
+- **なぜ `model: sonnet`・`effort: high` か**：起票を2分以内に終わらせるため（人間の決定）。`context: fork` のとき、この2つは fork 先にだけ効き、本筋のモデルは変わらない（https://code.claude.com/docs/en/skills ）
 - **なぜ見つけた時点で起票するか**：本筋の完了後にまとめて起票すると、途中で落ちたセッションの起票が失われる。見つけた時点で起票すれば GitHub に残る
 
 </details>
