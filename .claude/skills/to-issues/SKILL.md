@@ -89,7 +89,7 @@ Plan を**曳光弾**の Issue に分ける。各 Issue は、すべての統合
 
 **書く前に、`/quick-issue` の SKILL.md を Read する。** 本文の書き方は、そこが正典である。文体・用語・図（`writing-rules` タグの中）と、環境依存の識別子の扱い（「2. 本文の組み立て」）に従う。下のテンプレートで「`/quick-issue` の同名の節と同じ」とした節も、そこの `issue-template` タグの中に従う。
 
-Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転記する**（そのスライスが実際に触れる種別の Skill だけに絞る）。これは「issue NNN 対応して」だけで開発フローを自動追従させるための情報なので、issue 化で**落とさない**こと。Plan に同セクションが無ければ、変更種別から CLAUDE.md「開発フロー」の一覧で補って記載する。
+Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転記する**（そのスライスが実際に触れる種別の Skill だけに絞る）。これは「issue NNN 対応して」だけで開発フローを自動追従させるための情報なので、issue 化で**落とさない**こと。Plan に同セクションが無ければ、変更するパスで `npm run --silent select-flow-skills -- <パス>` を打った出力で補って記載する。
 
 各 Issue には `ai-fixable` / `needs-human-decision` / `ready-for-human` のどれか1つだけを必ず付ける（`broken-window` は付けない。AI が作業中に見つけ、その場で直さずに起票した問題に付けるラベルであり、`/to-issues` 産の Issue には当たらない）。どれを付けるかの判定は issue-policy の「人間が決めるべき Issue の条件」と「人間しかできない作業の条件」に従う。`ready-for-human` の Issue では、人間がするタスクの頭に「（人間）」と書く。
 
