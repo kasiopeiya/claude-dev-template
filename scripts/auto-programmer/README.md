@@ -14,7 +14,7 @@
 | 2   | 閉じ損ねた Issue を閉じる。衝突して止まった自分の PR があれば、Issue を選ぶ前にそれを解かせる（「衝突して止まった PR を解かせる」）。無ければ Ready・`ai-fixable`・自分が担当者の open Issue から着手できる1件を選ぶ。選んだ Issue のロックを取り、カードがまだ Ready かを引き直す（他のプロセスが着手中なら飛ばして次の候補へ） | このツール                                |
 | 3   | 未コミットの変更を stash へ退避して clone をデフォルトブランチの最新へ戻し、トピックブランチを作り、依存を揃える                                                                                                                                                                                                                 | このツール                                |
 | 4   | 選んだ Issue のカードを「In progress」へ動かす                                                                                                                                                                                                                                                                                   | このツール                                |
-| 5   | Issue が open な sub-issue を持てば、子を Ready に載せて 13 へ飛ぶ。持たず `issue:checked` も無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する                                                                                                                                                                | このツール・`.claude/skills/issue-check/` |
+| 5   | Issue が open な sub-issue を持てば、子を Ready に載せて 13 へ飛ぶ。持たず、`issue:checked` も週次ラベルも無ければ、clone の中で `claude -p "/issue-check #<番号>"` を起動する                                                                                                                                                   | このツール・`.claude/skills/issue-check/` |
 | 6   | やる必要があるかと、対応方針がポリシーに合うかを確かめ、判定をラベル・state・本文へ書き戻す。1つの PR に収まらず割れる Issue は、`/issue-split` で sub-issue に割る。初回の検査で、本文に新しい技術要素があれば、外部依存の制約も調べる                                                                                          | `/issue-check`                            |
 | 7   | 6 で open な sub-issue ができていれば、子を Ready に載せる。続けて Issue のラベルと state を読み、子を載せたか止める理由があれば 13 へ飛ぶ                                                                                                                                                                                       | このツール                                |
 | 8   | Issue から前回の `needs-human-check` を外し、clone の中で `claude -p "/auto-dev <番号>"` を起動する                                                                                                                                                                                                                              | `.claude/skills/auto-dev/`                |
@@ -39,14 +39,14 @@
 - **カードが Todo・Ready 以外の列にある**：着手した後（In progress・In Review・Done）の子を Ready へ戻すと、同じ Issue をもう一度拾う。ボードに無い子は載せる
 - **対象リポジトリ（`repository`）の外にある**：2 は対象リポジトリの Issue しか拾わないので、載せても拾われない
 
-5 で `issue:checked` が付いていれば、6 を飛ばして 7 へ進む。監査の後に前提が崩れていれば、9 で `/auto-dev` が離脱する。
+5 で `issue:checked` か週次ラベル（`doc-audit-weekly`・`code-policy-weekly`）が付いていれば、6 を飛ばして 7 へ進む。週次の Issue は本文に変更対象が無く、見積もりが 0 行になるので、監査しても判定は変わらない。監査の後に前提が崩れていれば、9 で `/auto-dev` が離脱する。
 
-6 で外部依存の制約を調べるのは、`issue:checked` が無く、本文に出た外部の製品・サービス・ツールの名前が `docs/adr/`・`docs/design/`・各 `package.json` のどこにも無い Issue だけである。Plan を通らない Issue の前提の誤りを、実装の前に拾うためである。人間にまだ示していない制約のうち、対応方針を確実に実行できなくするものが見つかれば、判定は人間判断になり、7 で止まる。そうでない制約は、本文へ追記して監査を続ける。調べられなかったときは、Issue にコメントを残して監査を続ける。
+6 で外部依存の制約を調べるのは、`issue:checked` も週次ラベルも無く、本文に出た外部の製品・サービス・ツールの名前が `docs/adr/`・`docs/design/`・各 `package.json` のどこにも無い Issue だけである。Plan を通らない Issue の前提の誤りを、実装の前に拾うためである。人間にまだ示していない制約のうち、対応方針を確実に実行できなくするものが見つかれば、判定は人間判断になり、7 で止まる。そうでない制約は、本文へ追記して監査を続ける。調べられなかったときは、Issue にコメントを残して監査を続ける。
 
 7 で実装へ進まないのは、次のときだけである。`/issue-check` が「方針差し替え」に倒した Issue は、差し替わった本文のまま 8 へ進む。
 
 - open な sub-issue ができた
-- `issue:checked` が貼られていない（判定が書き戻されていない）
+- `issue:checked` が貼られていない（判定が書き戻されていない。週次ラベルの Issue は除く）
 - `needs-human-decision` か `ready-for-human` が付いた
 - `ai-fixable` が外れた
 - close された

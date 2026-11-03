@@ -17,6 +17,7 @@
 // - 実装の前に `/issue-check` を別プロセスで通し、書き戻されたラベルと state だけで進むか止めるかを
 //   決める（Issue #482）。止めた Issue のカードは着手中のまま残し、人間が見るまで次の巡回で拾わない。
 //   監査は `issue:checked` が無い Issue にだけ走らせ、貼られたことを「今回の判定が書き戻された」印にする。
+//   週次ラベルの Issue には走らせない（走らせるかの判定は issueCheckVerdict.mjs の shouldRunIssueCheck が持ち、理由もそこに書く）。
 // - `issue:checked` が付いた Issue は監査し直さない。人間がローカルでまとめて監査してから Ready へ積む
 //   運用が多く、毎回の再監査は同じ判定を繰り返すだけになる。監査後に前提が崩れていれば `/auto-dev` が離脱する。
 // - open な sub-issue を持つ Issue は実装せず、子を着手待ちに載せて拾わせる（どの子を載せるかは subIssueHandover.mjs）。
@@ -83,7 +84,8 @@ import { validateSessionModelSettings } from './sessionModel.mjs'
 import {
   findSkipImplementationDecision,
   ISSUE_CHECKED_LABEL,
-  HUMAN_ONLY_LABELS
+  HUMAN_ONLY_LABELS,
+  shouldRunIssueCheck
 } from './issueCheckVerdict.mjs'
 import { listSubIssues, readIssueStatus } from './issueQuery.mjs'
 import { isSpeechEnabled, speakIssueResult } from './issueResultSpeech.mjs'
@@ -334,7 +336,7 @@ async function startFirstStartableIssue(workspaceDir) {
 }
 
 /**
- * open な sub-issue を持つなら子を着手待ちに載せて終える。そうでなければ `issue:checked` が無いときだけ `/issue-check` を通し、
+ * open な sub-issue を持つなら子を着手待ちに載せて終える。そうでなければ `shouldRunIssueCheck` が真のときだけ `/issue-check` を通し、
  * 監査が割っていれば子を着手待ちに載せ、止める理由も子も無ければ `/auto-dev` を走らせる。`/auto-dev` が commit せずに
  * 正常終了した後も、実装フローの `/issue-split` で子ができていれば子を着手待ちに載せる。結果は record へ書き足す。
  *
@@ -351,9 +353,9 @@ async function handOverOrImplement(issueNumber, workspaceDir, record) {
   // 監査前の親のラベルは止める理由の判定に通さない。`/to-issues` のまとめ用の親は issue:checked を持たないことがある
   if (record.subIssueHandover) return 'handed-over'
 
-  record.isIssueCheckSkipped = readIssueStatus(issueNumber).labelNames.includes(ISSUE_CHECKED_LABEL)
+  record.isIssueCheckSkipped = !shouldRunIssueCheck(readIssueStatus(issueNumber).labelNames)
   if (record.isIssueCheckSkipped) {
-    showInfo(`${ISSUE_CHECKED_LABEL} が付いているので /issue-check を飛ばします`)
+    showInfo(`${ISSUE_CHECKED_LABEL} か週次ラベルが付いているので /issue-check を飛ばします`)
   } else {
     const issueCheckStatus = await runIssueCheckSession({
       issueNumber,
