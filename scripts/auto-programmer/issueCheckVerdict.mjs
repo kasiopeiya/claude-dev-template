@@ -6,6 +6,8 @@
 // - `issue:checked` は判定が何であれ貼られるので、判定の中身の分岐には使わない。使うのは「今回の判定が
 //   書き戻されたか」の印としてだけで、呼び出し側はこのラベルが無い Issue にだけ監査を走らせる。
 //   終了コード 0 は書き戻しを保証しない（/issue-check は判定を読めないとき、何も書き戻さずに終わる）。
+// - 週次ラベルの Issue は監査を走らせず、`issue:checked` が無くても止めない。本文に変更対象が無く、見積もりが
+//   0 行になるので、監査しても判定は変わらない（Issue #1231・#1543）。
 // - 判定の中身で止めるのは「人間判断」「人間しかできない作業」「不要（close）」だけで、「方針差し替え」は
 //   本文が直って ai-fixable のまま残るので止めない。
 // - 対象ラベル（ai-fixable）が外れた Issue も止める。/issue-check がラベルを付け替えると対象ラベルが外れるので、
@@ -16,6 +18,8 @@
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに確かめられる。
 
 export const ISSUE_CHECKED_LABEL = 'issue:checked'
+// 週次ワークフローが起票した Issue に付くラベル。表記は docs/policy/issue-policy.md の週次ラベルの行が正
+const WEEKLY_ISSUE_LABELS = ['doc-audit-weekly', 'code-policy-weekly']
 // 人間が方針を決める・人間が作業する Issue に付くラベルと、実装を止めるときに記録へ残す判定の言い回し。
 // 子を着手待ちに載せるかの判定も HUMAN_ONLY_LABELS を使い、人間向けのラベルが増えたときに片方だけ直る食い違いを防ぐ
 const HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE = new Map([
@@ -23,6 +27,19 @@ const HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE = new Map([
   ['ready-for-human', '人間しかできない作業だ']
 ])
 export const HUMAN_ONLY_LABELS = [...HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE.keys()]
+
+/**
+ * 実装の前に `/issue-check` を起動するかを返す。`issue:checked` が付いた Issue と、週次ラベルの Issue は起動しない。
+ *
+ * @param {string[]} labelNames Issue に付いているラベルの名前
+ * @returns {boolean} 起動するなら true
+ */
+export function shouldRunIssueCheck(labelNames) {
+  const hasWeeklyIssueLabel = WEEKLY_ISSUE_LABELS.some((weeklyIssueLabel) =>
+    labelNames.includes(weeklyIssueLabel)
+  )
+  return !labelNames.includes(ISSUE_CHECKED_LABEL) && !hasWeeklyIssueLabel
+}
 
 /**
  * 監査後の Issue を実装へ進めてはいけない理由を返す。
@@ -35,7 +52,8 @@ export function findSkipImplementationDecision({ state, labelNames }, targetIssu
   if (state !== 'OPEN') {
     return { reason: '/issue-check が不要と判定して close しました', isVerdict: true }
   }
-  if (!labelNames.includes(ISSUE_CHECKED_LABEL)) {
+  // 監査を走らせる条件が監査後も残っている＝判定が書き戻されていない
+  if (shouldRunIssueCheck(labelNames)) {
     return { reason: '/issue-check が判定を書き戻しませんでした', isVerdict: false }
   }
   for (const [humanOnlyLabel, verdictPhrase] of HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE) {
