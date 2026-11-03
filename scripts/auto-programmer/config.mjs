@@ -54,7 +54,7 @@ export const config = {
 
   // 環境変数 AUTO_PROGRAMMER_ENABLE_SPEECH の値をそのまま載せる（未設定なら undefined）。Issue 1件を終えたときの読み上げは、
   // これが '1' のときだけ鳴る。ここでは検査も例外もしない。このファイルは CI 待ちの hook（.claude/hooks/wake-on-ci-failure.mjs）と
-  // scripts/move-issue-card.mjs も読み込むので、読み込みで例外が出ると hook が何も言わずに止まる。値の検査は
+  // scripts/move-issue-card.mjs・scripts/decide-issue-start.mjs も読み込むので、読み込みで例外が出ると hook が何も言わずに止まる。値の検査は
   // index.mjs の起動直後が行う。キーが無い config.mjs（同期した利用先の古いもの）では、オフと同じに動く
   enableSpeechEnvValue: process.env.AUTO_PROGRAMMER_ENABLE_SPEECH,
 
