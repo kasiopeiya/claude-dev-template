@@ -240,7 +240,7 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 これらは専用の経路（常設・自動 close・人間の確認）で扱う。3択を付けると、`/issue-check` や Auto-Programmer（ボードの `Ready` の Issue を1件ずつ拾い、AI に実装させるツール。`scripts/auto-programmer/`）が拾って空回りし、専用の経路と二重に扱われる（#996）。
 
-**umbrella の親は3択の例外にしない。** `/issue-regroup` が立てる子への入口の親も、`/to-issues` のまとめ用の親と同じく `ai-fixable` を付ける。`tracking-issue` は、親の親が `phase` のときだけ重ねる（`/to-issues` のまとめ用の親は常に第2階層なので常に重ねる）。子が open な間は `/issue-check` が飛ばし、子が全部 close されたら完了条件を見て閉じるので、空回りしない（#996）。親から `ai-fixable` を外さないのは、Auto-Programmer が `ai-fixable` のカードだけを拾い、拾った親の子を Ready に載せて引き継ぐからである。外すと親が拾われず、引き継ぎが止まる。
+**umbrella の親は3択の例外にしない。** `/issue-regroup` が立てる子への入口の親も、`/to-issues` のまとめ用の親と同じく `ai-fixable` を付ける。`tracking-issue` は、親の親が `phase` のときだけ重ねる。子が open な間は `/issue-check` が飛ばし、子が全部 close されたら完了条件を見て閉じるので、空回りしない（#996）。親から `ai-fixable` を外さないのは、Auto-Programmer が `ai-fixable` のカードだけを拾い、拾った親の子を Ready に載せて引き継ぐからである。外すと親が拾われず、引き継ぎが止まる。
 
 ## ボードの Status の意味
 
