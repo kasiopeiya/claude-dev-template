@@ -39,20 +39,11 @@
 仕様駆動で開発する（`docs/guide/development-flow.md`）。
 
 > [!IMPORTANT]
-> **（AI・必須）** **issue番号だけで開発フローを自動追従する**：「issue 111 対応して」と番号だけ渡されたら、`gh issue view 111` の「実装フロー（使用するSkill）」の Skill を記載順に実行する。同セクションが無ければ下の一覧で決める。実装フローの Skill が終わったら、コミット・push・`/pr-body` まで確認せずに進める。
+> **（AI・必須）** **issue番号だけで開発フローを自動追従する**：「issue 111 対応して」と番号だけ渡されたら、`gh issue view 111` の「実装フロー（使用するSkill）」の Skill を記載順に実行する。同セクションが無ければ `npm run --silent select-flow-skills -- <変更するパス>` の出力で決める。実装フローの Skill が終わったら、コミット・push・`/pr-body` まで確認せずに進める。
 >
 > 着手のコマンドを打った後、最初の Skill を起動する前に、確認なしで `npm run --silent decide-issue-start -- <番号>` を打ち、出力の1行目の指示にも確認なしで従う
 
-変更種別ごとの使用Skill（直接編集した場合／新規・大幅加筆の場合）：
-
-- 設計書：`/quick-doc-review`／`/design`
-- アプリ実装（samples/app 含む）：`/code-review`／`/code-dev`
-- CDK（samples/infra 含む）：`/cdk-review`／`/cdk-dev`
-- それ以外のコード（`scripts/`・`.claude/hooks/`・`eslint-rules/`・`.claude/skills/` 配下のスクリプト）：`/quick-code-review <パス>`／`/code-review <パス>`（パスを渡さないと `.mjs` 本体が外れる）
-- CI ワークフロー（`.github/workflows/`）：どちらも `/actions-review`
-- 要件定義書：`/quick-doc-review`／`/requirements-review`
-- ADR（`docs/adr/`）：`/quick-doc-review`／`/create-adr`
-- 上記以外の文書（ハーネスのプロンプト定義 `.claude/skills/`・`.claude/agents/`、`docs/` 配下、`CLAUDE.md`）：`/quick-doc-review`／`/doc-review`
+直接編集したファイルは、`npm run --silent select-flow-skills -- <パス>` の出力の「直接編集」の Skill でレビューする。
 
 ## Issue 作業の共通ルール
 
