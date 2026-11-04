@@ -17,36 +17,36 @@
     </mxGraphModel>
   </diagram>
   <diagram name="AIDD" id="VuWgp9L6Yji_PRQnP5GD">
-    <mxGraphModel dx="2359" dy="1484" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel grid="0" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="FyGJfU2ifQTK040_GAB6-0" />
         <mxCell id="FyGJfU2ifQTK040_GAB6-1" parent="FyGJfU2ifQTK040_GAB6-0" />
         <mxCell id="FyGJfU2ifQTK040_GAB6-10" connectable="0" parent="FyGJfU2ifQTK040_GAB6-1" style="group;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#ECECEC,#FFFFFF);fontSize=26;" value="" vertex="1">
-          <mxGeometry height="252" width="702" x="60" y="500" as="geometry" />
+          <mxGeometry height="252" width="763" x="60" y="500" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-11" parent="FyGJfU2ifQTK040_GAB6-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=20;" value="" vertex="1">
-          <mxGeometry height="252" width="702" as="geometry" />
+          <mxGeometry height="252" width="763" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-12" edge="1" parent="FyGJfU2ifQTK040_GAB6-10" source="FyGJfU2ifQTK040_GAB6-13" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="FyGJfU2ifQTK040_GAB6-15" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-13" parent="FyGJfU2ifQTK040_GAB6-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=24;" value="設計" vertex="1">
-          <mxGeometry height="84" width="113.23" x="67.94" y="112" as="geometry" />
+          <mxGeometry height="84" width="113.23" x="180" y="114" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-14" edge="1" parent="FyGJfU2ifQTK040_GAB6-10" source="FyGJfU2ifQTK040_GAB6-15" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="FyGJfU2ifQTK040_GAB6-17" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-15" parent="FyGJfU2ifQTK040_GAB6-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=24;" value="実装" vertex="1">
-          <mxGeometry height="84" width="113.23" x="226.45" y="112" as="geometry" />
+          <mxGeometry height="84" width="113.23" x="329" y="114" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-16" edge="1" parent="FyGJfU2ifQTK040_GAB6-10" source="FyGJfU2ifQTK040_GAB6-17" style="edgeStyle=none;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;" target="FyGJfU2ifQTK040_GAB6-18" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-17" parent="FyGJfU2ifQTK040_GAB6-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=24;" value="テスト" vertex="1">
-          <mxGeometry height="84" width="113.23" x="373.65" y="112" as="geometry" />
+          <mxGeometry height="84" width="113.23" x="478" y="114" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-18" parent="FyGJfU2ifQTK040_GAB6-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=24;" value="レビュー" vertex="1">
-          <mxGeometry height="84" width="113.23" x="520.84" y="112" as="geometry" />
+          <mxGeometry height="84" width="113.23" x="626.9000000000001" y="114" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-19" parent="FyGJfU2ifQTK040_GAB6-10" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=24;" value="&lt;font style=&quot;font-size: 30px;&quot;&gt;&lt;b&gt;仕様駆動開発&lt;/b&gt;&lt;/font&gt;" vertex="1">
           <mxGeometry height="84" width="226.45" x="11.33" y="12" as="geometry" />
@@ -54,10 +54,17 @@
         <mxCell id="FyGJfU2ifQTK040_GAB6-20" edge="1" parent="FyGJfU2ifQTK040_GAB6-10" source="FyGJfU2ifQTK040_GAB6-11" style="edgeStyle=orthogonalEdgeStyle;html=1;innerLoopWaypoints=1;entryX=0.997;entryY=0.602;entryDx=0;entryDy=0;entryPerimeter=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=20;strokeWidth=4;" target="FyGJfU2ifQTK040_GAB6-11">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
-              <mxPoint x="798" y="114" />
-              <mxPoint x="798" y="151.72" />
+              <mxPoint x="820.2" y="110.9" />
+              <mxPoint x="820.2" y="148.6" />
+              <mxPoint x="772.9822868775542" y="149.332013933103" />
             </Array>
           </mxGeometry>
+        </mxCell>
+        <mxCell id="TWc7dq17ITaV1qW7Dbns-1" edge="1" parent="FyGJfU2ifQTK040_GAB6-10" source="TWc7dq17ITaV1qW7Dbns-0" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;defaultLabelBackgroundColor=page;" target="FyGJfU2ifQTK040_GAB6-13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="TWc7dq17ITaV1qW7Dbns-0" parent="FyGJfU2ifQTK040_GAB6-10" style="rounded=1;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=24;" value="Issue" vertex="1">
+          <mxGeometry height="84" width="113.23" x="31" y="114" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-22" parent="FyGJfU2ifQTK040_GAB6-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=36;" value="&lt;b&gt;AI駆動開発&lt;br&gt;（AIDD）&lt;/b&gt;" vertex="1">
           <mxGeometry height="30" width="352" x="878" y="619.5" as="geometry" />
@@ -75,10 +82,10 @@
           <mxGeometry height="90" width="6.593576281655342" y="5" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-27" parent="FyGJfU2ifQTK040_GAB6-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=26;" value="ループ" vertex="1">
-          <mxGeometry height="30" width="109" x="762" y="570" as="geometry" />
+          <mxGeometry height="30" width="109" x="813.5" y="570" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-34" parent="FyGJfU2ifQTK040_GAB6-1" style="shape=curlyBracket;whiteSpace=wrap;html=1;rounded=1;flipH=1;labelPosition=right;verticalLabelPosition=middle;align=left;verticalAlign=middle;legacyAnchorPoints=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);strokeColor=light-dark(#000000,#000000);strokeWidth=3;" value="" vertex="1">
-          <mxGeometry height="601" width="20" x="900" y="323" as="geometry" />
+          <mxGeometry height="601" width="20" x="929" y="323" as="geometry" />
         </mxCell>
         <mxCell id="pjBtEsn35uAxKZkSsxUW-0" parent="FyGJfU2ifQTK040_GAB6-1" style="text;whiteSpace=wrap;html=1;fontSize=35;fillColor=none;" value="ただの「AIを使った開発」との違い&lt;br&gt;&lt;b&gt;AIが開発の一連のサイクルを自律的まわし、問題があれば自己修正し、構築を推進&lt;/b&gt;" vertex="1">
           <mxGeometry height="113" width="1356" x="190" y="1058" as="geometry" />
@@ -93,10 +100,10 @@
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="vQYDSzbU85PNXJMO-AKz-0" parent="FyGJfU2ifQTK040_GAB6-1" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Georgia;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=26;" value="&lt;font&gt;要件定義&lt;/font&gt;" vertex="1">
-          <mxGeometry height="80" width="160" x="331.35" y="336" as="geometry" />
+          <mxGeometry height="80" width="160" x="361.5" y="336" as="geometry" />
         </mxCell>
         <mxCell id="vQYDSzbU85PNXJMO-AKz-1" parent="FyGJfU2ifQTK040_GAB6-1" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Georgia;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fillColor=light-dark(#FFFFFF,#FFFFFF);fontSize=26;" value="システムテスト" vertex="1">
-          <mxGeometry height="80" width="188.71" x="316.65" y="837" as="geometry" />
+          <mxGeometry height="80" width="188.71" x="347.14" y="838" as="geometry" />
         </mxCell>
         <mxCell id="vQYDSzbU85PNXJMO-AKz-3" edge="1" parent="FyGJfU2ifQTK040_GAB6-1" source="FyGJfU2ifQTK040_GAB6-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;defaultLabelBackgroundColor=page;" target="vQYDSzbU85PNXJMO-AKz-1">
           <mxGeometry relative="1" as="geometry" />
@@ -122,7 +129,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="review-bottle-neck" id="YOQiNSW3BdJJE3ZxxAnX">
-    <mxGraphModel dx="1555" dy="1221" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="2281" dy="1426" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="B1hv-0MndP3tPqB3LhuA-0" />
         <mxCell id="B1hv-0MndP3tPqB3LhuA-1" parent="B1hv-0MndP3tPqB3LhuA-0" />
@@ -883,7 +890,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="short-lived branch " id="0aOevvNBhysqb7m821cn">
-    <mxGraphModel dx="1483" dy="1165" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1885" dy="1179" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="9h29b4OtzfZ9MYV06EXY-0" />
         <mxCell id="9h29b4OtzfZ9MYV06EXY-1" parent="9h29b4OtzfZ9MYV06EXY-0" />
@@ -961,8 +968,8 @@
         <mxCell id="gnDYup-pplmDH4aJIF-7-2" parent="9h29b4OtzfZ9MYV06EXY-1" style="dashed=0;outlineConnect=0;html=1;align=center;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;shape=mxgraph.weblogos.github;labelPerimeter=1;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;PR&lt;br&gt;変更130行&lt;/font&gt;" vertex="1">
           <mxGeometry height="80" width="78.8" x="956" y="1008" as="geometry" />
         </mxCell>
-        <mxCell id="7WY4ja-AVWNVvcZa_kUB-0" parent="9h29b4OtzfZ9MYV06EXY-1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.roundRectCallout;dx=40.33;dy=13;size=10.33;boundedLbl=1;flipH=0;legacyAnchorPoints=0;" value="&lt;span style=&quot;font-size: 26px;&quot;&gt;この量なら&lt;br&gt;空き時間にレビューできる&lt;/span&gt;" vertex="1">
-          <mxGeometry height="100" width="318" x="1146" y="732" as="geometry" />
+        <mxCell id="7WY4ja-AVWNVvcZa_kUB-0" parent="9h29b4OtzfZ9MYV06EXY-1" style="whiteSpace=wrap;html=1;shape=mxgraph.basic.roundRectCallout;dx=40.33;dy=13;size=10.33;boundedLbl=1;flipH=0;legacyAnchorPoints=0;" value="&lt;span style=&quot;font-size: 26px;&quot;&gt;この量なら&lt;br&gt;空き時間にレビューできるし、&lt;br&gt;細かいところまで確認できる&lt;/span&gt;" vertex="1">
+          <mxGeometry height="113" width="387" x="1146" y="719" as="geometry" />
         </mxCell>
         <mxCell id="7WY4ja-AVWNVvcZa_kUB-1" connectable="0" parent="9h29b4OtzfZ9MYV06EXY-1" style="group" value="" vertex="1">
           <mxGeometry height="146" width="142.5" x="1113" y="832" as="geometry" />
@@ -1017,7 +1024,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="pr-review" id="R7b83oP5Hhzm4j9kENvQ">
-    <mxGraphModel dx="1580" dy="1241" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1790" dy="1119" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="hHYWbuuVEu2jwU5-ITD7-0" />
         <mxCell id="hHYWbuuVEu2jwU5-ITD7-1" parent="hHYWbuuVEu2jwU5-ITD7-0" />
@@ -1036,7 +1043,7 @@
         <mxCell id="hHYWbuuVEu2jwU5-ITD7-6" parent="hHYWbuuVEu2jwU5-ITD7-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=22;" value="&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;人間レビューの条件（例）&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;ul&gt;&lt;li&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;判断基準（Policy等）の変更&lt;/span&gt;&lt;/li&gt;&lt;li&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;振る舞いの変更&lt;/span&gt;&lt;/li&gt;&lt;li&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;CI/CDの変更&lt;/span&gt;&lt;/li&gt;&lt;li&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;判定が難しいもの（安全側に倒す）&lt;/span&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="253" width="676" x="445" y="378" as="geometry" />
         </mxCell>
-        <mxCell id="hHYWbuuVEu2jwU5-ITD7-7" parent="hHYWbuuVEu2jwU5-ITD7-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=22;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;「正解を示す」「短命ブランチ」の対策により人間のレビュー負荷を減らすことはできた&lt;br&gt;しかし、全てをレビューしていると人間がボトルネックになることは変わらない&lt;br&gt;&amp;nbsp;→重要な変更だけレビューするようなルール整備&lt;/span&gt;" vertex="1">
+        <mxCell id="hHYWbuuVEu2jwU5-ITD7-7" parent="hHYWbuuVEu2jwU5-ITD7-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=22;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;「正解を示す」「短命ブランチ」の対策により人間のレビュー負荷を減らすことはできた&lt;br&gt;しかし、全てをレビュー以上、人間がボトルネックになることは変わらない&lt;br&gt;&amp;nbsp;→重要な変更だけレビューするようなルール整備&lt;/span&gt;" vertex="1">
           <mxGeometry height="134" width="1213" x="102" y="224" as="geometry" />
         </mxCell>
         <mxCell id="TtE8_6RvbPXHcnZ6mUZm-5" edge="1" parent="hHYWbuuVEu2jwU5-ITD7-1" source="hHYWbuuVEu2jwU5-ITD7-9" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;startSize=12;endSize=12;" target="TtE8_6RvbPXHcnZ6mUZm-2">
@@ -1106,27 +1113,27 @@
     </mxGraphModel>
   </diagram>
   <diagram name="summary" id="1-xFaONdxzACpJ9X3IU4">
-    <mxGraphModel dx="1439" dy="1130" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1768" dy="1105" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="BL01StOJjvSbYqQzYMc2-0" />
         <mxCell id="BL01StOJjvSbYqQzYMc2-1" parent="BL01StOJjvSbYqQzYMc2-0" />
-        <mxCell id="BL01StOJjvSbYqQzYMc2-2" parent="BL01StOJjvSbYqQzYMc2-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="レビューを制するものがAI駆動開発を制する" vertex="1">
+        <mxCell id="BL01StOJjvSbYqQzYMc2-2" parent="BL01StOJjvSbYqQzYMc2-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="レビューを制して、AI駆動開発を制するための３箇条" vertex="1">
           <mxGeometry height="64" width="1383" x="37" y="124" as="geometry" />
         </mxCell>
         <mxCell id="BL01StOJjvSbYqQzYMc2-3" connectable="0" parent="BL01StOJjvSbYqQzYMc2-1" style="group" value="" vertex="1">
           <mxGeometry height="100" width="1383" x="37" y="13" as="geometry" />
         </mxCell>
-        <mxCell id="BL01StOJjvSbYqQzYMc2-4" parent="BL01StOJjvSbYqQzYMc2-3" style="text;whiteSpace=wrap;html=1;fontSize=75;" value="レビュー問題対策の答え" vertex="1">
+        <mxCell id="BL01StOJjvSbYqQzYMc2-4" parent="BL01StOJjvSbYqQzYMc2-3" style="text;whiteSpace=wrap;html=1;fontSize=75;" value="まとめ：レビュー問題対策の答え" vertex="1">
           <mxGeometry height="100" width="1371.8949969116738" x="11.105003088326129" as="geometry" />
         </mxCell>
         <mxCell id="BL01StOJjvSbYqQzYMc2-5" parent="BL01StOJjvSbYqQzYMc2-3" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
           <mxGeometry height="90" width="5.979617047560223" y="5" as="geometry" />
         </mxCell>
-        <mxCell id="AL-YYhV-VxJ1iFnzJHqx-1" parent="BL01StOJjvSbYqQzYMc2-1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#666666;align=left;verticalAlign=top;spacing=10;spacingLeft=14;fontColor=light-dark(#000000,#000000);fontSize=30;" value="&lt;div&gt;&lt;span&gt;&lt;b&gt;これら対策でHOTLを実現し、&lt;/b&gt;&lt;/span&gt;&lt;b style=&quot;background-color: transparent;&quot;&gt;品質と開発スピードを両立&lt;br&gt;真に生産的なAI駆動開発を実現&lt;/b&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="100" width="869" x="336" y="983" as="geometry" />
+        <mxCell id="mVm5g3d-zvHR4soUjLgo-0" parent="BL01StOJjvSbYqQzYMc2-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=50;" value="&lt;div&gt;&lt;span&gt;&lt;b&gt;1. 正解を決める&lt;br&gt;&lt;br&gt;2. 小さく回す&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span&gt;&lt;b&gt;&lt;br&gt;3. 全部見ない&lt;/b&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="345" width="974" x="247.05" y="480" as="geometry" />
         </mxCell>
-        <mxCell id="mVm5g3d-zvHR4soUjLgo-0" parent="BL01StOJjvSbYqQzYMc2-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=22;" value="&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;1. AIに正解を先に示す&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;ポリシー駆動開発で正解を定義しAIに示す&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;→イメージ通りの成果物を出力&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;→レビューで指摘することが少なくなる&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;→人間の負担軽減&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;2. PRのサイズを小さくする&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;短命ブランチの導入&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;→空き時間に&lt;/span&gt;&lt;span style=&quot;font-size: 30px; background-color: transparent;&quot;&gt;気軽に精度&lt;/span&gt;&lt;span style=&quot;background-color: transparent; font-size: 30px;&quot;&gt;良く&lt;/span&gt;&lt;span style=&quot;background-color: transparent; font-size: 30px;&quot;&gt;レビューできる&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;3. 重要な変更だけ人間レビューする&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;&lt;br&gt;&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;人間レビュー判定基準を定義&lt;br&gt;→重要な変更のレビューに集中できる&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
-          <mxGeometry height="707" width="974" x="181" y="247" as="geometry" />
+        <mxCell id="K82cSUuHUUcZHev_D3UC-0" parent="BL01StOJjvSbYqQzYMc2-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=50;" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="84" width="974" x="303" y="1098" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
@@ -1149,7 +1156,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="role" id="zSG63CEj6xi9ZXTzDw1V">
-    <mxGraphModel dx="1607" dy="1205" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1530" dy="1202" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="0w0zNO3XVD4p1xrtiatR-0" />
         <mxCell id="0w0zNO3XVD4p1xrtiatR-1" parent="0w0zNO3XVD4p1xrtiatR-0" />
@@ -1595,7 +1602,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="async-review" id="_NGM3Ak_dNR5mgR6t4RR">
-    <mxGraphModel grid="0" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1937" dy="1211" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="-xc2fBPYx7Jom1wnPpMH-0" />
         <mxCell id="-xc2fBPYx7Jom1wnPpMH-1" parent="-xc2fBPYx7Jom1wnPpMH-0" />
