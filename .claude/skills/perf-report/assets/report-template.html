@@ -202,6 +202,7 @@
 
           <h2 id="delegation">AI に任せた度合い</h2>
 
+          <!-- if:delegationFigure -->
           <figure class="mb-figure">
             <div class="mb-figure-frame">{{delegationFigure}}</div>
             <figcaption>
@@ -211,6 +212,10 @@
               のラベル表。分類なしは <code>scripts/perf-report.mjs</code>）
             </figcaption>
           </figure>
+          <!-- endif -->
+          <!-- if:noWorkIssue -->
+          <p>期間内に作業 Issue が無いため、図を描きません。</p>
+          <!-- endif -->
 
           <table>
             <tr>
