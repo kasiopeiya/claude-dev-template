@@ -163,7 +163,176 @@
       <!-- /.mb-hero -->
 
       <div class="mb-wrap">
-        <main class="mb-main"></main>
+        <main class="mb-main">
+          <h2 id="throughput">処理した量</h2>
+
+          <figure class="mb-figure">
+            <div class="mb-figure-frame">{{throughputFigure}}</div>
+            <figcaption>
+              fig.1 週ごとの作業 Issue
+              数（白抜きは全日そろっていない週で、期間の端で切れた週と今日を含む週が当たる）
+            </figcaption>
+          </figure>
+
+          <table>
+            <tr>
+              <td class="mb-rowlabel"><strong>定義</strong></td>
+              <td>
+                completed で close した Issue から、PR
+                のレビュー通知・子を持つ親・<code>phase</code>・週次の
+                Issue・メモ（ラベルが無く本文が空）を除いた件数<br />定義元は、レビュー通知が
+                <code>docs/policy/pr-review-policy.md</code>、親・<code>phase</code>・週次が
+                <code>docs/policy/issue-policy.md</code>、メモが <code>scripts/perf-report.mjs</code
+                ><br />close した日（日本時間）で週に分ける（月曜始まり）<br />全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>読み方</strong></td>
+              <td>
+                小さな Issue を流し続ける運用が、週単位で途切れていないかを見る<br />少ない週は、要件定義など件数に出にくい作業の時期のことがある
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>限界</strong></td>
+              <td>
+                件数は成果や価値の大きさを表さない<br />週ごとの件数は大きくぶれるので、1週の増減で良し悪しを判断しない<br />白抜きの週は日数が足りず、他の週と比べられない
+              </td>
+            </tr>
+          </table>
+
+          <h2 id="delegation">AI に任せた度合い</h2>
+
+          <figure class="mb-figure">
+            <div class="mb-figure-frame">{{delegationFigure}}</div>
+            <figcaption>
+              fig.2 作業 Issue {{workIssueCount}}件のラベル別の内訳（定義元：<code
+                >docs/policy/issue-policy.md</code
+              >
+              のラベル表。分類なしは <code>scripts/perf-report.mjs</code>）
+            </figcaption>
+          </figure>
+
+          <table>
+            <tr>
+              <td class="mb-rowlabel"><strong>定義</strong></td>
+              <td>
+                Issue に付いたラベルだけで機械的に分類した件数<br /><code>ai-fixable</code> は
+                <code>issue:decided</code> の有無を問わない<br />分類なしは、3択のラベルが無いものと
+                <code>needs-human-decision</code> のまま close したもの
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>読み方</strong></td>
+              <td>
+                人の手をどれだけ残しているかを見る。他のプロジェクトで人をどこに置くかの目安になる
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>限界</strong></td>
+              <td>
+                ラベルは着手前の分類で、実際の作業の記録ではない<br />Issue
+                を作るまでの相談は含まない（人間と相談して方針を決めた Issue も AI 単独に入る）
+              </td>
+            </tr>
+          </table>
+
+          <h2 id="speed">着手から PR が出るまでの時間</h2>
+
+          <figure class="mb-figure">
+            <div class="mb-figure-frame">{{speedFigure}}</div>
+            <figcaption>
+              fig.3 AI 単独の分類の Issue {{measuredIssueCount}}件の、着手から PR
+              が出るまでの時間（右端の帯は作業時間ではない）
+            </figcaption>
+          </figure>
+
+          <table>
+            <tr>
+              <td class="mb-rowlabel"><strong>定義</strong></td>
+              <td>
+                <code>ai-fixable</code> の作業 Issue で、ボードの Status が最初に
+                <code>In Review</code>（PR が Issue に紐づいた時点）になった時刻と、その直前に
+                <code>In progress</code>
+                になった時刻の差<br />{{targetIssueCount}}件のうち{{measuredIssueCount}}件で数えた。<code
+                  >In progress</code
+                >
+                と <code>In Review</code> の両方の記録が無い Issue は数えない<br />割合は四捨五入のため、合計が100%にならないことがある
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>読み方</strong></td>
+              <td>
+                AI の作業のスピード感をつかむ目安にする<br />1件は小さく割った Issue
+                で、大きな機能を作る時間ではない<br />8時間以上の帯は、エラーや判断待ちで止まっていた時間として読む
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>限界</strong></td>
+              <td>
+                <strong>人間が同じ作業にかかる時間との比較ではなく、何倍速いかは言えない</strong
+                ><br />Issue を作るまでの相談、自動検査、レビュー、マージの時間は含まない<br />AI
+                が動いていた時間そのものではなく、人間の指示を待つ時間なども入る<br />失敗してやり直す前の時間は含まないので、その分だけ実際より短く見える
+              </td>
+            </tr>
+          </table>
+
+          <h2 id="review">人間レビューの対象</h2>
+
+          <figure class="mb-figure">
+            <div class="mb-figure-frame">{{reviewFigure}}</div>
+            <figcaption>
+              fig.4 週ごとのマージした PR {{mergedPullRequestCount}}件の内訳（割合は対象の割合）
+            </figcaption>
+          </figure>
+
+          <table>
+            <tr>
+              <td class="mb-rowlabel"><strong>定義</strong></td>
+              <td>
+                マージした PR のうち、<code>needs-human-review</code> が付いた割合<br />付く条件は
+                <code>docs/policy/pr-review-policy.md</code> のレビュー方針の表が決める
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>読み方</strong></td>
+              <td>
+                人間の確認に回る変更がどれだけ残るかを見る<br />他のプロジェクトで、確認に要る人の量を考える目安になる
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>限界</strong></td>
+              <td>
+                対象になった割合で、人間が読んだ割合やかかった時間ではない<br />この割合だけでは、レビューがボトルネックかどうかは言えない<br />{{humanReviewTargetCount}}件のうち{{policyOrCicdCount}}件は判断基準や自動検査の変更（<code>policy</code>・<code>cicd</code>）で、プロダクト開発では内訳が変わる<br />対象はルールで決まる。ルールが変わると割合も変わる
+              </td>
+            </tr>
+          </table>
+
+          <h2 id="size">変更の小ささ</h2>
+
+          <figure class="mb-figure">
+            <div class="mb-figure-frame">{{sizeFigure}}</div>
+            <figcaption>fig.5 マージした PR {{mergedPullRequestCount}}件の差分行数</figcaption>
+          </figure>
+
+          <table>
+            <tr>
+              <td class="mb-rowlabel"><strong>定義</strong></td>
+              <td>
+                期間内にマージした PR の追加行数と削除行数の合計<br />割合は四捨五入のため、合計が100%にならないことがある
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>読み方</strong></td>
+              <td>
+                1回の変更を小さく保てているかを見る<br />平均は一部の大きな変更に引っ張られるので、中央値を中心に読む<br />200行と300行は、このプロジェクトが決めた分割の線（<code>docs/policy/pr-review-policy.md</code>）
+              </td>
+            </tr>
+            <tr>
+              <td class="mb-rowlabel"><strong>限界</strong></td>
+              <td>小さく回せている事実を示すだけで、有効さの証明ではない</td>
+            </tr>
+          </table>
+        </main>
         <!-- /.mb-main -->
       </div>
       <!-- /.mb-wrap -->

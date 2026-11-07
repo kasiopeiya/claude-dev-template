@@ -31,6 +31,7 @@ hook:
       '.claude/hooks/label-ai-filed-issue.mjs',
       '.claude/skills/auto-dev/**/*.md',
       '.claude/skills/perf-report/**/*.md',
+      '.claude/skills/perf-report/assets/report-template.html',
       '.claude/skills/auto-fix-ci/**/*.md',
       '.claude/skills/auto-resolve-conflict/**/*.md',
       '.claude/skills/design/SKILL.md',
