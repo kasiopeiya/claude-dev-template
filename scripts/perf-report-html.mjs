@@ -42,7 +42,7 @@ const LEFTOVER_MARKER_PATTERN = /\{\{|<!-- (?:if:|endif)/
 const FULL_WEEK_SUMMARY_KEYS = ['weekCount', 'average', 'min', 'max']
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 // TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる
-const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = ['speedFigure']
+const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = []
 
 // 縦棒の図の形（Issue #1642 で決めた値）。座標は viewBox の中の値で、図の幅は svg の width="100%" で画面に合わせる
 const CHART_BASE_WIDTH = 860
@@ -91,6 +91,16 @@ const CHART_LABEL_TEXT_STYLE = { fontSize: 14, fontWeight: 400, color: CHART_MUT
 const CHART_NOTE_TEXT_STYLE = { fontSize: 12.5, fontWeight: 400, color: CHART_MUTED_COLOR }
 // 等幅フォントも、色や線と同じくデザインシステムの変数で指す。図だけ別のフォントで残さないため
 const CHART_MONOSPACE_FONT_FAMILY = 'var(--mb-font-mono)'
+
+// 棒の後ろに敷く薄い灰色の面（backdrop）と、面の上部の注記（8時間以上の帯）。デザインシステムに、この灰色の変数が無い（document.css の `p code` などの背景が同じ値の直書き）ので、ここで名前を付ける。`--mb-surface`（白）とは別の色である
+const CHART_BACKDROP_FILL = '#F1EFE9'
+const CHART_BACKDROP_CORNER_RADIUS = 8
+const CHART_BACKDROP_PADDING_X = 8
+const CHART_BACKDROP_EDGE_INSET = 4
+const CHART_BACKDROP_EXTENT_BELOW_BASELINE = 32
+const CHART_BACKDROP_NOTE_FIRST_BASELINE_Y = 16
+const CHART_BACKDROP_NOTE_LINE_HEIGHT = 18
+const CHART_BACKDROP_NOTE_BOTTOM_PADDING = 6
 
 // 横棒の図の形（Issue #1658 で決めた値）。viewBox の幅は縦棒と同じ CHART_BASE_WIDTH で、色と線は縦棒と同じ変数で指す
 const HORIZONTAL_CHART_BAR_THICKNESS = 24
@@ -151,6 +161,16 @@ const DIFF_LINE_BANDS = [
   { bandLabel: '300行超', countFieldName: 'over300Count' }
 ]
 
+// 着手から PR が出るまでの時間の帯。左から並べる順で、bandKey は JSON の aiOnlyTimeToPullRequest.bandCounts のキー。isStopped の帯は作業時間ではなく停止として、面（backdrop）の上に白抜きで描く
+const TIME_TO_PULL_REQUEST_BANDS = [
+  { bandKey: 'under5Minutes', labelText: '5分未満' },
+  { bandKey: 'from5To14Minutes', labelText: '5〜14分' },
+  { bandKey: 'from15To59Minutes', labelText: '15〜59分' },
+  { bandKey: 'from1To8Hours', labelText: '1〜8時間' },
+  { bandKey: 'atLeast8Hours', labelText: '8時間以上', isStopped: true }
+]
+const STOPPED_BAND_NOTE_LINES = ['作業ではなく停止', 'エラーや判断待ちで止まっていた時間']
+
 // このスクリプトが JSON から読む項目のすべて
 const REPORT_FIELD_SPECS = [
   { name: 'repository', jsonPath: 'repository', isValid: isNonEmptyText },
@@ -179,6 +199,16 @@ const REPORT_FIELD_SPECS = [
     jsonPath: 'aiOnlyTimeToPullRequest.medianMinutes',
     isValid: isNumberOrNull
   },
+  {
+    name: 'underOneHourCount',
+    jsonPath: 'aiOnlyTimeToPullRequest.underOneHourCount',
+    isValid: isCount
+  },
+  ...TIME_TO_PULL_REQUEST_BANDS.map(({ bandKey }) => ({
+    name: `${bandKey}Count`,
+    jsonPath: `aiOnlyTimeToPullRequest.bandCounts.${bandKey}`,
+    isValid: isCount
+  })),
   {
     name: 'mergedPullRequestCount',
     jsonPath: 'pullRequestDiffLines.mergedPullRequestCount',
@@ -445,7 +475,8 @@ function buildPlaceholderValues(readField) {
     throughputFigure: buildThroughputFigure(readField('weeks')),
     sizeFigure: hasMergedPullRequest ? buildSizeFigure(readField) : null,
     reviewFigure: hasMergedPullRequest ? buildReviewFigure(readField('weeks')) : null,
-    ...buildDelegationPlaceholderValues(readField)
+    ...buildDelegationPlaceholderValues(readField),
+    ...buildSpeedPlaceholderValues(readField)
   }
 }
 
@@ -469,6 +500,28 @@ function buildDelegationPlaceholderValues(readField) {
       }
     }),
     noWorkIssue: null
+  }
+}
+
+/**
+ * 着手から PR が出るまでの時間の図の場所に入れる値を作る。測れた Issue が無い期間は図を null にして、ひな形の `if:speedFigure` の囲み（図と説明）を消し、`if:noMeasuredIssue` の文に差し替える。
+ *
+ * @param {(fieldName: string) => any} readField readReportFields が返す、確かめ済みの項目を読む関数
+ * @returns {{ speedFigure: string | null, noMeasuredIssue: string | null }} 図の svg（測れた Issue が無ければ null）と、`if:noMeasuredIssue` の条件（測れた Issue が無いときだけ値を持つ）
+ */
+function buildSpeedPlaceholderValues(readField) {
+  const measuredIssueCount = readField('measuredIssueCount')
+  if (measuredIssueCount === 0) return { speedFigure: null, noMeasuredIssue: 'true' }
+  return {
+    speedFigure: buildSpeedFigure({
+      measuredIssueCount,
+      medianMinutes: readField('medianMinutes'),
+      underOneHourCount: readField('underOneHourCount'),
+      bandCounts: Object.fromEntries(
+        TIME_TO_PULL_REQUEST_BANDS.map(({ bandKey }) => [bandKey, readField(`${bandKey}Count`)])
+      )
+    }),
+    noMeasuredIssue: null
   }
 }
 
@@ -682,6 +735,53 @@ function buildDelegationFigure({ workIssueCount, delegationCounts }) {
 }
 
 /**
+ * 着手から PR が出るまでの時間を5つの帯の縦棒にし、図の上に中央値と1時間未満の大きな数字を置く。
+ * 止まっていた時間として読む帯（isStopped）は、薄い灰色の面（backdrop）の上に白抜きの棒で描き、面の上部に注記を添える。
+ *
+ * @param {{ measuredIssueCount: number, medianMinutes: number | null, underOneHourCount: number, bandCounts: Record<string, number> }} speed 測れた Issue の件数（1以上）、中央値（分）、1時間未満の件数、TIME_TO_PULL_REQUEST_BANDS の bandKey ごとの件数
+ * @returns {string} svg 要素の HTML
+ */
+function buildSpeedFigure({ measuredIssueCount, medianMinutes, underOneHourCount, bandCounts }) {
+  const bars = TIME_TO_PULL_REQUEST_BANDS.map(({ bandKey, labelText, isStopped = false }) => {
+    const barAmount = bandCounts[bandKey]
+    const percentText = formatPercentText({ count: barAmount, totalCount: measuredIssueCount })
+    return {
+      barAmount,
+      mainText: String(barAmount),
+      subText: percentText,
+      labelText,
+      noteText: null,
+      hoverText: `${labelText}：${barAmount}件（${percentText}）`,
+      isHollow: isStopped
+    }
+  })
+  const underOneHourPercentText = formatPercentText({
+    count: underOneHourCount,
+    totalCount: measuredIssueCount
+  })
+  return renderVerticalBarChart({
+    bars,
+    chartTitle: '着手から PR が出るまでの時間',
+    headlineNumbers: [
+      {
+        labelText: '中央値',
+        valueText: formatNumber(medianMinutes) ?? MISSING_VALUE_TEXT,
+        unitText: '分'
+      },
+      {
+        labelText: '1時間未満',
+        valueText: underOneHourPercentText,
+        unitText: `（${underOneHourCount}件）`
+      }
+    ],
+    backdrop: {
+      barPosition: TIME_TO_PULL_REQUEST_BANDS.findIndex(({ isStopped }) => isStopped),
+      noteLines: STOPPED_BAND_NOTE_LINES
+    }
+  })
+}
+
+/**
  * 縦棒の図の棒1本。1色の棒（barAmount と isHollow を持つ）か、積み上げの棒（stackedSegments を持つ）のどちらか。
  * 積み上げの棒は、量を段の量の合計で表す。barAmount と段の合計が食い違う棒や、使われない isHollow を持つ棒を作れないようにするため、積み上げの棒は barAmount と isHollow を持たない。
  *
@@ -691,49 +791,86 @@ function buildDelegationFigure({ workIssueCount, delegationCounts }) {
 /**
  * 棒の高さを最大の棒に対する比で決める縦棒の図を描く。
  *
- * @param {{ bars: VerticalBar[], chartTitle: string, headlineNumbers?: { labelText: string, valueText: string, unitText: string }[], legendItems?: { labelText: string, fillColor: string }[] }} chart 左から並べる棒（1本以上。棒の量は0以上。subText があれば mainText の下に小さく重ねる。1色の棒は黒で、isHollow なら白抜き。積み上げの棒は、下から積む段（量が0の段は描かない）で塗り分け、isHollow は使わない）と、図の題（aria-label の頭に付く）と、図の上に大きな数字で並べる項目と、図の上に並べる凡例（どちらも省くと帯を取らない）
- * @returns {string} svg 要素の HTML。棒が増えても文字が重ならないよう、viewBox の幅を広げる。大きな数字や凡例を並べるときは、図の上にそれぞれの専用の帯（CHART_HEADLINE_BAND_HEIGHT・CHART_LEGEND_BAND_HEIGHT）を上から順に足し、viewBox の高さもその分伸ばす
+ * @param {{ bars: VerticalBar[], chartTitle: string, headlineNumbers?: { labelText: string, valueText: string, unitText: string }[], legendItems?: { labelText: string, fillColor: string }[], backdrop?: { barPosition: number, noteLines: string[] } | null }} chart 左から並べる棒（1本以上。棒の量は0以上。subText があれば mainText の下に小さく重ねる。1色の棒は黒で、isHollow なら白抜き。積み上げの棒は、下から積む段（量が0の段は描かない）で塗り分け、isHollow は使わない）と、図の題（aria-label の頭に付く）と、図の上に大きな数字で並べる項目と、図の上に並べる凡例（どちらも省くと帯を取らない）と、面を敷く棒の位置（0 から）と面の上部に書く注記（図に1つまで。省くと面を敷かない）
+ * @returns {string} svg 要素の HTML。棒が増えても文字が重ならないよう、viewBox の幅を広げる。大きな数字や凡例を並べるときは、図の上にそれぞれの専用の帯（CHART_HEADLINE_BAND_HEIGHT・CHART_LEGEND_BAND_HEIGHT）を上から順に足し、面の注記を取るときはその下に注記の帯を足す。viewBox の高さもその分伸ばし、基準線と棒を下げる
  */
-function renderVerticalBarChart({ bars, chartTitle, headlineNumbers = [], legendItems = [] }) {
-  const columnWidth = Math.max(
-    CHART_MIN_COLUMN_WIDTH,
-    (CHART_BASE_WIDTH - 2 * CHART_MARGIN_X) / bars.length
-  )
-  const chartWidth = 2 * CHART_MARGIN_X + columnWidth * bars.length
-  const barAmounts = bars.map(measureBarAmount)
-  // 全部の棒が 0 のときも、0 で割らずに縮尺を決める
-  const largestBarAmount = Math.max(1, ...barAmounts)
+function renderVerticalBarChart({
+  bars,
+  chartTitle,
+  headlineNumbers = [],
+  legendItems = [],
+  backdrop = null
+}) {
+  const { chartWidth, barCenterXs, barHeights } = measureVerticalBarLayout(bars)
   const barElements = bars.map((bar, barPosition) =>
-    renderBar({
-      bar,
-      centerX: CHART_MARGIN_X + columnWidth * (barPosition + 0.5),
-      barHeight: (barAmounts[barPosition] / largestBarAmount) * CHART_MAX_BAR_HEIGHT
-    })
+    renderBar({ bar, centerX: barCenterXs[barPosition], barHeight: barHeights[barPosition] })
   )
   const headlineBandHeight = headlineNumbers.length > 0 ? CHART_HEADLINE_BAND_HEIGHT : 0
   const topBandHeight = headlineBandHeight + (legendItems.length > 0 ? CHART_LEGEND_BAND_HEIGHT : 0)
-  const ariaLabelParts = [
-    ...headlineNumbers.map(
-      ({ labelText, valueText, unitText }) => `${labelText}${valueText}${unitText}`
-    ),
-    ...bars.map(({ hoverText }) => hoverText)
+  const backdropNoteBandHeight =
+    backdrop === null ? 0 : measureBackdropNoteBandHeight(backdrop.noteLines)
+  const plotTopOffset = topBandHeight + backdropNoteBandHeight
+  const plotElements = [
+    // 面は基準線と棒より先に敷く。後に敷くと、基準線と棒を隠す
+    backdrop === null
+      ? ''
+      : renderBackdrop({
+          backdrop,
+          centerX: barCenterXs[backdrop.barPosition],
+          chartWidth,
+          noteBandHeight: backdropNoteBandHeight
+        }),
+    `<line x1="${CHART_MARGIN_X}" y1="${CHART_BASELINE_Y}" x2="${formatCoordinate(chartWidth - CHART_MARGIN_X)}" y2="${CHART_BASELINE_Y}" style="stroke:${CHART_BASELINE_COLOR}" />`,
+    ...barElements
   ]
-  const ariaLabel = `${chartTitle}：${ariaLabelParts.join('／')}`
+  // 帯の無い図（週ごとの作業 Issue 数の図）の svg を変えないよう、帯があるときだけ包んで下げる
+  const plotGroup =
+    plotTopOffset === 0
+      ? plotElements
+      : [`<g transform="translate(0 ${plotTopOffset})">`, ...plotElements, '</g>']
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 ${formatCoordinate(chartWidth)} ${CHART_HEIGHT + topBandHeight}" role="img" aria-label="${escapeHtml(ariaLabel)}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 ${formatCoordinate(chartWidth)} ${CHART_HEIGHT + plotTopOffset}" role="img" aria-label="${escapeHtml(buildVerticalChartAriaLabel({ chartTitle, headlineNumbers, bars }))}">`,
     ...headlineNumbers.map((headlineNumber, numberPosition) =>
       renderHeadlineNumber({ headlineNumber, numberPosition })
     ),
     ...legendItems.map((legendItem, legendPosition) =>
       renderLegendItem({ legendItem, legendPosition, bandTopY: headlineBandHeight })
     ),
-    // 帯の無い図（週ごとの作業 Issue 数の図）の svg を変えないよう、帯があるときだけ包んで下げる
-    topBandHeight > 0 ? `<g transform="translate(0 ${topBandHeight})">` : '',
-    `<line x1="${CHART_MARGIN_X}" y1="${CHART_BASELINE_Y}" x2="${formatCoordinate(chartWidth - CHART_MARGIN_X)}" y2="${CHART_BASELINE_Y}" style="stroke:${CHART_BASELINE_COLOR}" />`,
-    ...barElements,
-    topBandHeight > 0 ? '</g>' : '',
+    ...plotGroup,
     '</svg>'
   ].join('')
+}
+
+/**
+ * @param {VerticalBar[]} bars 左から並べる棒（1本以上）
+ * @returns {{ chartWidth: number, barCenterXs: number[], barHeights: number[] }} 図の幅（viewBox の幅）と、棒ごとの中心の x と高さ（0 以上）。棒が増えても文字が重ならないよう、列の幅には下限を置いて図の幅を広げる。高さは、最大の棒を CHART_MAX_BAR_HEIGHT とした比で決める
+ */
+function measureVerticalBarLayout(bars) {
+  const columnWidth = Math.max(
+    CHART_MIN_COLUMN_WIDTH,
+    (CHART_BASE_WIDTH - 2 * CHART_MARGIN_X) / bars.length
+  )
+  const barAmounts = bars.map(measureBarAmount)
+  // 全部の棒が 0 のときも、0 で割らずに縮尺を決める
+  const largestBarAmount = Math.max(1, ...barAmounts)
+  return {
+    chartWidth: 2 * CHART_MARGIN_X + columnWidth * bars.length,
+    barCenterXs: bars.map(
+      (_bar, barPosition) => CHART_MARGIN_X + columnWidth * (barPosition + 0.5)
+    ),
+    barHeights: barAmounts.map((barAmount) => (barAmount / largestBarAmount) * CHART_MAX_BAR_HEIGHT)
+  }
+}
+
+/**
+ * @param {{ chartTitle: string, headlineNumbers: { labelText: string, valueText: string, unitText: string }[], bars: { hoverText: string }[] }} chartContent 図の題と、図に出す大きな数字・棒
+ * @returns {string} 図の題に続けて、大きな数字と棒の hoverText（図に出す全部の数字）を並べた aria-label の文字列
+ */
+function buildVerticalChartAriaLabel({ chartTitle, headlineNumbers, bars }) {
+  const headlineTexts = headlineNumbers.map(
+    ({ labelText, valueText, unitText }) => `${labelText}${valueText}${unitText}`
+  )
+  return `${chartTitle}：${[...headlineTexts, ...bars.map(({ hoverText }) => hoverText)].join('／')}`
 }
 
 /**
@@ -760,6 +897,54 @@ function renderHeadlineNumber({ headlineNumber, numberPosition }) {
     `<text x="${leftX}" y="${CHART_HEADLINE_LABEL_BASELINE_Y}" font-size="${labelStyle.fontSize}" font-weight="${labelStyle.fontWeight}" style="fill:${labelStyle.color}">${escapeHtml(labelText)}</text>`,
     `<text x="${leftX}" y="${CHART_HEADLINE_VALUE_BASELINE_Y}" font-size="${valueStyle.fontSize}" font-weight="${valueStyle.fontWeight}" style="fill:${valueStyle.color}">${escapeHtml(valueText)}<tspan font-size="${CHART_HEADLINE_UNIT_FONT_SIZE}" font-weight="${labelStyle.fontWeight}" dx="2">${escapeHtml(unitText)}</tspan></text>`,
     '</g>'
+  ].join('')
+}
+
+/**
+ * @param {string[]} noteLines 面の上部に書く注記の行
+ * @returns {number} 注記を収める帯の高さ（1行目の文字の下端、行の間隔、下の余白の合計）。注記が増えると高くなる
+ */
+function measureBackdropNoteBandHeight(noteLines) {
+  return (
+    CHART_BACKDROP_NOTE_FIRST_BASELINE_Y +
+    CHART_BACKDROP_NOTE_LINE_HEIGHT * (noteLines.length - 1) +
+    CHART_BACKDROP_NOTE_BOTTOM_PADDING
+  )
+}
+
+/**
+ * 棒の後ろに薄い灰色の面を敷き、面の上部に注記を書く。面は棒の列の幅より広くなることがあり、注記の最も長い行が収まる幅まで広げて、図の端に収める。
+ *
+ * @param {{ backdrop: { noteLines: string[] }, centerX: number, chartWidth: number, noteBandHeight: number }} backdropPlacement 面と注記（noteLines は全角の文字だけで書く。面の幅を、全角1字＝文字の大きさとして見積もるため）、面を敷く棒の中心の x、図の幅、基準線の上に取った注記の帯の高さ
+ * @returns {string} rect 要素と注記の text 要素の HTML
+ */
+function renderBackdrop({ backdrop, centerX, chartWidth, noteBandHeight }) {
+  const { noteLines } = backdrop
+  // 全角の文字の幅は文字の大きさに等しい
+  const widestNoteWidth = Math.max(
+    ...noteLines.map((noteLine) => [...noteLine].length * CHART_NOTE_TEXT_STYLE.fontSize)
+  )
+  const backdropWidth = widestNoteWidth + 2 * CHART_BACKDROP_PADDING_X
+  const backdropLeftX = Math.min(
+    Math.max(centerX - backdropWidth / 2, CHART_BACKDROP_EDGE_INSET),
+    chartWidth - CHART_BACKDROP_EDGE_INSET - backdropWidth
+  )
+  const backdropTopY = -noteBandHeight
+  const backdropHeight = noteBandHeight + CHART_BASELINE_Y + CHART_BACKDROP_EXTENT_BELOW_BASELINE
+  const noteElements = noteLines.map((noteLine, noteLinePosition) =>
+    renderChartText({
+      text: noteLine,
+      anchorX: backdropLeftX + backdropWidth / 2,
+      baselineY:
+        backdropTopY +
+        CHART_BACKDROP_NOTE_FIRST_BASELINE_Y +
+        CHART_BACKDROP_NOTE_LINE_HEIGHT * noteLinePosition,
+      textStyle: CHART_NOTE_TEXT_STYLE
+    })
+  )
+  return [
+    `<rect x="${formatCoordinate(backdropLeftX)}" y="${backdropTopY}" width="${formatCoordinate(backdropWidth)}" height="${backdropHeight}" rx="${CHART_BACKDROP_CORNER_RADIUS}" style="fill:${CHART_BACKDROP_FILL}" />`,
+    ...noteElements
   ].join('')
 }
 

@@ -243,6 +243,7 @@
 
           <h2 id="speed">着手から PR が出るまでの時間</h2>
 
+          <!-- if:speedFigure -->
           <figure class="mb-figure">
             <div class="mb-figure-frame">{{speedFigure}}</div>
             <figcaption>
@@ -250,6 +251,10 @@
               が出るまでの時間（右端の帯は作業時間ではない）
             </figcaption>
           </figure>
+          <!-- endif -->
+          <!-- if:noMeasuredIssue -->
+          <p>測れた Issue が無いため、図を描きません。</p>
+          <!-- endif -->
 
           <table>
             <tr>
