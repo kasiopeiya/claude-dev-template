@@ -68,11 +68,10 @@ npm run --silent perf-report -- $ARGUMENTS
 
 **人間レビューの対象**は、期間内にマージした PR のうち `needs-human-review` が付いた割合を、`humanReviewTargets` の値で示す。全体の割合（`targetPercentage`）と件数（`targetCount`／`mergedPullRequestCount`）を本文に書く。`targetPercentage` が `null` なら、割合と図と注記の代わりに、期間内にマージした PR が無いと書く。
 
-図は、週ごとの件数（`weeks[].humanReviewTargets`）の縦棒を、最初の図と同じ規則（本文の幅いっぱい・有彩色なし・棒の下に週の範囲）のインライン SVG で描く。
+図は、週ごとの件数（`weeks[].humanReviewTargets`）の縦棒を、最初の図と同じ規則（本文の幅いっぱい・有彩色なし・棒の下に週の範囲・全日そろっていない週の破線の枠と数えた範囲）のインライン SVG で描く。
 
 - 棒の高さをマージした PR の件数（`mergedPullRequestCount`）にし、下から対象の件数（`targetCount`）の分を塗る
 - 棒の上に `targetCount`／`mergedPullRequestCount` 件と割合（`targetPercentage`）を書く。`mergedPullRequestCount` が `0` の週は棒を描かず、`0件` とだけ書く
-- 全日そろっていない週（`isFullWeek` が `false`）は、外枠を破線にし、棒の下に数えた範囲（`countedFrom`〜`countedTo`）を添える
 - `figcaption` で棒の読み方を説明し、対象の定義元が `docs/policy/pr-review-policy.md`「ラベルとレビュイーの経験でレビュー方針を決める」の表であることを書く
 
 図の下に、次を載せる。
