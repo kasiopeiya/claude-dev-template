@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとに数え、JSON で標準出力に返す。
+// 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとと委譲の分類ごとに数え、JSON で標準出力に返す。
 //   `/perf-report` が、この結果を HTML 1枚にする。
 //
 // 設計意図（WHY）:
@@ -9,6 +9,8 @@
 // - 親かどうかは subIssues の有無で決める。`tracking-issue` は第2階層の親にしか付かない（#1587）。
 // - レビュー通知は bot 名義に限る。`needs-human-review` は PR のラベルで、作業でないのは bot が起票する通知の Issue だけである。
 // - ラベルも本文も無い Issue はメモとして除く。#835 の子に資料の見出しだけを書いたものがあり（#939 など）、何の作業かを確かめられない。
+// - 委譲の分類はラベルだけで決める。他のリポジトリでも同じ Skill が使えるようにするためである（#1591）。
+//   無人実行の記録（runs.jsonl）は使わない。無人実行の定義に問題があり、端末ごとの記録でもある。
 // - hasProductCode も返す。`/perf-report` は、app/・infra/ にコードが無いときだけ「本番では未検証」と注記する。
 // - 日付は固定幅の文字列のまま大小を比べる。年を 4 桁に収まる範囲へ絞るのはそのためで、外れると週を進めるループが終わらない。
 //
@@ -33,6 +35,9 @@ const REPORT_UTC_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000
 const REVIEW_NOTIFICATION_LABEL = 'needs-human-review'
 const ROOT_ISSUE_LABEL = 'phase'
 const WEEKLY_ISSUE_LABELS = ['doc-audit-weekly', 'code-policy-weekly']
+const AI_FIXABLE_LABEL = 'ai-fixable'
+const READY_FOR_HUMAN_LABEL = 'ready-for-human'
+const COLLABORATION_LABEL = 'human-ai-collaboration'
 
 const CLOSED_ISSUES_QUERY = `query($searchQuery: String!, $endCursor: String) {
   search(query: $searchQuery, type: ISSUE, first: 100, after: $endCursor) {
@@ -74,6 +79,19 @@ const EXCLUSION_RULES = [
     reason: 'memo',
     matches: (issue) => issue.labels.nodes.length === 0 && issue.body.trim() === ''
   }
+]
+
+// 上から順に当て、最初に当たった分類だけで数える。最後の分類がすべてを受けるので、分類ごとの件数を足すと作業 Issue の件数に一致する。
+// 共同は人間単独より先に当てる。共同の Issue は `ready-for-human` も持つためである
+const DELEGATION_RULES = [
+  { category: 'aiOnly', matches: (issue) => hasAnyLabel(issue, [AI_FIXABLE_LABEL]) },
+  {
+    category: 'collaboration',
+    matches: (issue) =>
+      hasAnyLabel(issue, [READY_FOR_HUMAN_LABEL]) && hasAnyLabel(issue, [COLLABORATION_LABEL])
+  },
+  { category: 'humanOnly', matches: (issue) => hasAnyLabel(issue, [READY_FOR_HUMAN_LABEL]) },
+  { category: 'unclassified', matches: () => true }
 ]
 
 /**
@@ -206,20 +224,33 @@ function fetchClosedIssues({ repository, from, to }) {
 }
 
 /**
- * Issue を、作業 Issue と除外の理由ごとに数える。
+ * Issue を、作業 Issue・除外の理由ごと・委譲の分類ごとに数える。
  *
  * @param {ClosedIssue[]} issues close された Issue
- * @returns {{ workIssueCount: number, excludedCounts: Record<string, number> }} 作業 Issue の件数と、除外の理由ごとの件数
+ * @returns {{ workIssueCount: number, excludedCounts: Record<string, number>, delegationCounts: Record<string, number> }} 作業 Issue の件数と、除外の理由ごと・委譲の分類ごとの件数
  */
 function tallyIssues(issues) {
   const excludedCounts = createEmptyExcludedCounts()
+  const delegationCounts = createEmptyDelegationCounts()
   let workIssueCount = 0
   for (const issue of issues) {
     const matchedRule = EXCLUSION_RULES.find(({ matches }) => matches(issue))
-    if (matchedRule) excludedCounts[matchedRule.reason] += 1
-    else workIssueCount += 1
+    if (matchedRule) {
+      excludedCounts[matchedRule.reason] += 1
+    } else {
+      workIssueCount += 1
+      delegationCounts[findDelegationCategory(issue)] += 1
+    }
   }
-  return { workIssueCount, excludedCounts }
+  return { workIssueCount, excludedCounts, delegationCounts }
+}
+
+/**
+ * @param {ClosedIssue} issue 作業 Issue
+ * @returns {string} 委譲の分類
+ */
+function findDelegationCategory(issue) {
+  return DELEGATION_RULES.find(({ matches }) => matches(issue)).category
 }
 
 /**
@@ -244,6 +275,7 @@ function buildReport({ repository, from, to, today, weeklyTallies }) {
     closedIssueCount: workIssueCount + excludedIssueCount,
     workIssueCount,
     excludedCounts,
+    delegationCounts: sumDelegationCounts(weeklyTallies.map(({ tally }) => tally)),
     weeks,
     fullWeekSummary: summarizeFullWeeks(weeks),
     hasProductCode: readHasProductCode()
@@ -274,6 +306,25 @@ function sumExcludedCounts(tallies) {
   const totalCounts = createEmptyExcludedCounts()
   for (const { excludedCounts } of tallies) {
     for (const { reason } of EXCLUSION_RULES) totalCounts[reason] += excludedCounts[reason]
+  }
+  return totalCounts
+}
+
+/**
+ * @returns {Record<string, number>} 委譲の分類ごとの件数をすべて 0 にしたもの
+ */
+function createEmptyDelegationCounts() {
+  return Object.fromEntries(DELEGATION_RULES.map(({ category }) => [category, 0]))
+}
+
+/**
+ * @param {{ delegationCounts: Record<string, number> }[]} tallies 週ごとの集計
+ * @returns {Record<string, number>} 委譲の分類ごとの、全週の合計
+ */
+function sumDelegationCounts(tallies) {
+  const totalCounts = createEmptyDelegationCounts()
+  for (const { delegationCounts } of tallies) {
+    for (const { category } of DELEGATION_RULES) totalCounts[category] += delegationCounts[category]
   }
   return totalCounts
 }
