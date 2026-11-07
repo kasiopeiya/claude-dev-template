@@ -50,7 +50,7 @@ ultrathink
 
    凍結判定の記載段階では、タスク一覧には「凍結判定の記載段階」の手順（下）を書き、「この変更が必要な理由」と「現状」には、文書全体がまだ凍結判定を受けていないことを書く。
 
-5. 記載段階の順に、1本ずつ `gh issue create --assignee @me --label ready-for-human` で起票する。ブロッカーに前の番号が要るので、順を入れ替えない。**ラベルは全部 `ready-for-human`**（この Skill はモデルから呼べないため。意味は [issue-policy](../../../docs/policy/issue-policy.md)）。起票したら、対応方針と実装フローの自番号を `gh issue edit` で書き足す
+5. 記載段階の順に、1本ずつ `gh issue create --assignee @me --label ready-for-human,human-ai-collaboration` で起票する。ブロッカーに前の番号が要るので、順を入れ替えない。**ラベルは全部 `ready-for-human` と `human-ai-collaboration`**（この Skill はモデルから呼べないため。意味は [issue-policy](../../../docs/policy/issue-policy.md)）。起票したら、対応方針と実装フローの自番号を `gh issue edit` で書き足す
 6. 起票した Issue それぞれを `/link-root-issue` の「紐づける（起票後）」に従ってルートの下に紐づける
 7. 起票した番号の一覧を表示し、記載段階1の Issue 番号で経路Bへ続ける
 

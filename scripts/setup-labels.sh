@@ -24,6 +24,7 @@ readonly LABELS=(
   'needs-human-decision|0052cc|中身を見ずには直せない。人間が1件ずつ方針を決める対象を選ぶ印'
   'ready-for-human|FBCA04|方針は決まっているが、残る作業を AI が実行する手段を持たない Issue'
   'issue:decided|1D76DB|人間が方針を決めた Issue。決めた条件を理由に人間判断へ戻さない'
+  'human-ai-collaboration|C5DEF5|人間と AI が対話しながら成果物を作る Issue。ready-for-human にだけ重ねる'
   'harness|BFDADC|ハーネス（Policy・Rule・Skill・SubAgent・hooks）を変えるIssue'
   'tracking-issue|D4C5F9|ルート直下（第2階層）で子を持つ親 Issue。自分では実装せず、子に分けて進める単位'
   'customer-question|D876E3|顧客・プロダクトオーナーに確認する事項を含む Issue。回答後も外さない'
