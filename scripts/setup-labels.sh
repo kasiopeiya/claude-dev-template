@@ -20,6 +20,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/resolve-origin-repo.sh"
 readonly LABELS=(
   # Issue: /quick-issue・/issue-check・/auto-dev・Auto-Programmer・add-opus-label.yml などが付ける
   'broken-window|C2E0C6|AI が作業中に見つけ、その場で直さずに起票した問題'
+  'human-correction|E99695|人間が AI の誤りを指摘して起票した Issue。件数の増減は AI の誤りの増減を表さない'
   'ai-fixable|0E8A16|問題と対応方針が一意に定まり、AIが単独で対応できるIssue'
   'needs-human-decision|0052cc|中身を見ずには直せない。人間が1件ずつ方針を決める対象を選ぶ印'
   'ready-for-human|FBCA04|方針は決まっているが、残る作業を AI が実行する手段を持たない Issue'
