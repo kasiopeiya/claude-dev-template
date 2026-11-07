@@ -1,0 +1,174 @@
+<!doctype html>
+<!-- 値の場所は二重の波かっこで名前を囲んで示す。if:名前 と endif のコメントで囲んだ部分は、その名前の値が無いときに消す -->
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 駆動開発 実績レポート</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Ubuntu+Sans:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&family=Ubuntu+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./design-system/document.css" />
+    <script src="./design-system/math-copy.js"></script>
+    <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => hljs.highlightAll())
+    </script>
+    <style>
+      /* 用語リストを置かないので、本文の幅に合わせて中央に寄せる */
+      .mb-page {
+        max-width: 1056px;
+      }
+      .mb-wrap {
+        display: block;
+      }
+      .perf-kpis {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 16px;
+        padding-bottom: 16px;
+        border-bottom: var(--mb-border-w) solid var(--mb-rule);
+      }
+      .perf-kpi-label {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--mb-ink);
+      }
+      .perf-kpi-value {
+        font-size: 40px;
+        font-weight: 700;
+        line-height: 1.25;
+        color: var(--mb-ink);
+      }
+      .perf-kpi-unit {
+        font-size: 18px;
+        margin-left: 2px;
+      }
+      .perf-kpi-note {
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--mb-muted);
+      }
+      .perf-limits-title {
+        margin: 16px 0 4px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--mb-ink);
+      }
+      @media (max-width: 1000px) {
+        .perf-kpis {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mb-page">
+      <div class="mb-hero">
+        <header class="mb-header">
+          <div>
+            <h1>AI 駆動開発 実績レポート</h1>
+            <p class="mb-meta-line">{{repository}} ／ {{from}} 〜 {{to}}</p>
+          </div>
+        </header>
+
+        <p class="mb-lede">
+          この期間に作業 Issue
+          を{{workIssueCount}}件処理し、そのうち{{aiOnlyCount}}件（{{aiOnlyPercent}}%）を AI
+          単独の分類で進めました。<!-- if:medianMinutes -->AI 単独の分類では、着手から PR
+          が出るまでの中央値は{{medianMinutes}}分です。<!-- endif --><!-- if:humanReviewPercent -->マージした
+          PR
+          の{{humanReviewPercent}}%は人間レビューの対象で、変更の{{under50Percent}}%は50行未満です。<!-- endif -->このやり方を他のプロジェクトへ広げるかを判断する材料としてまとめました。
+        </p>
+
+        <nav class="mb-toc">
+          <ol>
+            <li><a href="#throughput">処理した量</a></li>
+            <li><a href="#delegation">AI に任せた度合い</a></li>
+            <li><a href="#speed">着手から PR が出るまでの時間</a></li>
+            <li><a href="#review">人間レビューの対象</a></li>
+            <li><a href="#size">変更の小ささ</a></li>
+          </ol>
+        </nav>
+
+        <div class="mb-summary">
+          <div class="perf-kpis">
+            <div>
+              <div class="perf-kpi-label">週あたりの作業 Issue</div>
+              <div class="perf-kpi-value">
+                {{fullWeekAverage}}<span class="perf-kpi-unit">件/週</span>
+              </div>
+              <div class="perf-kpi-note">
+                全日そろった{{fullWeekCount}}週の平均。合計{{workIssueCount}}件、週の幅は{{fullWeekMin}}〜{{fullWeekMax}}件
+              </div>
+            </div>
+            <div>
+              <div class="perf-kpi-label">AI 単独の分類</div>
+              <div class="perf-kpi-value">
+                {{aiOnlyPercent}}<span class="perf-kpi-unit">%</span>
+              </div>
+              <div class="perf-kpi-note">
+                {{workIssueCount}}件のうち{{aiOnlyCount}}件。着手前のラベルによる
+              </div>
+            </div>
+            <div>
+              <div class="perf-kpi-label">着手から PR まで</div>
+              <div class="perf-kpi-value">
+                {{medianMinutes}}<span class="perf-kpi-unit">分</span>
+              </div>
+              <div class="perf-kpi-note">
+                AI 単独の分類の中央値。{{targetIssueCount}}件のうち{{measuredIssueCount}}件を測定
+              </div>
+            </div>
+            <div>
+              <div class="perf-kpi-label">人間レビューの対象</div>
+              <div class="perf-kpi-value">
+                {{humanReviewPercent}}<span class="perf-kpi-unit">%</span>
+              </div>
+              <div class="perf-kpi-note">
+                マージした PR {{mergedPullRequestCount}}件のうち{{humanReviewTargetCount}}件
+              </div>
+            </div>
+            <div>
+              <div class="perf-kpi-label">変更の大きさの中央値</div>
+              <div class="perf-kpi-value">
+                {{medianChangedLines}}<span class="perf-kpi-unit">行</span>
+              </div>
+              <div class="perf-kpi-note">
+                PR {{mergedPullRequestCount}}件。50行未満が{{under50Count}}件
+              </div>
+            </div>
+          </div>
+
+          <p class="perf-limits-title">どの数字にも共通する限界</p>
+          <ul>
+            <!-- if:noProductCode -->
+            <li>
+              中身はこの開発の仕組みづくりの実績です。<code>app/</code>・<code>infra/</code>
+              のファイルは0件です
+            </li>
+            <li><em>プロダクトと本番では未検証</em>です</li>
+            <!-- endif -->
+            <li>1人・1プロジェクトの自己評価で、他で再現するかは分かりません</li>
+            <li>
+              工数削減・時間短縮・体感値は載せません。1プロジェクトでは対照実験ができないためです
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- /.mb-hero -->
+
+      <div class="mb-wrap">
+        <main class="mb-main"></main>
+        <!-- /.mb-main -->
+      </div>
+      <!-- /.mb-wrap -->
+
+      <footer class="mb-footer">/perf-report --from {{from}} --to {{to}} の出力</footer>
+    </div>
+  </body>
+</html>
