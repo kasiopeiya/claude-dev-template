@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとと委譲の分類ごとに数え、
-//   同じ期間にマージした PR の差分行数を帯ごとに数え、人間レビューの対象の件数を全体と週ごとに数えて、JSON で標準出力に返す。
+//   同じ期間にマージした PR の差分行数を帯ごとに数え、人間レビューの対象の件数を全体と週ごとに数え、
+//   AI 単独の Issue の着手から PR が出るまでの時間をまとめて、JSON で標準出力に返す。
 //   `/perf-report` が、この結果を HTML 1枚にする。
 //
 // 設計意図（WHY）:
@@ -15,6 +16,11 @@
 // - 差分行数の帯は docs/policy/pr-review-policy.md「見積もりで割る線」の 200行・300行に合わせる（#1592）。
 // - 人間レビューの対象は、PR に付いた `needs-human-review` で数える（#1603）。`.github/workflows/pr-ai-triage.yml` が付けるので、新しい記録は要らない。
 //   このラベルは「レビューすべき」の印であり、人間が読んだ記録ではない。
+// - 着手から PR が出るまでの時間は、最初の `In Review` の直前の `In progress` から測る（#1608）。無人実行が失敗するとカードが `In progress` に残り、
+//   最初の `In progress` から測ると再実行までの止まっていた時間が入るためである。測り終わりを `In Review` にするのは、人間のレビュー待ちを入れないためである。
+// - Status 履歴は Issue の検索に入れず、25 件ずつ別に引く。検索や 100 件の別名に入れると、エラーを返さず一部の Issue の履歴だけが空で返る（#1608。原因は未確認）。
+//   278 件で確かめると、1回 100 件では 62 件が空になり、1・10・25・50 件では同じ結果だった。25 件は 50 件に余裕を持たせた値である。
+// - Status 履歴は Issue ごとに先頭の 100 件だけ読む。最初の `In Review` までに 100 回も動いた Issue は想定しない。
 // - hasProductCode も返す。`/perf-report` は、app/・infra/ にコードが無いときだけ「本番では未検証」と注記する。
 // - 日付は固定幅の文字列のまま大小を比べる。年を 4 桁に収まる範囲へ絞るのはそのためで、外れると週を進めるループが終わらない。
 //
@@ -27,8 +33,11 @@ import { runJson, runOrThrow } from './auto-programmer/shell.mjs'
 import { BusinessError, TechnicalError } from './lib/errors.mjs'
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
+const MILLISECONDS_PER_MINUTE = 60 * 1000
+const MINUTES_PER_HOUR = 60
 const DAYS_PER_WEEK = 7
 const SEARCH_RESULT_LIMIT = 1000
+const STATUS_HISTORY_BATCH_SIZE = 25
 const MIN_SUPPORTED_YEAR = 1000
 const MAX_SUPPORTED_YEAR = 9998
 
@@ -44,6 +53,9 @@ const READY_FOR_HUMAN_LABEL = 'ready-for-human'
 const COLLABORATION_LABEL = 'human-ai-collaboration'
 const POLICY_OR_CICD_LABELS = ['policy', 'cicd']
 
+const IN_PROGRESS_STATUS = 'In progress'
+const IN_REVIEW_STATUS = 'In Review'
+
 // 上から順に当て、最初に当たった帯だけで数える。最後の帯がすべてを受けるので、帯ごとの件数を足すと PR の件数に一致する
 const DIFF_LINE_BANDS = [
   { band: 'under50', maxChangedLines: 49 },
@@ -52,12 +64,22 @@ const DIFF_LINE_BANDS = [
   { band: 'over300', maxChangedLines: Number.POSITIVE_INFINITY }
 ]
 
+// 時間は小数になるので、上限はその値を含まない（14.5分は 5〜14分の帯に入る）
+const PULL_REQUEST_TIME_BANDS = [
+  { band: 'under5Minutes', underMinutes: 5 },
+  { band: 'from5To14Minutes', underMinutes: 15 },
+  { band: 'from15To59Minutes', underMinutes: MINUTES_PER_HOUR },
+  { band: 'from1To8Hours', underMinutes: 8 * MINUTES_PER_HOUR },
+  { band: 'atLeast8Hours', underMinutes: Number.POSITIVE_INFINITY }
+]
+
 const CLOSED_ISSUES_QUERY = `query($searchQuery: String!, $endCursor: String) {
   search(query: $searchQuery, type: ISSUE, first: 100, after: $endCursor) {
     issueCount
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on Issue {
+        number
         stateReason
         body
         author { __typename }
@@ -91,11 +113,18 @@ const MERGED_PULL_REQUESTS_QUERY = `query($searchQuery: String!, $endCursor: Str
 
 /**
  * @typedef {object} ClosedIssue
+ * @property {number} number Issue 番号
  * @property {string | null} stateReason close の理由（COMPLETED・NOT_PLANNED・DUPLICATE）
  * @property {string} body 本文
  * @property {{ __typename: string } | null} author 起票者（アカウントが消えていれば null）
  * @property {{ nodes: { name: string }[] }} labels ラベル
  * @property {{ totalCount: number }} subIssues 子 Issue
+ */
+
+/**
+ * @typedef {object} StatusChange
+ * @property {string} createdAt 変わった日時
+ * @property {string} status 変わった後のボードの Status
  */
 
 // 上から順に当て、最初に当たった理由だけで数える。理由ごとの件数を足すと、除外した総数に一致する
@@ -160,7 +189,13 @@ function runCli() {
     humanReviewTargets: {
       ...summarizeHumanReviewTargets(pullRequests),
       policyOrCicdCount: countPolicyOrCicdTargets(pullRequests)
-    }
+    },
+    aiOnlyTimeToPullRequest: summarizeTimeToPullRequest(
+      fetchStatusHistories({
+        repository,
+        issueNumbers: weeklyTallies.flatMap(({ tally }) => tally.aiOnlyIssueNumbers)
+      })
+    )
   }
   console.log(JSON.stringify(report, null, 2))
 }
@@ -275,6 +310,52 @@ function fetchMergedPullRequests({ repository, from, to }) {
 }
 
 /**
+ * Issue ごとのボードの Status 履歴を引く。
+ *
+ * @param {{ repository: string, issueNumbers: number[] }} target 対象のリポジトリ（owner/repo）と Issue 番号
+ * @returns {StatusChange[][]} Issue ごとの Status の変更。1件分は古い順に並ぶ
+ * @throws {TechnicalError} gh が失敗したとき
+ */
+function fetchStatusHistories({ repository, issueNumbers }) {
+  const [repositoryOwner, repositoryName] = repository.split('/')
+  const statusHistories = []
+  for (let start = 0; start < issueNumbers.length; start += STATUS_HISTORY_BATCH_SIZE) {
+    const batchNumbers = issueNumbers.slice(start, start + STATUS_HISTORY_BATCH_SIZE)
+    const statusHistoryResponse = runJson('gh', [
+      'api',
+      'graphql',
+      '-f',
+      `query=${buildStatusHistoryQuery(batchNumbers)}`,
+      '-f',
+      `owner=${repositoryOwner}`,
+      '-f',
+      `name=${repositoryName}`
+    ])
+    for (const { timelineItems } of Object.values(statusHistoryResponse.data.repository)) {
+      statusHistories.push(timelineItems.nodes)
+    }
+  }
+  return statusHistories
+}
+
+/**
+ * @param {number[]} issueNumbers 引く Issue の番号
+ * @returns {string} 指定した Issue の Status 履歴を1回で引く GraphQL の問い合わせ
+ */
+function buildStatusHistoryQuery(issueNumbers) {
+  const issueFields = issueNumbers.map(
+    (issueNumber) => `issue${issueNumber}: issue(number: ${issueNumber}) {
+      timelineItems(itemTypes: [PROJECT_V2_ITEM_STATUS_CHANGED_EVENT], first: 100) {
+        nodes { ... on ProjectV2ItemStatusChangedEvent { createdAt status } }
+      }
+    }`
+  )
+  return `query($owner: String!, $name: String!) {
+    repository(owner: $owner, name: $name) { ${issueFields.join('\n')} }
+  }`
+}
+
+/**
  * @param {string} from 範囲の初日（YYYY-MM-DD）
  * @param {string} to 範囲の最終日（YYYY-MM-DD）
  * @returns {string} GitHub の検索に渡す、日本時間の日時の範囲
@@ -314,22 +395,25 @@ function searchAllNodes({ graphqlQuery, searchQuery, period }) {
  * Issue を、作業 Issue・除外の理由ごと・委譲の分類ごとに数える。
  *
  * @param {ClosedIssue[]} issues close された Issue
- * @returns {{ workIssueCount: number, excludedCounts: Record<string, number>, delegationCounts: Record<string, number> }} 作業 Issue の件数と、除外の理由ごと・委譲の分類ごとの件数
+ * @returns {{ workIssueCount: number, excludedCounts: Record<string, number>, delegationCounts: Record<string, number>, aiOnlyIssueNumbers: number[] }} 作業 Issue の件数と、除外の理由ごと・委譲の分類ごとの件数、AI 単独の作業 Issue の番号
  */
 function tallyIssues(issues) {
   const excludedCounts = createEmptyExcludedCounts()
   const delegationCounts = createEmptyDelegationCounts()
+  const aiOnlyIssueNumbers = []
   let workIssueCount = 0
   for (const issue of issues) {
     const matchedRule = EXCLUSION_RULES.find(({ matches }) => matches(issue))
     if (matchedRule) {
       excludedCounts[matchedRule.reason] += 1
-    } else {
-      workIssueCount += 1
-      delegationCounts[findDelegationCategory(issue)] += 1
+      continue
     }
+    workIssueCount += 1
+    const delegationCategory = findDelegationCategory(issue)
+    delegationCounts[delegationCategory] += 1
+    if (delegationCategory === 'aiOnly') aiOnlyIssueNumbers.push(issue.number)
   }
-  return { workIssueCount, excludedCounts, delegationCounts }
+  return { workIssueCount, excludedCounts, delegationCounts, aiOnlyIssueNumbers }
 }
 
 /**
@@ -490,6 +574,53 @@ function countPolicyOrCicdTargets(pullRequests) {
       hasAnyLabel(pullRequest, [HUMAN_REVIEW_LABEL]) &&
       hasAnyLabel(pullRequest, POLICY_OR_CICD_LABELS)
   ).length
+}
+
+/**
+ * AI 単独の作業 Issue の、着手から PR が出るまでの時間をまとめる。
+ *
+ * @param {StatusChange[][]} statusHistories AI 単独の作業 Issue ごとの Status の変更
+ * @returns {{ targetIssueCount: number, measuredIssueCount: number, bandCounts: Record<string, number>, medianMinutes: number | null, underOneHourCount: number, underOneHourPercentage: number | null }} medianMinutes と underOneHourPercentage は小数第1位に四捨五入した値。測れた Issue が無ければ null
+ */
+function summarizeTimeToPullRequest(statusHistories) {
+  const measuredMinutes = statusHistories
+    .map((statusChanges) => measureMinutesToPullRequest(statusChanges))
+    .filter((minutes) => minutes !== null)
+  const bandCounts = Object.fromEntries(PULL_REQUEST_TIME_BANDS.map(({ band }) => [band, 0]))
+  for (const minutes of measuredMinutes) {
+    const { band } = PULL_REQUEST_TIME_BANDS.find(({ underMinutes }) => minutes < underMinutes)
+    bandCounts[band] += 1
+  }
+  const measuredIssueCount = measuredMinutes.length
+  const underOneHourCount = measuredMinutes.filter((minutes) => minutes < MINUTES_PER_HOUR).length
+  const hasMeasuredIssue = measuredIssueCount > 0
+  return {
+    targetIssueCount: statusHistories.length,
+    measuredIssueCount,
+    bandCounts,
+    medianMinutes: hasMeasuredIssue ? roundToOneDecimal(findMedian(measuredMinutes)) : null,
+    underOneHourCount,
+    underOneHourPercentage: hasMeasuredIssue
+      ? roundToOneDecimal((underOneHourCount / measuredIssueCount) * 100)
+      : null
+  }
+}
+
+/**
+ * @param {StatusChange[]} statusChanges 1件の Issue の Status の変更（古い順）
+ * @returns {number | null} 最初の `In Review` の直前の `In progress` から、その `In Review` までの分。どちらかの記録が無ければ null
+ */
+function measureMinutesToPullRequest(statusChanges) {
+  const firstReviewIndex = statusChanges.findIndex(({ status }) => status === IN_REVIEW_STATUS)
+  if (firstReviewIndex === -1) return null
+  const startedChange = statusChanges
+    .slice(0, firstReviewIndex)
+    .findLast(({ status }) => status === IN_PROGRESS_STATUS)
+  if (!startedChange) return null
+  const elapsedMilliseconds =
+    new Date(statusChanges[firstReviewIndex].createdAt).getTime() -
+    new Date(startedChange.createdAt).getTime()
+  return elapsedMilliseconds / MILLISECONDS_PER_MINUTE
 }
 
 /**
