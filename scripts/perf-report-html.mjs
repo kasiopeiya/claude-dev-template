@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 // 責務: `scripts/perf-report.mjs` の JSON を標準入力で受け、`/perf-report` のひな形（report-template.html）の
-//   文字と数字を埋めて HTML を書き、その絶対パスを標準出力に返す。数える処理は `perf-report.mjs`、見た目と固定の文言はひな形が持つ。
+//   文字と数字と図（svg）を埋めて HTML を書き、その絶対パスを標準出力に返す。数える処理は `perf-report.mjs`、図を除く見た目と固定の文言はひな形が持つ。
 //
 // 設計意図（WHY）:
 // - ひな形をスクリプトで埋める。文章の指示を読んだ AI に HTML を書かせると、合意した見た目からずれる（表や節が増える）。
 //   同じ JSON から同じ HTML を出すためである（docs/policy/refined-engineer-judgment-principles.md「確率論より決定論」）。
-// - HTML をこのスクリプトに持たせない。ひな形を HTML のまま開いて見た目を確かめ・直せるようにし、文言を直すたびにコードを直さずに済ませる。
+// - 図を除く HTML をこのスクリプトに持たせない。ひな形を HTML のまま開いて見た目を確かめ・直せるようにし、文言を直すたびにコードを直さずに済ませる。
 //   `perf-report.mjs` にも足さない。あちらは取得と集計を担い、すでに大きい。
+// - 図の svg はこのスクリプトが描く。ひな形に座標を書くと、棒の数が JSON で変わる図を表せないためである。縦棒の図は renderVerticalBarChart 1つで描き、基準線・棒・文字をそろえる。
 // - 同じ JSON なら出力先まで同じにするため、ここでは今日の日付を取らない。ファイル名の日付は JSON の `generatedOn` を使う。
 // - 値が無いときは null で表し、本文には `—` を出す（`NaN`・`null` を出さない）。0 は有効な値なので、無いこととは区別する。
 // - ひな形の `<!-- if:名前 -->〜<!-- endif -->` は、その名前の値が null のときに消す。消える部分の中の `{{名前}}` は先に消えるので、値が要らない。
@@ -39,14 +40,37 @@ const IF_BLOCK_PATTERN = /<!-- if:(\w+) -->([\s\S]*?)<!-- endif -->/g
 const PLACEHOLDER_PATTERN = /\{\{(\w+)\}\}/g
 const LEFTOVER_MARKER_PATTERN = /\{\{|<!-- (?:if:|endif)/
 const FULL_WEEK_SUMMARY_KEYS = ['weekCount', 'average', 'min', 'max']
-// TODO(#1642): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる（#1643・#1644 も同じ）
-const FIGURE_PLACEHOLDER_NAMES = [
-  'throughputFigure',
+const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
+// TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる（#1644 も同じ）
+const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = [
   'delegationFigure',
   'speedFigure',
   'reviewFigure',
   'sizeFigure'
 ]
+
+// 縦棒の図の形（Issue #1642 で決めた値）。座標は viewBox の中の値で、図の幅は svg の width="100%" で画面に合わせる
+const CHART_BASE_WIDTH = 860
+const CHART_MARGIN_X = 40
+const CHART_BASELINE_Y = 280
+const CHART_HEIGHT = 330
+const CHART_MAX_BAR_HEIGHT = 230
+const CHART_BAR_WIDTH = 36
+const CHART_BAR_CORNER_RADIUS = 4
+// 棒の下の「10/5〜」（14px）と「N日間」（12.5px）が、隣の棒の文字と重ならない最小の幅
+const CHART_MIN_COLUMN_WIDTH = 64
+// 色と線の太さは、デザインシステム（document.css）の変数で指す。値を写すと、デザインシステムを変えたときに図だけ古い値で残る
+const CHART_BASELINE_COLOR = 'var(--mb-rule)'
+const CHART_INK_COLOR = 'var(--mb-ink)'
+const CHART_MUTED_COLOR = 'var(--mb-muted)'
+const CHART_HOLLOW_FILL = 'var(--mb-surface)'
+const CHART_HOLLOW_STROKE_WIDTH = 'var(--mb-border-w)'
+const CHART_COUNT_GAP_ABOVE_BAR = 8
+const CHART_LABEL_OFFSET_BELOW_BASELINE = 22
+const CHART_NOTE_OFFSET_BELOW_BASELINE = 40
+const CHART_COUNT_TEXT_STYLE = { fontSize: 16, fontWeight: 700, color: CHART_INK_COLOR }
+const CHART_LABEL_TEXT_STYLE = { fontSize: 14, fontWeight: 400, color: CHART_MUTED_COLOR }
+const CHART_NOTE_TEXT_STYLE = { fontSize: 12.5, fontWeight: 400, color: CHART_MUTED_COLOR }
 
 // このスクリプトが JSON から読む項目のすべて
 const REPORT_FIELD_SPECS = [
@@ -55,6 +79,7 @@ const REPORT_FIELD_SPECS = [
   { name: 'from', jsonPath: 'period.from', isValid: isDateText },
   { name: 'to', jsonPath: 'period.to', isValid: isDateText },
   { name: 'workIssueCount', jsonPath: 'workIssueCount', isValid: isCount },
+  { name: 'weeks', jsonPath: 'weeks', isValid: isWeekList },
   { name: 'aiOnlyCount', jsonPath: 'delegationCounts.aiOnly', isValid: isCount },
   { name: 'fullWeekSummary', jsonPath: 'fullWeekSummary', isValid: isFullWeekSummaryOrNull },
   {
@@ -229,6 +254,29 @@ function isBoolean(candidate) {
 }
 
 /**
+ * @param {unknown} candidate 調べる値
+ * @returns {boolean} 1件以上あり、すべてが週の形（isWeek）の配列なら true
+ */
+function isWeekList(candidate) {
+  return Array.isArray(candidate) && candidate.length > 0 && candidate.every(isWeek)
+}
+
+/**
+ * @param {unknown} candidate 調べる値
+ * @returns {boolean} 週の初日・最終日と、数えた範囲の初日・最終日（どれも YYYY-MM-DD）・件数（0 以上の整数）・全日そろったか（真偽値）が揃い、数えた範囲が日付として読めて1日以上なら true
+ */
+function isWeek(candidate) {
+  if (candidate === null || typeof candidate !== 'object') return false
+  const { weekStart, weekEnd, countedFrom, countedTo, workIssueCount, isFullWeek } = candidate
+  return (
+    [weekStart, weekEnd, countedFrom, countedTo].every(isDateText) &&
+    isCount(workIssueCount) &&
+    isBoolean(isFullWeek) &&
+    countDaysInclusive({ fromDate: countedFrom, toDate: countedTo }) >= 1
+  )
+}
+
+/**
  * ひな形の `{{名前}}` に入れる文字列を作る。値が無いものは null にする。
  *
  * @param {(fieldName: string) => any} readField readReportFields が返す、確かめ済みの項目を読む関数
@@ -240,6 +288,10 @@ function buildPlaceholderValues(readField) {
   const under50Count = readField('under50Count')
   const humanReviewTargetCount = readField('humanReviewTargetCount')
   return {
+    // まだ描かない図の場所を空にする。後ろの実際の値が上書きするよう、先頭に置く
+    ...Object.fromEntries(
+      UNDRAWN_FIGURE_PLACEHOLDER_NAMES.map((placeholderName) => [placeholderName, ''])
+    ),
     repository: escapeHtml(readField('repository')),
     from: escapeHtml(readField('from')),
     to: escapeHtml(readField('to')),
@@ -269,7 +321,7 @@ function buildPlaceholderValues(readField) {
     under50Percent: formatPercent({ count: under50Count, totalCount: mergedPullRequestCount }),
     // `if:noProductCode` の条件にだけ使う。app/・infra/ にコードが無いときだけ値を持つ
     noProductCode: readField('hasProductCode') ? null : 'true',
-    ...Object.fromEntries(FIGURE_PLACEHOLDER_NAMES.map((placeholderName) => [placeholderName, '']))
+    throughputFigure: buildThroughputFigure(readField('weeks'))
   }
 }
 
@@ -322,6 +374,160 @@ function writeReport({ generatedOn, from, to, html }) {
   })
   writeFileSync(reportPath, html)
   return reportPath
+}
+
+/**
+ * 週ごとの作業 Issue 数を縦棒の図にする。全日そろっていない週は白抜きで、棒の下に数えた日数を添える。
+ *
+ * @param {{ weekStart: string, countedFrom: string, countedTo: string, workIssueCount: number, isFullWeek: boolean }[]} weeks 確かめ済みの週（1件以上）
+ * @returns {string} svg 要素の HTML
+ */
+function buildThroughputFigure(weeks) {
+  const bars = weeks.map(({ weekStart, countedFrom, countedTo, workIssueCount, isFullWeek }) => {
+    const countedDays = countDaysInclusive({ fromDate: countedFrom, toDate: countedTo })
+    const countedRange = `${countedFrom}〜${countedTo}`
+    return {
+      barAmount: workIssueCount,
+      countText: String(workIssueCount),
+      labelText: `${formatMonthDay(weekStart)}〜`,
+      noteText: isFullWeek ? null : `${countedDays}日間`,
+      hoverText: isFullWeek
+        ? `${countedRange}：${workIssueCount}件`
+        : `${countedRange}（${countedDays}日間・全日そろっていない週）：${workIssueCount}件`,
+      isHollow: !isFullWeek
+    }
+  })
+  return renderVerticalBarChart({ bars, chartTitle: '週ごとの作業 Issue 数' })
+}
+
+/**
+ * 棒の高さを最大の棒に対する比で決める縦棒の図を描く。
+ *
+ * @param {{ bars: { barAmount: number, countText: string, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }[], chartTitle: string }} chart 左から並べる棒（1本以上。barAmount は棒が表す量で、0 以上）と、図の題（aria-label の頭に付く）
+ * @returns {string} svg 要素の HTML。棒が増えても文字が重ならないよう、viewBox の幅を広げる
+ */
+function renderVerticalBarChart({ bars, chartTitle }) {
+  const columnWidth = Math.max(
+    CHART_MIN_COLUMN_WIDTH,
+    (CHART_BASE_WIDTH - 2 * CHART_MARGIN_X) / bars.length
+  )
+  const chartWidth = 2 * CHART_MARGIN_X + columnWidth * bars.length
+  // 全部の棒が 0 のときも、0 で割らずに縮尺を決める
+  const largestBarAmount = Math.max(1, ...bars.map(({ barAmount }) => barAmount))
+  const barElements = bars.map((bar, barPosition) =>
+    renderBar({
+      bar,
+      centerX: CHART_MARGIN_X + columnWidth * (barPosition + 0.5),
+      barHeight: (bar.barAmount / largestBarAmount) * CHART_MAX_BAR_HEIGHT
+    })
+  )
+  const ariaLabel = `${chartTitle}：${bars.map(({ hoverText }) => hoverText).join('／')}`
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 ${formatCoordinate(chartWidth)} ${CHART_HEIGHT}" role="img" aria-label="${escapeHtml(ariaLabel)}">`,
+    `<line x1="${CHART_MARGIN_X}" y1="${CHART_BASELINE_Y}" x2="${formatCoordinate(chartWidth - CHART_MARGIN_X)}" y2="${CHART_BASELINE_Y}" style="stroke:${CHART_BASELINE_COLOR}" />`,
+    ...barElements,
+    '</svg>'
+  ].join('')
+}
+
+/**
+ * @param {{ bar: { countText: string, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }, centerX: number, barHeight: number }} barPlacement 描く棒と、棒の中心の x、棒の高さ（0 以上）
+ * @returns {string} 棒・件数・棒の下の文字をまとめた g 要素の HTML。マウスを載せると hoverText が出る
+ */
+function renderBar({ bar, centerX, barHeight }) {
+  const { countText, labelText, noteText, hoverText, isHollow } = bar
+  const barTopY = CHART_BASELINE_Y - barHeight
+  const noteElement =
+    noteText === null
+      ? ''
+      : renderChartText({
+          text: noteText,
+          centerX,
+          baselineY: CHART_BASELINE_Y + CHART_NOTE_OFFSET_BELOW_BASELINE,
+          textStyle: CHART_NOTE_TEXT_STYLE
+        })
+  return [
+    '<g>',
+    `<title>${escapeHtml(hoverText)}</title>`,
+    // 0 件の棒は高さが無く、角を丸める道筋も組めない。件数の「0」だけを基準線の上に出す
+    barHeight > 0 ? renderBarShape({ centerX, barHeight, isHollow }) : '',
+    renderChartText({
+      text: countText,
+      centerX,
+      baselineY: barTopY - CHART_COUNT_GAP_ABOVE_BAR,
+      textStyle: CHART_COUNT_TEXT_STYLE
+    }),
+    renderChartText({
+      text: labelText,
+      centerX,
+      baselineY: CHART_BASELINE_Y + CHART_LABEL_OFFSET_BELOW_BASELINE,
+      textStyle: CHART_LABEL_TEXT_STYLE
+    }),
+    noteElement,
+    '</g>'
+  ].join('')
+}
+
+/**
+ * @param {{ centerX: number, barHeight: number, isHollow: boolean }} barShape 棒の中心の x、棒の高さ（0 より大きい）、白抜きにするか
+ * @returns {string} 上の角が丸い棒の path 要素。白抜きなら黒の枠だけ、そうでなければ黒で塗る
+ */
+function renderBarShape({ centerX, barHeight, isHollow }) {
+  const leftX = centerX - CHART_BAR_WIDTH / 2
+  const rightX = leftX + CHART_BAR_WIDTH
+  const topY = CHART_BASELINE_Y - barHeight
+  // 丸みが棒の高さを超えると、角の曲線が基準線より下へ出る
+  const cornerRadius = Math.min(CHART_BAR_CORNER_RADIUS, barHeight)
+  const outline = [
+    `M${formatCoordinate(leftX)} ${CHART_BASELINE_Y}`,
+    `V${formatCoordinate(topY + cornerRadius)}`,
+    `Q${formatCoordinate(leftX)} ${formatCoordinate(topY)} ${formatCoordinate(leftX + cornerRadius)} ${formatCoordinate(topY)}`,
+    `H${formatCoordinate(rightX - cornerRadius)}`,
+    `Q${formatCoordinate(rightX)} ${formatCoordinate(topY)} ${formatCoordinate(rightX)} ${formatCoordinate(topY + cornerRadius)}`,
+    `V${CHART_BASELINE_Y}`,
+    'Z'
+  ].join(' ')
+  const paint = isHollow
+    ? `style="fill:${CHART_HOLLOW_FILL};stroke:${CHART_INK_COLOR};stroke-width:${CHART_HOLLOW_STROKE_WIDTH}"`
+    : `style="fill:${CHART_INK_COLOR}"`
+  return `<path d="${outline}" ${paint} />`
+}
+
+/**
+ * @param {{ text: string, centerX: number, baselineY: number, textStyle: { fontSize: number, fontWeight: number, color: string } }} chartText 文字と、中央に置く x、文字の下端の y、見た目
+ * @returns {string} text 要素の HTML
+ */
+function renderChartText({ text, centerX, baselineY, textStyle }) {
+  const { fontSize, fontWeight, color } = textStyle
+  return `<text x="${formatCoordinate(centerX)}" y="${formatCoordinate(baselineY)}" text-anchor="middle" font-size="${fontSize}" font-weight="${fontWeight}" style="fill:${color}">${escapeHtml(text)}</text>`
+}
+
+/**
+ * @param {{ fromDate: string, toDate: string }} dateRange 初日と最終日（YYYY-MM-DD）
+ * @returns {number} 両端を含む日数。月が1〜12の外などで日付として読めなければ NaN（2/30 のような日は翌月に繰り上げて数える）
+ */
+function countDaysInclusive({ fromDate, toDate }) {
+  return (
+    (Date.parse(`${toDate}T00:00:00Z`) - Date.parse(`${fromDate}T00:00:00Z`)) /
+      MILLISECONDS_PER_DAY +
+    1
+  )
+}
+
+/**
+ * @param {string} dateText YYYY-MM-DD の形の日付
+ * @returns {string} 0 埋めしない月/日（2026-10-05 なら 10/5）
+ */
+function formatMonthDay(dateText) {
+  return `${Number(dateText.slice(5, 7))}/${Number(dateText.slice(8, 10))}`
+}
+
+/**
+ * @param {number} coordinate svg の座標
+ * @returns {string} 小数第2位までに丸めた文字列（浮動小数の長い尾を出さない）
+ */
+function formatCoordinate(coordinate) {
+  return String(Math.round(coordinate * 100) / 100)
 }
 
 /**
