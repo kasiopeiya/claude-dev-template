@@ -7,7 +7,7 @@
 //   同じ JSON から同じ HTML を出すためである（docs/policy/refined-engineer-judgment-principles.md「確率論より決定論」）。
 // - 図を除く HTML をこのスクリプトに持たせない。ひな形を HTML のまま開いて見た目を確かめ・直せるようにし、文言を直すたびにコードを直さずに済ませる。
 //   `perf-report.mjs` にも足さない。あちらは取得と集計を担い、すでに大きい。
-// - 図の svg はこのスクリプトが描く。ひな形に座標を書くと、棒の数が JSON で変わる図を表せないためである。縦棒の図は renderVerticalBarChart、横棒の図は renderHorizontalBarChart で描き、それぞれ基準線・棒・文字をそろえる。
+// - 図の svg はこのスクリプトが描く。ひな形に座標を書くと、棒の数が JSON で変わる図を表せないためである。縦棒の図（積み上げの棒も）は renderVerticalBarChart、横棒の図は renderHorizontalBarChart で描き、それぞれ基準線・棒・文字をそろえる。
 // - 同じ JSON なら出力先まで同じにするため、ここでは今日の日付を取らない。ファイル名の日付は JSON の `generatedOn` を使う。
 // - 値が無いときは null で表し、本文には `—` を出す（`NaN`・`null` を出さない）。0 は有効な値なので、無いこととは区別する。
 // - ひな形の `<!-- if:名前 -->〜<!-- endif -->` は、その名前の値が null のときに消す。消える部分の中の `{{名前}}` は先に消えるので、値が要らない。
@@ -41,8 +41,8 @@ const PLACEHOLDER_PATTERN = /\{\{(\w+)\}\}/g
 const LEFTOVER_MARKER_PATTERN = /\{\{|<!-- (?:if:|endif)/
 const FULL_WEEK_SUMMARY_KEYS = ['weekCount', 'average', 'min', 'max']
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
-// TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる（#1644 も同じ）
-const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = ['reviewFigure']
+// TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる
+const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = []
 
 // 縦棒の図の形（Issue #1642 で決めた値）。座標は viewBox の中の値で、図の幅は svg の width="100%" で画面に合わせる
 const CHART_BASE_WIDTH = 860
@@ -60,21 +60,33 @@ const CHART_INK_COLOR = 'var(--mb-ink)'
 const CHART_MUTED_COLOR = 'var(--mb-muted)'
 const CHART_HOLLOW_FILL = 'var(--mb-surface)'
 const CHART_HOLLOW_STROKE_WIDTH = 'var(--mb-border-w)'
-const CHART_COUNT_GAP_ABOVE_BAR = 8
+const CHART_MAIN_TEXT_GAP_ABOVE_BAR = 8
 const CHART_LABEL_OFFSET_BELOW_BASELINE = 22
 const CHART_NOTE_OFFSET_BELOW_BASELINE = 40
-// 棒の上に件数と割合を2行で重ねるときの、件数の文字の下端を割合の文字の下端から離す距離
-const CHART_PERCENT_LINE_HEIGHT = 17
+// 棒の上に mainText と subText を2行で重ねるときの、mainText の文字の下端を subText の文字の下端から離す距離
+const CHART_SUB_TEXT_LINE_HEIGHT = 17
 // 図の上に大きな数字の専用の帯を取るときの、帯の高さ。棒が最大の高さでも、帯の文字と重ならない
 const CHART_HEADLINE_BAND_HEIGHT = 80
 const CHART_HEADLINE_LABEL_BASELINE_Y = 16
 const CHART_HEADLINE_VALUE_BASELINE_Y = 56
 const CHART_HEADLINE_COLUMN_WIDTH = 220
-const CHART_COUNT_TEXT_STYLE = { fontSize: 16, fontWeight: 700, color: CHART_INK_COLOR }
-const CHART_PERCENT_TEXT_STYLE = { fontSize: 13, fontWeight: 400, color: CHART_MUTED_COLOR }
+// 図の主な文字（縦棒は棒の上の mainText、横棒は棒の右の件数）
+const CHART_MAIN_TEXT_STYLE = { fontSize: 16, fontWeight: 700, color: CHART_INK_COLOR }
+const CHART_SUB_TEXT_STYLE = { fontSize: 13, fontWeight: 400, color: CHART_MUTED_COLOR }
 const CHART_HEADLINE_LABEL_TEXT_STYLE = { fontSize: 14, fontWeight: 400, color: CHART_MUTED_COLOR }
 const CHART_HEADLINE_VALUE_TEXT_STYLE = { fontSize: 34, fontWeight: 700, color: CHART_INK_COLOR }
 const CHART_HEADLINE_UNIT_FONT_SIZE = 16
+// 凡例の専用の帯（Issue #1662 で決めた値）。帯の中の座標は、帯の上端からの距離で指す
+const CHART_LEGEND_BAND_HEIGHT = 40
+const CHART_LEGEND_SWATCH_TOP_OFFSET = 14
+const CHART_LEGEND_SWATCH_SIZE = 12
+const CHART_LEGEND_SWATCH_CORNER_RADIUS = 2
+const CHART_LEGEND_TEXT_GAP_AFTER_SWATCH = 6
+// 「人間レビューの対象」(13px・9字) の幅に収まり、次の凡例と重ならない幅
+const CHART_LEGEND_COLUMN_WIDTH = 180
+const CHART_LEGEND_TEXT_STYLE = { fontSize: 13, fontWeight: 400, color: CHART_INK_COLOR }
+// 積み上げの棒の段と段の間の隙間。段が低いときは、段の高さの半分までに縮める
+const CHART_STACK_SEGMENT_GAP = 2
 const CHART_LABEL_TEXT_STYLE = { fontSize: 14, fontWeight: 400, color: CHART_MUTED_COLOR }
 const CHART_NOTE_TEXT_STYLE = { fontSize: 12.5, fontWeight: 400, color: CHART_MUTED_COLOR }
 // 等幅フォントも、色や線と同じくデザインシステムの変数で指す。図だけ別のフォントで残さないため
@@ -135,6 +147,11 @@ const DELEGATION_ROWS = [
     issueLabelRule: '上のどれにも当たらない'
   }
 ]
+
+// 人間レビューの図の凡例。積み上げの棒の段も、ここの fillColor を指す（見本と段の色がずれないようにする）。
+// 対象外の灰色は、デザインシステム（document.css）の変数に、この段に合う灰色が無いため、Issue #1662 で決めた値を直に書く
+const REVIEW_TARGET_LEGEND_ITEM = { labelText: '人間レビューの対象', fillColor: CHART_INK_COLOR }
+const REVIEW_NON_TARGET_LEGEND_ITEM = { labelText: '対象外', fillColor: '#B0B0B0' }
 
 // 差分行数の帯。表示名と、件数を読む REPORT_FIELD_SPECS の name を組にして、並びと名前がずれないようにする
 const DIFF_LINE_BANDS = [
@@ -374,17 +391,36 @@ function isWeekList(candidate) {
 
 /**
  * @param {unknown} candidate 調べる値
- * @returns {boolean} 週の初日・最終日と、数えた範囲の初日・最終日（どれも YYYY-MM-DD）・件数（0 以上の整数）・全日そろったか（真偽値）が揃い、数えた範囲が日付として読めて1日以上なら true
+ * @returns {boolean} 週の初日・最終日と、数えた範囲の初日・最終日（どれも YYYY-MM-DD）・件数（0 以上の整数）・全日そろったか（真偽値）・週ごとの人間レビューの対象（isWeeklyHumanReviewTargets）が揃い、数えた範囲が日付として読めて1日以上なら true
  */
 function isWeek(candidate) {
   if (candidate === null || typeof candidate !== 'object') return false
-  const { weekStart, weekEnd, countedFrom, countedTo, workIssueCount, isFullWeek } = candidate
+  const {
+    weekStart,
+    weekEnd,
+    countedFrom,
+    countedTo,
+    workIssueCount,
+    isFullWeek,
+    humanReviewTargets
+  } = candidate
   return (
     [weekStart, weekEnd, countedFrom, countedTo].every(isDateText) &&
     isCount(workIssueCount) &&
     isBoolean(isFullWeek) &&
+    isWeeklyHumanReviewTargets(humanReviewTargets) &&
     countDaysInclusive({ fromDate: countedFrom, toDate: countedTo }) >= 1
   )
+}
+
+/**
+ * @param {unknown} candidate 調べる値
+ * @returns {boolean} マージした PR の件数・対象の件数（どちらも 0 以上の整数）・対象の割合（有限の数。その週にマージした PR が無ければ null）が揃ったオブジェクトなら true
+ */
+function isWeeklyHumanReviewTargets(candidate) {
+  if (candidate === null || typeof candidate !== 'object') return false
+  const { mergedPullRequestCount, targetCount, targetPercentage } = candidate
+  return isCount(mergedPullRequestCount) && isCount(targetCount) && isNumberOrNull(targetPercentage)
 }
 
 /**
@@ -438,6 +474,7 @@ function buildPlaceholderValues(readField) {
     noMergedPullRequest: hasMergedPullRequest ? null : 'true',
     throughputFigure: buildThroughputFigure(readField('weeks')),
     sizeFigure: hasMergedPullRequest ? buildSizeFigure(readField) : null,
+    reviewFigure: hasMergedPullRequest ? buildReviewFigure(readField('weeks')) : null,
     ...buildDelegationPlaceholderValues(readField),
     ...buildSpeedPlaceholderValues(readField)
   }
@@ -546,22 +583,85 @@ function writeReport({ generatedOn, from, to, html }) {
  * @returns {string} svg 要素の HTML
  */
 function buildThroughputFigure(weeks) {
-  const bars = weeks.map(({ weekStart, countedFrom, countedTo, workIssueCount, isFullWeek }) => {
-    const countedDays = countDaysInclusive({ fromDate: countedFrom, toDate: countedTo })
-    const countedRange = `${countedFrom}〜${countedTo}`
+  const bars = weeks.map((week) => {
+    const { labelText, noteText, hoverRangeText } = describeWeekAxis(week)
     return {
-      barAmount: workIssueCount,
-      countText: String(workIssueCount),
-      percentText: null,
-      labelText: `${formatMonthDay(weekStart)}〜`,
-      noteText: isFullWeek ? null : `${countedDays}日間`,
-      hoverText: isFullWeek
-        ? `${countedRange}：${workIssueCount}件`
-        : `${countedRange}（${countedDays}日間・全日そろっていない週）：${workIssueCount}件`,
-      isHollow: !isFullWeek
+      barAmount: week.workIssueCount,
+      mainText: String(week.workIssueCount),
+      subText: null,
+      labelText,
+      noteText,
+      hoverText: `${hoverRangeText}：${week.workIssueCount}件`,
+      isHollow: !week.isFullWeek
     }
   })
   return renderVerticalBarChart({ bars, chartTitle: '週ごとの作業 Issue 数' })
+}
+
+/**
+ * 週ごとの縦棒の図が、棒の下と `<title>` に出す週の表記を作る。週ごとの図どうしで表記がずれないよう、ここ1か所で決める。
+ *
+ * @param {{ weekStart: string, countedFrom: string, countedTo: string, isFullWeek: boolean }} week 確かめ済みの週
+ * @returns {{ labelText: string, noteText: string | null, hoverRangeText: string }} 棒の下の「10/5〜」、全日そろっていない週だけに添える「N日間」、`<title>` と aria-label に使う数えた範囲（全日そろっていない週は日数と注記を含む）
+ */
+function describeWeekAxis({ weekStart, countedFrom, countedTo, isFullWeek }) {
+  const countedDays = countDaysInclusive({ fromDate: countedFrom, toDate: countedTo })
+  const countedRange = `${countedFrom}〜${countedTo}`
+  return {
+    labelText: `${formatMonthDay(weekStart)}〜`,
+    noteText: isFullWeek ? null : `${countedDays}日間`,
+    hoverRangeText: isFullWeek
+      ? countedRange
+      : `${countedRange}（${countedDays}日間・全日そろっていない週）`
+  }
+}
+
+/**
+ * 週ごとのマージした PR を、人間レビューの対象と対象外の積み上げ棒にする。棒の上に対象の割合を出し、凡例を添える。
+ *
+ * @param {Parameters<typeof buildReviewBar>[0][]} weeks 確かめ済みの週（1件以上）。マージした PR が1件以上ある期間のときだけ呼ぶ（0件のときの文言は、ひな形の `if:noMergedPullRequest` が持つ）
+ * @returns {string} svg 要素の HTML
+ */
+function buildReviewFigure(weeks) {
+  return renderVerticalBarChart({
+    bars: weeks.map(buildReviewBar),
+    chartTitle: '週ごとの人間レビューの対象',
+    legendItems: [REVIEW_TARGET_LEGEND_ITEM, REVIEW_NON_TARGET_LEGEND_ITEM]
+  })
+}
+
+/**
+ * @param {{ weekStart: string, countedFrom: string, countedTo: string, isFullWeek: boolean, humanReviewTargets: { mergedPullRequestCount: number, targetCount: number } }} week 確かめ済みの週
+ * @returns {VerticalBar} renderVerticalBarChart に渡す、積み上げの棒1本。その週にマージした PR が0件なら、棒は描かず「0件」だけを出す
+ */
+function buildReviewBar(week) {
+  const { labelText, noteText, hoverRangeText } = describeWeekAxis(week)
+  const { mergedPullRequestCount, targetCount } = week.humanReviewTargets
+  const nonTargetCount = mergedPullRequestCount - targetCount
+  // 棒の量は段の合計で決まる。マージした PR が0件の週は、2段とも0で、棒の高さも0になる
+  const barBase = {
+    labelText,
+    noteText,
+    stackedSegments: [
+      { segmentAmount: targetCount, fillColor: REVIEW_TARGET_LEGEND_ITEM.fillColor },
+      { segmentAmount: nonTargetCount, fillColor: REVIEW_NON_TARGET_LEGEND_ITEM.fillColor }
+    ]
+  }
+  if (mergedPullRequestCount === 0) {
+    return {
+      ...barBase,
+      mainText: '0件',
+      subText: null,
+      hoverText: `${hoverRangeText}：マージした PR 0件`
+    }
+  }
+  const percentText = formatPercentText({ count: targetCount, totalCount: mergedPullRequestCount })
+  return {
+    ...barBase,
+    mainText: percentText,
+    subText: `${targetCount}/${mergedPullRequestCount}`,
+    hoverText: `${hoverRangeText}：マージした PR ${mergedPullRequestCount}件のうち対象${targetCount}件（${percentText}）・対象外${nonTargetCount}件`
+  }
 }
 
 /**
@@ -576,11 +676,14 @@ function buildSizeFigure(readField) {
   const averageChangedLines = readField('averageChangedLines')
   const bars = DIFF_LINE_BANDS.map(({ bandLabel, countFieldName }) => {
     const bandCount = readField(countFieldName)
-    const percentText = `${formatPercent({ count: bandCount, totalCount: mergedPullRequestCount })}%`
+    const percentText = formatPercentText({
+      count: bandCount,
+      totalCount: mergedPullRequestCount
+    })
     return {
       barAmount: bandCount,
-      countText: String(bandCount),
-      percentText,
+      mainText: String(bandCount),
+      subText: percentText,
       labelText: bandLabel,
       noteText: null,
       hoverText: `${bandLabel}：${bandCount}件（${percentText}）`,
@@ -616,7 +719,7 @@ function buildDelegationFigure({ workIssueCount, delegationCounts }) {
   const bars = DELEGATION_ROWS.map(
     ({ delegationCategory, categoryName, issueLabelRule, zeroCountNoteText }) => {
       const barAmount = delegationCounts[delegationCategory]
-      const percentText = `${formatPercent({ count: barAmount, totalCount: workIssueCount })}%`
+      const percentText = formatPercentText({ count: barAmount, totalCount: workIssueCount })
       const trailingText = barAmount === 0 && zeroCountNoteText ? zeroCountNoteText : percentText
       return {
         barAmount,
@@ -641,18 +744,18 @@ function buildDelegationFigure({ workIssueCount, delegationCounts }) {
 function buildSpeedFigure({ measuredIssueCount, medianMinutes, underOneHourCount, bandCounts }) {
   const bars = TIME_TO_PULL_REQUEST_BANDS.map(({ bandKey, labelText, isStopped = false }) => {
     const barAmount = bandCounts[bandKey]
-    const percentText = `${formatPercent({ count: barAmount, totalCount: measuredIssueCount })}%`
+    const percentText = formatPercentText({ count: barAmount, totalCount: measuredIssueCount })
     return {
       barAmount,
-      countText: String(barAmount),
-      percentText,
+      mainText: String(barAmount),
+      subText: percentText,
       labelText,
       noteText: null,
       hoverText: `${labelText}：${barAmount}件（${percentText}）`,
       isHollow: isStopped
     }
   })
-  const underOneHourPercent = formatPercent({
+  const underOneHourPercentText = formatPercentText({
     count: underOneHourCount,
     totalCount: measuredIssueCount
   })
@@ -667,7 +770,7 @@ function buildSpeedFigure({ measuredIssueCount, medianMinutes, underOneHourCount
       },
       {
         labelText: '1時間未満',
-        valueText: `${underOneHourPercent}%`,
+        valueText: underOneHourPercentText,
         unitText: `（${underOneHourCount}件）`
       }
     ],
@@ -679,33 +782,34 @@ function buildSpeedFigure({ measuredIssueCount, medianMinutes, underOneHourCount
 }
 
 /**
- * 棒の高さを最大の棒に対する比で決める縦棒の図を描く。headlineNumbers を渡すと図の上に大きな数字の帯を取り、backdrop を渡すと指定した棒の後ろに面を敷く。どちらも渡さなければ、帯も面も足さない。
+ * 縦棒の図の棒1本。1色の棒（barAmount と isHollow を持つ）か、積み上げの棒（stackedSegments を持つ）のどちらか。
+ * 積み上げの棒は、量を段の量の合計で表す。barAmount と段の合計が食い違う棒や、使われない isHollow を持つ棒を作れないようにするため、積み上げの棒は barAmount と isHollow を持たない。
  *
- * @param {{ bars: { barAmount: number, countText: string, percentText: string | null, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }[], chartTitle: string, headlineNumbers?: { labelText: string, valueText: string, unitText: string }[], backdrop?: { barPosition: number, noteLines: string[] } | null }} chart 左から並べる棒（1本以上。barAmount は棒が表す量で、0 以上。percentText があれば件数の下に割合を重ねる）、図の題（aria-label の頭に付く）、図の上に大きな数字で並べる項目（省くと帯を取らない）、面を敷く棒の位置（0 から）と面の上部に書く注記（図に1つまで。省くと面を敷かない）
- * @returns {string} svg 要素の HTML。棒が増えても文字が重ならないよう、viewBox の幅を広げる。大きな数字の帯（CHART_HEADLINE_BAND_HEIGHT）や面の注記を取るときは、その分だけ viewBox の高さを広げ、基準線と棒を下げる
+ * @typedef {{ mainText: string, subText: string | null, labelText: string, noteText: string | null, hoverText: string } & ({ barAmount: number, isHollow: boolean } | { stackedSegments: { segmentAmount: number, fillColor: string }[] })} VerticalBar
  */
-function renderVerticalBarChart({ bars, chartTitle, headlineNumbers = [], backdrop = null }) {
-  const columnWidth = Math.max(
-    CHART_MIN_COLUMN_WIDTH,
-    (CHART_BASE_WIDTH - 2 * CHART_MARGIN_X) / bars.length
-  )
-  const chartWidth = 2 * CHART_MARGIN_X + columnWidth * bars.length
-  // 全部の棒が 0 のときも、0 で割らずに縮尺を決める
-  const largestBarAmount = Math.max(1, ...bars.map(({ barAmount }) => barAmount))
-  const barCenterXs = bars.map(
-    (_bar, barPosition) => CHART_MARGIN_X + columnWidth * (barPosition + 0.5)
-  )
+
+/**
+ * 棒の高さを最大の棒に対する比で決める縦棒の図を描く。
+ *
+ * @param {{ bars: VerticalBar[], chartTitle: string, headlineNumbers?: { labelText: string, valueText: string, unitText: string }[], legendItems?: { labelText: string, fillColor: string }[], backdrop?: { barPosition: number, noteLines: string[] } | null }} chart 左から並べる棒（1本以上。棒の量は0以上。subText があれば mainText の下に小さく重ねる。1色の棒は黒で、isHollow なら白抜き。積み上げの棒は、下から積む段（量が0の段は描かない）で塗り分け、isHollow は使わない）と、図の題（aria-label の頭に付く）と、図の上に大きな数字で並べる項目と、図の上に並べる凡例（どちらも省くと帯を取らない）と、面を敷く棒の位置（0 から）と面の上部に書く注記（図に1つまで。省くと面を敷かない）
+ * @returns {string} svg 要素の HTML。棒が増えても文字が重ならないよう、viewBox の幅を広げる。大きな数字や凡例を並べるときは、図の上にそれぞれの専用の帯（CHART_HEADLINE_BAND_HEIGHT・CHART_LEGEND_BAND_HEIGHT）を上から順に足し、面の注記を取るときはその下に注記の帯を足す。viewBox の高さもその分伸ばし、基準線と棒を下げる
+ */
+function renderVerticalBarChart({
+  bars,
+  chartTitle,
+  headlineNumbers = [],
+  legendItems = [],
+  backdrop = null
+}) {
+  const { chartWidth, barCenterXs, barHeights } = measureVerticalBarLayout(bars)
   const barElements = bars.map((bar, barPosition) =>
-    renderBar({
-      bar,
-      centerX: barCenterXs[barPosition],
-      barHeight: (bar.barAmount / largestBarAmount) * CHART_MAX_BAR_HEIGHT
-    })
+    renderBar({ bar, centerX: barCenterXs[barPosition], barHeight: barHeights[barPosition] })
   )
   const headlineBandHeight = headlineNumbers.length > 0 ? CHART_HEADLINE_BAND_HEIGHT : 0
+  const topBandHeight = headlineBandHeight + (legendItems.length > 0 ? CHART_LEGEND_BAND_HEIGHT : 0)
   const backdropNoteBandHeight =
     backdrop === null ? 0 : measureBackdropNoteBandHeight(backdrop.noteLines)
-  const plotTopOffset = headlineBandHeight + backdropNoteBandHeight
+  const plotTopOffset = topBandHeight + backdropNoteBandHeight
   const plotElements = [
     // 面は基準線と棒より先に敷く。後に敷くと、基準線と棒を隠す
     backdrop === null
@@ -719,7 +823,7 @@ function renderVerticalBarChart({ bars, chartTitle, headlineNumbers = [], backdr
     `<line x1="${CHART_MARGIN_X}" y1="${CHART_BASELINE_Y}" x2="${formatCoordinate(chartWidth - CHART_MARGIN_X)}" y2="${CHART_BASELINE_Y}" style="stroke:${CHART_BASELINE_COLOR}" />`,
     ...barElements
   ]
-  // 帯の無い図（週ごとの図）の svg を変えないよう、帯があるときだけ包んで下げる
+  // 帯の無い図（週ごとの作業 Issue 数の図）の svg を変えないよう、帯があるときだけ包んで下げる
   const plotGroup =
     plotTopOffset === 0
       ? plotElements
@@ -729,9 +833,33 @@ function renderVerticalBarChart({ bars, chartTitle, headlineNumbers = [], backdr
     ...headlineNumbers.map((headlineNumber, numberPosition) =>
       renderHeadlineNumber({ headlineNumber, numberPosition })
     ),
+    ...legendItems.map((legendItem, legendPosition) =>
+      renderLegendItem({ legendItem, legendPosition, bandTopY: headlineBandHeight })
+    ),
     ...plotGroup,
     '</svg>'
   ].join('')
+}
+
+/**
+ * @param {VerticalBar[]} bars 左から並べる棒（1本以上）
+ * @returns {{ chartWidth: number, barCenterXs: number[], barHeights: number[] }} 図の幅（viewBox の幅）と、棒ごとの中心の x と高さ（0 以上）。棒が増えても文字が重ならないよう、列の幅には下限を置いて図の幅を広げる。高さは、最大の棒を CHART_MAX_BAR_HEIGHT とした比で決める
+ */
+function measureVerticalBarLayout(bars) {
+  const columnWidth = Math.max(
+    CHART_MIN_COLUMN_WIDTH,
+    (CHART_BASE_WIDTH - 2 * CHART_MARGIN_X) / bars.length
+  )
+  const barAmounts = bars.map(measureBarAmount)
+  // 全部の棒が 0 のときも、0 で割らずに縮尺を決める
+  const largestBarAmount = Math.max(1, ...barAmounts)
+  return {
+    chartWidth: 2 * CHART_MARGIN_X + columnWidth * bars.length,
+    barCenterXs: bars.map(
+      (_bar, barPosition) => CHART_MARGIN_X + columnWidth * (barPosition + 0.5)
+    ),
+    barHeights: barAmounts.map((barAmount) => (barAmount / largestBarAmount) * CHART_MAX_BAR_HEIGHT)
+  }
 }
 
 /**
@@ -743,6 +871,16 @@ function buildVerticalChartAriaLabel({ chartTitle, headlineNumbers, bars }) {
     ({ labelText, valueText, unitText }) => `${labelText}${valueText}${unitText}`
   )
   return `${chartTitle}：${[...headlineTexts, ...bars.map(({ hoverText }) => hoverText)].join('／')}`
+}
+
+/**
+ * @param {VerticalBar} bar 縦棒の図の棒
+ * @returns {number} 棒の高さを決める量。積み上げの棒は段の量の合計で、1色の棒は barAmount
+ */
+function measureBarAmount(bar) {
+  return 'stackedSegments' in bar
+    ? bar.stackedSegments.reduce((sum, { segmentAmount }) => sum + segmentAmount, 0)
+    : bar.barAmount
 }
 
 /**
@@ -811,11 +949,34 @@ function renderBackdrop({ backdrop, centerX, chartWidth, noteBandHeight }) {
 }
 
 /**
- * @param {{ bar: { countText: string, percentText: string | null, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }, centerX: number, barHeight: number }} barPlacement 描く棒と、棒の中心の x、棒の高さ（0 以上）
- * @returns {string} 棒・件数（と割合）・棒の下の文字をまとめた g 要素の HTML。マウスを載せると hoverText が出る
+ * @param {{ legendItem: { labelText: string, fillColor: string }, legendPosition: number, bandTopY: number }} legendPlacement 描く凡例の項目と、左から数えた位置、凡例の帯の上端の y
+ * @returns {string} 色の見本（四角）と文字を、左から legendPosition 番目の列に置いた g 要素の HTML
+ */
+function renderLegendItem({ legendItem, legendPosition, bandTopY }) {
+  const { labelText, fillColor } = legendItem
+  const swatchLeftX = CHART_MARGIN_X + CHART_LEGEND_COLUMN_WIDTH * legendPosition
+  const swatchTopY = bandTopY + CHART_LEGEND_SWATCH_TOP_OFFSET
+  return [
+    '<g>',
+    `<rect x="${formatCoordinate(swatchLeftX)}" y="${formatCoordinate(swatchTopY)}" width="${CHART_LEGEND_SWATCH_SIZE}" height="${CHART_LEGEND_SWATCH_SIZE}" rx="${CHART_LEGEND_SWATCH_CORNER_RADIUS}" style="fill:${fillColor}" />`,
+    renderChartText({
+      text: labelText,
+      anchorX: swatchLeftX + CHART_LEGEND_SWATCH_SIZE + CHART_LEGEND_TEXT_GAP_AFTER_SWATCH,
+      // 文字の下端を見本の下端より1px上に置くと、見本と文字の中心が目で合う
+      baselineY: swatchTopY + CHART_LEGEND_SWATCH_SIZE - 1,
+      textStyle: CHART_LEGEND_TEXT_STYLE,
+      textAnchor: 'start'
+    }),
+    '</g>'
+  ].join('')
+}
+
+/**
+ * @param {{ bar: VerticalBar, centerX: number, barHeight: number }} barPlacement 描く棒と、棒の中心の x、棒の高さ（0 以上）
+ * @returns {string} 棒・棒の上の文字・棒の下の文字をまとめた g 要素の HTML。マウスを載せると hoverText が出る
  */
 function renderBar({ bar, centerX, barHeight }) {
-  const { labelText, noteText, hoverText, isHollow } = bar
+  const { labelText, noteText, hoverText, isHollow, stackedSegments } = bar
   const noteElement =
     noteText === null
       ? ''
@@ -828,8 +989,8 @@ function renderBar({ bar, centerX, barHeight }) {
   return [
     '<g>',
     `<title>${escapeHtml(hoverText)}</title>`,
-    // 0 件の棒は高さが無く、角を丸める道筋も組めない。棒は描かず、件数（と割合）だけを基準線の上に出す
-    barHeight > 0 ? renderBarShape({ centerX, barHeight, isHollow }) : '',
+    // 0 件の棒は高さが無く、角を丸める道筋も組めない。棒は描かず、棒の上の文字だけを基準線の上に出す
+    barHeight > 0 ? renderBarBody({ stackedSegments, centerX, barHeight, isHollow }) : '',
     renderBarAmountTexts({ bar, centerX, barTopY: CHART_BASELINE_Y - barHeight }),
     renderChartText({
       text: labelText,
@@ -843,34 +1004,44 @@ function renderBar({ bar, centerX, barHeight }) {
 }
 
 /**
- * @param {{ bar: { countText: string, percentText: string | null }, centerX: number, barTopY: number }} amountPlacement 件数と割合の文字、棒の中心の x、棒の上端の y
- * @returns {string} 棒の上に置く件数の text 要素の HTML。割合があれば、件数の下に小さく添える
+ * @param {{ bar: { mainText: string, subText: string | null }, centerX: number, barTopY: number }} amountPlacement 棒の上の文字、棒の中心の x、棒の上端の y
+ * @returns {string} 棒の上に置く主の文字（件数や割合）の text 要素の HTML。subText があれば、主の文字の下に小さく添える
  */
 function renderBarAmountTexts({ bar, centerX, barTopY }) {
-  const { countText, percentText } = bar
-  const lowestBaselineY = barTopY - CHART_COUNT_GAP_ABOVE_BAR
-  if (percentText === null) {
+  const { mainText, subText } = bar
+  const lowestBaselineY = barTopY - CHART_MAIN_TEXT_GAP_ABOVE_BAR
+  if (subText === null) {
     return renderChartText({
-      text: countText,
+      text: mainText,
       anchorX: centerX,
       baselineY: lowestBaselineY,
-      textStyle: CHART_COUNT_TEXT_STYLE
+      textStyle: CHART_MAIN_TEXT_STYLE
     })
   }
   return [
     renderChartText({
-      text: countText,
+      text: mainText,
       anchorX: centerX,
-      baselineY: lowestBaselineY - CHART_PERCENT_LINE_HEIGHT,
-      textStyle: CHART_COUNT_TEXT_STYLE
+      baselineY: lowestBaselineY - CHART_SUB_TEXT_LINE_HEIGHT,
+      textStyle: CHART_MAIN_TEXT_STYLE
     }),
     renderChartText({
-      text: percentText,
+      text: subText,
       anchorX: centerX,
       baselineY: lowestBaselineY,
-      textStyle: CHART_PERCENT_TEXT_STYLE
+      textStyle: CHART_SUB_TEXT_STYLE
     })
   ].join('')
+}
+
+/**
+ * @param {{ stackedSegments?: { segmentAmount: number, fillColor: string }[], centerX: number, barHeight: number, isHollow?: boolean }} barBody 積み上げの段（省くと1色の棒）、棒の中心の x、棒の高さ（0 より大きい）、白抜きにするか（1色の棒だけ。積み上げの棒は渡さない）
+ * @returns {string} 棒の path 要素の HTML。積み上げの棒では、段ごとの path 要素をつないだもの
+ */
+function renderBarBody({ stackedSegments, centerX, barHeight, isHollow }) {
+  return stackedSegments === undefined
+    ? renderBarShape({ centerX, barHeight, isHollow })
+    : renderStackedBarShape({ stackedSegments, centerX, barHeight })
 }
 
 /**
@@ -879,23 +1050,69 @@ function renderBarAmountTexts({ bar, centerX, barTopY }) {
  */
 function renderBarShape({ centerX, barHeight, isHollow }) {
   const leftX = centerX - CHART_BAR_WIDTH / 2
-  const rightX = leftX + CHART_BAR_WIDTH
-  const topY = CHART_BASELINE_Y - barHeight
-  // 丸みが棒の高さを超えると、角の曲線が基準線より下へ出る
-  const cornerRadius = Math.min(CHART_BAR_CORNER_RADIUS, barHeight)
-  const outline = [
-    `M${formatCoordinate(leftX)} ${CHART_BASELINE_Y}`,
-    `V${formatCoordinate(topY + cornerRadius)}`,
-    `Q${formatCoordinate(leftX)} ${formatCoordinate(topY)} ${formatCoordinate(leftX + cornerRadius)} ${formatCoordinate(topY)}`,
-    `H${formatCoordinate(rightX - cornerRadius)}`,
-    `Q${formatCoordinate(rightX)} ${formatCoordinate(topY)} ${formatCoordinate(rightX)} ${formatCoordinate(topY + cornerRadius)}`,
-    `V${CHART_BASELINE_Y}`,
-    'Z'
-  ].join(' ')
+  const outline = buildRoundedTopOutline({
+    leftX,
+    rightX: leftX + CHART_BAR_WIDTH,
+    bottomY: CHART_BASELINE_Y,
+    topY: CHART_BASELINE_Y - barHeight,
+    cornerRadius: CHART_BAR_CORNER_RADIUS
+  })
   const paint = isHollow
     ? `style="fill:${CHART_HOLLOW_FILL};stroke:${CHART_INK_COLOR};stroke-width:${CHART_HOLLOW_STROKE_WIDTH}"`
     : `style="fill:${CHART_INK_COLOR}"`
   return `<path d="${outline}" ${paint} />`
+}
+
+/**
+ * 量が0より大きい段だけを、下から積んで塗り分ける。角を丸めるのは一番上の段だけ。段と段の間には隙間を空ける。
+ *
+ * @param {{ stackedSegments: { segmentAmount: number, fillColor: string }[], centerX: number, barHeight: number }} stackedBar 下から並べた段（量が0より大きい段が1つ以上）、棒の中心の x、棒全体の高さ（0 より大きい）
+ * @returns {string} 段ごとの path 要素をつないだ HTML。段の高さは、段の量が合計に占める比で決める
+ */
+function renderStackedBarShape({ stackedSegments, centerX, barHeight }) {
+  const drawnSegments = stackedSegments.filter(({ segmentAmount }) => segmentAmount > 0)
+  const totalAmount = drawnSegments.reduce((sum, { segmentAmount }) => sum + segmentAmount, 0)
+  const leftX = centerX - CHART_BAR_WIDTH / 2
+  const segmentPaths = []
+  let lowerEdgeY = CHART_BASELINE_Y
+  for (const [segmentPosition, { segmentAmount, fillColor }] of drawnSegments.entries()) {
+    const isBottomSegment = segmentPosition === 0
+    const isTopSegment = segmentPosition === drawnSegments.length - 1
+    const segmentHeight = (segmentAmount / totalAmount) * barHeight
+    const topY = lowerEdgeY - segmentHeight
+    // 隙間は、下の段との境の分だけ、この段の下端を上げて作る。棒全体の高さは変わらない
+    const bottomY = isBottomSegment
+      ? lowerEdgeY
+      : lowerEdgeY - Math.min(CHART_STACK_SEGMENT_GAP, segmentHeight / 2)
+    const outline = buildRoundedTopOutline({
+      leftX,
+      rightX: leftX + CHART_BAR_WIDTH,
+      bottomY,
+      topY,
+      cornerRadius: isTopSegment ? CHART_BAR_CORNER_RADIUS : 0
+    })
+    segmentPaths.push(`<path d="${outline}" style="fill:${fillColor}" />`)
+    lowerEdgeY = topY
+  }
+  return segmentPaths.join('')
+}
+
+/**
+ * @param {{ leftX: number, rightX: number, bottomY: number, topY: number, cornerRadius: number }} shape 左右の x、下端と上端の y（上端は下端より上）、上の角の丸み（0 なら四角）
+ * @returns {string} 上の2つの角だけが丸い四角の path の d 属性
+ */
+function buildRoundedTopOutline({ leftX, rightX, bottomY, topY, cornerRadius }) {
+  // 丸みが高さを超えると、角の曲線が下端より下へ出る
+  const radius = Math.min(cornerRadius, bottomY - topY)
+  return [
+    `M${formatCoordinate(leftX)} ${formatCoordinate(bottomY)}`,
+    `V${formatCoordinate(topY + radius)}`,
+    `Q${formatCoordinate(leftX)} ${formatCoordinate(topY)} ${formatCoordinate(leftX + radius)} ${formatCoordinate(topY)}`,
+    `H${formatCoordinate(rightX - radius)}`,
+    `Q${formatCoordinate(rightX)} ${formatCoordinate(topY)} ${formatCoordinate(rightX)} ${formatCoordinate(topY + radius)}`,
+    `V${formatCoordinate(bottomY)}`,
+    'Z'
+  ].join(' ')
 }
 
 /**
@@ -958,7 +1175,7 @@ function renderHorizontalBarRow({ bar, rowTopY, barLength }) {
       text: countText,
       anchorX: HORIZONTAL_CHART_BAR_START_X + barLength + HORIZONTAL_CHART_TEXT_GAP_AFTER_BAR,
       baselineY: rowCenterY + HORIZONTAL_CHART_COUNT_OFFSET_FROM_ROW_CENTER,
-      textStyle: CHART_COUNT_TEXT_STYLE,
+      textStyle: CHART_MAIN_TEXT_STYLE,
       textAnchor: 'start',
       trailing: {
         text: trailingText,
@@ -1061,6 +1278,14 @@ function formatNumber(rawNumber) {
 function formatPercent({ count, totalCount }) {
   // 先に 100 を掛ける。割ってから掛けると、ちょうど .5 になる値（23/40 など）が浮動小数の誤差で .4999… になり、1小さく丸まる
   return totalCount > 0 ? String(Math.round((count * 100) / totalCount)) : null
+}
+
+/**
+ * @param {{ count: number, totalCount: number }} ratio 部分の件数と全体の件数（全体は1以上）
+ * @returns {string} 図の棒や行に添える「45%」の形の割合。全体が 0 件だと formatPercent が null を返し「null%」になるので、全体が 0 件の図は呼び出し側が描かない
+ */
+function formatPercentText(ratio) {
+  return `${formatPercent(ratio)}%`
 }
 
 /**
