@@ -1,6 +1,6 @@
 ---
 name: perf-report
-description: 指定した期間の作業 Issue の週次件数と委譲の度合い、PR の差分行数の分布、人間レビューの対象の割合、注記を HTML 1枚にする。経営寄りの読み手へ AI 駆動開発の実績を報告するときに使う。「perf-report」「実績レポートを作って」と指示されたとき。
+description: 指定した期間の作業 Issue の週次件数と委譲の度合い、着手から PR が出るまでの時間、PR の差分行数の分布、人間レビューの対象の割合、注記を HTML 1枚にする。経営寄りの読み手へ AI 駆動開発の実績を報告するときに使う。「perf-report」「実績レポートを作って」と指示されたとき。
 argument-hint: '[--from YYYY-MM-DD] [--to YYYY-MM-DD]（省略すると直近1か月）'
 disable-model-invocation: true
 ---
@@ -24,7 +24,7 @@ npm run --silent perf-report -- $ARGUMENTS
 `.claude/skills/html/SKILL.md` の「デザインシステム」「図」の規則で書く。同じ Skill の「基本構成」と目次は使わず、下の順で1枚にする。用語リストは置かない。
 
 - **置き場**：`tmp/perf-report/{yyyymmdd}-perf-report-{from}-{to}.html`。`.claude/skills/html/design-system/` を HTML と同じフォルダへコピーする（既にあれば上書きしない）
-- **順番**：見出し → リード文 → 図 → 週の説明 → 委譲の度合い → 変更の小ささ → 人間レビューの対象 → 定義 → 読み方 → 限界
+- **順番**：見出し → リード文 → 図 → 週の説明 → 委譲の度合い → 着手から PR が出るまでの時間 → 変更の小ささ → 人間レビューの対象 → 定義 → 読み方 → 限界
 
 **リード文**には、期間、作業 Issue の件数（`workIssueCount`）、全日そろった週の平均と幅（`fullWeekSummary`）を書く。`fullWeekSummary` が `null` なら、全日そろった週が無いので平均を出せないと書く。全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう。今日を含む週は、まだ数え終えていないので含めない。
 
@@ -60,6 +60,31 @@ npm run --silent perf-report -- $ARGUMENTS
 - ラベルは着手前の分類で、実際の作業の記録ではない
 
 `collaboration` が `0` のときは、表の下に「対話で作った成果物がこの期間に無い」とも書く。
+
+**着手から PR が出るまでの時間**は、AI 単独の作業 Issue について、ボードの Status が最初に `In Review` になった時刻と、その直前に `In progress` になった時刻の差を、`aiOnlyTimeToPullRequest` の値で示す。`In Review` は PR が Issue に紐づいた時点である。測っているのは Status の間の時間なので、「AI の作業時間」と呼ばない。
+
+測れた件数（`measuredIssueCount`）／対象の件数（`targetIssueCount`）、中央値（`medianMinutes`）、1時間未満の割合（`underOneHourPercentage`）を本文に書く。`medianMinutes` が `null` なら、中央値と割合と図の代わりに、測れた Issue が無いと書く（注記は載せる）。
+
+図は、帯ごとの件数（`bandCounts`）の縦棒を、インライン SVG で本文の幅いっぱいに描く。有彩色を使わない。棒の上に件数、棒の下に帯の名前を書く。
+
+| 帯        | 件数（`bandCounts`） |
+| --------- | -------------------- |
+| 5分未満   | `under5Minutes`      |
+| 5〜14分   | `from5To14Minutes`   |
+| 15〜59分  | `from15To59Minutes`  |
+| 1〜8時間  | `from1To8Hours`      |
+| 8時間以上 | `atLeast8Hours`      |
+
+- 8時間以上の帯だけ、他の帯の黒塗りと違う描き方（白地に斜線）にし、棒の近くに「作業ではなく停止」と書く
+- `figcaption` で棒の読み方を説明し、8時間以上の帯は「エラーや判断待ちで止まっていた時間」と書く
+
+図の下に、次の文をそのまま載せる。最初の文は太字にする。
+
+- **人間が同じ作業にかかる時間との比較ではなく、何倍速いかは言えない**
+- 1件は小さく割った Issue で、大きな機能を作る時間ではない
+- Issue を作るまでの相談、自動検査、レビュー、マージの時間は含まない
+- 失敗してやり直す前の時間は含まないので、その分だけ実際より短く見える
+- `In progress` と `In Review` の両方の記録が無い Issue は数えない
 
 **変更の小ささ**は、期間内にマージした PR の差分行数（追加と削除の合計）を、`pullRequestDiffLines` の値で示す。件数の合計は `mergedPullRequestCount` と一致する。
 
