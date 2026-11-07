@@ -320,7 +320,10 @@
           <h2 id="size">変更の小ささ</h2>
 
           <figure class="mb-figure">
-            <div class="mb-figure-frame">{{sizeFigure}}</div>
+            <div class="mb-figure-frame">
+              <!-- if:sizeFigure -->{{sizeFigure}}<!-- endif -->
+              <!-- if:noMergedPullRequest -->期間内にマージした PR が無い<!-- endif -->
+            </div>
             <figcaption>fig.5 マージした PR {{mergedPullRequestCount}}件の差分行数</figcaption>
           </figure>
 
