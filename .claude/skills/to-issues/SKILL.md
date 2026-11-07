@@ -99,6 +99,8 @@ Plan の「実装フロー（使用するSkill）」を各 Issue に**必ず転�
 
 同ポリシーの「Issue に付けるラベル」表の `customer-question` の付ける条件に当たる Issue には、`customer-question` も重ねる。
 
+同表の `human-ai-collaboration` の付ける条件に当たる Issue には、`human-ai-collaboration` も重ねる。
+
 「タスク一覧」「完了条件」は、登録前に該当するポリシー・rules（`docs/policy-hub.md`・`.claude/rules/`）と照合する。ポリシーに反する作業を指示していたら、タスク側を直してから登録する。実装時はポリシーが優先されるため、反したまま登録すると手戻りになる。
 
 Issue は依存順（ブロッカーが先）に登録する。そうすれば「ブロッカー」欄に実際の Issue 番号を書ける。登録する前に、タイトルの先頭の段番号が「ブロッカー」欄と食い違っていないか確かめる。

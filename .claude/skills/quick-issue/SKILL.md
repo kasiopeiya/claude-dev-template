@@ -49,6 +49,7 @@ description: 確認不要で手早く GitHub Issue を起票する。思いつ�
 - `harness`：ポリシーの「`harness` を付ける条件」に当たるときに重ねる。3択のどれを付けたかとは別に決める
 - `opus`：ポリシーの「`opus` を付ける条件」の条件B・Cに当たるときに、起票時に重ねる。3択のどれを付けたかとは別に決める。条件Aは `add-opus-label.yml` が付けるので、ここでは判定しない
 - `customer-question`：ポリシーの「Issue に付けるラベル」表の `customer-question` の付ける条件に当たるときに、`needs-human-decision` に重ねる
+- `human-ai-collaboration`：ポリシーの「Issue に付けるラベル」表の `human-ai-collaboration` の付ける条件に当たるときに、`ready-for-human` に重ねる
 
 ### 人間の作業を別 Issue に切り出す
 
