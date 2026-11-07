@@ -283,12 +283,17 @@
 
           <h2 id="review">人間レビューの対象</h2>
 
+          <!-- if:reviewFigure -->
           <figure class="mb-figure">
             <div class="mb-figure-frame">{{reviewFigure}}</div>
             <figcaption>
               fig.4 週ごとのマージした PR {{mergedPullRequestCount}}件の内訳（割合は対象の割合）
             </figcaption>
           </figure>
+          <!-- endif -->
+          <!-- if:noMergedPullRequest -->
+          <p>期間内にマージした PR が無いため、図を描きません。</p>
+          <!-- endif -->
 
           <table>
             <tr>
