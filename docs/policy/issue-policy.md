@@ -27,6 +27,7 @@ hook:
       '.claude/skills/doc-consistency/**/*.md',
       '.claude/skills/slim-always-loaded-docs/**/*.md',
       '.claude/skills/sre-prr/**/*.md',
+      '.claude/hooks/label-ai-filed-issue.mjs',
       '.claude/skills/auto-dev/**/*.md',
       '.claude/skills/auto-fix-ci/**/*.md',
       '.claude/skills/auto-resolve-conflict/**/*.md',
@@ -88,6 +89,7 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 | `human-ai-collaboration`                 | 人間と AI が対話しながら成果物を作る Issue                                                                    | 人間と AI が対話しながら成果物を作るとき、`ready-for-human` にだけ重ねる（例：`/elicit-requirements` で要件定義書を書く Issue）。実機確認や新しいセッションでの確認のような「確かめる」作業には付けない。起票する Skill が付ける（#1586）                                     |
 | `issue:checked`                          | `/issue-check` が一度監査した。いま妥当である保証ではない                                                     | `/issue-check` が判定を出した Issue に、判定が何であれ貼る。監査できなかった・飛ばした Issue には貼らない                                                                                                                                                                     |
 | `broken-window`                          | AI が作業中に見つけ、その場で直さずに起票した問題                                                             | AI が本筋外の問題を見つけて起票するとき（CLAUDE.md「本筋外の課題は起票する」と、それを引いて確認なしに起票するレビュー系 Skill）。人間が依頼した要望には付けない                                                                                                              |
+| `ai-filed-issue`                         | AI の Bash から起票された Issue                                                                               | `label-ai-filed-issue.mjs` が付ける。印が無いことを、人間が起票したとは読まない                                                                                                                                                                                               |
 | `harness`                                | ハーネスを変える Issue。ハーネスの手直しをプロダクト開発と分けて一覧する印                                    | 下の「`harness` を付ける条件」に当たるとき。起票する Skill が付ける                                                                                                                                                                                                           |
 | `opus`                                   | 実行セッション全体を最上位モデルで回す Issue。モデルを選ぶ人間が見る印                                        | 下の「`opus` を付ける条件」に当たるとき。3択に重ねる                                                                                                                                                                                                                          |
 | `tracking-issue`                         | ルート Issue の直下（第2階層）で子を持つ親 Issue。自分では実装せず、子に分けて進める単位                      | 子を紐づけて親にした Skill が、親にした Issue の親が `phase` のときだけ付ける。判定は親にした時点で行い、あとで階層が変わっても付け外ししない。3択に重ねる。子が全部 close されても外さない。人間が GitHub の画面で子を紐づけたときは、人間が同じ条件で付ける（#1126、#1207） |
