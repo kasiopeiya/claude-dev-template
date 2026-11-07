@@ -1,6 +1,6 @@
 ---
 name: perf-report
-description: 指定した期間の作業 Issue の週次件数と委譲の度合い、注記を HTML 1枚にする。経営寄りの読み手へ AI 駆動開発の実績を報告するときに使う。「perf-report」「実績レポートを作って」と指示されたとき。
+description: 指定した期間の作業 Issue の週次件数と委譲の度合い、PR の差分行数の分布、注記を HTML 1枚にする。経営寄りの読み手へ AI 駆動開発の実績を報告するときに使う。「perf-report」「実績レポートを作って」と指示されたとき。
 argument-hint: '[--from YYYY-MM-DD] [--to YYYY-MM-DD]（省略すると直近1か月）'
 disable-model-invocation: true
 ---
@@ -24,7 +24,7 @@ npm run --silent perf-report -- $ARGUMENTS
 `.claude/skills/html/SKILL.md` の「デザインシステム」「図」の規則で書く。同じ Skill の「基本構成」と目次は使わず、下の順で1枚にする。用語リストは置かない。
 
 - **置き場**：`tmp/perf-report/{yyyymmdd}-perf-report-{from}-{to}.html`。`.claude/skills/html/design-system/` を HTML と同じフォルダへコピーする（既にあれば上書きしない）
-- **順番**：見出し → リード文 → 図 → 委譲の度合い → 定義 → 読み方 → 限界
+- **順番**：見出し → リード文 → 図 → 委譲の度合い → 変更の小ささ → 定義 → 読み方 → 限界
 
 **リード文**には、期間、作業 Issue の件数（`workIssueCount`）、全日そろった週の平均と幅（`fullWeekSummary`）を書く。`fullWeekSummary` が `null` なら、全日そろった週が無いので平均を出せないと書く。全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう。今日を含む週は、まだ数え終えていないので含めない。
 
@@ -51,6 +51,20 @@ npm run --silent perf-report -- $ARGUMENTS
 - ラベルは着手前の分類で、実際の作業の記録ではない
 
 `collaboration` が `0` のときは、表の下に「対話で作った成果物がこの期間に無い」とも書く。
+
+**変更の小ささ**は、期間内にマージした PR の差分行数（追加と削除の合計）を、`pullRequestDiffLines` の値で示す。件数の合計は `mergedPullRequestCount` と一致する。
+
+| 帯         | 件数（`bandCounts`） |
+| ---------- | -------------------- |
+| 50行未満   | `under50`            |
+| 50〜199行  | `from50To199`        |
+| 200〜300行 | `from200To300`       |
+| 300行超    | `over300`            |
+
+表の下に、中央値（`median`）と平均（`average`）を書き、次の2文をそのまま載せる。`median` が `null` なら、中央値と平均と2文の代わりに、期間内にマージした PR が無いと書く。
+
+- 平均は一部の大きな変更に引っ張られるので、中央値を中心に読む
+- 小さく回せている事実を示すだけで、有効さの証明ではない
 
 **定義**は、作業 Issue を「GitHub で完了（completed）として close された Issue から、次の表のものを除いたもの」と書き、表を置く。週は日本時間の月曜始まりである。
 

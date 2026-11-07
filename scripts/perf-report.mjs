@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとと委譲の分類ごとに数え、JSON で標準出力に返す。
+// 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとと委譲の分類ごとに数え、
+//   同じ期間にマージした PR の差分行数を帯ごとに数えて、JSON で標準出力に返す。
 //   `/perf-report` が、この結果を HTML 1枚にする。
 //
 // 設計意図（WHY）:
@@ -11,6 +12,7 @@
 // - ラベルも本文も無い Issue はメモとして除く。#835 の子に資料の見出しだけを書いたものがあり（#939 など）、何の作業かを確かめられない。
 // - 委譲の分類はラベルだけで決める。他のリポジトリでも同じ Skill が使えるようにするためである（#1591）。
 //   無人実行の記録（runs.jsonl）は使わない。無人実行の定義に問題があり、端末ごとの記録でもある。
+// - 差分行数の帯は docs/policy/pr-review-policy.md「見積もりで割る線」の 200行・300行に合わせる（#1592）。
 // - hasProductCode も返す。`/perf-report` は、app/・infra/ にコードが無いときだけ「本番では未検証」と注記する。
 // - 日付は固定幅の文字列のまま大小を比べる。年を 4 桁に収まる範囲へ絞るのはそのためで、外れると週を進めるループが終わらない。
 //
@@ -39,6 +41,14 @@ const AI_FIXABLE_LABEL = 'ai-fixable'
 const READY_FOR_HUMAN_LABEL = 'ready-for-human'
 const COLLABORATION_LABEL = 'human-ai-collaboration'
 
+// 上から順に当て、最初に当たった帯だけで数える。最後の帯がすべてを受けるので、帯ごとの件数を足すと PR の件数に一致する
+const DIFF_LINE_BANDS = [
+  { band: 'under50', maxChangedLines: 49 },
+  { band: 'from50To199', maxChangedLines: 199 },
+  { band: 'from200To300', maxChangedLines: 300 },
+  { band: 'over300', maxChangedLines: Number.POSITIVE_INFINITY }
+]
+
 const CLOSED_ISSUES_QUERY = `query($searchQuery: String!, $endCursor: String) {
   search(query: $searchQuery, type: ISSUE, first: 100, after: $endCursor) {
     issueCount
@@ -50,6 +60,19 @@ const CLOSED_ISSUES_QUERY = `query($searchQuery: String!, $endCursor: String) {
         author { __typename }
         labels(first: 50) { nodes { name } }
         subIssues { totalCount }
+      }
+    }
+  }
+}`
+
+const MERGED_PULL_REQUESTS_QUERY = `query($searchQuery: String!, $endCursor: String) {
+  search(query: $searchQuery, type: ISSUE, first: 100, after: $endCursor) {
+    issueCount
+    pageInfo { hasNextPage endCursor }
+    nodes {
+      ... on PullRequest {
+        additions
+        deletions
       }
     }
   }
@@ -105,13 +128,20 @@ function runCli() {
   const today = getTodayInReportTimezone()
   const { from, to } = parsePeriod(process.argv.slice(2), today)
   const repository = readCurrentRepository()
-  const weeklyTallies = splitIntoWeeks({ from, to }).map((week) => ({
+  const weeks = splitIntoWeeks({ from, to })
+  const weeklyTallies = weeks.map((week) => ({
     week,
     tally: tallyIssues(
       fetchClosedIssues({ repository, from: week.countedFrom, to: week.countedTo })
     )
   }))
-  const report = buildReport({ repository, from, to, today, weeklyTallies })
+  const changedLineCounts = weeks.flatMap((week) =>
+    fetchMergedPullRequestChangedLines({ repository, from: week.countedFrom, to: week.countedTo })
+  )
+  const report = {
+    ...buildReport({ repository, from, to, today, weeklyTallies }),
+    pullRequestDiffLines: summarizeChangedLines(changedLineCounts)
+  }
   console.log(JSON.stringify(report, null, 2))
 }
 
@@ -202,22 +232,60 @@ function splitIntoWeeks({ from, to }) {
  * @throws {TechnicalError} gh が失敗したとき・検索の上限を超えて数え切れないとき
  */
 function fetchClosedIssues({ repository, from, to }) {
-  const closedRange = `${from}T00:00:00${REPORT_UTC_OFFSET}..${to}T23:59:59${REPORT_UTC_OFFSET}`
-  const searchQuery = `repo:${repository} is:issue is:closed closed:${closedRange}`
+  return searchAllNodes({
+    graphqlQuery: CLOSED_ISSUES_QUERY,
+    searchQuery: `repo:${repository} is:issue is:closed closed:${formatSearchRange(from, to)}`,
+    period: { from, to }
+  })
+}
+
+/**
+ * 日本時間の範囲にマージされた PR の差分行数を引く。
+ *
+ * @param {{ repository: string, from: string, to: string }} searchRange 対象のリポジトリ（owner/repo）と、範囲の初日・最終日（YYYY-MM-DD）
+ * @returns {number[]} PR ごとの追加と削除の合計
+ * @throws {TechnicalError} gh が失敗したとき・検索の上限を超えて数え切れないとき
+ */
+function fetchMergedPullRequestChangedLines({ repository, from, to }) {
+  const pullRequests = searchAllNodes({
+    graphqlQuery: MERGED_PULL_REQUESTS_QUERY,
+    searchQuery: `repo:${repository} is:pr is:merged merged:${formatSearchRange(from, to)}`,
+    period: { from, to }
+  })
+  return pullRequests.map(({ additions, deletions }) => additions + deletions)
+}
+
+/**
+ * @param {string} from 範囲の初日（YYYY-MM-DD）
+ * @param {string} to 範囲の最終日（YYYY-MM-DD）
+ * @returns {string} GitHub の検索に渡す、日本時間の日時の範囲
+ */
+function formatSearchRange(from, to) {
+  return `${from}T00:00:00${REPORT_UTC_OFFSET}..${to}T23:59:59${REPORT_UTC_OFFSET}`
+}
+
+/**
+ * GitHub の検索を最後のページまで引く。
+ *
+ * @param {{ graphqlQuery: string, searchQuery: string, period: { from: string, to: string } }} search GraphQL の問い合わせ・検索の条件と、エラーに出す範囲
+ * @returns {object[]} 当たったものすべて
+ * @throws {TechnicalError} gh が失敗したとき・検索の上限を超えて数え切れないとき
+ */
+function searchAllNodes({ graphqlQuery, searchQuery, period }) {
   const pages = runJson('gh', [
     'api',
     'graphql',
     '--paginate',
     '--slurp',
     '-f',
-    `query=${CLOSED_ISSUES_QUERY}`,
+    `query=${graphqlQuery}`,
     '-f',
     `searchQuery=${searchQuery}`
   ])
   const { issueCount } = pages[0].data.search
   if (issueCount > SEARCH_RESULT_LIMIT) {
     throw new TechnicalError(
-      `${from}〜${to} は ${issueCount} 件あり、検索の上限（${SEARCH_RESULT_LIMIT} 件）を超えるので数え切れません`
+      `${period.from}〜${period.to} は ${issueCount} 件あり、検索の上限（${SEARCH_RESULT_LIMIT} 件）を超えるので数え切れません`
     )
   }
   return pages.flatMap((page) => page.data.search.nodes)
@@ -343,10 +411,54 @@ function summarizeFullWeeks(weeks) {
   const totalCount = fullWeekIssueCounts.reduce((sum, count) => sum + count, 0)
   return {
     weekCount: fullWeekIssueCounts.length,
-    average: Math.round((totalCount / fullWeekIssueCounts.length) * 10) / 10,
+    average: roundToOneDecimal(totalCount / fullWeekIssueCounts.length),
     min: Math.min(...fullWeekIssueCounts),
     max: Math.max(...fullWeekIssueCounts)
   }
+}
+
+/**
+ * PR の差分行数を、帯ごとの件数と中央値・平均にまとめる。
+ *
+ * @param {number[]} changedLineCounts PR ごとの追加と削除の合計
+ * @returns {{ mergedPullRequestCount: number, bandCounts: Record<string, number>, median: number | null, average: number | null }} median と average は小数第1位に四捨五入した値。PR が無ければ null
+ */
+function summarizeChangedLines(changedLineCounts) {
+  const bandCounts = Object.fromEntries(DIFF_LINE_BANDS.map(({ band }) => [band, 0]))
+  for (const changedLines of changedLineCounts) {
+    const { band } = DIFF_LINE_BANDS.find(({ maxChangedLines }) => changedLines <= maxChangedLines)
+    bandCounts[band] += 1
+  }
+  const mergedPullRequestCount = changedLineCounts.length
+  if (mergedPullRequestCount === 0) {
+    return { mergedPullRequestCount, bandCounts, median: null, average: null }
+  }
+  const totalChangedLines = changedLineCounts.reduce((sum, changedLines) => sum + changedLines, 0)
+  return {
+    mergedPullRequestCount,
+    bandCounts,
+    median: roundToOneDecimal(findMedian(changedLineCounts)),
+    average: roundToOneDecimal(totalChangedLines / mergedPullRequestCount)
+  }
+}
+
+/**
+ * @param {number[]} numbers 1つ以上の数
+ * @returns {number} 中央値。個数が偶数なら、真ん中の2つの平均
+ */
+function findMedian(numbers) {
+  const sortedNumbers = numbers.toSorted((left, right) => left - right)
+  const middleIndex = Math.floor(sortedNumbers.length / 2)
+  if (sortedNumbers.length % 2 === 1) return sortedNumbers[middleIndex]
+  return (sortedNumbers[middleIndex - 1] + sortedNumbers[middleIndex]) / 2
+}
+
+/**
+ * @param {number} rawNumber 丸める数
+ * @returns {number} 小数第1位に四捨五入した値
+ */
+function roundToOneDecimal(rawNumber) {
+  return Math.round(rawNumber * 10) / 10
 }
 
 /**
