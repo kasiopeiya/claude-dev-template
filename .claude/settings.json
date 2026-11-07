@@ -45,6 +45,17 @@
             "timeout": 2700
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(gh issue create *)",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/label-ai-filed-issue.mjs\"",
+            "timeout": 120
+          }
+        ]
       }
     ],
     "Stop": [
