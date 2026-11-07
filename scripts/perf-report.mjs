@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとと委譲の分類ごとに数え、
-//   同じ期間にマージした PR の差分行数を帯ごとに数えて、JSON で標準出力に返す。
+//   同じ期間にマージした PR の差分行数を帯ごとに数え、人間レビューの対象の件数を全体と週ごとに数えて、JSON で標準出力に返す。
 //   `/perf-report` が、この結果を HTML 1枚にする。
 //
 // 設計意図（WHY）:
@@ -13,6 +13,8 @@
 // - 委譲の分類はラベルだけで決める。他のリポジトリでも同じ Skill が使えるようにするためである（#1591）。
 //   無人実行の記録（runs.jsonl）は使わない。無人実行の定義に問題があり、端末ごとの記録でもある。
 // - 差分行数の帯は docs/policy/pr-review-policy.md「見積もりで割る線」の 200行・300行に合わせる（#1592）。
+// - 人間レビューの対象は、PR に付いた `needs-human-review` で数える（#1603）。`.github/workflows/pr-ai-triage.yml` が付けるので、新しい記録は要らない。
+//   このラベルは「レビューすべき」の印であり、人間が読んだ記録ではない。
 // - hasProductCode も返す。`/perf-report` は、app/・infra/ にコードが無いときだけ「本番では未検証」と注記する。
 // - 日付は固定幅の文字列のまま大小を比べる。年を 4 桁に収まる範囲へ絞るのはそのためで、外れると週を進めるループが終わらない。
 //
@@ -34,12 +36,13 @@ const REPORT_TIMEZONE_NAME = 'Asia/Tokyo'
 const REPORT_UTC_OFFSET = '+09:00'
 const REPORT_UTC_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000
 
-const REVIEW_NOTIFICATION_LABEL = 'needs-human-review'
+const HUMAN_REVIEW_LABEL = 'needs-human-review'
 const ROOT_ISSUE_LABEL = 'phase'
 const WEEKLY_ISSUE_LABELS = ['doc-audit-weekly', 'code-policy-weekly']
 const AI_FIXABLE_LABEL = 'ai-fixable'
 const READY_FOR_HUMAN_LABEL = 'ready-for-human'
 const COLLABORATION_LABEL = 'human-ai-collaboration'
+const POLICY_OR_CICD_LABELS = ['policy', 'cicd']
 
 // 上から順に当て、最初に当たった帯だけで数える。最後の帯がすべてを受けるので、帯ごとの件数を足すと PR の件数に一致する
 const DIFF_LINE_BANDS = [
@@ -73,10 +76,18 @@ const MERGED_PULL_REQUESTS_QUERY = `query($searchQuery: String!, $endCursor: Str
       ... on PullRequest {
         additions
         deletions
+        labels(first: 50) { nodes { name } }
       }
     }
   }
 }`
+
+/**
+ * @typedef {object} MergedPullRequest
+ * @property {number} additions 追加した行数
+ * @property {number} deletions 削除した行数
+ * @property {{ nodes: { name: string }[] }} labels ラベル
+ */
 
 /**
  * @typedef {object} ClosedIssue
@@ -93,7 +104,7 @@ const EXCLUSION_RULES = [
   {
     reason: 'reviewNotification',
     matches: (issue) =>
-      issue.author?.__typename === 'Bot' && hasAnyLabel(issue, [REVIEW_NOTIFICATION_LABEL])
+      issue.author?.__typename === 'Bot' && hasAnyLabel(issue, [HUMAN_REVIEW_LABEL])
   },
   { reason: 'parent', matches: (issue) => issue.subIssues.totalCount > 0 },
   { reason: 'rootIssue', matches: (issue) => hasAnyLabel(issue, [ROOT_ISSUE_LABEL]) },
@@ -133,14 +144,23 @@ function runCli() {
     week,
     tally: tallyIssues(
       fetchClosedIssues({ repository, from: week.countedFrom, to: week.countedTo })
-    )
+    ),
+    pullRequests: fetchMergedPullRequests({
+      repository,
+      from: week.countedFrom,
+      to: week.countedTo
+    })
   }))
-  const changedLineCounts = weeks.flatMap((week) =>
-    fetchMergedPullRequestChangedLines({ repository, from: week.countedFrom, to: week.countedTo })
-  )
+  const pullRequests = weeklyTallies.flatMap((weeklyTally) => weeklyTally.pullRequests)
   const report = {
     ...buildReport({ repository, from, to, today, weeklyTallies }),
-    pullRequestDiffLines: summarizeChangedLines(changedLineCounts)
+    pullRequestDiffLines: summarizeChangedLines(
+      pullRequests.map(({ additions, deletions }) => additions + deletions)
+    ),
+    humanReviewTargets: {
+      ...summarizeHumanReviewTargets(pullRequests),
+      policyOrCicdCount: countPolicyOrCicdTargets(pullRequests)
+    }
   }
   console.log(JSON.stringify(report, null, 2))
 }
@@ -240,19 +260,18 @@ function fetchClosedIssues({ repository, from, to }) {
 }
 
 /**
- * 日本時間の範囲にマージされた PR の差分行数を引く。
+ * 日本時間の範囲にマージされた PR を引く。
  *
  * @param {{ repository: string, from: string, to: string }} searchRange 対象のリポジトリ（owner/repo）と、範囲の初日・最終日（YYYY-MM-DD）
- * @returns {number[]} PR ごとの追加と削除の合計
+ * @returns {MergedPullRequest[]} マージされた PR
  * @throws {TechnicalError} gh が失敗したとき・検索の上限を超えて数え切れないとき
  */
-function fetchMergedPullRequestChangedLines({ repository, from, to }) {
-  const pullRequests = searchAllNodes({
+function fetchMergedPullRequests({ repository, from, to }) {
+  return searchAllNodes({
     graphqlQuery: MERGED_PULL_REQUESTS_QUERY,
     searchQuery: `repo:${repository} is:pr is:merged merged:${formatSearchRange(from, to)}`,
     period: { from, to }
   })
-  return pullRequests.map(({ additions, deletions }) => additions + deletions)
 }
 
 /**
@@ -324,14 +343,15 @@ function findDelegationCategory(issue) {
 /**
  * 週ごとの集計を、出力する形にまとめる。
  *
- * @param {{ repository: string, from: string, to: string, today: string, weeklyTallies: { week: { weekStart: string, weekEnd: string, countedFrom: string, countedTo: string }, tally: ReturnType<typeof tallyIssues> }[] }} reportSource 集計の結果と、その条件
+ * @param {{ repository: string, from: string, to: string, today: string, weeklyTallies: { week: { weekStart: string, weekEnd: string, countedFrom: string, countedTo: string }, tally: ReturnType<typeof tallyIssues>, pullRequests: MergedPullRequest[] }[] }} reportSource 集計の結果と、その条件
  * @returns {object} 標準出力に出す内容
  * @throws {TechnicalError} git が失敗したとき
  */
 function buildReport({ repository, from, to, today, weeklyTallies }) {
-  const weeks = weeklyTallies.map(({ week, tally }) => ({
+  const weeks = weeklyTallies.map(({ week, tally, pullRequests }) => ({
     ...week,
     workIssueCount: tally.workIssueCount,
+    humanReviewTargets: summarizeHumanReviewTargets(pullRequests),
     isFullWeek: isFullWeek(week, today)
   }))
   const workIssueCount = weeks.reduce((sum, week) => sum + week.workIssueCount, 0)
@@ -443,6 +463,36 @@ function summarizeChangedLines(changedLineCounts) {
 }
 
 /**
+ * マージした PR のうち、人間レビューの対象を数える。
+ *
+ * @param {MergedPullRequest[]} pullRequests マージされた PR
+ * @returns {{ mergedPullRequestCount: number, targetCount: number, targetPercentage: number | null }} targetPercentage は小数第1位に四捨五入した百分率。PR が無ければ null
+ */
+function summarizeHumanReviewTargets(pullRequests) {
+  const mergedPullRequestCount = pullRequests.length
+  const targetCount = pullRequests.filter((pullRequest) =>
+    hasAnyLabel(pullRequest, [HUMAN_REVIEW_LABEL])
+  ).length
+  const targetPercentage =
+    mergedPullRequestCount === 0
+      ? null
+      : roundToOneDecimal((targetCount / mergedPullRequestCount) * 100)
+  return { mergedPullRequestCount, targetCount, targetPercentage }
+}
+
+/**
+ * @param {MergedPullRequest[]} pullRequests マージされた PR
+ * @returns {number} 人間レビューの対象のうち、`policy`・`cicd` のどちらかが付いた PR の件数。両方付いていても1件と数える
+ */
+function countPolicyOrCicdTargets(pullRequests) {
+  return pullRequests.filter(
+    (pullRequest) =>
+      hasAnyLabel(pullRequest, [HUMAN_REVIEW_LABEL]) &&
+      hasAnyLabel(pullRequest, POLICY_OR_CICD_LABELS)
+  ).length
+}
+
+/**
  * @param {number[]} numbers 1つ以上の数
  * @returns {number} 中央値。個数が偶数なら、真ん中の2つの平均
  */
@@ -462,12 +512,12 @@ function roundToOneDecimal(rawNumber) {
 }
 
 /**
- * @param {ClosedIssue} issue 調べる Issue
+ * @param {{ labels: { nodes: { name: string }[] } }} issueOrPullRequest 調べる Issue か PR
  * @param {string[]} labelNames 探すラベルの名前
  * @returns {boolean} どれか1つでも付いていれば true
  */
-function hasAnyLabel(issue, labelNames) {
-  return issue.labels.nodes.some(({ name }) => labelNames.includes(name))
+function hasAnyLabel(issueOrPullRequest, labelNames) {
+  return issueOrPullRequest.labels.nodes.some(({ name }) => labelNames.includes(name))
 }
 
 /**
