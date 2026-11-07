@@ -42,12 +42,7 @@ const LEFTOVER_MARKER_PATTERN = /\{\{|<!-- (?:if:|endif)/
 const FULL_WEEK_SUMMARY_KEYS = ['weekCount', 'average', 'min', 'max']
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 // TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる（#1644 も同じ）
-const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = [
-  'delegationFigure',
-  'speedFigure',
-  'reviewFigure',
-  'sizeFigure'
-]
+const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = ['delegationFigure', 'speedFigure', 'reviewFigure']
 
 // 縦棒の図の形（Issue #1642 で決めた値）。座標は viewBox の中の値で、図の幅は svg の width="100%" で画面に合わせる
 const CHART_BASE_WIDTH = 860
@@ -68,9 +63,28 @@ const CHART_HOLLOW_STROKE_WIDTH = 'var(--mb-border-w)'
 const CHART_COUNT_GAP_ABOVE_BAR = 8
 const CHART_LABEL_OFFSET_BELOW_BASELINE = 22
 const CHART_NOTE_OFFSET_BELOW_BASELINE = 40
+// 棒の上に件数と割合を2行で重ねるときの、件数の文字の下端を割合の文字の下端から離す距離
+const CHART_PERCENT_LINE_HEIGHT = 17
+// 図の上に大きな数字の専用の帯を取るときの、帯の高さ。棒が最大の高さでも、帯の文字と重ならない
+const CHART_HEADLINE_BAND_HEIGHT = 80
+const CHART_HEADLINE_LABEL_BASELINE_Y = 16
+const CHART_HEADLINE_VALUE_BASELINE_Y = 56
+const CHART_HEADLINE_COLUMN_WIDTH = 220
 const CHART_COUNT_TEXT_STYLE = { fontSize: 16, fontWeight: 700, color: CHART_INK_COLOR }
+const CHART_PERCENT_TEXT_STYLE = { fontSize: 13, fontWeight: 400, color: CHART_MUTED_COLOR }
+const CHART_HEADLINE_LABEL_TEXT_STYLE = { fontSize: 14, fontWeight: 400, color: CHART_MUTED_COLOR }
+const CHART_HEADLINE_VALUE_TEXT_STYLE = { fontSize: 34, fontWeight: 700, color: CHART_INK_COLOR }
+const CHART_HEADLINE_UNIT_FONT_SIZE = 16
 const CHART_LABEL_TEXT_STYLE = { fontSize: 14, fontWeight: 400, color: CHART_MUTED_COLOR }
 const CHART_NOTE_TEXT_STYLE = { fontSize: 12.5, fontWeight: 400, color: CHART_MUTED_COLOR }
+
+// 差分行数の帯。表示名と、件数を読む REPORT_FIELD_SPECS の name を組にして、並びと名前がずれないようにする
+const DIFF_LINE_BANDS = [
+  { bandLabel: '50行未満', countFieldName: 'under50Count' },
+  { bandLabel: '50〜199行', countFieldName: 'from50To199Count' },
+  { bandLabel: '200〜300行', countFieldName: 'from200To300Count' },
+  { bandLabel: '300行超', countFieldName: 'over300Count' }
+]
 
 // このスクリプトが JSON から読む項目のすべて
 const REPORT_FIELD_SPECS = [
@@ -103,7 +117,23 @@ const REPORT_FIELD_SPECS = [
     isValid: isCount
   },
   { name: 'medianChangedLines', jsonPath: 'pullRequestDiffLines.median', isValid: isNumberOrNull },
+  {
+    name: 'averageChangedLines',
+    jsonPath: 'pullRequestDiffLines.average',
+    isValid: isNumberOrNull
+  },
   { name: 'under50Count', jsonPath: 'pullRequestDiffLines.bandCounts.under50', isValid: isCount },
+  {
+    name: 'from50To199Count',
+    jsonPath: 'pullRequestDiffLines.bandCounts.from50To199',
+    isValid: isCount
+  },
+  {
+    name: 'from200To300Count',
+    jsonPath: 'pullRequestDiffLines.bandCounts.from200To300',
+    isValid: isCount
+  },
+  { name: 'over300Count', jsonPath: 'pullRequestDiffLines.bandCounts.over300', isValid: isCount },
   { name: 'humanReviewTargetCount', jsonPath: 'humanReviewTargets.targetCount', isValid: isCount },
   { name: 'policyOrCicdCount', jsonPath: 'humanReviewTargets.policyOrCicdCount', isValid: isCount },
   { name: 'hasProductCode', jsonPath: 'hasProductCode', isValid: isBoolean }
@@ -285,6 +315,7 @@ function isWeek(candidate) {
 function buildPlaceholderValues(readField) {
   const fullWeekSummary = readField('fullWeekSummary')
   const mergedPullRequestCount = readField('mergedPullRequestCount')
+  const hasMergedPullRequest = mergedPullRequestCount > 0
   const under50Count = readField('under50Count')
   const humanReviewTargetCount = readField('humanReviewTargetCount')
   return {
@@ -321,7 +352,10 @@ function buildPlaceholderValues(readField) {
     under50Percent: formatPercent({ count: under50Count, totalCount: mergedPullRequestCount }),
     // `if:noProductCode` の条件にだけ使う。app/・infra/ にコードが無いときだけ値を持つ
     noProductCode: readField('hasProductCode') ? null : 'true',
-    throughputFigure: buildThroughputFigure(readField('weeks'))
+    // `if:noMergedPullRequest` の条件にだけ使う。マージした PR が0件のときだけ値を持つ
+    noMergedPullRequest: hasMergedPullRequest ? null : 'true',
+    throughputFigure: buildThroughputFigure(readField('weeks')),
+    sizeFigure: hasMergedPullRequest ? buildSizeFigure(readField) : null
   }
 }
 
@@ -389,6 +423,7 @@ function buildThroughputFigure(weeks) {
     return {
       barAmount: workIssueCount,
       countText: String(workIssueCount),
+      percentText: null,
       labelText: `${formatMonthDay(weekStart)}〜`,
       noteText: isFullWeek ? null : `${countedDays}日間`,
       hoverText: isFullWeek
@@ -401,12 +436,53 @@ function buildThroughputFigure(weeks) {
 }
 
 /**
+ * マージした PR の差分行数を、4つの帯の縦棒と、中央値・平均の大きな数字にする。
+ *
+ * @param {(fieldName: string) => any} readField readReportFields が返す、確かめ済みの項目を読む関数
+ * @returns {string} svg 要素の HTML。マージした PR が1件以上のときだけ呼ぶ（0件のときの文言は、ひな形の `if:noMergedPullRequest` が持つ）
+ */
+function buildSizeFigure(readField) {
+  const mergedPullRequestCount = readField('mergedPullRequestCount')
+  const medianChangedLines = readField('medianChangedLines')
+  const averageChangedLines = readField('averageChangedLines')
+  const bars = DIFF_LINE_BANDS.map(({ bandLabel, countFieldName }) => {
+    const bandCount = readField(countFieldName)
+    const percentText = `${formatPercent({ count: bandCount, totalCount: mergedPullRequestCount })}%`
+    return {
+      barAmount: bandCount,
+      countText: String(bandCount),
+      percentText,
+      labelText: bandLabel,
+      noteText: null,
+      hoverText: `${bandLabel}：${bandCount}件（${percentText}）`,
+      isHollow: false
+    }
+  })
+  return renderVerticalBarChart({
+    bars,
+    chartTitle: '差分行数の帯ごとの PR 数',
+    headlineNumbers: [
+      {
+        labelText: '中央値',
+        valueText: formatNumber(medianChangedLines) ?? MISSING_VALUE_TEXT,
+        unitText: '行'
+      },
+      {
+        labelText: '平均',
+        valueText: formatNumber(averageChangedLines) ?? MISSING_VALUE_TEXT,
+        unitText: '行'
+      }
+    ]
+  })
+}
+
+/**
  * 棒の高さを最大の棒に対する比で決める縦棒の図を描く。
  *
- * @param {{ bars: { barAmount: number, countText: string, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }[], chartTitle: string }} chart 左から並べる棒（1本以上。barAmount は棒が表す量で、0 以上）と、図の題（aria-label の頭に付く）
- * @returns {string} svg 要素の HTML。棒が増えても文字が重ならないよう、viewBox の幅を広げる
+ * @param {{ bars: { barAmount: number, countText: string, percentText: string | null, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }[], chartTitle: string, headlineNumbers?: { labelText: string, valueText: string, unitText: string }[] }} chart 左から並べる棒（1本以上。barAmount は棒が表す量で、0 以上。percentText があれば件数の下に割合を重ねる）と、図の題（aria-label の頭に付く）と、図の上に大きな数字で並べる項目（省くと帯を取らない）
+ * @returns {string} svg 要素の HTML。棒が増えても文字が重ならないよう、viewBox の幅を広げる。大きな数字を並べるときは、図の上に大きな数字の専用の帯（CHART_HEADLINE_BAND_HEIGHT）を足し、viewBox の高さもその分伸ばす
  */
-function renderVerticalBarChart({ bars, chartTitle }) {
+function renderVerticalBarChart({ bars, chartTitle, headlineNumbers = [] }) {
   const columnWidth = Math.max(
     CHART_MIN_COLUMN_WIDTH,
     (CHART_BASE_WIDTH - 2 * CHART_MARGIN_X) / bars.length
@@ -421,22 +497,52 @@ function renderVerticalBarChart({ bars, chartTitle }) {
       barHeight: (bar.barAmount / largestBarAmount) * CHART_MAX_BAR_HEIGHT
     })
   )
-  const ariaLabel = `${chartTitle}：${bars.map(({ hoverText }) => hoverText).join('／')}`
+  const hasHeadlineBand = headlineNumbers.length > 0
+  const headlineBandHeight = hasHeadlineBand ? CHART_HEADLINE_BAND_HEIGHT : 0
+  const ariaLabelParts = [
+    ...headlineNumbers.map(
+      ({ labelText, valueText, unitText }) => `${labelText}${valueText}${unitText}`
+    ),
+    ...bars.map(({ hoverText }) => hoverText)
+  ]
+  const ariaLabel = `${chartTitle}：${ariaLabelParts.join('／')}`
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 ${formatCoordinate(chartWidth)} ${CHART_HEIGHT}" role="img" aria-label="${escapeHtml(ariaLabel)}">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 ${formatCoordinate(chartWidth)} ${CHART_HEIGHT + headlineBandHeight}" role="img" aria-label="${escapeHtml(ariaLabel)}">`,
+    ...headlineNumbers.map((headlineNumber, numberPosition) =>
+      renderHeadlineNumber({ headlineNumber, numberPosition })
+    ),
+    // 帯の無い図（週ごとの図）の svg を変えないよう、帯があるときだけ包んで下げる
+    hasHeadlineBand ? `<g transform="translate(0 ${headlineBandHeight})">` : '',
     `<line x1="${CHART_MARGIN_X}" y1="${CHART_BASELINE_Y}" x2="${formatCoordinate(chartWidth - CHART_MARGIN_X)}" y2="${CHART_BASELINE_Y}" style="stroke:${CHART_BASELINE_COLOR}" />`,
     ...barElements,
+    hasHeadlineBand ? '</g>' : '',
     '</svg>'
   ].join('')
 }
 
 /**
- * @param {{ bar: { countText: string, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }, centerX: number, barHeight: number }} barPlacement 描く棒と、棒の中心の x、棒の高さ（0 以上）
- * @returns {string} 棒・件数・棒の下の文字をまとめた g 要素の HTML。マウスを載せると hoverText が出る
+ * @param {{ headlineNumber: { labelText: string, valueText: string, unitText: string }, numberPosition: number }} headlineNumberPlacement 描く項目と、左から数えた位置
+ * @returns {string} 見出しと太字の大きな数字を、左から numberPosition 番目の列に置いた g 要素の HTML。単位は数字より小さく添える
+ */
+function renderHeadlineNumber({ headlineNumber, numberPosition }) {
+  const { labelText, valueText, unitText } = headlineNumber
+  const leftX = formatCoordinate(CHART_MARGIN_X + CHART_HEADLINE_COLUMN_WIDTH * numberPosition)
+  const labelStyle = CHART_HEADLINE_LABEL_TEXT_STYLE
+  const valueStyle = CHART_HEADLINE_VALUE_TEXT_STYLE
+  return [
+    '<g>',
+    `<text x="${leftX}" y="${CHART_HEADLINE_LABEL_BASELINE_Y}" font-size="${labelStyle.fontSize}" font-weight="${labelStyle.fontWeight}" style="fill:${labelStyle.color}">${escapeHtml(labelText)}</text>`,
+    `<text x="${leftX}" y="${CHART_HEADLINE_VALUE_BASELINE_Y}" font-size="${valueStyle.fontSize}" font-weight="${valueStyle.fontWeight}" style="fill:${valueStyle.color}">${escapeHtml(valueText)}<tspan font-size="${CHART_HEADLINE_UNIT_FONT_SIZE}" font-weight="${labelStyle.fontWeight}" dx="2">${escapeHtml(unitText)}</tspan></text>`,
+    '</g>'
+  ].join('')
+}
+
+/**
+ * @param {{ bar: { countText: string, percentText: string | null, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }, centerX: number, barHeight: number }} barPlacement 描く棒と、棒の中心の x、棒の高さ（0 以上）
+ * @returns {string} 棒・件数（と割合）・棒の下の文字をまとめた g 要素の HTML。マウスを載せると hoverText が出る
  */
 function renderBar({ bar, centerX, barHeight }) {
-  const { countText, labelText, noteText, hoverText, isHollow } = bar
-  const barTopY = CHART_BASELINE_Y - barHeight
+  const { labelText, noteText, hoverText, isHollow } = bar
   const noteElement =
     noteText === null
       ? ''
@@ -449,14 +555,9 @@ function renderBar({ bar, centerX, barHeight }) {
   return [
     '<g>',
     `<title>${escapeHtml(hoverText)}</title>`,
-    // 0 件の棒は高さが無く、角を丸める道筋も組めない。件数の「0」だけを基準線の上に出す
+    // 0 件の棒は高さが無く、角を丸める道筋も組めない。棒は描かず、件数（と割合）だけを基準線の上に出す
     barHeight > 0 ? renderBarShape({ centerX, barHeight, isHollow }) : '',
-    renderChartText({
-      text: countText,
-      centerX,
-      baselineY: barTopY - CHART_COUNT_GAP_ABOVE_BAR,
-      textStyle: CHART_COUNT_TEXT_STYLE
-    }),
+    renderBarAmountTexts({ bar, centerX, barTopY: CHART_BASELINE_Y - barHeight }),
     renderChartText({
       text: labelText,
       centerX,
@@ -465,6 +566,37 @@ function renderBar({ bar, centerX, barHeight }) {
     }),
     noteElement,
     '</g>'
+  ].join('')
+}
+
+/**
+ * @param {{ bar: { countText: string, percentText: string | null }, centerX: number, barTopY: number }} amountPlacement 件数と割合の文字、棒の中心の x、棒の上端の y
+ * @returns {string} 棒の上に置く件数の text 要素の HTML。割合があれば、件数の下に小さく添える
+ */
+function renderBarAmountTexts({ bar, centerX, barTopY }) {
+  const { countText, percentText } = bar
+  const lowestBaselineY = barTopY - CHART_COUNT_GAP_ABOVE_BAR
+  if (percentText === null) {
+    return renderChartText({
+      text: countText,
+      centerX,
+      baselineY: lowestBaselineY,
+      textStyle: CHART_COUNT_TEXT_STYLE
+    })
+  }
+  return [
+    renderChartText({
+      text: countText,
+      centerX,
+      baselineY: lowestBaselineY - CHART_PERCENT_LINE_HEIGHT,
+      textStyle: CHART_COUNT_TEXT_STYLE
+    }),
+    renderChartText({
+      text: percentText,
+      centerX,
+      baselineY: lowestBaselineY,
+      textStyle: CHART_PERCENT_TEXT_STYLE
+    })
   ].join('')
 }
 
