@@ -183,6 +183,29 @@ export function normalizeCommandStart(tokens) {
 }
 
 /**
+ * コマンド文字列を、実行される各段のトークン列に分ける。
+ *
+ * ヒアドキュメントの中身を外し、ステートメント・パイプ段に区切り、各段をトークンに分ける。
+ * 「どのコマンドが実行されるか」を段ごとに判定する呼び出し側が、この手順を写さず使う。
+ * 実行されるコマンド名を取り出すには、各段を `normalizeCommandStart` に通す。ここで通さないのは、
+ * 代入だけの段（`url=`）が通すと空になり、代入の中身を呼び出し側が見られなくなるため。
+ *
+ * コマンド置換の始まり（`$(`・バッククォート）も段の区切りとして読む。区切らないと `url=$(gh issue create …)` の
+ * 語頭 `url=$(gh` が環境変数の代入として剥がされ、`gh` を見失う。置換の始まりは `;` に置き換える。
+ * 引用符の内側は `splitStatements` が区切らないので、そこにある置換の始まりは、`;` のまま同じ段のトークンに残る
+ * （改行にしないのは、`tokenize` が改行を空白として潰し、目印が消えるため）。
+ *
+ * @param {string} command bashコマンド文字列
+ * @returns {string[][]} 段ごとのトークン列（左から順）。文字列でなければ空の配列
+ */
+export function splitCommandStageTokens(command) {
+  const { commandText } = splitHeredoc(command)
+  return splitStatements(commandText.replaceAll('$(', ';').replaceAll('`', ';'))
+    .flatMap(splitPipeStages)
+    .map(tokenize)
+}
+
+/**
  * その位置から始まる区切り文字を返す。区切りとして働かない `&` は除く。
  *
  * @param {string} text 分割対象のテキスト

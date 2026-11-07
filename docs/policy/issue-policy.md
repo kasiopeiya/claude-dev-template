@@ -28,6 +28,7 @@ hook:
       '.claude/skills/doc-consistency/**/*.md',
       '.claude/skills/slim-always-loaded-docs/**/*.md',
       '.claude/skills/sre-prr/**/*.md',
+      '.claude/hooks/label-ai-filed-issue.mjs',
       '.claude/skills/auto-dev/**/*.md',
       '.claude/skills/perf-report/**/*.md',
       '.claude/skills/auto-fix-ci/**/*.md',
@@ -90,6 +91,7 @@ AIエージェントが、Issue を起票する・Issue のラベルを付け替
 | `human-ai-collaboration`                 | 人間と AI が対話しながら成果物を作る Issue                                                                    | 人間と AI が対話しながら成果物を作るとき、`ready-for-human` にだけ重ねる（例：`/elicit-requirements` で要件定義書を書く Issue）。実機確認や新しいセッションでの確認のような「確かめる」作業には付けない。起票する Skill が付ける（#1586）                                     |
 | `issue:checked`                          | `/issue-check` が一度監査した。いま妥当である保証ではない                                                     | `/issue-check` が判定を出した Issue に、判定が何であれ貼る。監査できなかった・飛ばした Issue には貼らない                                                                                                                                                                     |
 | `broken-window`                          | AI が作業中に見つけ、その場で直さずに起票した問題                                                             | AI が本筋外の問題を見つけて起票するとき（CLAUDE.md「本筋外の課題は起票する」と、それを引いて確認なしに起票するレビュー系 Skill）。人間が依頼した要望には付けない                                                                                                              |
+| `ai-filed-issue`                         | AI の Bash から起票された Issue                                                                               | `label-ai-filed-issue.mjs` が付ける。印が無いことを、人間が起票したとは読まない                                                                                                                                                                                               |
 | `human-correction`                       | 人間が AI の誤りを指摘して起票した Issue。件数の増減は AI の誤りの増減を表さない                              | CLAUDE.md「本筋外の課題は起票する」の人間からの指摘を起票するとき。`broken-window` に重ねる                                                                                                                                                                                   |
 | `harness`                                | ハーネスを変える Issue。ハーネスの手直しをプロダクト開発と分けて一覧する印                                    | 下の「`harness` を付ける条件」に当たるとき。起票する Skill が付ける                                                                                                                                                                                                           |
 | `opus`                                   | 実行セッション全体を最上位モデルで回す Issue。モデルを選ぶ人間が見る印                                        | 下の「`opus` を付ける条件」に当たるとき。3択に重ねる                                                                                                                                                                                                                          |
