@@ -1,6 +1,6 @@
 ---
 name: perf-report
-description: 指定した期間の作業 Issue の週次件数と注記を HTML 1枚にする。経営寄りの読み手へ AI 駆動開発の実績を報告するときに使う。「perf-report」「実績レポートを作って」と指示されたとき。
+description: 指定した期間の作業 Issue の週次件数と委譲の度合い、注記を HTML 1枚にする。経営寄りの読み手へ AI 駆動開発の実績を報告するときに使う。「perf-report」「実績レポートを作って」と指示されたとき。
 argument-hint: '[--from YYYY-MM-DD] [--to YYYY-MM-DD]（省略すると直近1か月）'
 disable-model-invocation: true
 ---
@@ -24,7 +24,7 @@ npm run --silent perf-report -- $ARGUMENTS
 `.claude/skills/html/SKILL.md` の「デザインシステム」「図」の規則で書く。同じ Skill の「基本構成」と目次は使わず、下の順で1枚にする。用語リストは置かない。
 
 - **置き場**：`tmp/perf-report/{yyyymmdd}-perf-report-{from}-{to}.html`。`.claude/skills/html/design-system/` を HTML と同じフォルダへコピーする（既にあれば上書きしない）
-- **順番**：見出し → リード文 → 図 → 定義 → 読み方 → 限界
+- **順番**：見出し → リード文 → 図 → 委譲の度合い → 定義 → 読み方 → 限界
 
 **リード文**には、期間、作業 Issue の件数（`workIssueCount`）、全日そろった週の平均と幅（`fullWeekSummary`）を書く。`fullWeekSummary` が `null` なら、全日そろった週が無いので平均を出せないと書く。全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう。今日を含む週は、まだ数え終えていないので含めない。
 
@@ -35,6 +35,22 @@ npm run --silent perf-report -- $ARGUMENTS
 - 全日そろっていない週は、白地に破線の枠で描き、棒の下に数えた範囲（`countedFrom`〜`countedTo`）を添える。どちらの描き方かを `figcaption` で説明し、期間の端で切れた週と今日を含む週が破線になることも書く
 - 全日そろった週の平均を、灰色の破線で引いて値を添える。`fullWeekSummary` が `null` なら線を引かない
 - 有彩色を使わない
+
+**委譲の度合い**は、作業 Issue を分類した件数（`delegationCounts`）を次の表で示す。件数の合計は `workIssueCount` と一致する。
+
+| 分類     | 件数（`delegationCounts`） | ラベル                                                                 | 定義元                                                |
+| -------- | -------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| AI単独   | `aiOnly`                   | `ai-fixable`（`issue:decided` の有無は問わない）                       | `docs/policy/issue-policy.md`「Issue に付けるラベル」 |
+| 共同     | `collaboration`            | `ready-for-human` ＋ `human-ai-collaboration`                          | `docs/policy/issue-policy.md`「Issue に付けるラベル」 |
+| 人間単独 | `humanOnly`                | `ready-for-human` のみ                                                 | `docs/policy/issue-policy.md`「Issue に付けるラベル」 |
+| 分類なし | `unclassified`             | 上のどれにも当たらない（3択なし、`needs-human-decision` のまま close） | `scripts/perf-report.mjs`                             |
+
+表の下に、次の2文をそのまま載せる。
+
+- Issue を作るまでの相談は含まない
+- ラベルは着手前の分類で、実際の作業の記録ではない
+
+`collaboration` が `0` のときは、表の下に「対話で作った成果物がこの期間に無い」とも書く。
 
 **定義**は、作業 Issue を「GitHub で完了（completed）として close された Issue から、次の表のものを除いたもの」と書き、表を置く。週は日本時間の月曜始まりである。
 
