@@ -146,6 +146,7 @@ flowchart TD
 sequenceDiagram
     actor U as 👤 ユーザー・有識者
     actor D as 👥 開発者
+    actor C as 🏢 顧客
     participant AI as 🤖 AI
     participant B as 📗 背景情報・用語集（Markdown）
     participant K as 📚 議事録・要件管理ツール
@@ -172,6 +173,16 @@ sequenceDiagram
     end
 
     D->>AI: 記載段階8の Issue 番号を渡す
-    AI->>R: 文書全体の凍結判定を行い、合格すれば凍結する
+    AI->>R: 文書全体の凍結判定を行う（合格すれば凍結可）
+    D->>C: 凍結可の要件定義書をレビューに回す
+
+    loop 顧客が合意するまで
+        C->>D: 文書全体をレビューして指摘する
+        D->>AI: 指摘を Issue にして直させ、凍結判定を打ち直させる
+        AI->>R: 直して、凍結可かを判定し直す
+    end
+
+    C->>D: 合意する
+    D->>R: 記載段階8の Issue に合意の相手と日付を記録する（真の凍結）
     R-->>AI: 設計・実装のインプットになる（「F-01を実装する」とIDで指せる）
 ```

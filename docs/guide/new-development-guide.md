@@ -24,8 +24,9 @@ stateDiagram-v2
     state "📄 インプット資料（RFC等）" as Input
     state "🗂️ 記載段階ごとの Issue" as Staged
     state "📝 requirements.md 執筆中（記載段階1〜7）" as Writing
-    state "🔍 凍結判定（記載段階8）" as Judge
-    state "🔒 凍結済 requirements.md" as Frozen
+    state "🔍 凍結判定（記載段階8・AI）" as Judge
+    state "👥 顧客レビュー" as Review
+    state "🔒 真の凍結済 requirements.md" as Frozen
     state "⚙️ 技術スタックADR" as Adr
     state "🚩 起点Issue群" as Issues
 
@@ -35,7 +36,9 @@ stateDiagram-v2
     Writing --> Writing : /elicit-requirements Issue番号（1段階ずつ、PRのマージで次へ）
     Writing --> Judge : 記載段階7のPRがマージされる
     Judge --> Writing : 前の段階の判定を変える指摘は、その段階のIssueを開き直す
-    Judge --> Frozen : 凍結条件を満たす
+    Judge --> Review : 凍結条件を満たす（凍結可）
+    Review --> Review : 顧客の指摘を直し、/requirements-reviewを打ち直す
+    Review --> Frozen : 顧客が合意する
     Frozen --> Adr : /decide-tech-stack
     Adr --> Issues : 起点Issueを作る
     Issues --> [*] : 各Issue単位の開発フローへ
@@ -45,19 +48,21 @@ stateDiagram-v2
 | --- | ------------------------- | ---------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | 1   | 記載段階 Issue を起票する | 顧客からのインプット資料（RFC等）  | 記載段階ごとの Issue（ルート「要件定義」の下）。記載段階1が始まる           | `/elicit-requirements <入力資料>`（パスか要求テキスト）          |
 | 2   | 記載段階ごとに書く        | 記載段階 Issue（記載段階1〜7）     | `requirements.md` の該当節と仕分け台帳（仮決めがあれば別紙）。段階ごとに PR | `/elicit-requirements <Issue番号>`（その段階の Issue）           |
-| 3   | 凍結する                  | 記載段階8の Issue                  | 凍結済 `requirements.md`（合否判定が凍結可）                                | `/elicit-requirements <Issue番号>`（記載段階8の Issue）          |
-| 4   | 基盤技術を決める          | `requirements.md`                  | 初期技術スタックADR（`docs/adr/NNN-*.md`）                                  | `/decide-tech-stack docs/requirements.md`                        |
-| 5   | 起点Issue を作る          | `requirements.md`＋技術スタックADR | 起点Issue群（GitHub・依存順つき）                                           | `新規開発ガイドの「起票する起点Issue」に従って起点Issueを作って` |
+| 3   | 凍結判定を通す            | 記載段階8の Issue                  | 合否判定が凍結可の `requirements.md`                                        | `/elicit-requirements <Issue番号>`（記載段階8の Issue）          |
+| 4   | 顧客レビューで真の凍結    | 凍結可の `requirements.md`         | 真の凍結済 `requirements.md`                                                | 人間の作業（顧客に文書全体をレビューしてもらい、合意を取る）     |
+| 5   | 基盤技術を決める          | 真の凍結済 `requirements.md`       | 初期技術スタックADR（`docs/adr/NNN-*.md`）                                  | `/decide-tech-stack docs/requirements.md`                        |
+| 6   | 起点Issue を作る          | `requirements.md`＋技術スタックADR | 起点Issue群（GitHub・依存順つき）                                           | `新規開発ガイドの「起票する起点Issue」に従って起点Issueを作って` |
 
 - **ステップ2は記載段階ごとに繰り返す**：1段階は、その段階の項目だけのインタビュー、`/requirements-review --stage` による判定、PR 作成までを同じセッションで進める。PR は自動マージされないので、開発者がレビューしてマージする。マージで Issue が閉じたら、次の段階の Issue 番号で打ち直す。
-- **レビューで要修正なら**：記載段階の途中の指摘は、その段階で直す。前の段階で下した判定（制約と前提の判定・スコープ外の区分など）を変える指摘は、前の記載段階の Issue を開き直して直す。凍結可になってから基盤技術の決定へ進む（判定基準は [requirements-doc-policy](../policy/requirements-doc-policy.md)）。
+- **ステップ4は人間の作業**：顧客の指摘は Issue にして PR で直し、凍結可を取り直してから顧客レビューへ戻す。顧客が合意したら、記載段階8の Issue に合意の相手と日付をコメントする。これが真の凍結の記録である。
+- **レビューで要修正なら**：記載段階の途中の指摘は、その段階で直す。前の段階で下した判定（制約と前提の判定・スコープ外の区分など）を変える指摘は、前の記載段階の Issue を開き直して直す。凍結可になった後は顧客レビューへ回し、顧客が合意して真の凍結になってから基盤技術の決定へ進む（判定基準と顧客レビューの扱いは [requirements-doc-policy](../policy/requirements-doc-policy.md)）。
 - **基盤技術を決める／保留する判定基準**：「決めないと足場（静的解析・CI・デプロイ）と最初の曳光弾が組めないか」で決める/保留を分ける。足場に効くもの（言語・クラウド・IaC・CI/CD 等）は決め、曳光弾でスタブできる詳細（FW・ORM・DBスキーマ・外部サービス）はあえて保留する——コアから着手し、詳細は境界の外に置いて決定を遅らせるためである。決める基盤項目の全リストは `/decide-tech-stack` が網羅する。決定は ADR に残す。**境界の置き方（アプリアーキテクチャ・ディレクトリ構成）はここでは決めない**——[全体構造設計Issue](#全体構造設計issue)が持つ。
 - **実装の置き場**：`app/`・`infra/` は空の状態から始める。構造・命名・テストの粒度は [`samples/`](../../samples/README.md) の参照実装を手本にする（構成そのものの方針は directory-structure-guide が定める）。
 - **起点Issue はモデルを最大にして作る**：使用可能な最も性能の良いモデルを選び、effort も最大にして実行する。ここでの切り分けが以降のすべてのIssueの土台になり、誤ると作った Issue が丸ごと作り直しになるからである。フェーズごとのモデルの使い分けは[開発フローガイド](development-flow.md)にある。
 
 ## 起票する起点Issue
 
-ステップ5は、要件定義書と技術スタックADRを読み、**曳光弾の経路を選んだうえで、下表のIssueを依存順に一度で起票する**。Issue化と経路選定を分けると「機能のIssueは立っているが曳光弾のIssueがまだ無い」状態が生まれ、その隙にissue追従で機能を1つずつ完成させる水平な積み上げが始まる。
+ステップ6は、要件定義書と技術スタックADRを読み、**曳光弾の経路を選んだうえで、下表のIssueを依存順に一度で起票する**。Issue化と経路選定を分けると「機能のIssueは立っているが曳光弾のIssueがまだ無い」状態が生まれ、その隙にissue追従で機能を1つずつ完成させる水平な積み上げが始まる。
 
 > [!IMPORTANT]
 > **（AI・必須）** 起点Issueは着手単位ではない。`/grill-me` で仕様を詰め、sub-issue（縦スライス）に割ってから実装する**親Issue**である。
