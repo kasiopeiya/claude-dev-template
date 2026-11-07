@@ -7,6 +7,7 @@ hook:
       'scripts/move-issue-card.mjs',
       'scripts/decide-issue-start.mjs',
       'scripts/perf-report.mjs',
+      'scripts/perf-report-html.mjs',
       'scripts/auto-programmer/README.md',
       'scripts/ci/doc-audit-weekly-issue.mjs',
       'scripts/ci/code-policy-weekly-issue.mjs',
