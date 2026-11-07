@@ -2,7 +2,7 @@
 // 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとと委譲の分類ごとに数え、
 //   同じ期間にマージした PR の差分行数を帯ごとに数え、人間レビューの対象の件数を全体と週ごとに数え、
 //   AI 単独の Issue の着手から PR が出るまでの時間をまとめて、JSON で標準出力に返す。
-//   `/perf-report` が、この結果を HTML 1枚にする。
+//   `scripts/perf-report-html.mjs` が、この結果でひな形を埋めて HTML 1枚にする（`/perf-report`）。
 //
 // 設計意図（WHY）:
 // - 数える処理をスクリプトに置く。報告の数字は誰が打っても同じでなければならず、AI に数えさせると打つたびにぶれる。
@@ -22,6 +22,7 @@
 //   278 件で確かめると、1回 100 件では 62 件が空になり、1・10・25・50 件では同じ結果だった。25 件は 50 件に余裕を持たせた値である。
 // - Status 履歴は Issue ごとに先頭の 100 件だけ読む。最初の `In Review` までに 100 回も動いた Issue は想定しない。
 // - hasProductCode も返す。`/perf-report` は、app/・infra/ にコードが無いときだけ「本番では未検証」と注記する。
+// - generatedOn（今日）も返す。`perf-report-html.mjs` が出力のファイル名に使う。
 // - 日付は固定幅の文字列のまま大小を比べる。年を 4 桁に収まる範囲へ絞るのはそのためで、外れると週を進めるループが終わらない。
 //
 // 使い方: npm run --silent perf-report -- [--from YYYY-MM-DD] [--to YYYY-MM-DD]
@@ -444,6 +445,7 @@ function buildReport({ repository, from, to, today, weeklyTallies }) {
   return {
     repository,
     period: { from, to, timezone: REPORT_TIMEZONE_NAME },
+    generatedOn: today,
     closedIssueCount: workIssueCount + excludedIssueCount,
     workIssueCount,
     excludedCounts,
