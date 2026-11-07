@@ -7,7 +7,7 @@
 //   同じ JSON から同じ HTML を出すためである（docs/policy/refined-engineer-judgment-principles.md「確率論より決定論」）。
 // - 図を除く HTML をこのスクリプトに持たせない。ひな形を HTML のまま開いて見た目を確かめ・直せるようにし、文言を直すたびにコードを直さずに済ませる。
 //   `perf-report.mjs` にも足さない。あちらは取得と集計を担い、すでに大きい。
-// - 図の svg はこのスクリプトが描く。ひな形に座標を書くと、棒の数が JSON で変わる図を表せないためである。縦棒の図は renderVerticalBarChart 1つで描き、基準線・棒・文字をそろえる。
+// - 図の svg はこのスクリプトが描く。ひな形に座標を書くと、棒の数が JSON で変わる図を表せないためである。縦棒の図は renderVerticalBarChart、横棒の図は renderHorizontalBarChart で描き、それぞれ基準線・棒・文字をそろえる。
 // - 同じ JSON なら出力先まで同じにするため、ここでは今日の日付を取らない。ファイル名の日付は JSON の `generatedOn` を使う。
 // - 値が無いときは null で表し、本文には `—` を出す（`NaN`・`null` を出さない）。0 は有効な値なので、無いこととは区別する。
 // - ひな形の `<!-- if:名前 -->〜<!-- endif -->` は、その名前の値が null のときに消す。消える部分の中の `{{名前}}` は先に消えるので、値が要らない。
@@ -42,7 +42,7 @@ const LEFTOVER_MARKER_PATTERN = /\{\{|<!-- (?:if:|endif)/
 const FULL_WEEK_SUMMARY_KEYS = ['weekCount', 'average', 'min', 'max']
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 // TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる（#1644 も同じ）
-const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = ['delegationFigure', 'speedFigure', 'reviewFigure']
+const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = ['speedFigure', 'reviewFigure']
 
 // 縦棒の図の形（Issue #1642 で決めた値）。座標は viewBox の中の値で、図の幅は svg の width="100%" で画面に合わせる
 const CHART_BASE_WIDTH = 860
@@ -77,6 +77,54 @@ const CHART_HEADLINE_VALUE_TEXT_STYLE = { fontSize: 34, fontWeight: 700, color: 
 const CHART_HEADLINE_UNIT_FONT_SIZE = 16
 const CHART_LABEL_TEXT_STYLE = { fontSize: 14, fontWeight: 400, color: CHART_MUTED_COLOR }
 const CHART_NOTE_TEXT_STYLE = { fontSize: 12.5, fontWeight: 400, color: CHART_MUTED_COLOR }
+// 等幅フォントも、色や線と同じくデザインシステムの変数で指す。図だけ別のフォントで残さないため
+const CHART_MONOSPACE_FONT_FAMILY = 'var(--mb-font-mono)'
+
+// 横棒の図の形（Issue #1658 で決めた値）。viewBox の幅は縦棒と同じ CHART_BASE_WIDTH で、色と線は縦棒と同じ変数で指す
+const HORIZONTAL_CHART_BAR_THICKNESS = 24
+const HORIZONTAL_CHART_ROW_SPACING = 58
+const HORIZONTAL_CHART_BAR_START_X = 340
+const HORIZONTAL_CHART_MAX_BAR_LENGTH = 350
+const HORIZONTAL_CHART_PADDING_Y = 20
+const HORIZONTAL_CHART_TEXT_GAP_AFTER_BAR = 8
+// 左の文字は、棒の始まりの手前で右にそろえる。左にそろえると、40字ほどの等幅のラベル名（250〜305px）が棒の始まりや「0件」に届く
+const HORIZONTAL_CHART_TEXT_RIGHT_X = HORIZONTAL_CHART_BAR_START_X - 20
+// 分類名とラベル名を行の中心に対して上下に振り分ける
+const HORIZONTAL_CHART_CATEGORY_NAME_OFFSET_FROM_ROW_CENTER = -2
+const HORIZONTAL_CHART_ISSUE_LABEL_RULE_OFFSET_FROM_ROW_CENTER = 14
+const HORIZONTAL_CHART_COUNT_OFFSET_FROM_ROW_CENTER = 6
+const HORIZONTAL_CHART_BASELINE_OVERHANG = 8
+const CHART_CATEGORY_NAME_TEXT_STYLE = { fontSize: 15, fontWeight: 700, color: CHART_INK_COLOR }
+const CHART_ISSUE_LABEL_RULE_TEXT_STYLE = {
+  fontSize: 12.5,
+  fontWeight: 400,
+  color: CHART_MUTED_COLOR,
+  fontFamily: CHART_MONOSPACE_FONT_FAMILY
+}
+// 件数のすぐ後ろに続ける割合や添え書き
+const CHART_COUNT_TRAILING_TEXT_STYLE = { fontSize: 13, fontWeight: 400, color: CHART_MUTED_COLOR }
+const CHART_COUNT_TRAILING_TEXT_GAP = 8
+
+// 委譲の度合いの図の行。上から並べる順で、delegationCategory は JSON の delegationCounts のキー。issueLabelRule は、どのラベルの Issue をその分類に数えるか
+const DELEGATION_ROWS = [
+  { delegationCategory: 'aiOnly', categoryName: 'AI 単独', issueLabelRule: 'ai-fixable' },
+  {
+    delegationCategory: 'collaboration',
+    categoryName: '共同',
+    issueLabelRule: 'ready-for-human ＋ human-ai-collaboration',
+    zeroCountNoteText: '対話で作った成果物がこの期間に無い'
+  },
+  {
+    delegationCategory: 'humanOnly',
+    categoryName: '人間単独',
+    issueLabelRule: 'ready-for-human のみ'
+  },
+  {
+    delegationCategory: 'unclassified',
+    categoryName: '分類なし',
+    issueLabelRule: '上のどれにも当たらない'
+  }
+]
 
 // 差分行数の帯。表示名と、件数を読む REPORT_FIELD_SPECS の name を組にして、並びと名前がずれないようにする
 const DIFF_LINE_BANDS = [
@@ -95,6 +143,9 @@ const REPORT_FIELD_SPECS = [
   { name: 'workIssueCount', jsonPath: 'workIssueCount', isValid: isCount },
   { name: 'weeks', jsonPath: 'weeks', isValid: isWeekList },
   { name: 'aiOnlyCount', jsonPath: 'delegationCounts.aiOnly', isValid: isCount },
+  { name: 'collaborationCount', jsonPath: 'delegationCounts.collaboration', isValid: isCount },
+  { name: 'humanOnlyCount', jsonPath: 'delegationCounts.humanOnly', isValid: isCount },
+  { name: 'unclassifiedCount', jsonPath: 'delegationCounts.unclassified', isValid: isCount },
   { name: 'fullWeekSummary', jsonPath: 'fullWeekSummary', isValid: isFullWeekSummaryOrNull },
   {
     name: 'targetIssueCount',
@@ -318,6 +369,7 @@ function buildPlaceholderValues(readField) {
   const hasMergedPullRequest = mergedPullRequestCount > 0
   const under50Count = readField('under50Count')
   const humanReviewTargetCount = readField('humanReviewTargetCount')
+  const workIssueCount = readField('workIssueCount')
   return {
     // まだ描かない図の場所を空にする。後ろの実際の値が上書きするよう、先頭に置く
     ...Object.fromEntries(
@@ -326,11 +378,11 @@ function buildPlaceholderValues(readField) {
     repository: escapeHtml(readField('repository')),
     from: escapeHtml(readField('from')),
     to: escapeHtml(readField('to')),
-    workIssueCount: formatNumber(readField('workIssueCount')),
+    workIssueCount: formatNumber(workIssueCount),
     aiOnlyCount: formatNumber(readField('aiOnlyCount')),
     aiOnlyPercent: formatPercent({
       count: readField('aiOnlyCount'),
-      totalCount: readField('workIssueCount')
+      totalCount: workIssueCount
     }),
     // 全日そろった週が無いとき、週数は 0 週である。平均と幅は出せない
     fullWeekCount: formatNumber(fullWeekSummary?.weekCount ?? 0),
@@ -355,7 +407,31 @@ function buildPlaceholderValues(readField) {
     // `if:noMergedPullRequest` の条件にだけ使う。マージした PR が0件のときだけ値を持つ
     noMergedPullRequest: hasMergedPullRequest ? null : 'true',
     throughputFigure: buildThroughputFigure(readField('weeks')),
-    sizeFigure: hasMergedPullRequest ? buildSizeFigure(readField) : null
+    sizeFigure: hasMergedPullRequest ? buildSizeFigure(readField) : null,
+    ...buildDelegationPlaceholderValues(readField)
+  }
+}
+
+/**
+ * 委譲の度合いの図の場所に入れる値を作る。作業 Issue が無い期間は図を null にして、ひな形の `if:delegationFigure` の囲み（図と説明）を消し、`if:noWorkIssue` の文に差し替える。
+ *
+ * @param {(fieldName: string) => any} readField readReportFields が返す、確かめ済みの項目を読む関数
+ * @returns {{ delegationFigure: string | null, noWorkIssue: string | null }} 図の svg（作業 Issue が無ければ null）と、`if:noWorkIssue` の条件（作業 Issue が無いときだけ値を持つ）
+ */
+function buildDelegationPlaceholderValues(readField) {
+  const workIssueCount = readField('workIssueCount')
+  if (workIssueCount === 0) return { delegationFigure: null, noWorkIssue: 'true' }
+  return {
+    delegationFigure: buildDelegationFigure({
+      workIssueCount,
+      delegationCounts: {
+        aiOnly: readField('aiOnlyCount'),
+        collaboration: readField('collaborationCount'),
+        humanOnly: readField('humanOnlyCount'),
+        unclassified: readField('unclassifiedCount')
+      }
+    }),
+    noWorkIssue: null
   }
 }
 
@@ -477,6 +553,32 @@ function buildSizeFigure(readField) {
 }
 
 /**
+ * 作業 Issue を AI 単独・共同・人間単独・分類なしに分けた件数を、横棒の図にする。
+ * 共同が0件のときは棒の代わりに、対話で作った成果物が無いと添える。
+ *
+ * @param {{ workIssueCount: number, delegationCounts: Record<string, number> }} delegation 作業 Issue の件数（1以上）と、DELEGATION_ROWS の delegationCategory ごとの件数
+ * @returns {string} svg 要素の HTML
+ */
+function buildDelegationFigure({ workIssueCount, delegationCounts }) {
+  const bars = DELEGATION_ROWS.map(
+    ({ delegationCategory, categoryName, issueLabelRule, zeroCountNoteText }) => {
+      const barAmount = delegationCounts[delegationCategory]
+      const percentText = `${formatPercent({ count: barAmount, totalCount: workIssueCount })}%`
+      const trailingText = barAmount === 0 && zeroCountNoteText ? zeroCountNoteText : percentText
+      return {
+        barAmount,
+        categoryName,
+        issueLabelRule,
+        countText: `${barAmount}件`,
+        trailingText,
+        hoverText: `${categoryName}（${issueLabelRule}）：${barAmount}件・${trailingText}`
+      }
+    }
+  )
+  return renderHorizontalBarChart({ bars, chartTitle: 'AI に任せた度合い' })
+}
+
+/**
  * 棒の高さを最大の棒に対する比で決める縦棒の図を描く。
  *
  * @param {{ bars: { barAmount: number, countText: string, percentText: string | null, labelText: string, noteText: string | null, hoverText: string, isHollow: boolean }[], chartTitle: string, headlineNumbers?: { labelText: string, valueText: string, unitText: string }[] }} chart 左から並べる棒（1本以上。barAmount は棒が表す量で、0 以上。percentText があれば件数の下に割合を重ねる）と、図の題（aria-label の頭に付く）と、図の上に大きな数字で並べる項目（省くと帯を取らない）
@@ -548,7 +650,7 @@ function renderBar({ bar, centerX, barHeight }) {
       ? ''
       : renderChartText({
           text: noteText,
-          centerX,
+          anchorX: centerX,
           baselineY: CHART_BASELINE_Y + CHART_NOTE_OFFSET_BELOW_BASELINE,
           textStyle: CHART_NOTE_TEXT_STYLE
         })
@@ -560,7 +662,7 @@ function renderBar({ bar, centerX, barHeight }) {
     renderBarAmountTexts({ bar, centerX, barTopY: CHART_BASELINE_Y - barHeight }),
     renderChartText({
       text: labelText,
-      centerX,
+      anchorX: centerX,
       baselineY: CHART_BASELINE_Y + CHART_LABEL_OFFSET_BELOW_BASELINE,
       textStyle: CHART_LABEL_TEXT_STYLE
     }),
@@ -579,7 +681,7 @@ function renderBarAmountTexts({ bar, centerX, barTopY }) {
   if (percentText === null) {
     return renderChartText({
       text: countText,
-      centerX,
+      anchorX: centerX,
       baselineY: lowestBaselineY,
       textStyle: CHART_COUNT_TEXT_STYLE
     })
@@ -587,13 +689,13 @@ function renderBarAmountTexts({ bar, centerX, barTopY }) {
   return [
     renderChartText({
       text: countText,
-      centerX,
+      anchorX: centerX,
       baselineY: lowestBaselineY - CHART_PERCENT_LINE_HEIGHT,
       textStyle: CHART_COUNT_TEXT_STYLE
     }),
     renderChartText({
       text: percentText,
-      centerX,
+      anchorX: centerX,
       baselineY: lowestBaselineY,
       textStyle: CHART_PERCENT_TEXT_STYLE
     })
@@ -626,12 +728,123 @@ function renderBarShape({ centerX, barHeight, isHollow }) {
 }
 
 /**
- * @param {{ text: string, centerX: number, baselineY: number, textStyle: { fontSize: number, fontWeight: number, color: string } }} chartText 文字と、中央に置く x、文字の下端の y、見た目
+ * 棒の長さを最大の棒に対する比で決める横棒の図を描く。行は上から並べ、左に分類名とラベル名、棒の右に件数と添え書きを置く。
+ *
+ * @param {{ bars: { barAmount: number, categoryName: string, issueLabelRule: string, countText: string, trailingText: string, hoverText: string }[], chartTitle: string }} chart 上から並べる行（1行以上。barAmount は棒が表す量で、0 以上）と、図の題（aria-label の頭に付く）
+ * @returns {string} svg 要素の HTML
+ */
+function renderHorizontalBarChart({ bars, chartTitle }) {
+  // 全部の棒が 0 のときも、0 で割らずに縮尺を決める
+  const largestBarAmount = Math.max(1, ...bars.map(({ barAmount }) => barAmount))
+  const rowElements = bars.map((bar, barPosition) =>
+    renderHorizontalBarRow({
+      bar,
+      rowTopY: HORIZONTAL_CHART_PADDING_Y + HORIZONTAL_CHART_ROW_SPACING * barPosition,
+      barLength: (bar.barAmount / largestBarAmount) * HORIZONTAL_CHART_MAX_BAR_LENGTH
+    })
+  )
+  const chartHeight =
+    2 * HORIZONTAL_CHART_PADDING_Y +
+    HORIZONTAL_CHART_ROW_SPACING * (bars.length - 1) +
+    HORIZONTAL_CHART_BAR_THICKNESS
+  const ariaLabel = `${chartTitle}：${bars.map(({ hoverText }) => hoverText).join('／')}`
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 ${CHART_BASE_WIDTH} ${formatCoordinate(chartHeight)}" role="img" aria-label="${escapeHtml(ariaLabel)}">`,
+    // 棒の始まりに縦の基準線を引く。0 件の行も、始まりの位置が分かる
+    `<line x1="${HORIZONTAL_CHART_BAR_START_X}" y1="${HORIZONTAL_CHART_PADDING_Y - HORIZONTAL_CHART_BASELINE_OVERHANG}" x2="${HORIZONTAL_CHART_BAR_START_X}" y2="${formatCoordinate(chartHeight - HORIZONTAL_CHART_PADDING_Y + HORIZONTAL_CHART_BASELINE_OVERHANG)}" style="stroke:${CHART_BASELINE_COLOR}" />`,
+    ...rowElements,
+    '</svg>'
+  ].join('')
+}
+
+/**
+ * @param {{ bar: { categoryName: string, issueLabelRule: string, countText: string, trailingText: string, hoverText: string }, rowTopY: number, barLength: number }} barRow 描く行と、行の上端の y、棒の長さ（0 以上）
+ * @returns {string} 棒・分類名・ラベル名・件数をまとめた g 要素の HTML。マウスを載せると hoverText が出る
+ */
+function renderHorizontalBarRow({ bar, rowTopY, barLength }) {
+  const { categoryName, issueLabelRule, countText, trailingText, hoverText } = bar
+  const rowCenterY = rowTopY + HORIZONTAL_CHART_BAR_THICKNESS / 2
+  return [
+    '<g>',
+    `<title>${escapeHtml(hoverText)}</title>`,
+    // 0 件の棒は長さが無く、角を丸める道筋も組めない。件数と添え書きだけを棒の始まりの右に出す
+    barLength > 0 ? renderHorizontalBarShape({ rowTopY, barLength }) : '',
+    renderChartText({
+      text: categoryName,
+      anchorX: HORIZONTAL_CHART_TEXT_RIGHT_X,
+      baselineY: rowCenterY + HORIZONTAL_CHART_CATEGORY_NAME_OFFSET_FROM_ROW_CENTER,
+      textStyle: CHART_CATEGORY_NAME_TEXT_STYLE,
+      textAnchor: 'end'
+    }),
+    renderChartText({
+      text: issueLabelRule,
+      anchorX: HORIZONTAL_CHART_TEXT_RIGHT_X,
+      baselineY: rowCenterY + HORIZONTAL_CHART_ISSUE_LABEL_RULE_OFFSET_FROM_ROW_CENTER,
+      textStyle: CHART_ISSUE_LABEL_RULE_TEXT_STYLE,
+      textAnchor: 'end'
+    }),
+    renderChartText({
+      text: countText,
+      anchorX: HORIZONTAL_CHART_BAR_START_X + barLength + HORIZONTAL_CHART_TEXT_GAP_AFTER_BAR,
+      baselineY: rowCenterY + HORIZONTAL_CHART_COUNT_OFFSET_FROM_ROW_CENTER,
+      textStyle: CHART_COUNT_TEXT_STYLE,
+      textAnchor: 'start',
+      trailing: {
+        text: trailingText,
+        textStyle: CHART_COUNT_TRAILING_TEXT_STYLE,
+        gapX: CHART_COUNT_TRAILING_TEXT_GAP
+      }
+    }),
+    '</g>'
+  ].join('')
+}
+
+/**
+ * @param {{ rowTopY: number, barLength: number }} barShape 行の上端の y と、棒の長さ（0 より大きい）
+ * @returns {string} 右の角が丸い棒の path 要素。黒で塗る
+ */
+function renderHorizontalBarShape({ rowTopY, barLength }) {
+  const leftX = HORIZONTAL_CHART_BAR_START_X
+  const rightX = leftX + barLength
+  const bottomY = rowTopY + HORIZONTAL_CHART_BAR_THICKNESS
+  // 丸みが棒の長さや太さの半分を超えると、角の曲線が棒の外へ出る
+  const cornerRadius = Math.min(
+    CHART_BAR_CORNER_RADIUS,
+    barLength,
+    HORIZONTAL_CHART_BAR_THICKNESS / 2
+  )
+  const outline = [
+    `M${formatCoordinate(leftX)} ${formatCoordinate(rowTopY)}`,
+    `H${formatCoordinate(rightX - cornerRadius)}`,
+    `Q${formatCoordinate(rightX)} ${formatCoordinate(rowTopY)} ${formatCoordinate(rightX)} ${formatCoordinate(rowTopY + cornerRadius)}`,
+    `V${formatCoordinate(bottomY - cornerRadius)}`,
+    `Q${formatCoordinate(rightX)} ${formatCoordinate(bottomY)} ${formatCoordinate(rightX - cornerRadius)} ${formatCoordinate(bottomY)}`,
+    `H${formatCoordinate(leftX)}`,
+    'Z'
+  ].join(' ')
+  return `<path d="${outline}" style="fill:${CHART_INK_COLOR}" />`
+}
+
+/**
+ * @param {{ text: string, anchorX: number, baselineY: number, textStyle: { fontSize: number, fontWeight: number, color: string, fontFamily?: string }, textAnchor?: 'start' | 'middle' | 'end', trailing?: { text: string, textStyle: { fontSize: number, fontWeight: number, color: string }, gapX: number } | null }} chartText 文字と、寄せる位置の x、文字の下端の y、見た目。textStyle の fontFamily は、省くとページの書体になる（等幅にするときに渡す）。textAnchor は anchorX に対する寄せ方（start は左寄せ、end は右寄せ。既定は中央）。trailing は text の直後に、gapX だけ空けて続ける文字（既定は無し）
  * @returns {string} text 要素の HTML
  */
-function renderChartText({ text, centerX, baselineY, textStyle }) {
-  const { fontSize, fontWeight, color } = textStyle
-  return `<text x="${formatCoordinate(centerX)}" y="${formatCoordinate(baselineY)}" text-anchor="middle" font-size="${fontSize}" font-weight="${fontWeight}" style="fill:${color}">${escapeHtml(text)}</text>`
+function renderChartText({
+  text,
+  anchorX,
+  baselineY,
+  textStyle,
+  textAnchor = 'middle',
+  trailing = null
+}) {
+  // 後ろに続ける文字は、前の文字の幅を測らずに済むよう、同じ text 要素の tspan にして dx だけ空ける
+  const trailingElement =
+    trailing === null
+      ? ''
+      : `<tspan dx="${trailing.gapX}" font-size="${trailing.textStyle.fontSize}" font-weight="${trailing.textStyle.fontWeight}" style="fill:${trailing.textStyle.color}">${escapeHtml(trailing.text)}</tspan>`
+  const { fontSize, fontWeight, color, fontFamily } = textStyle
+  const fontFamilyStyle = fontFamily === undefined ? '' : `;font-family:${fontFamily}`
+  return `<text x="${formatCoordinate(anchorX)}" y="${formatCoordinate(baselineY)}" text-anchor="${textAnchor}" font-size="${fontSize}" font-weight="${fontWeight}" style="fill:${color}${fontFamilyStyle}">${escapeHtml(text)}${trailingElement}</text>`
 }
 
 /**
