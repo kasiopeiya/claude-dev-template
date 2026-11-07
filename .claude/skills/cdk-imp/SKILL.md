@@ -144,7 +144,7 @@ Issue: #1 CDK初期構築
 抽出した情報をユーザーに提示し、開始確認:
 
 ```
-question: "以下の内容でCDK実装を開始します。よろしいですか？"
+question: "Issue #<番号>（<タイトル>）のCDK実装を開始します。よろしいですか？"
 header: "実装開始確認"
 options: [
   { label: "はい、開始します", description: "CDK実装を開始します" },
@@ -220,7 +220,7 @@ CDKルール:
 AskUserQuestion で実装方針を確認:
 
 ```
-question: "上記の実装方針でCDKコードを実装します。よろしいですか？"
+question: "実装方針（<設計判断の要点>）のとおりにCDKコードを実装します。よろしいですか？"
 header: "実装方針確認"
 options: [
   { label: "はい、この方針で実装します", description: "CDKコード実装に進みます" },
@@ -321,7 +321,7 @@ private createS3Bucket(bucketName: string): s3.Bucket {
 AskUserQuestion で確認:
 
 ```
-question: "実装内容を確認してください。このままテストに進みますか？"
+question: "実装した <CDKディレクトリ>/lib/{スタックファイル名}.ts のCDKコードで、テストに進みますか？"
 header: "実装確認"
 options: [
   { label: "はい、テストに進みます", description: "npm testを実行します" },
@@ -438,7 +438,7 @@ Lambda Function URLはNodejsFunctionのプロパティとして直接アクセ�
 AskUserQuestion で修正するか確認:
 
 ```
-question: "上記のエラーを修正しますか？"
+question: "テストが失敗しました（<エラーの要約>）。修正してテストを再実行しますか？"
 header: "エラー修正"
 options: [
   { label: "はい、修正します", description: "エラーを修正してテストを再実行" },
@@ -499,7 +499,7 @@ cdk.out/tree.json
 AskUserQuestion で修正方法を確認:
 
 ```
-question: "循環参照を回避するため、以下のいずれかの方法で修正します。どれを選択しますか？"
+question: "循環参照（<循環しているリソース>）を回避する方法はどれにしますか？"
 header: "循環参照回避"
 options: [
   { label: "SSM Parameter Store を利用", description: "CloudFront URLをSSMに保存し、Lambda側で参照" },
@@ -532,7 +532,7 @@ bucketName を小文字に変更してください。
 AskUserQuestion で修正するか確認:
 
 ```
-question: "上記のエラーを修正しますか？"
+question: "cdk synth が失敗しました（<エラーの要約>）。修正して再実行しますか？"
 header: "エラー修正"
 options: [
   { label: "はい、修正します", description: "エラーを修正してcdk synthを再実行" },
