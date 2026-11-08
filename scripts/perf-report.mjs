@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとと委譲の分類ごとに数え、
 //   同じ期間にマージした PR の差分行数を帯ごとに数え、人間レビューの対象の件数を全体と週ごとに数え、
-//   AI 単独の Issue の着手から PR が出るまでの時間をまとめて、JSON で標準出力に返す。
+//   AI 単独の Issue の着手から PR が出るまでの時間をまとめ、作業 Issue とマージした PR の1件ごとの記録を添えて、JSON で標準出力に返す。
 //   `/perf-report` はこの結果をファイルに保存し、会話中の AI がそれを読んで考察ファイルを書く。
 //   `scripts/perf-report-html.mjs` が、保存した結果と考察ファイルでひな形を埋めて HTML 1枚にする。
 //
@@ -22,6 +22,9 @@
 // - Status 履歴は Issue の検索に入れず、25 件ずつ別に引く。検索や 100 件の別名に入れると、エラーを返さず一部の Issue の履歴だけが空で返る（#1608。原因は未確認）。
 //   278 件で確かめると、1回 100 件では 62 件が空になり、1・10・25・50 件では同じ結果だった。25 件は 50 件に余裕を持たせた値である。
 // - Status 履歴は Issue ごとに先頭の 100 件だけ読む。最初の `In Review` までに 100 回も動いた Issue は想定しない。
+// - 1件ごとの記録（workIssueRecords・mergedPullRequestRecords）は、AI が考察で「なぜ」を書く材料である（#1685）。
+//   帯ごとの件数だけでは、どの作業がその値になったかが分からない。何の作業かはタイトルから読む。
+//   記録に Issue・PR の番号を入れない。レポートに番号を載せないので、材料にも渡さない。
 // - hasProductCode も返す。`/perf-report` は、app/・infra/ にコードが無いときだけ「本番では未検証」と注記する。
 // - generatedOn（今日）も返す。`perf-report-html.mjs` が出力のファイル名に使う。
 // - 日付は固定幅の文字列のまま大小を比べる。年を 4 桁に収まる範囲へ絞るのはそのためで、外れると週を進めるループが終わらない。
@@ -82,6 +85,7 @@ const CLOSED_ISSUES_QUERY = `query($searchQuery: String!, $endCursor: String) {
     nodes {
       ... on Issue {
         number
+        title
         stateReason
         body
         author { __typename }
@@ -98,6 +102,7 @@ const MERGED_PULL_REQUESTS_QUERY = `query($searchQuery: String!, $endCursor: Str
     pageInfo { hasNextPage endCursor }
     nodes {
       ... on PullRequest {
+        title
         additions
         deletions
         labels(first: 50) { nodes { name } }
@@ -108,6 +113,7 @@ const MERGED_PULL_REQUESTS_QUERY = `query($searchQuery: String!, $endCursor: Str
 
 /**
  * @typedef {object} MergedPullRequest
+ * @property {string} title タイトル
  * @property {number} additions 追加した行数
  * @property {number} deletions 削除した行数
  * @property {{ nodes: { name: string }[] }} labels ラベル
@@ -116,6 +122,7 @@ const MERGED_PULL_REQUESTS_QUERY = `query($searchQuery: String!, $endCursor: Str
 /**
  * @typedef {object} ClosedIssue
  * @property {number} number Issue 番号
+ * @property {string} title タイトル
  * @property {string | null} stateReason close の理由（COMPLETED・NOT_PLANNED・DUPLICATE）
  * @property {string} body 本文
  * @property {{ __typename: string } | null} author 起票者（アカウントが消えていれば null）
@@ -127,6 +134,20 @@ const MERGED_PULL_REQUESTS_QUERY = `query($searchQuery: String!, $endCursor: Str
  * @typedef {object} StatusChange
  * @property {string} createdAt 変わった日時
  * @property {string} status 変わった後のボードの Status
+ */
+
+/**
+ * @typedef {object} StatusHistory
+ * @property {number} issueNumber Issue 番号
+ * @property {StatusChange[]} statusChanges Status の変更（古い順）
+ */
+
+/**
+ * @typedef {object} WorkIssue
+ * @property {number} number Issue 番号
+ * @property {string} title タイトル
+ * @property {string} delegationCategory 委譲の分類
+ * @property {string} closedWeekStart close された週の月曜日（YYYY-MM-DD）
  */
 
 // 上から順に当て、最初に当たった理由だけで数える。理由ごとの件数を足すと、除外した総数に一致する
@@ -170,8 +191,42 @@ function runCli() {
   const today = getTodayInReportTimezone()
   const { from, to } = parsePeriod(process.argv.slice(2), today)
   const repository = readCurrentRepository()
-  const weeks = splitIntoWeeks({ from, to })
-  const weeklyTallies = weeks.map((week) => ({
+  const weeklyTallies = fetchWeeklyTallies({ repository, from, to })
+  const pullRequests = weeklyTallies.flatMap((weeklyTally) => weeklyTally.pullRequests)
+  const workIssues = weeklyTallies.flatMap(({ week, tally }) =>
+    tally.workIssues.map((workIssue) => ({ ...workIssue, closedWeekStart: week.weekStart }))
+  )
+  const statusHistories = fetchStatusHistories({
+    repository,
+    issueNumbers: workIssues
+      .filter(({ delegationCategory }) => delegationCategory === 'aiOnly')
+      .map(({ number }) => number)
+  })
+  const report = {
+    ...buildReport({ repository, from, to, today, weeklyTallies }),
+    pullRequestDiffLines: summarizeChangedLines(pullRequests.map(countChangedLines)),
+    humanReviewTargets: {
+      ...summarizeHumanReviewTargets(pullRequests),
+      policyOrCicdCount: countPolicyOrCicdTargets(pullRequests)
+    },
+    aiOnlyTimeToPullRequest: summarizeTimeToPullRequest(
+      statusHistories.map(({ statusChanges }) => statusChanges)
+    ),
+    workIssueRecords: buildWorkIssueRecords({ workIssues, statusHistories }),
+    mergedPullRequestRecords: buildMergedPullRequestRecords(weeklyTallies)
+  }
+  console.log(JSON.stringify(report, null, 2))
+}
+
+/**
+ * 期間を週に分け、週ごとに close された Issue を数え、マージされた PR を引く。
+ *
+ * @param {{ repository: string, from: string, to: string }} searchRange 対象のリポジトリ（owner/repo）と、期間の初日・最終日（YYYY-MM-DD）
+ * @returns {{ week: { weekStart: string, weekEnd: string, countedFrom: string, countedTo: string }, tally: ReturnType<typeof tallyIssues>, pullRequests: MergedPullRequest[] }[]} 週ごとの集計
+ * @throws {TechnicalError} gh が失敗したとき・検索の上限を超えて数え切れないとき
+ */
+function fetchWeeklyTallies({ repository, from, to }) {
+  return splitIntoWeeks({ from, to }).map((week) => ({
     week,
     tally: tallyIssues(
       fetchClosedIssues({ repository, from: week.countedFrom, to: week.countedTo })
@@ -182,24 +237,6 @@ function runCli() {
       to: week.countedTo
     })
   }))
-  const pullRequests = weeklyTallies.flatMap((weeklyTally) => weeklyTally.pullRequests)
-  const report = {
-    ...buildReport({ repository, from, to, today, weeklyTallies }),
-    pullRequestDiffLines: summarizeChangedLines(
-      pullRequests.map(({ additions, deletions }) => additions + deletions)
-    ),
-    humanReviewTargets: {
-      ...summarizeHumanReviewTargets(pullRequests),
-      policyOrCicdCount: countPolicyOrCicdTargets(pullRequests)
-    },
-    aiOnlyTimeToPullRequest: summarizeTimeToPullRequest(
-      fetchStatusHistories({
-        repository,
-        issueNumbers: weeklyTallies.flatMap(({ tally }) => tally.aiOnlyIssueNumbers)
-      })
-    )
-  }
-  console.log(JSON.stringify(report, null, 2))
 }
 
 /**
@@ -315,7 +352,7 @@ function fetchMergedPullRequests({ repository, from, to }) {
  * Issue ごとのボードの Status 履歴を引く。
  *
  * @param {{ repository: string, issueNumbers: number[] }} target 対象のリポジトリ（owner/repo）と Issue 番号
- * @returns {StatusChange[][]} Issue ごとの Status の変更。1件分は古い順に並ぶ
+ * @returns {StatusHistory[]} Issue ごとの Status の変更。渡した Issue 番号と同じ順・同じ件数で並ぶ
  * @throws {TechnicalError} gh が失敗したとき
  */
 function fetchStatusHistories({ repository, issueNumbers }) {
@@ -333,8 +370,9 @@ function fetchStatusHistories({ repository, issueNumbers }) {
       '-f',
       `name=${repositoryName}`
     ])
-    for (const { timelineItems } of Object.values(statusHistoryResponse.data.repository)) {
-      statusHistories.push(timelineItems.nodes)
+    for (const issueNumber of batchNumbers) {
+      const { timelineItems } = statusHistoryResponse.data.repository[`issue${issueNumber}`]
+      statusHistories.push({ issueNumber, statusChanges: timelineItems.nodes })
     }
   }
   return statusHistories
@@ -397,12 +435,12 @@ function searchAllNodes({ graphqlQuery, searchQuery, period }) {
  * Issue を、作業 Issue・除外の理由ごと・委譲の分類ごとに数える。
  *
  * @param {ClosedIssue[]} issues close された Issue
- * @returns {{ workIssueCount: number, excludedCounts: Record<string, number>, delegationCounts: Record<string, number>, aiOnlyIssueNumbers: number[] }} 作業 Issue の件数と、除外の理由ごと・委譲の分類ごとの件数、AI 単独の作業 Issue の番号
+ * @returns {{ workIssueCount: number, excludedCounts: Record<string, number>, delegationCounts: Record<string, number>, workIssues: Omit<WorkIssue, 'closedWeekStart'>[] }} 作業 Issue の件数と、除外の理由ごと・委譲の分類ごとの件数、作業 Issue の番号・タイトル・委譲の分類
  */
 function tallyIssues(issues) {
   const excludedCounts = createEmptyExcludedCounts()
   const delegationCounts = createEmptyDelegationCounts()
-  const aiOnlyIssueNumbers = []
+  const workIssues = []
   let workIssueCount = 0
   for (const issue of issues) {
     const matchedRule = EXCLUSION_RULES.find(({ matches }) => matches(issue))
@@ -413,9 +451,9 @@ function tallyIssues(issues) {
     workIssueCount += 1
     const delegationCategory = findDelegationCategory(issue)
     delegationCounts[delegationCategory] += 1
-    if (delegationCategory === 'aiOnly') aiOnlyIssueNumbers.push(issue.number)
+    workIssues.push({ number: issue.number, title: issue.title, delegationCategory })
   }
-  return { workIssueCount, excludedCounts, delegationCounts, aiOnlyIssueNumbers }
+  return { workIssueCount, excludedCounts, delegationCounts, workIssues }
 }
 
 /**
@@ -607,6 +645,57 @@ function summarizeTimeToPullRequest(statusHistories) {
       ? roundToOneDecimal((underOneHourCount / measuredIssueCount) * 100)
       : null
   }
+}
+
+/**
+ * 作業 Issue の1件ごとの記録を作る。着手から PR が出るまでの時間は、AI 単独で測れた Issue にだけ付ける。
+ *
+ * @param {{ workIssues: WorkIssue[], statusHistories: StatusHistory[] }} recordSource 作業 Issue と、AI 単独の作業 Issue ごとの Status の変更
+ * @returns {{ title: string, closedWeekStart: string, delegationCategory: string, minutesToPullRequest?: number }[]} close された順の記録。minutesToPullRequest は小数第1位に四捨五入した分
+ */
+function buildWorkIssueRecords({ workIssues, statusHistories }) {
+  const minutesByIssueNumber = new Map(
+    statusHistories.map(({ issueNumber, statusChanges }) => [
+      issueNumber,
+      measureMinutesToPullRequest(statusChanges)
+    ])
+  )
+  return workIssues.map(({ number, title, closedWeekStart, delegationCategory }) => {
+    const minutesToPullRequest = minutesByIssueNumber.get(number) ?? null
+    return {
+      title,
+      closedWeekStart,
+      delegationCategory,
+      ...(minutesToPullRequest === null
+        ? {}
+        : { minutesToPullRequest: roundToOneDecimal(minutesToPullRequest) })
+    }
+  })
+}
+
+/**
+ * マージした PR の1件ごとの記録を作る。
+ *
+ * @param {{ week: { weekStart: string }, pullRequests: MergedPullRequest[] }[]} weeklyTallies 週ごとの集計
+ * @returns {{ title: string, mergedWeekStart: string, changedLines: number, isHumanReviewTarget: boolean }[]} マージした週の順の記録
+ */
+function buildMergedPullRequestRecords(weeklyTallies) {
+  return weeklyTallies.flatMap(({ week, pullRequests }) =>
+    pullRequests.map((pullRequest) => ({
+      title: pullRequest.title,
+      mergedWeekStart: week.weekStart,
+      changedLines: countChangedLines(pullRequest),
+      isHumanReviewTarget: hasAnyLabel(pullRequest, [HUMAN_REVIEW_LABEL])
+    }))
+  )
+}
+
+/**
+ * @param {MergedPullRequest} pullRequest マージされた PR
+ * @returns {number} 追加と削除の行数の合計
+ */
+function countChangedLines({ additions, deletions }) {
+  return additions + deletions
 }
 
 /**
