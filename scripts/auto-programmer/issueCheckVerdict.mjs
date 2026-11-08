@@ -13,6 +13,9 @@
 // - 対象ラベル（ai-fixable）が外れた Issue も止める。/issue-check がラベルを付け替えると対象ラベルが外れるので、
 //   止める理由のラベルを1つずつ並べるだけでは、ラベルが増えたときに取りこぼす。
 // - ラベル名は `.claude/skills/issue-check/SKILL.md` が貼る表記が正。
+// - 書き戻しの確認だけを外す指定（isWritebackCheckSkipped）は、人間が監査を飛ばして急ぐ経路（`/asap`）のためにある。
+//   監査を打たないので `issue:checked` が無いのは正常で、そこで止めると急げない。人間向けのラベルと対象ラベルの
+//   確認は外さない（止めるべき Issue に着手しないことは速さより優先する）。Auto Programmer は指定しない。
 // - 対話の「issue N 対応して」の経路は、scripts/decide-issue-start.mjs がこのファイルの関数を呼ぶ。
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに確かめられる。
 
@@ -45,14 +48,19 @@ export function shouldRunIssueCheck(labelNames) {
  *
  * @param {{ state: string, labelNames: string[] }} issue 監査後（監査済みで飛ばしたときはその時点）に引き直した Issue（state は gh の表記で 'OPEN' / 'CLOSED'）
  * @param {string} targetIssueLabel 実装へ進めてよい Issue に付く対象ラベル（config.mjs の targetIssueLabel）
+ * @param {{ isWritebackCheckSkipped?: boolean }} [options] `isWritebackCheckSkipped` が true なら、判定が書き戻されたかの確認だけを外す（人間が監査を飛ばして急ぐときの指定。既定は false）。人間向けのラベル・対象ラベルの確認は外さない
  * @returns {{ reason: string, isVerdict: boolean } | null} 止める理由と、それが /issue-check の判定そのものか（判定が書き戻されていなければ false）。実装へ進めてよければ null
  */
-export function findSkipImplementationDecision({ state, labelNames }, targetIssueLabel) {
+export function findSkipImplementationDecision(
+  { state, labelNames },
+  targetIssueLabel,
+  { isWritebackCheckSkipped = false } = {}
+) {
   if (state !== 'OPEN') {
     return { reason: '/issue-check が不要と判定して close しました', isVerdict: true }
   }
   // 監査を走らせる条件が監査後も残っている＝判定が書き戻されていない
-  if (shouldRunIssueCheck(labelNames)) {
+  if (!isWritebackCheckSkipped && shouldRunIssueCheck(labelNames)) {
     return { reason: '/issue-check が判定を書き戻しませんでした', isVerdict: false }
   }
   for (const [humanOnlyLabel, verdictPhrase] of HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE) {
