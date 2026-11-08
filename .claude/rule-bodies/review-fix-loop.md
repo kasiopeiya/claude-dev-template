@@ -1,6 +1,6 @@
 # レビューと修正のループと、フェーズ出力の表示の共通手順
 
-実装 → レビュー → 修正を自律で回す Skill（`/code-dev`・`/cdk-dev`・`/design`・`/auto-dev`）が、各フェーズの出力を表示する前と、レビューの結果を受けて直す前に、このファイルを Read して従う。合否・回数・修正範囲の条件は [ai-review-gate-policy](../../docs/policy/ai-review-gate-policy.md) が定め、このファイルはその条件を回す手順を書く。食い違ったらポリシーを正とし、このファイルを直す。
+実装 → レビュー → 修正を自律で回す Skill（`/code-dev`・`/cdk-dev`・`/design`・`/auto-dev`・`/asap`）が、各フェーズの出力を表示する前と、レビューの結果を受けて直す前に、このファイルを Read して従う。合否・回数・修正範囲の条件は [ai-review-gate-policy](../../docs/policy/ai-review-gate-policy.md) が定め、このファイルはその条件を回す手順を書く。食い違ったらポリシーを正とし、このファイルを直す。
 
 ## 置き場を選んだ理由
 
