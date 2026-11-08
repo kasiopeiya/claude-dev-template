@@ -293,7 +293,7 @@ flowchart TD
 ### 1. Keep Flows Focused
 
 - **Single purpose**: One activity diagram = one workflow
-- **Limit complexity**: Max 15-20 nodes per diagram
+- **Limit complexity**: Follow the node limit in [Keep Diagrams Focused](../../mermaid-diagram-guide.md#keep-diagrams-focused)
 - **Break down**: Split complex flows into multiple diagrams
 
 ### 2. Use Clear Naming
