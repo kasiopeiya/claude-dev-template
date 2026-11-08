@@ -306,9 +306,18 @@
             </figcaption>
           </figure>
 
+          <!-- if:throughputResultItems -->
+          <p class="perf-discussion-title">結果</p>
+          <ul>
+            {{throughputResultItems}}
+          </ul>
+          <!-- endif -->
           <p class="perf-discussion-title">考察</p>
           <ul>
-            <li>少ない週は、要件定義など件数に出にくい作業の時期のことがある</li>
+            {{throughputDiscussionItems}}
+          </ul>
+          <p class="perf-discussion-title">読むときの注意</p>
+          <ul>
             <li>件数は成果や価値の大きさを表さない</li>
             <li>週ごとの件数はぶれることがあるので、1週の増減で良し悪しを判断しない</li>
           </ul>
@@ -325,11 +334,18 @@
           <p>期間内に作業 Issue が無いため、図を描きません。</p>
           <!-- endif -->
 
+          <!-- if:delegationResultItems -->
+          <p class="perf-discussion-title">結果</p>
+          <ul>
+            {{delegationResultItems}}
+          </ul>
+          <!-- endif -->
           <p class="perf-discussion-title">考察</p>
           <ul>
-            <li>
-              人の手をどれだけ残しているかを見る。他のプロジェクトで人をどこに置くかの目安になる
-            </li>
+            {{delegationDiscussionItems}}
+          </ul>
+          <p class="perf-discussion-title">読むときの注意</p>
+          <ul>
             <li>分類は着手前に付けたもので、実際の作業の記録ではない</li>
             <li>
               Issue を作るまでの相談は含まない（人間と相談して方針を決めた Issue も AI 単独に入る）
@@ -351,9 +367,18 @@
           <p>測れた Issue が無いため、図を描きません。</p>
           <!-- endif -->
 
+          <!-- if:speedResultItems -->
+          <p class="perf-discussion-title">結果</p>
+          <ul>
+            {{speedResultItems}}
+          </ul>
+          <!-- endif -->
           <p class="perf-discussion-title">考察</p>
           <ul>
-            <li>AI の作業のスピード感をつかむ目安にする</li>
+            {{speedDiscussionItems}}
+          </ul>
+          <p class="perf-discussion-title">読むときの注意</p>
+          <ul>
             <li>
               <strong>人間が同じ作業にかかる時間との比較ではなく、何倍速いかは言えない</strong>
             </li>
@@ -374,9 +399,18 @@
           <p>期間内にマージした PR が無いため、図を描きません。</p>
           <!-- endif -->
 
+          <!-- if:reviewResultItems -->
+          <p class="perf-discussion-title">結果</p>
+          <ul>
+            {{reviewResultItems}}
+          </ul>
+          <!-- endif -->
           <p class="perf-discussion-title">考察</p>
           <ul>
-            <li>人間の確認に回る変更がどれだけ残るかを見る</li>
+            {{reviewDiscussionItems}}
+          </ul>
+          <p class="perf-discussion-title">読むときの注意</p>
+          <ul>
             <li>
               対象になった割合で、人間が読んだ割合やかかった時間ではなく、これだけではレビューがボトルネックかどうかは言えない
             </li>
@@ -395,9 +429,18 @@
             <figcaption>fig.5 マージした PR {{mergedPullRequestCount}}件の差分行数</figcaption>
           </figure>
 
+          <!-- if:sizeResultItems -->
+          <p class="perf-discussion-title">結果</p>
+          <ul>
+            {{sizeResultItems}}
+          </ul>
+          <!-- endif -->
           <p class="perf-discussion-title">考察</p>
           <ul>
-            <li>1回の変更を小さく保てているかを見る</li>
+            {{sizeDiscussionItems}}
+          </ul>
+          <p class="perf-discussion-title">読むときの注意</p>
+          <ul>
             <li>平均は一部の大きな変更に引っ張られるので、中央値を中心に読む</li>
             <li>変更の大きさを示すだけで、有効さの証明ではない</li>
           </ul>

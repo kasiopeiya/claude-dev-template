@@ -2,7 +2,8 @@
 // 責務: 指定した期間に完了した作業 Issue を、日本時間の月曜始まりの週ごとと委譲の分類ごとに数え、
 //   同じ期間にマージした PR の差分行数を帯ごとに数え、人間レビューの対象の件数を全体と週ごとに数え、
 //   AI 単独の Issue の着手から PR が出るまでの時間をまとめて、JSON で標準出力に返す。
-//   `scripts/perf-report-html.mjs` が、この結果でひな形を埋めて HTML 1枚にする（`/perf-report`）。
+//   `/perf-report` はこの結果をファイルに保存し、会話中の AI がそれを読んで考察ファイルを書く。
+//   `scripts/perf-report-html.mjs` が、保存した結果と考察ファイルでひな形を埋めて HTML 1枚にする。
 //
 // 設計意図（WHY）:
 // - 数える処理をスクリプトに置く。報告の数字は誰が打っても同じでなければならず、AI に数えさせると打つたびにぶれる。
@@ -25,7 +26,7 @@
 // - generatedOn（今日）も返す。`perf-report-html.mjs` が出力のファイル名に使う。
 // - 日付は固定幅の文字列のまま大小を比べる。年を 4 桁に収まる範囲へ絞るのはそのためで、外れると週を進めるループが終わらない。
 //
-// 使い方: npm run --silent perf-report -- [--from YYYY-MM-DD] [--to YYYY-MM-DD]
+// 使い方: npm run --silent perf-report -- [--from YYYY-MM-DD] [--to YYYY-MM-DD] > tmp/perf-report/<日時>-perf-report-aggregate.json
 //   日付は日本時間で読む。--to の既定は今日、--from の既定は --to の1か月前である
 
 import { parseArgs } from 'node:util'
