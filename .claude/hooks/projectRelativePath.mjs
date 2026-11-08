@@ -1,9 +1,12 @@
-// 責務: 編集対象の絶対パスを、ポリシー・Rule の照合に使うプロジェクト基準の相対パスへ直すことのみを担う。
+// 責務: 編集対象の絶対パスから、ポリシー・Rule の照合に使うプロジェクト基準の相対パスと、
+// その基準になるプロジェクトのルート（`docs/policy/`・`.claude/rules/` を読む場所）を決めることのみを担う。
 //
 // 設計意図（WHY）:
 // - 基準は hook の置き場所そのものではなく、対象ファイルが属する作業ツリーの中の同じ位置にする。
 //   別フォルダの git worktree を編集すると、hook の置き場所からは `..` で始まるパスになり、
 //   ポリシーが1件も届かなくなるため。
+// - 相対パスと同じ基準のルートを一緒に返す。ポリシー・Rule の読み先を呼び出し側が別に決めると、
+//   相対パスと読み先の基準がずれるため。
 // - 作業ツリーを基準にするのは、hook と同じリポジトリ（worktree 間で共有する `.git` が同じ）の
 //   ときだけに限る。親フォルダなど無関係なリポジトリに、このプロジェクトのポリシーを出さないため。
 // - 入出力を持つ policy-loader.mjs から分離してある。git への問い合わせと代替経路の判断は、
@@ -13,7 +16,7 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { basename, dirname, isAbsolute, relative, sep } from 'node:path'
+import { basename, dirname, isAbsolute, relative, resolve, sep } from 'node:path'
 
 // hook は Edit・Write のたびに同期で走り、1回で2度問い合わせる。git が応答しないときに編集を止めないための上限
 const GIT_QUERY_TIMEOUT_MS = 1000
@@ -22,31 +25,38 @@ const GIT_QUERY_TIMEOUT_MS = 1000
 const trustedWorkingDirectory = dirname(fileURLToPath(import.meta.url))
 
 /**
- * 対象ファイルの、hook の置き場所（projectRoot）に当たる位置からの相対パス（`/` 区切り）を返す。
+ * 対象ファイルの、プロジェクトのルートと、そのルートからの相対パス（`/` 区切り）を返す。
  *
  * 対象が hook と同じリポジトリの作業ツリー（別フォルダの worktree を含む）にあれば、その作業ツリーの
- * 中で projectRoot と同じ位置を基準にする。それ以外（git 外・別リポジトリ・`.git` の中・問い合わせの
- * 失敗）は projectRoot そのものを基準にする。対象ファイル・その親ディレクトリが未作成でもよい。
+ * 中で hookProjectRoot と同じ位置をルートにする。それ以外（git 外・別リポジトリ・`.git` の中・問い合わせの
+ * 失敗）は hookProjectRoot そのものをルートにする。対象ファイル・その親ディレクトリが未作成でもよい。
  *
  * @param {string} targetAbsolutePath 対象ファイルの絶対パス
- * @param {string} projectRoot hook を置いたプロジェクトのルート（絶対パス）
- * @returns {string | undefined} 相対パス。基準の外なら undefined
+ * @param {string} hookProjectRoot hook を置いたプロジェクトのルート（絶対パス）
+ * @returns {{ projectRoot: string, relativePath: string } | undefined} projectRoot は対象が属する
+ *   プロジェクトのルート（絶対パス）、relativePath はそこからの相対パス。ルートの外なら undefined
  */
-export function toProjectRelativePath(targetAbsolutePath, projectRoot) {
+export function locateTargetInProject(targetAbsolutePath, hookProjectRoot) {
   const { existingAncestor, missingSegments } = findNearestExistingAncestor(targetAbsolutePath)
   const targetGitLocation = readGitLocation(existingAncestor)
-  const projectGitLocation = readGitLocation(projectRoot)
+  const hookGitLocation = readGitLocation(hookProjectRoot)
   const isSameRepository =
-    targetGitLocation !== undefined && targetGitLocation.commonDir === projectGitLocation?.commonDir
-  if (!isSameRepository) return toRelativePathFromProjectRoot(targetAbsolutePath, projectRoot)
+    targetGitLocation !== undefined && targetGitLocation.commonDir === hookGitLocation?.commonDir
+  if (!isSameRepository) {
+    const relativePath = toRelativePathFromProjectRoot(targetAbsolutePath, hookProjectRoot)
+    return relativePath === undefined ? undefined : { projectRoot: hookProjectRoot, relativePath }
+  }
 
   // 絶対パス同士を比べず git の prefix を使うのは、macOS の /tmp → /private/tmp のような
   // シンボリックリンクで比較がずれるため
   const pathFromWorktreeRoot =
     targetGitLocation.prefix + [...missingSegments, basename(targetAbsolutePath)].join('/')
-  // projectRoot が作業ツリーのルートでない（リポジトリの子ディレクトリ）なら、その分を剥がす
-  if (!pathFromWorktreeRoot.startsWith(projectGitLocation.prefix)) return undefined
-  return pathFromWorktreeRoot.slice(projectGitLocation.prefix.length)
+  // hookProjectRoot が作業ツリーのルートでない（リポジトリの子ディレクトリ）なら、その分を剥がす
+  if (!pathFromWorktreeRoot.startsWith(hookGitLocation.prefix)) return undefined
+  return {
+    projectRoot: resolve(targetGitLocation.worktreeRoot, hookGitLocation.prefix),
+    relativePath: pathFromWorktreeRoot.slice(hookGitLocation.prefix.length)
+  }
 }
 
 /**
@@ -68,17 +78,18 @@ function findNearestExistingAncestor(targetAbsolutePath) {
 }
 
 /**
- * ディレクトリが属する git リポジトリの本体（worktree 間で共有する `.git`）と、
+ * ディレクトリが属する git リポジトリの本体（worktree 間で共有する `.git`）と、作業ツリーのルート、
  * 作業ツリーのルートからそのディレクトリまでの相対パスを返す。
  *
  * @param {string} directoryPath 実在するディレクトリの絶対パス
- * @returns {{ commonDir: string, prefix: string } | undefined} commonDir はシンボリックリンクを
- *   解決した絶対パスで、別の呼び出しの結果と === で比べられる。prefix は末尾が `/` の相対パスで、
- *   ルート直下なら空文字。作業ツリーの外（git 外・`.git` の中）・問い合わせの失敗・タイムアウト時は undefined
+ * @returns {{ commonDir: string, worktreeRoot: string, prefix: string } | undefined} commonDir は
+ *   シンボリックリンクを解決した絶対パスで、別の呼び出しの結果と === で比べられる。worktreeRoot は
+ *   作業ツリーのルートの絶対パス。prefix は末尾が `/` の相対パスで、ルート直下なら空文字。
+ *   作業ツリーの外（git 外・`.git` の中）・問い合わせの失敗・タイムアウト時は undefined
  */
 function readGitLocation(directoryPath) {
   try {
-    const [isInsideWorkTree, commonDir, prefix = ''] = execFileSync(
+    const [isInsideWorkTree, commonDir, worktreeRoot, prefix = ''] = execFileSync(
       'git',
       [
         '-C',
@@ -87,6 +98,7 @@ function readGitLocation(directoryPath) {
         '--path-format=absolute',
         '--is-inside-work-tree',
         '--git-common-dir',
+        '--show-toplevel',
         '--show-prefix'
       ],
       {
@@ -96,23 +108,23 @@ function readGitLocation(directoryPath) {
         timeout: GIT_QUERY_TIMEOUT_MS
       }
     ).split('\n')
-    // `.git` の中では prefix が空になり、ルート直下と区別できない
+    // `.git` の中では prefix が空になり、ルート直下と区別できない（--show-toplevel も失敗する）
     if (isInsideWorkTree !== 'true') return undefined
-    return { commonDir: realpathSync(commonDir), prefix }
+    return { commonDir: realpathSync(commonDir), worktreeRoot, prefix }
   } catch {
     return undefined
   }
 }
 
 /**
- * 対象ファイルの、projectRoot からの相対パス（`/` 区切り）を返す。
+ * 対象ファイルの、hookProjectRoot からの相対パス（`/` 区切り）を返す。
  *
  * @param {string} targetAbsolutePath 対象ファイルの絶対パス
- * @param {string} projectRoot hook を置いたプロジェクトのルート（絶対パス）
- * @returns {string | undefined} 相対パス。projectRoot の外なら undefined
+ * @param {string} hookProjectRoot hook を置いたプロジェクトのルート（絶対パス）
+ * @returns {string | undefined} 相対パス。hookProjectRoot の外なら undefined
  */
-function toRelativePathFromProjectRoot(targetAbsolutePath, projectRoot) {
-  const nativeRelativePath = relative(projectRoot, targetAbsolutePath)
+function toRelativePathFromProjectRoot(targetAbsolutePath, hookProjectRoot) {
+  const nativeRelativePath = relative(hookProjectRoot, targetAbsolutePath)
   // 別ドライブ（Windows）だと relative は相対パスにならず、絶対パスをそのまま返す
   const isOutsideProject = nativeRelativePath.startsWith('..') || isAbsolute(nativeRelativePath)
   if (isOutsideProject) return undefined

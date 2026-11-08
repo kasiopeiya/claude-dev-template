@@ -3,8 +3,11 @@
 //
 // 設計意図（WHY）:
 // - このファイルは stdin/stdout の入出力だけを担う。どのポリシー・Rule が効くかの判定は
-//   policyMatcher.mjs / ruleMatcher.mjs に、照合に使う相対パスへの変換（別フォルダの worktree の
-//   扱いを含む）は projectRelativePath.mjs に委ね、中身はここに一切持たない。
+//   policyMatcher.mjs / ruleMatcher.mjs に、照合に使う相対パスと、ポリシー・Rule を読むプロジェクトの
+//   ルートの決定（別フォルダの worktree の扱いを含む）は projectRelativePath.mjs に委ね、中身はここに一切持たない。
+// - ポリシーと Rule は、hook の置き場所ではなく、対象ファイルが属する作業ツリーから読む。置き場所
+//   （元のフォルダ）から読むと、worktree のブランチで `applies-to` を足し引きしても、そのブランチの
+//   編集時の差し込みに反映されないため。
 // - Rule の指し示しには2つの経路がある。
 //   1. `paths`：対象ファイルが存在しないときだけ指す。既存ファイルは Edit・Write の前に Read
 //      しており標準ロードが既に効いているため、二重に指さない。
@@ -19,15 +22,14 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
 import { collectMatchingPolicies } from './policyMatcher.mjs'
-import { toProjectRelativePath } from './projectRelativePath.mjs'
+import { locateTargetInProject } from './projectRelativePath.mjs'
 import { collectMatchingRules, collectRulesByAppliesTo } from './ruleMatcher.mjs'
 
 const scriptDir = dirname(fileURLToPath(import.meta.url))
-// .claude/hooks/ からプロジェクトルートへ
-const projectRoot = resolve(scriptDir, '../..')
-const policyDir = resolve(projectRoot, 'docs/policy')
+// .claude/hooks/ からプロジェクトルートへ。対象が属する作業ツリーを決められないときの既定
+const hookProjectRoot = resolve(scriptDir, '../..')
+const POLICY_RELATIVE_DIR = 'docs/policy'
 const RULES_RELATIVE_DIR = '.claude/rules'
-const rulesDir = resolve(projectRoot, RULES_RELATIVE_DIR)
 
 function main() {
   // Claude Code の hook 契約（外部仕様）：type: "command" の PreToolUse フックは、
@@ -37,15 +39,20 @@ function main() {
   if (!targetFilePath) return
 
   const targetAbsolutePath = resolve(targetFilePath)
-  const targetRelativePath = toProjectRelativePath(targetAbsolutePath, projectRoot)
-  if (targetRelativePath === undefined) return
+  const targetLocation = locateTargetInProject(targetAbsolutePath, hookProjectRoot)
+  if (targetLocation === undefined) return
+  const { projectRoot: targetProjectRoot, relativePath: targetRelativePath } = targetLocation
 
+  const policyDir = resolve(targetProjectRoot, POLICY_RELATIVE_DIR)
+  const rulesDir = resolve(targetProjectRoot, RULES_RELATIVE_DIR)
   const matchedPolicyPaths = collectMatchingPolicies(targetRelativePath, policyDir).map(
-    (name) => `docs/policy/${name}`
+    (name) => `${POLICY_RELATIVE_DIR}/${name}`
   )
-  const matchedRulePaths = collectRuleNames(targetAbsolutePath, targetRelativePath).map(
-    (name) => `${RULES_RELATIVE_DIR}/${name}`
-  )
+  const matchedRulePaths = collectRuleNames({
+    targetAbsolutePath,
+    targetRelativePath,
+    rulesDir
+  }).map((name) => `${RULES_RELATIVE_DIR}/${name}`)
 
   const appliedDocumentPaths = [...matchedPolicyPaths, ...matchedRulePaths]
   if (appliedDocumentPaths.length === 0) return
@@ -67,8 +74,12 @@ function main() {
  *
  * Rule の探索に失敗しても []。ここで投げると main() 全体が catch に抜け、
  * 既に見つかっているポリシーの指し示しまで道連れで失われるため。
+ *
+ * @param {{ targetAbsolutePath: string, targetRelativePath: string, rulesDir: string }} target
+ *   対象ファイルの絶対パス・プロジェクトルートからの相対パスと、Rule を読むディレクトリ
+ * @returns {string[]} Rule のファイル名
  */
-function collectRuleNames(targetAbsolutePath, targetRelativePath) {
+function collectRuleNames({ targetAbsolutePath, targetRelativePath, rulesDir }) {
   try {
     const matchedByAppliesTo = collectRulesByAppliesTo(targetRelativePath, rulesDir)
     const matchedByPaths = existsSync(targetAbsolutePath)
