@@ -937,7 +937,7 @@ graph LR
 **Guidelines:**
 
 - Max 10-12 nodes per diagram
-- Max 3-4 levels of nesting
+- Max 3-4 levels of subgraph nesting (for `alt`/`opt`/`loop` fragments in sequence diagrams, see the sequence diagram guide)
 - Break complex diagrams into multiple views
 
 ### Use Consistent Naming

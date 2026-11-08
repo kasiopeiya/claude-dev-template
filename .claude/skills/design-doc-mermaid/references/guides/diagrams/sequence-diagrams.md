@@ -764,7 +764,7 @@ sequenceDiagram
 
 ### 5. **Use Alt/Opt/Loop Fragments Sparingly**
 
-Fragments add complexity. Use them only when necessary:
+Fragments add complexity. Use them only when necessary. Do not nest them three or more levels deep, and do not join flows that start from different triggers in one diagram — split them (see "One Scenario Per Diagram").
 
 ```mermaid
 sequenceDiagram
