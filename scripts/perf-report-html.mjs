@@ -625,7 +625,7 @@ function describeWeekAxis({ weekStart, countedFrom, countedTo, isFullWeek }) {
 function buildReviewFigure(weeks) {
   return renderVerticalBarChart({
     bars: weeks.map(buildReviewBar),
-    chartTitle: '週ごとの人間レビューの対象',
+    chartTitle: '週ごとの人間レビュー対象の割合',
     legendItems: [REVIEW_TARGET_LEGEND_ITEM, REVIEW_NON_TARGET_LEGEND_ITEM]
   })
 }
@@ -731,7 +731,7 @@ function buildDelegationFigure({ workIssueCount, delegationCounts }) {
       }
     }
   )
-  return renderHorizontalBarChart({ bars, chartTitle: 'AI に任せた度合い' })
+  return renderHorizontalBarChart({ bars, chartTitle: 'AIへの委譲度' })
 }
 
 /**
@@ -761,7 +761,7 @@ function buildSpeedFigure({ measuredIssueCount, medianMinutes, underOneHourCount
   })
   return renderVerticalBarChart({
     bars,
-    chartTitle: '着手から PR が出るまでの時間',
+    chartTitle: 'Issue１つあたりのリードタイム分布',
     headlineNumbers: [
       {
         labelText: '中央値',
