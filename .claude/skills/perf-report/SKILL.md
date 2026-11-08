@@ -15,9 +15,15 @@ HTML を手で書かない。文章の指示で書かせると、合意した見
 
 ### 1. 集計結果を保存する
 
+先に日時を取り出す。出た値を、この後の `<日時>` にそのまま書く。
+
+```bash
+date +%Y%m%d-%H%M%S
+```
+
 ```bash
 mkdir -p tmp/perf-report
-npm run --silent perf-report -- $ARGUMENTS > tmp/perf-report/$(date +%Y%m%d-%H%M%S)-perf-report-aggregate.json
+npm run --silent perf-report -- $ARGUMENTS > tmp/perf-report/<日時>-perf-report-aggregate.json
 ```
 
 考察ファイルの名前は、保存した名前から1対1で決まる（手順2）。前に打った分の考察ファイルが、別の集計結果に使われないためである。
