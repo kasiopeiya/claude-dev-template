@@ -55,7 +55,6 @@ const AGGREGATE_FILE_SUFFIX = '-aggregate.json'
 const DISCUSSION_FILE_SUFFIX = '-discussion.json'
 const DISCUSSION_SENTENCE_ENDING_PATTERN = /と考えられる。?$/
 const NO_VALUE_DISCUSSION_SENTENCE = '期間内に値が無いので考察しない'
-const DISCUSSION_ENTRY_KEYS = ['resultSentences', 'discussionSentences']
 // TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる
 const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = []
 
@@ -253,7 +252,7 @@ const REPORT_FIELD_SPECS = [
   { name: 'hasProductCode', jsonPath: 'hasProductCode', isValid: isBoolean }
 ]
 
-// 考察を書く5指標。上から、ひな形に並ぶ順。metricKey は考察ファイルのキーで、ひな形の `{{<metricKey>ResultItems}}`・`{{<metricKey>DiscussionItems}}` の頭にも使う。
+// 考察を書く5指標。上から、ひな形に並ぶ順。metricKey は考察ファイルのキーで、ひな形の `{{<metricKey>DiscussionItems}}` の頭にも使う。
 // hasNoValue は、その指標の値が期間内に無いかを返す。値が無い指標だけ、NO_VALUE_DISCUSSION_SENTENCE を文末の検査から外す
 const DISCUSSION_METRICS = [
   { metricKey: 'throughput', metricName: 'Issue処理スループット', hasNoValue: () => false },
@@ -387,10 +386,10 @@ function readExistingFile({ filePath, fileLabel }) {
 }
 
 /**
- * 考察ファイルを確かめ、5指標ごとの「結果」と「考察」の文を取り出す。
+ * 考察ファイルを確かめ、5指標ごとの「考察」の文を取り出す。
  *
  * @param {{ discussionContent: unknown, readField: (fieldName: string) => any }} discussionSource JSON として読んだ考察ファイルと、readReportFields が返す、確かめ済みの項目を読む関数（値が無い指標を見分けるのに使う）
- * @returns {Record<string, { resultSentences: string[], discussionSentences: string[] }>} metricKey ごとの文。「結果」が無い指標は空の配列
+ * @returns {Record<string, string[]>} metricKey ごとの「考察」の文（1文以上）
  * @throws {BusinessError} 考察ファイルが決まりに合わないとき（合わない箇所をすべて並べる。条件は collectDiscussionProblems）
  */
 function readDiscussions({ discussionContent, readField }) {
@@ -401,10 +400,7 @@ function readDiscussions({ discussionContent, readField }) {
     )
   }
   return Object.fromEntries(
-    DISCUSSION_METRICS.map(({ metricKey }) => {
-      const { resultSentences = [], discussionSentences } = discussionContent[metricKey]
-      return [metricKey, { resultSentences, discussionSentences }]
-    })
+    DISCUSSION_METRICS.map(({ metricKey }) => [metricKey, discussionContent[metricKey]])
   )
 }
 
@@ -442,32 +438,14 @@ function collectDiscussionProblems({ discussionContent, readField }) {
 
 /**
  * @param {{ metric: { metricKey: string, metricName: string }, metricDiscussion: unknown, hasNoValue: boolean }} metricSource 指標と、考察ファイルのその指標の中身と、その指標の値が期間内に無いか
- * @returns {string[]} 決まりに合わない箇所の説明。オブジェクトでない・知らないキーがある・「結果」が文の配列でない・「考察」が1文以上の文の配列でない・「考察」の文が「と考えられる」で終わらない（値が無い指標の NO_VALUE_DISCUSSION_SENTENCE は除く）
+ * @returns {string[]} 決まりに合わない箇所の説明。1文以上の空でない文字列の配列でない・「と考えられる」で終わらない文がある（値が無い指標の NO_VALUE_DISCUSSION_SENTENCE は除く）
  */
 function collectMetricDiscussionProblems({ metric, metricDiscussion, hasNoValue }) {
   const metricLabel = describeMetric(metric)
-  if (!isPlainObject(metricDiscussion)) {
-    return [
-      `${metricLabel}: resultSentences と discussionSentences を持つオブジェクトではありません`
-    ]
+  if (!isSentenceList(metricDiscussion) || metricDiscussion.length === 0) {
+    return [`${metricLabel}: 「考察」の文が、1文以上の空でない文字列の配列ではありません`]
   }
-  const { resultSentences, discussionSentences } = metricDiscussion
-  const unknownKeys = Object.keys(metricDiscussion).filter(
-    (entryKey) => !DISCUSSION_ENTRY_KEYS.includes(entryKey)
-  )
-  const shapeProblems = [
-    ...(unknownKeys.length > 0
-      ? [`${metricLabel}: 知らないキーがあります: ${unknownKeys.join('・')}`]
-      : []),
-    ...(resultSentences === undefined || isSentenceList(resultSentences)
-      ? []
-      : [`${metricLabel}: resultSentences が、空でない文字列の配列ではありません`]),
-    ...(isSentenceList(discussionSentences) && discussionSentences.length > 0
-      ? []
-      : [`${metricLabel}: discussionSentences が、1文以上の空でない文字列の配列ではありません`])
-  ]
-  if (shapeProblems.length > 0) return shapeProblems
-  return discussionSentences
+  return metricDiscussion
     .filter((sentence) => !isAllowedDiscussionSentence({ sentence, hasNoValue }))
     .map(
       (sentence) =>
@@ -513,23 +491,17 @@ function isSentenceList(candidate) {
 }
 
 /**
- * ひな形の `{{<metricKey>ResultItems}}`・`{{<metricKey>DiscussionItems}}` に入れる箇条書きを作る。「結果」が無い指標は null にして、ひな形の `if` の囲み（「結果」の見出しごと）を消す。
+ * ひな形の `{{<metricKey>DiscussionItems}}` に入れる箇条書きを作る。
  *
- * @param {Record<string, { resultSentences: string[], discussionSentences: string[] }>} discussions readDiscussions が返す、metricKey ごとの文
- * @returns {Record<string, string | null>} 名前ごとの、HTML にそのまま入れてよい `<li>` の並び
+ * @param {Record<string, string[]>} discussions readDiscussions が返す、metricKey ごとの「考察」の文
+ * @returns {Record<string, string>} 名前ごとの、HTML にそのまま入れてよい `<li>` の並び
  */
 function buildDiscussionPlaceholderValues(discussions) {
   return Object.fromEntries(
-    DISCUSSION_METRICS.flatMap(({ metricKey }) => {
-      const { resultSentences, discussionSentences } = discussions[metricKey]
-      return [
-        [
-          `${metricKey}ResultItems`,
-          resultSentences.length > 0 ? renderSentenceItems(resultSentences) : null
-        ],
-        [`${metricKey}DiscussionItems`, renderSentenceItems(discussionSentences)]
-      ]
-    })
+    DISCUSSION_METRICS.map(({ metricKey }) => [
+      `${metricKey}DiscussionItems`,
+      renderSentenceItems(discussions[metricKey])
+    ])
   )
 }
 
