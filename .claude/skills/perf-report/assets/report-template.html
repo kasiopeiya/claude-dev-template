@@ -225,17 +225,24 @@
             のソフトウェアデリバリーの指標です。いまは、変更のリードタイム・デプロイ頻度・失敗したデプロイからの復旧時間・変更失敗率・デプロイのやり直し率の5つです（<a
               href="#ref-dora-2026"
               >DORA, 2026</a
-            >）。どれも、アプリやサービスを本番へ届ける流れを測ります。
+            >）。
+          </p>
+          <p>
+            これらが使われるのは、作業の量ではなく、本番へ届けた結果を測るからです。コードの行数やベロシティのような作業量の指標は、行数を増やしたり見積もりを大きくしたりするだけで良く見せられるので、生産性の指標にするのは危ういとされています（<a
+              href="#ref-forsgren-2018"
+              >Forsgren et al., 2018</a
+            >）。
           </p>
           <p>
             しかし、デプロイやリリースのやり方は組織のルールで決まることが多く、1チームの工夫では動かしにくい値です。<!-- if:noProductCode -->また、この期間は本番へ届けるプロダクトのコードがありません。<!-- endif -->
           </p>
           <p>
             そこでこのレポートは、チームの中で完結する Issue と PR
-            の記録から、いまのチームの働き方を測ります。指標を目標にすると、指標をよく見せること自体が目的になり、指標が役に立たなくなります。グッドハートの法則と呼ばれる現象で、DORA
+            の記録から、いまのチームの働き方を測ります。ただし、Issue の件数や PR
+            の差分行数は、上で危ういとした作業量の指標に近いものです。指標を目標にすると、指標をよく見せること自体が目的になり、指標が役に立たなくなります。グッドハートの法則と呼ばれる現象で、DORA
             も指標を目標にすると数字をごまかす動きを招くと注意しています（<a href="#ref-dora-2026"
               >DORA, 2026</a
-            >）。そのため、ここで測る数字も KPI にはせず、ハーネスを改善する材料として読みます。
+            >）。そのため、ここで測る数字は KPI にはせず、ハーネスを改善する材料として読みます。
           </p>
 
           <h3>今回の測定項目</h3>
@@ -500,6 +507,15 @@
                 href="https://www.deloitte.com/global/en/issues/generative-ai/ai-roi-the-paradox-of-rising-investment-and-elusive-returns.html"
                 >AI ROI: The paradox of rising investment and elusive returns</a
               >
+            </li>
+            <li
+              id="ref-forsgren-2018"
+              data-citation-label="Forsgren et al., 2018"
+              data-citable-in-discussion="false"
+            >
+              <strong>Forsgren et al., 2018</strong>：Nicole Forsgren, Jez Humble, Gene Kim.
+              Accelerate: The Science of Lean Software and DevOps. IT Revolution
+              Press（邦訳『LeanとDevOpsの科学』）
             </li>
             <li
               id="ref-metr-2025"
