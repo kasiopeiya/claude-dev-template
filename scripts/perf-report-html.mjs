@@ -57,8 +57,6 @@ const AGGREGATE_FILE_SUFFIX = '-aggregate.json'
 const DISCUSSION_FILE_SUFFIX = '-discussion.json'
 const DISCUSSION_SENTENCE_ENDING_PATTERN = /と考えられる。?$/
 const NO_VALUE_DISCUSSION_SENTENCE = '期間内に値が無いので考察しない'
-// TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる
-const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = []
 
 // 縦棒の図の形（Issue #1642 で決めた値）。座標は viewBox の中の値で、図の幅は svg の width="100%" で画面に合わせる
 const CHART_BASE_WIDTH = 860
@@ -704,10 +702,6 @@ function buildPlaceholderValues(readField) {
   const humanReviewTargetCount = readField('humanReviewTargetCount')
   const workIssueCount = readField('workIssueCount')
   return {
-    // まだ描かない図の場所を空にする。後ろの実際の値が上書きするよう、先頭に置く
-    ...Object.fromEntries(
-      UNDRAWN_FIGURE_PLACEHOLDER_NAMES.map((placeholderName) => [placeholderName, ''])
-    ),
     repositoryName: escapeHtml(readField('repository').split('/').pop()),
     from: escapeHtml(readField('from')),
     to: escapeHtml(readField('to')),
