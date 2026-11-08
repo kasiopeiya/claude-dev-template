@@ -89,8 +89,6 @@ const CHART_LEGEND_TEXT_STYLE = { fontSize: 13, fontWeight: 400, color: CHART_IN
 const CHART_STACK_SEGMENT_GAP = 2
 const CHART_LABEL_TEXT_STYLE = { fontSize: 14, fontWeight: 400, color: CHART_MUTED_COLOR }
 const CHART_NOTE_TEXT_STYLE = { fontSize: 12.5, fontWeight: 400, color: CHART_MUTED_COLOR }
-// 等幅フォントも、色や線と同じくデザインシステムの変数で指す。図だけ別のフォントで残さないため
-const CHART_MONOSPACE_FONT_FAMILY = 'var(--mb-font-mono)'
 
 // 棒の後ろに敷く薄い灰色の面（backdrop）と、面の上部の注記（8時間以上の帯）。デザインシステムに、この灰色の変数が無い（document.css の `p code` などの背景が同じ値の直書き）ので、ここで名前を付ける。`--mb-surface`（白）とは別の色である
 const CHART_BACKDROP_FILL = '#F1EFE9'
@@ -109,42 +107,45 @@ const HORIZONTAL_CHART_BAR_START_X = 340
 const HORIZONTAL_CHART_MAX_BAR_LENGTH = 350
 const HORIZONTAL_CHART_PADDING_Y = 20
 const HORIZONTAL_CHART_TEXT_GAP_AFTER_BAR = 8
-// 左の文字は、棒の始まりの手前で右にそろえる。左にそろえると、40字ほどの等幅のラベル名（250〜305px）が棒の始まりや「0件」に届く
+// 左の文字は、棒の始まりの手前で右にそろえる。左にそろえると、長い分類の説明が棒の始まりや「0件」に届く
 const HORIZONTAL_CHART_TEXT_RIGHT_X = HORIZONTAL_CHART_BAR_START_X - 20
-// 分類名とラベル名を行の中心に対して上下に振り分ける
+// 分類名と分類の説明を行の中心に対して上下に振り分ける
 const HORIZONTAL_CHART_CATEGORY_NAME_OFFSET_FROM_ROW_CENTER = -2
-const HORIZONTAL_CHART_ISSUE_LABEL_RULE_OFFSET_FROM_ROW_CENTER = 14
+const HORIZONTAL_CHART_CATEGORY_DESCRIPTION_OFFSET_FROM_ROW_CENTER = 14
 const HORIZONTAL_CHART_COUNT_OFFSET_FROM_ROW_CENTER = 6
 const HORIZONTAL_CHART_BASELINE_OVERHANG = 8
 const CHART_CATEGORY_NAME_TEXT_STYLE = { fontSize: 15, fontWeight: 700, color: CHART_INK_COLOR }
-const CHART_ISSUE_LABEL_RULE_TEXT_STYLE = {
+const CHART_CATEGORY_DESCRIPTION_TEXT_STYLE = {
   fontSize: 12.5,
   fontWeight: 400,
-  color: CHART_MUTED_COLOR,
-  fontFamily: CHART_MONOSPACE_FONT_FAMILY
+  color: CHART_MUTED_COLOR
 }
 // 件数のすぐ後ろに続ける割合や添え書き
 const CHART_COUNT_TRAILING_TEXT_STYLE = { fontSize: 13, fontWeight: 400, color: CHART_MUTED_COLOR }
 const CHART_COUNT_TRAILING_TEXT_GAP = 8
 
-// 委譲の度合いの図の行。上から並べる順で、delegationCategory は JSON の delegationCounts のキー。issueLabelRule は、どのラベルの Issue をその分類に数えるか
+// 委譲の度合いの図の行。上から並べる順で、delegationCategory は JSON の delegationCounts のキー。categoryDescription は、その分類がどんな Issue かの説明
 const DELEGATION_ROWS = [
-  { delegationCategory: 'aiOnly', categoryName: 'AI 単独', issueLabelRule: 'ai-fixable' },
+  {
+    delegationCategory: 'aiOnly',
+    categoryName: 'AI 単独',
+    categoryDescription: 'AI が人間の判断を待たずに作業'
+  },
   {
     delegationCategory: 'collaboration',
     categoryName: '共同',
-    issueLabelRule: 'ready-for-human ＋ human-ai-collaboration',
+    categoryDescription: '人間と AI が対話して作る',
     zeroCountNoteText: '対話で作った成果物がこの期間に無い'
   },
   {
     delegationCategory: 'humanOnly',
     categoryName: '人間単独',
-    issueLabelRule: 'ready-for-human のみ'
+    categoryDescription: '残りの作業を人間が行う'
   },
   {
     delegationCategory: 'unclassified',
     categoryName: '分類なし',
-    issueLabelRule: '上のどれにも当たらない'
+    categoryDescription: '上のどれにも当たらない'
   }
 ]
 
@@ -717,17 +718,17 @@ function buildSizeFigure(readField) {
  */
 function buildDelegationFigure({ workIssueCount, delegationCounts }) {
   const bars = DELEGATION_ROWS.map(
-    ({ delegationCategory, categoryName, issueLabelRule, zeroCountNoteText }) => {
+    ({ delegationCategory, categoryName, categoryDescription, zeroCountNoteText }) => {
       const barAmount = delegationCounts[delegationCategory]
       const percentText = formatPercentText({ count: barAmount, totalCount: workIssueCount })
       const trailingText = barAmount === 0 && zeroCountNoteText ? zeroCountNoteText : percentText
       return {
         barAmount,
         categoryName,
-        issueLabelRule,
+        categoryDescription,
         countText: `${barAmount}件`,
         trailingText,
-        hoverText: `${categoryName}（${issueLabelRule}）：${barAmount}件・${trailingText}`
+        hoverText: `${categoryName}（${categoryDescription}）：${barAmount}件・${trailingText}`
       }
     }
   )
@@ -1116,9 +1117,9 @@ function buildRoundedTopOutline({ leftX, rightX, bottomY, topY, cornerRadius }) 
 }
 
 /**
- * 棒の長さを最大の棒に対する比で決める横棒の図を描く。行は上から並べ、左に分類名とラベル名、棒の右に件数と添え書きを置く。
+ * 棒の長さを最大の棒に対する比で決める横棒の図を描く。行は上から並べ、左に分類名と分類の説明、棒の右に件数と添え書きを置く。
  *
- * @param {{ bars: { barAmount: number, categoryName: string, issueLabelRule: string, countText: string, trailingText: string, hoverText: string }[], chartTitle: string }} chart 上から並べる行（1行以上。barAmount は棒が表す量で、0 以上）と、図の題（aria-label の頭に付く）
+ * @param {{ bars: { barAmount: number, categoryName: string, categoryDescription: string, countText: string, trailingText: string, hoverText: string }[], chartTitle: string }} chart 上から並べる行（1行以上。barAmount は棒が表す量で、0 以上）と、図の題（aria-label の頭に付く）
  * @returns {string} svg 要素の HTML
  */
 function renderHorizontalBarChart({ bars, chartTitle }) {
@@ -1146,11 +1147,11 @@ function renderHorizontalBarChart({ bars, chartTitle }) {
 }
 
 /**
- * @param {{ bar: { categoryName: string, issueLabelRule: string, countText: string, trailingText: string, hoverText: string }, rowTopY: number, barLength: number }} barRow 描く行と、行の上端の y、棒の長さ（0 以上）
- * @returns {string} 棒・分類名・ラベル名・件数をまとめた g 要素の HTML。マウスを載せると hoverText が出る
+ * @param {{ bar: { categoryName: string, categoryDescription: string, countText: string, trailingText: string, hoverText: string }, rowTopY: number, barLength: number }} barRow 描く行と、行の上端の y、棒の長さ（0 以上）
+ * @returns {string} 棒・分類名・分類の説明・件数をまとめた g 要素の HTML。マウスを載せると hoverText が出る
  */
 function renderHorizontalBarRow({ bar, rowTopY, barLength }) {
-  const { categoryName, issueLabelRule, countText, trailingText, hoverText } = bar
+  const { categoryName, categoryDescription, countText, trailingText, hoverText } = bar
   const rowCenterY = rowTopY + HORIZONTAL_CHART_BAR_THICKNESS / 2
   return [
     '<g>',
@@ -1165,10 +1166,10 @@ function renderHorizontalBarRow({ bar, rowTopY, barLength }) {
       textAnchor: 'end'
     }),
     renderChartText({
-      text: issueLabelRule,
+      text: categoryDescription,
       anchorX: HORIZONTAL_CHART_TEXT_RIGHT_X,
-      baselineY: rowCenterY + HORIZONTAL_CHART_ISSUE_LABEL_RULE_OFFSET_FROM_ROW_CENTER,
-      textStyle: CHART_ISSUE_LABEL_RULE_TEXT_STYLE,
+      baselineY: rowCenterY + HORIZONTAL_CHART_CATEGORY_DESCRIPTION_OFFSET_FROM_ROW_CENTER,
+      textStyle: CHART_CATEGORY_DESCRIPTION_TEXT_STYLE,
       textAnchor: 'end'
     }),
     renderChartText({

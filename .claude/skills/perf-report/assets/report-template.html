@@ -118,7 +118,7 @@
                   {{aiOnlyPercent}}<span class="perf-kpi-unit">%</span>
                 </div>
                 <div class="perf-kpi-note">
-                  {{workIssueCount}}件のうち{{aiOnlyCount}}件。着手前のラベルによる
+                  {{workIssueCount}}件のうち{{aiOnlyCount}}件。着手前の分類による
                 </div>
               </div>
               <div>
@@ -235,7 +235,8 @@
 
           <p>
             対象は {{repository}} の {{from}}〜{{to}} です。データは GitHub の
-            Issue・PR・ボードの記録で、集計用のスクリプトで機械的に数えました。
+            Issue・PR・ボード（Issue の進み具合を列で管理する GitHub
+            の画面）の記録で、集計用のスクリプトで機械的に数えました。
           </p>
           <table>
             <thead>
@@ -249,33 +250,27 @@
               <tr>
                 <td class="mb-rowlabel">Issue処理スループット</td>
                 <td>
-                  completed で close した Issue から、PR
-                  のレビュー通知・子を持つ親・<code>phase</code>・週次の
-                  Issue・メモ（ラベルが無く本文が空）を除いた件数<br />close
-                  した日（日本時間）で週に分ける（月曜始まり）<br />全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう
+                  完了として閉じた Issue から、PR のレビュー通知・子を持つ親・最上位のまとめ用の
+                  Issue・週次の Issue・メモ（分類が無く本文が空）を除いた件数<br />閉じた日（日本時間）で週に分ける（月曜始まり）<br />全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう
                 </td>
                 <td>—</td>
               </tr>
               <tr>
                 <td class="mb-rowlabel">AIへの委譲度</td>
                 <td>
-                  Issue に付いたラベルだけで機械的に分類した件数<br /><code>ai-fixable</code> は
-                  <code>issue:decided</code>
-                  の有無を問わない<br />分類なしは、3択のラベルが無いものと
-                  <code>needs-human-decision</code> のまま close したもの
+                  着手前に Issue に付けた分類だけで機械的に数えた件数<br />AI 単独は AI
+                  が人間の判断を待たずに作業してよい Issue で、人間が先に方針を決めた Issue
+                  も含む<br />共同は人間と AI が対話しながら成果物を作る
+                  Issue、人間単独は残りの作業を人間が行う Issue<br />分類なしは、分類が無いものと、人間の判断待ちのまま閉じたもの
                 </td>
                 <td>—</td>
               </tr>
               <tr>
                 <td class="mb-rowlabel">Issue１つあたりのリードタイム分布</td>
                 <td>
-                  <code>ai-fixable</code> の作業 Issue で、ボードの Status が最初に
-                  <code>In Review</code>（PR が Issue に紐づいた時点）になった時刻と、その直前に
-                  <code>In progress</code>
-                  になった時刻の差<br />{{targetIssueCount}}件のうち{{measuredIssueCount}}件で数えた。<code
-                    >In progress</code
-                  >
-                  と <code>In Review</code> の両方の記録が無い Issue は数えない<br />割合は四捨五入のため、合計が100%にならないことがある
+                  AI 単独の作業 Issue で、ボードの状態が最初に「レビュー中」（PR が Issue
+                  に紐づいた時点）になった時刻と、その直前に「作業中」になった時刻の差<br />{{targetIssueCount}}件のうち{{measuredIssueCount}}件で数えた。「作業中」と「レビュー中」の両方の記録が無い
+                  Issue は数えない<br />割合は四捨五入のため、合計が100%にならないことがある
                 </td>
                 <td>
                   Issue を作るまでの相談、自動検査、レビュー、マージの時間は含まない<br />AI
@@ -285,8 +280,7 @@
               <tr>
                 <td class="mb-rowlabel">人間レビュー対象の割合</td>
                 <td>
-                  マージした PR のうち、<code>needs-human-review</code>
-                  が付いた割合<br />付く条件は、このプロジェクトのレビュー方針が決める
+                  マージした PR のうち、人間がレビューする対象の印が付いた割合<br />印が付く条件は、このプロジェクトのレビュー方針が決める
                 </td>
                 <td>対象はルールで決まる。ルールが変わると割合も変わる</td>
               </tr>
@@ -296,91 +290,6 @@
                   期間内にマージした PR の追加行数と削除行数の合計<br />割合は四捨五入のため、合計が100%にならないことがある
                 </td>
                 <td>200行と300行は、このプロジェクトが決めた分割の線</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <h3>ラベルと状態の意味</h3>
-          <p>
-            このプロジェクトでは、Issue と PR
-            にラベル（分類の札）を付けて仕事を振り分けています。ボードは、Issue
-            の進み具合を列で管理する GitHub の画面です。
-          </p>
-          <table>
-            <thead>
-              <tr>
-                <th class="mb-rowlabel">名前</th>
-                <th class="mb-rowlabel">種類</th>
-                <th>意味</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="mb-rowlabel"><code>ai-fixable</code></td>
-                <td class="mb-rowlabel">Issue のラベル</td>
-                <td>AI が人間の判断を待たずに作業してよい Issue。図では「AI 単独」に数える</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>issue:decided</code></td>
-                <td class="mb-rowlabel">Issue のラベル</td>
-                <td>人間が決めるべき点を、作業の前に人間が決めた Issue</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>needs-human-decision</code></td>
-                <td class="mb-rowlabel">Issue のラベル</td>
-                <td>作業の前に、人間が方針を決める必要がある Issue</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>ready-for-human</code></td>
-                <td class="mb-rowlabel">Issue のラベル</td>
-                <td>方針は決まっているが、残りの作業を AI ができず、人間が行う Issue</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>human-ai-collaboration</code></td>
-                <td class="mb-rowlabel">Issue のラベル</td>
-                <td>
-                  人間と AI が対話しながら成果物を作る Issue（例：要件定義書を書く）。<code
-                    >ready-for-human</code
-                  >
-                  と一緒に付く
-                </td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>phase</code></td>
-                <td class="mb-rowlabel">Issue のラベル</td>
-                <td>
-                  Issue を大きな区分ごとにまとめる、最上位の入れ物の Issue。作業そのものではない
-                </td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel">completed</td>
-                <td class="mb-rowlabel">Issue の閉じ方</td>
-                <td>作業を終えて閉じたこと。「対応しない」と決めて閉じたものとは区別される</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>In progress</code></td>
-                <td class="mb-rowlabel">ボードの状態</td>
-                <td>AI か人間が、その Issue の作業を始めた</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>In Review</code></td>
-                <td class="mb-rowlabel">ボードの状態</td>
-                <td>作業の結果が PR として出て、Issue に紐づいた</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>needs-human-review</code></td>
-                <td class="mb-rowlabel">PR のラベル</td>
-                <td>マージの前か後に、人間がレビューする PR</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>policy</code></td>
-                <td class="mb-rowlabel">PR のラベル</td>
-                <td>開発の判断基準（ルールを書いた文書）を変える PR</td>
-              </tr>
-              <tr>
-                <td class="mb-rowlabel"><code>cicd</code></td>
-                <td class="mb-rowlabel">PR のラベル</td>
-                <td>自動テストや自動デプロイの仕組みを変える PR</td>
               </tr>
             </tbody>
           </table>
@@ -409,7 +318,7 @@
           <!-- if:delegationFigure -->
           <figure class="mb-figure">
             <div class="mb-figure-frame">{{delegationFigure}}</div>
-            <figcaption>fig.2 作業 Issue {{workIssueCount}}件のラベル別の内訳</figcaption>
+            <figcaption>fig.2 作業 Issue {{workIssueCount}}件の分類別の内訳</figcaption>
           </figure>
           <!-- endif -->
           <!-- if:noWorkIssue -->
@@ -421,7 +330,7 @@
             <li>
               人の手をどれだけ残しているかを見る。他のプロジェクトで人をどこに置くかの目安になる
             </li>
-            <li>ラベルは着手前の分類で、実際の作業の記録ではない</li>
+            <li>分類は着手前に付けたもので、実際の作業の記録ではない</li>
             <li>
               Issue を作るまでの相談は含まない（人間と相談して方針を決めた Issue も AI 単独に入る）
             </li>
@@ -472,8 +381,7 @@
               対象になった割合で、人間が読んだ割合やかかった時間ではなく、これだけではレビューがボトルネックかどうかは言えない
             </li>
             <li>
-              {{humanReviewTargetCount}}件のうち{{policyOrCicdCount}}件は
-              <code>policy</code>・<code>cicd</code> の変更で、プロダクト開発では内訳が変わる
+              {{humanReviewTargetCount}}件のうち{{policyOrCicdCount}}件は、開発のルール文書や自動テスト・自動デプロイの仕組みの変更で、プロダクト開発では内訳が変わる
             </li>
           </ul>
 
