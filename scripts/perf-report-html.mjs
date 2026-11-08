@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 責務: 保存した `scripts/perf-report.mjs` の集計結果（JSON）と、会話中の AI が書いた考察ファイル（JSON）を読んで、考察を決まりと集計結果に照らして確かめ、
+// 責務: 保存した `scripts/perf-report.mjs` の集計結果（JSON）と、会話中の AI が書いた考察ファイル（JSON）を読んで、考察を決まりと集計結果とひな形の参考文献に照らして確かめ、
 //   `/perf-report` のひな形（report-template.html）の文字と数字と図（svg）と考察を埋めて HTML を書き、その絶対パスを標準出力に返す。
 //   数える処理は `perf-report.mjs`、考察の中身は AI、図と考察を除く見た目と固定の文言はひな形が持つ。
 //
@@ -16,6 +16,10 @@
 //   何も書かずに止まり、原因をすべて並べる。考察の無いレポートや、推測を事実のように書いたレポートを配らないためである。文末は機械で判定できるので、文章の指示に任せない。
 //   タイトルにはパスやラベル名が入り、レポートを配る相手には意味が分からない。集計結果と突き合わせれば機械で判定できるので、これも文章の指示に任せない（#1685）。
 //   照合するのはタイトル全体で、タイトルの一部だけを写した文は止めない。
+// - 考察の出典（英字と4桁の数の両方を含むかっこ）が「（名前, 4桁の年）」の形でないか、ひな形の参考文献で考察に引いてよいとされた表記のどれとも一致しないときも止まる。
+//   AI が記憶から研究を引くと、出典に無い結果や崩れた出典が配布物に載るためである。形と一致は機械で判定できるので、文章の指示に任せない（#1698）。
+//   参考文献の表記と印はひな形の `data-citation-label`・`data-citable-in-discussion` から読み、ここに書き写さない。参考文献を足すときにコードを直さずに済ませるためである。
+//   文の中身が研究の結果と合っているかは機械で判定できないので、SKILL.md の指示に任せる。
 //   値が無い指標（期間内に作業 Issue・測れた Issue・マージした PR が無い）だけは、決まった1文（NO_VALUE_DISCUSSION_SENTENCE）を文末の検査から外す。
 //   「値が無い」は事実で、「と考えられる」で終えると推測に見えるためである。言い換えを許すと文末の検査が骨抜きになるので、1文に固定する。
 // - 図の svg はこのスクリプトが描く。ひな形に座標を書くと、棒の数が JSON で変わる図を表せないためである。縦棒の図（積み上げの棒も）は renderVerticalBarChart、横棒の図は renderHorizontalBarChart で描き、それぞれ基準線・棒・文字をそろえる。
@@ -57,6 +61,14 @@ const AGGREGATE_FILE_SUFFIX = '-aggregate.json'
 const DISCUSSION_FILE_SUFFIX = '-discussion.json'
 const DISCUSSION_SENTENCE_ENDING_PATTERN = /と考えられる。?$/
 const NO_VALUE_DISCUSSION_SENTENCE = '期間内に値が無いので考察しない'
+const PARENTHESIZED_TEXT_PATTERN = /[（(]([^（）()]*)[）)]/g
+// 英字を条件に入れるのは、日付や件数だけのかっこ（「（2026-10-07）」など）を出典として拾わないためである
+const CITATION_LIKE_PATTERN = /(?=.*[A-Za-z])(?=.*\d{4})/
+const CITATION_FORM_PATTERN = /^（([A-Za-z][A-Za-z ]*, \d{4})）$/
+// ひな形の参考文献の項目。属性の並びは Prettier が折り返すので、開きタグ全体を拾ってから属性を読む
+const REFERENCE_ITEM_TAG_PATTERN = /<li\b[^>]*\bdata-citation-label="[^"]*"[^>]*>/g
+const REFERENCE_LABEL_ATTRIBUTE_PATTERN = /\bdata-citation-label="([^"]*)"/
+const REFERENCE_CITABLE_ATTRIBUTE_PATTERN = /\bdata-citable-in-discussion="(true|false)"/
 
 // 縦棒の図の形（Issue #1642 で決めた値）。座標は viewBox の中の値で、図の幅は svg の width="100%" で画面に合わせる
 const CHART_BASE_WIDTH = 860
@@ -290,22 +302,24 @@ const DISCUSSION_METRICS = [
  *
  * @returns {void}
  * @throws {BusinessError} 引数が違うとき・集計結果か考察ファイルが読めないとき・考察ファイルが決まりに合わないとき（条件は readAggregatePathArgument・readJsonFile・readReportFields・readDiscussions）
- * @throws {TechnicalError} ひな形とこのスクリプトの対応がずれたとき（条件は fillTemplate）
+ * @throws {TechnicalError} ひな形とこのスクリプトの対応がずれたとき（条件は readReferences・fillTemplate）
  */
 function runCli() {
   const aggregatePath = readAggregatePathArgument(process.argv.slice(2))
   const readField = readReportFields(
     readJsonFile({ filePath: aggregatePath, fileLabel: '集計結果' })
   )
+  const template = readReportTemplate()
   const discussions = readDiscussions({
     discussionContent: readJsonFile({
       filePath: deriveDiscussionPath(aggregatePath),
       fileLabel: '考察ファイル'
     }),
-    readField
+    readField,
+    references: readReferences(template)
   })
   const html = fillTemplate({
-    template: readReportTemplate(),
+    template,
     placeholderValues: {
       ...buildPlaceholderValues(readField),
       ...buildDiscussionPlaceholderValues(discussions)
@@ -357,6 +371,33 @@ function readReportTemplate() {
 }
 
 /**
+ * ひな形の参考文献の項目から、出典の表記と、考察で引いてよいかを読む。
+ *
+ * @param {string} template ひな形（report-template.html）の中身
+ * @returns {{ citableLabels: Set<string>, nonCitableLabels: Set<string> }} 考察で引いてよい出典の表記と、参考文献にあるが考察では引かない出典の表記
+ * @throws {TechnicalError} 参考文献の項目が1つも無いとき・考察で引いてよいかの印が無い項目があるとき。直すのはひな形かこのスクリプトを保守する人である
+ */
+function readReferences(template) {
+  const citableLabels = new Set()
+  const nonCitableLabels = new Set()
+  const referenceItemTags = template.match(REFERENCE_ITEM_TAG_PATTERN) ?? []
+  if (referenceItemTags.length === 0) {
+    throw new TechnicalError('ひな形に、出典の表記を持つ参考文献の項目がありません')
+  }
+  for (const referenceItemTag of referenceItemTags) {
+    const [, citationLabel] = referenceItemTag.match(REFERENCE_LABEL_ATTRIBUTE_PATTERN)
+    const citableMatch = referenceItemTag.match(REFERENCE_CITABLE_ATTRIBUTE_PATTERN)
+    if (citableMatch === null) {
+      throw new TechnicalError(
+        `ひな形の参考文献「${citationLabel}」に、考察で引いてよいかの印（true か false）がありません`
+      )
+    }
+    ;(citableMatch[1] === 'true' ? citableLabels : nonCitableLabels).add(citationLabel)
+  }
+  return { citableLabels, nonCitableLabels }
+}
+
+/**
  * @param {{ filePath: string, fileLabel: string }} jsonFile 読むファイルの絶対パスと、エラーに出す呼び名
  * @returns {unknown} JSON として読んだ結果。中身の形は確かめていない
  * @throws {BusinessError} ファイルが無いとき・空のとき・JSON として読めないとき
@@ -395,12 +436,16 @@ function readExistingFile({ filePath, fileLabel }) {
 /**
  * 考察ファイルを確かめ、5指標ごとの「考察」の文を取り出す。
  *
- * @param {{ discussionContent: unknown, readField: (fieldName: string) => any }} discussionSource JSON として読んだ考察ファイルと、readReportFields が返す、確かめ済みの項目を読む関数（値が無い指標を見分けるのに使う）
+ * @param {{ discussionContent: unknown, readField: (fieldName: string) => any, references: ReturnType<typeof readReferences> }} discussionSource JSON として読んだ考察ファイルと、readReportFields が返す、確かめ済みの項目を読む関数（値が無い指標を見分けるのに使う）と、ひな形の参考文献の出典の表記（readReferences）
  * @returns {Record<string, string[]>} metricKey ごとの「考察」の文（1文以上）
  * @throws {BusinessError} 考察ファイルが決まりに合わないとき（合わない箇所をすべて並べる。条件は collectDiscussionProblems）
  */
-function readDiscussions({ discussionContent, readField }) {
-  const discussionProblems = collectDiscussionProblems({ discussionContent, readField })
+function readDiscussions({ discussionContent, readField, references }) {
+  const discussionProblems = collectDiscussionProblems({
+    discussionContent,
+    readField,
+    references
+  })
   if (discussionProblems.length > 0) {
     throw new BusinessError(
       `考察ファイルが決まりに合いません。直して HTML を作る段だけを打ち直してください:\n- ${discussionProblems.join('\n- ')}`
@@ -412,10 +457,10 @@ function readDiscussions({ discussionContent, readField }) {
 }
 
 /**
- * @param {{ discussionContent: unknown, readField: (fieldName: string) => any }} discussionSource readDiscussions と同じ
+ * @param {{ discussionContent: unknown, readField: (fieldName: string) => any, references: ReturnType<typeof readReferences> }} discussionSource readDiscussions と同じ
  * @returns {string[]} 決まりに合わない箇所の説明。オブジェクトでない・知らないキーがある・5指標のどれかが抜けている・指標ごとの考察が決まりに合わない（collectMetricDiscussionProblems）
  */
-function collectDiscussionProblems({ discussionContent, readField }) {
+function collectDiscussionProblems({ discussionContent, readField, references }) {
   if (!isPlainObject(discussionContent)) {
     return ['考察ファイルの中身が、指標ごとのキーを持つオブジェクトではありません']
   }
@@ -439,7 +484,8 @@ function collectDiscussionProblems({ discussionContent, readField }) {
         metric,
         metricDiscussion: discussionContent[metric.metricKey],
         hasNoValue: metric.hasNoValue(readField),
-        recordTitles
+        recordTitles,
+        references
       })
     )
   ]
@@ -455,10 +501,16 @@ function collectRecordTitles(readField) {
 }
 
 /**
- * @param {{ metric: { metricKey: string, metricName: string }, metricDiscussion: unknown, hasNoValue: boolean, recordTitles: string[] }} metricSource 指標と、考察ファイルのその指標の中身と、その指標の値が期間内に無いかと、集計結果のタイトル（collectRecordTitles）
- * @returns {string[]} 決まりに合わない箇所の説明。1文以上の空でない文字列の配列でない・「と考えられる」で終わらない文がある（値が無い指標の NO_VALUE_DISCUSSION_SENTENCE は除く）・集計結果のタイトルをそのまま含む文がある
+ * @param {{ metric: { metricKey: string, metricName: string }, metricDiscussion: unknown, hasNoValue: boolean, recordTitles: string[], references: ReturnType<typeof readReferences> }} metricSource 指標と、考察ファイルのその指標の中身と、その指標の値が期間内に無いかと、集計結果のタイトル（collectRecordTitles）と、ひな形の参考文献の出典の表記（readReferences）
+ * @returns {string[]} 決まりに合わない箇所の説明。1文以上の空でない文字列の配列でない・「と考えられる」で終わらない文がある（値が無い指標の NO_VALUE_DISCUSSION_SENTENCE は除く）・集計結果のタイトルをそのまま含む文がある・出典が決まりに合わない文がある（collectCitationProblems）
  */
-function collectMetricDiscussionProblems({ metric, metricDiscussion, hasNoValue, recordTitles }) {
+function collectMetricDiscussionProblems({
+  metric,
+  metricDiscussion,
+  hasNoValue,
+  recordTitles,
+  references
+}) {
   const metricLabel = describeMetric(metric)
   if (!isSentenceList(metricDiscussion) || metricDiscussion.length === 0) {
     return [`${metricLabel}: 「考察」の文が、1文以上の空でない文字列の配列ではありません`]
@@ -472,8 +524,39 @@ function collectMetricDiscussionProblems({ metric, metricDiscussion, hasNoValue,
       .map(
         (recordTitle) =>
           `${metricLabel}: 「考察」の文が、集計結果の Issue・PR のタイトル「${recordTitle}」をそのまま含んでいます。何の作業かを言葉で言い換えてください: 「${sentence}」`
-      )
+      ),
+    ...collectCitationProblems({ sentence, references }).map(
+      (citationProblem) => `${metricLabel}: ${citationProblem}: 「${sentence}」`
+    )
   ])
+}
+
+/**
+ * 考察の文1つから出典に見えるかっこ（英字と4桁の数の両方を含むもの）を拾い、形と参考文献との一致を確かめる。
+ *
+ * @param {{ sentence: string, references: ReturnType<typeof readReferences> }} citationSource 「考察」の文1つと、ひな形の参考文献の出典の表記（readReferences）
+ * @returns {string[]} 出典ごとの、決まりに合わない理由。形が「（名前, 4桁の年）」でない・参考文献にあるが考察では引かない・参考文献に無い
+ */
+function collectCitationProblems({ sentence, references }) {
+  const { citableLabels, nonCitableLabels } = references
+  return [...sentence.matchAll(PARENTHESIZED_TEXT_PATTERN)]
+    .filter(([, parenthesizedText]) => CITATION_LIKE_PATTERN.test(parenthesizedText))
+    .flatMap(([citationText]) => {
+      const formMatch = citationText.match(CITATION_FORM_PATTERN)
+      if (formMatch === null) {
+        return [
+          `出典「${citationText}」の形が崩れています。「（DORA, 2024）」のように、全角のかっこの中に名前・半角の読点と空白・4桁の年を書いてください`
+        ]
+      }
+      const [, citationLabel] = formMatch
+      if (citableLabels.has(citationLabel)) return []
+      if (nonCitableLabels.has(citationLabel)) {
+        return [`出典「${citationText}」は参考文献にありますが、考察では引かないものです`]
+      }
+      return [
+        `出典「${citationText}」は参考文献にありません。考察で引いてよい出典は ${[...citableLabels].join('・')} です`
+      ]
+    })
 }
 
 /**
@@ -735,7 +818,13 @@ function buildPlaceholderValues(readField) {
     noMergedPullRequest: hasMergedPullRequest ? null : 'true',
     throughputFigure: buildThroughputFigure(readField('weeks')),
     sizeFigure: hasMergedPullRequest ? buildSizeFigure(readField) : null,
-    reviewFigure: hasMergedPullRequest ? buildReviewFigure(readField('weeks')) : null,
+    reviewFigure: hasMergedPullRequest
+      ? buildReviewFigure({
+          weeks: readField('weeks'),
+          mergedPullRequestCount,
+          humanReviewTargetCount
+        })
+      : null,
     ...buildDelegationPlaceholderValues(readField),
     ...buildSpeedPlaceholderValues(readField)
   }
@@ -878,15 +967,26 @@ function describeWeekAxis({ weekStart, countedFrom, countedTo, isFullWeek }) {
 }
 
 /**
- * 週ごとのマージした PR を、人間レビューの対象と対象外の積み上げ棒にする。棒の上に対象の割合を出し、凡例を添える。
+ * 週ごとのマージした PR を、人間レビューの対象と対象外の積み上げ棒にする。棒の上に対象の割合を出し、図の上に期間全体の割合の大きな数字と、凡例を添える。
+ * 期間全体の割合は、要約の KPI と同じ件数から作る。図と要約で値が食い違わないためである。
  *
- * @param {Parameters<typeof buildReviewBar>[0][]} weeks 確かめ済みの週（1件以上）。マージした PR が1件以上ある期間のときだけ呼ぶ（0件のときの文言は、ひな形の `if:noMergedPullRequest` が持つ）
+ * @param {{ weeks: Parameters<typeof buildReviewBar>[0][], mergedPullRequestCount: number, humanReviewTargetCount: number }} review 確かめ済みの週（1件以上）と、期間全体のマージした PR の件数（1以上）と、そのうち人間レビューの対象の件数。マージした PR が1件以上ある期間のときだけ呼ぶ（0件のときの文言は、ひな形の `if:noMergedPullRequest` が持つ）
  * @returns {string} svg 要素の HTML
  */
-function buildReviewFigure(weeks) {
+function buildReviewFigure({ weeks, mergedPullRequestCount, humanReviewTargetCount }) {
   return renderVerticalBarChart({
     bars: weeks.map(buildReviewBar),
     chartTitle: '週ごとの人間レビュー対象の割合',
+    headlineNumbers: [
+      {
+        labelText: '期間全体の平均',
+        valueText: formatPercentText({
+          count: humanReviewTargetCount,
+          totalCount: mergedPullRequestCount
+        }),
+        unitText: `（${humanReviewTargetCount}/${mergedPullRequestCount}件）`
+      }
+    ],
     legendItems: [REVIEW_TARGET_LEGEND_ITEM, REVIEW_NON_TARGET_LEGEND_ITEM]
   })
 }
