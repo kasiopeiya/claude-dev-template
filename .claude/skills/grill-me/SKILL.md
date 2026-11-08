@@ -5,13 +5,21 @@ description: Interview the user relentlessly about a plan or design until reachi
 
 ## Agree the scope first — always
 
-**Before anything else**, ask:
+**Before anything else**, agree on one sentence with the user and get an explicit yes. That sentence is the scope of this interview.
+
+**By default the sentence is a thin vertical slice（曳光弾）** — start small and grow later (refined-engineer-judgment-principles「小さく始めて育てる」). Don't ask for it: write the thinnest path from entry to exit that the request implies, as one sentence. If the sentence you wrote lists features rather than one path, cut it down to one path before presenting it. Only when the request gives too little to write one path (e.g. `/grill-me` with no context), ask this instead:
+
+> 「これが動いた」と言える、入口から出口まで通る一番薄い一本道は何ですか？
+
+When the work is not code — a Skill definition, a policy, a guide — read「一番薄い一本道」as「目的を満たす最小の変更」. If the answer is a list of features rather than one path, say so and ask again.
+
+**Only if the arguments contain `--deep`**, the sentence may be any state the user calls done. Ask:
 
 > 今回作るものが、どうなっていれば完成ですか？
 
-Ask for an **externally observable state** of what is being built, not a restatement of the work（✅「dev に `cdk deploy` が通り、スタックができた」／❌「CDK を書く」）. Don't ask when this interview ends — **Stop** below already fixes that, so the answer would be the same every time and narrow nothing. If the user's answer names the end of the interview instead of the thing being built（❌「Issue 作成まで」）, say so and ask again. Restate the answer as one sentence and get an explicit yes before asking anything else. That sentence is the scope of this interview.
+Ask for an **externally observable state** of what is being built, not a restatement of the work（✅「dev に `cdk deploy` が通り、スタックができた」／❌「CDK を書く」）. Don't ask when this interview ends — **Stop** below already fixes that, so the answer would be the same every time and narrow nothing. If the user's answer names the end of the interview instead of the thing being built（❌「Issue 作成まで」）, say so and ask again.
 
-If the caller passed a scope or a stopping condition in the arguments (another Skill may invoke this one), adopt it as the agreed sentence and skip this question — the caller already fixed the scope, and asking the user again only widens it.
+If the caller passed a scope or a stopping condition in the arguments (another Skill may invoke this one), adopt it as the agreed sentence as is — don't cut it down to one path — and ask neither question: the caller already fixed the scope, and asking the user again only widens it.
 
 **Look up past decisions next — always.** Right after the scope is agreed (or adopted from the caller) and before the first question, run `/past-decision-search` with the Skill tool, passing the mechanisms, paths, and keywords that appear on the agreed sentence. Do this every time, not only when it seems needed: an AI cannot tell which past decisions it is missing. When a recommendation would overturn a decision it returned, cite that decision and say why it should be overturned.
 
@@ -25,13 +33,13 @@ Ask about something outside it only when one of these holds — the list is exha
 
 These are never reasons to ask:「後で困るから今決めておく」「ついでに聞いておく」「網羅的に詰めるのが本Skillの役目」「拡張性も詰めないと不完全」.
 
-**Not-now list.** Every topic you did not ask about goes on a Not-now list — one line each, in the form `<論点> — <何が起きたら決める必要が出るか>`. Present it at the end alongside the confirmed decisions, and tell the user it carries into the Plan's スコープ「やらないこと」. It records a deferral, not a rejection.
+**Not-now list.** Every topic you did not ask about goes on a Not-now list — one line each, in the form `<論点> — <何が起きたら決める必要が出るか>`. Present it at the end alongside the confirmed decisions, and tell the user it carries into the Plan's スコープ「やらないこと」. It records a deferral, not a rejection. When a rebuttal (e.g. from `/devil`) raises a topic outside the agreed sentence, put it on this list instead of turning it into a question — even if the rebuttal holds.
 
 **Stop** once every element of the agreed sentence has a decision, and hand control back instead of continuing indefinitely. If the caller passed a stopping condition in the arguments, that one wins.
 
 ## Interview
 
-Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer, and add one line stating whether taking that answer still satisfies the agreed sentence and the issue's purpose — a recommendation that would fail to satisfy either is not a valid recommendation.
+Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer, and add one line stating whether taking that answer still satisfies the agreed sentence and the issue's purpose — a recommendation that would fail to satisfy either is not a valid recommendation. Never add to a recommendation a mechanism (a label, a gate, a branch) that appears in neither the user's request nor the agreed sentence; if it seems to need one, put that on the Not-now list instead.
 
 Back every recommendation with one fact that exists now: an issue number of a real case, a line of `docs/requirements.md`, or a quotable original text of a file or code. Never mark an option as recommended when all you can show is a possibility ("〜ことがある" / "might happen"); present the options without a recommendation and let the user choose.
 
@@ -46,16 +54,3 @@ Before and during the interview, read the requirements (docs/requirements.md —
 When the plan implies documentation changes, ask which document's purpose (対象読者・目的) each piece of resulting content belongs to. Content that doesn't serve any existing document's purpose belongs elsewhere, or nowhere — surface this before it gets frozen into a task list. This catches purpose-mismatch at the source, since downstream sessions treat the issue's task list as ground truth.
 
 As you interview, hold each answer and proposed direction against the refined engineer judgment principles (docs/policy/refined-engineer-judgment-principles.md — the judgment north star). When an answer violates a principle, name the principle and push back before it freezes into the plan. Apply the whole set — e.g. premature tech lock-in (決定を遅らせる), needless complexity (Less is more), drifting from the stated purpose (目的を見失えば、速く進むほど遠ざかる). The most common case: wanting to build something not in the agreed requirements — probe whether it is actually needed (what present need drives it, what breaks if omitted); speculative "we might need it later" additions are YAGNI violations. This pushback applies only to something absent from the agreed sentence. Never invoke YAGNI to cut down the volume of the work the agreed sentence itself asks for — that would produce a plan that fails the sentence it was supposed to satisfy. A question that decides which of several options carries out an element of the agreed sentence (e.g. where a new Skill is called from) is different: ask of each option what the present need is and what breaks if it is left out.
-
-## `--small` — the agreed sentence must be a thin vertical slice
-
-Applies **only if the arguments contain `--small`**. It changes nothing above except the first question and what counts as an acceptable scope sentence.
-
-- **`--small` なし**：ユーザーが「完成」と呼ぶ、作るものの状態であれば何でもよい
-- **`--small` あり**：曳光弾（薄い縦スライス）であること。最初の質問を省き、AI が依頼から一番薄い一本道を一文に書いて、明示の肯定を得る
-
-Skip the question because `--small` already answers how deep the scope goes. If the sentence you wrote lists features rather than one path, cut it down to one path before presenting it. Only when the request gives too little to write one path (e.g. `/grill-me --small` with no context), ask this instead:
-
-> 「これが動いた」と言える、入口から出口まで通る一番薄い一本道は何ですか？
-
-When the work is not code — a Skill definition, a policy, a guide — read「一番薄い一本道」as「目的を満たす最小の変更」. If the answer is a list of features rather than one path, say so and ask again.
