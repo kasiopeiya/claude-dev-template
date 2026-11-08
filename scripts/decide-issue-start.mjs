@@ -22,9 +22,14 @@
 // - `--after-issue-check` は、監査を打った後だと呼ぶ側が渡す印にする。このコマンドは前回の結果を覚えないので、
 //   旗が無いと、監査が判定を書き戻さないたびに `監査する：` が返り続ける。旗があれば監査を返さず、
 //   判定が書き戻されたかを findSkipImplementationDecision が見て、書き戻されていなければ止める。
+// - `--skip-issue-check` は、人間が監査を飛ばして急ぐ Skill（`/asap`）だけが渡す。#1231 の「『issue N 対応して』では
+//   issue-check を自動で通す」を、人間しか打てない Skill に限って外す。読み替えを SKILL.md に書くと、人間判断待ちの
+//   Issue をラベルを見ずに実装しうるので、旗として本スクリプトに置く。旗があれば、監査の指示と「監査が判定を書き戻さなかった」
+//   で止める判定だけを外す。close 済み・子を持つ親・人間向けのラベル・対象ラベルが無い、の判定は旗の有無で変えない。
+//   子を選ばせるときは、打ち直しにも旗を付けさせる。旗なしで打ち直すと、子の判定で `監査する：` が返るため。
 // - 対象ラベルは config.mjs の targetIssueLabel から読み、このファイルには持たない。
 //
-// 使い方: npm run --silent decide-issue-start -- <Issue番号> [--after-issue-check]
+// 使い方: npm run --silent decide-issue-start -- <Issue番号> [--after-issue-check | --skip-issue-check]
 //   `--silent` が無いと、npm が先に `> root@1.0.0 …` の見出し行を出し、1行目が判定の語にならない
 
 import {
@@ -43,8 +48,9 @@ import { BusinessError, TechnicalError } from './lib/errors.mjs'
  */
 
 const AFTER_ISSUE_CHECK_FLAG = '--after-issue-check'
+const SKIP_ISSUE_CHECK_FLAG = '--skip-issue-check'
 
-const USAGE_MESSAGE = `Issue 番号を渡してください（例: npm run --silent decide-issue-start -- 123 [${AFTER_ISSUE_CHECK_FLAG}]）`
+const USAGE_MESSAGE = `Issue 番号を渡してください（例: npm run --silent decide-issue-start -- 123 [${AFTER_ISSUE_CHECK_FLAG} | ${SKIP_ISSUE_CHECK_FLAG}]）`
 
 const DECIDE_ISSUE_START_COMMAND = 'npm run --silent decide-issue-start --'
 
@@ -88,28 +94,31 @@ console.log([decisionOutput.headline, ...decisionOutput.guidanceLines].join('\n'
  * @throws {Error} gh を起動できないとき・config.mjs を読み込めないとき
  */
 async function decideFromCommandLine() {
-  const { issueNumber, hasRunIssueCheck } = parseArguments(process.argv.slice(2))
+  const { issueNumber, hasRunIssueCheck, isIssueCheckSkipped } = parseArguments(
+    process.argv.slice(2)
+  )
   const targetIssueLabel = await readTargetIssueLabel()
   const issue = readIssueInCurrentRepository(issueNumber)
-  return decideIssueStart(issue, { hasRunIssueCheck, targetIssueLabel })
+  return decideIssueStart(issue, { hasRunIssueCheck, isIssueCheckSkipped, targetIssueLabel })
 }
 
 /**
- * コマンドラインの引数から、Issue 番号と、監査を打った後かを読む。
+ * コマンドラインの引数から、Issue 番号と、監査を打った後か・監査を飛ばすかを読む。
  *
  * @param {string[]} commandLineArguments `node scripts/decide-issue-start.mjs` の後ろに渡された引数
- * @returns {{ issueNumber: number, hasRunIssueCheck: boolean }} Issue 番号と、`--after-issue-check` が付いていたか
+ * @returns {{ issueNumber: number, hasRunIssueCheck: boolean, isIssueCheckSkipped: boolean }} Issue 番号と、`--after-issue-check` が付いていたか、`--skip-issue-check` が付いていたか
  * @throws {BusinessError} Issue 番号が1つの正の整数として読めないとき
  */
 function parseArguments(commandLineArguments) {
   const hasRunIssueCheck = commandLineArguments.includes(AFTER_ISSUE_CHECK_FLAG)
+  const isIssueCheckSkipped = commandLineArguments.includes(SKIP_ISSUE_CHECK_FLAG)
   const [rawIssueNumber, ...extraArguments] = commandLineArguments.filter(
-    (argument) => argument !== AFTER_ISSUE_CHECK_FLAG
+    (argument) => argument !== AFTER_ISSUE_CHECK_FLAG && argument !== SKIP_ISSUE_CHECK_FLAG
   )
   if (extraArguments.length > 0 || !/^[1-9]\d*$/.test(rawIssueNumber ?? '')) {
     throw new BusinessError(USAGE_MESSAGE)
   }
-  return { issueNumber: Number(rawIssueNumber), hasRunIssueCheck }
+  return { issueNumber: Number(rawIssueNumber), hasRunIssueCheck, isIssueCheckSkipped }
 }
 
 /**
@@ -208,27 +217,29 @@ function listSubIssuesInCurrentRepository(issueNumber) {
  * Issue の状態から、次にすることを決める。判定の順は上から当て、最初に当たったもので決める。
  *
  * @param {{ issueNumber: number, state: string, labelNames: string[], subIssues: SubIssue[] }} issue 読んだ Issue
- * @param {{ hasRunIssueCheck: boolean, targetIssueLabel: string }} context 監査を打った後か・対象ラベル
+ * @param {{ hasRunIssueCheck: boolean, isIssueCheckSkipped: boolean, targetIssueLabel: string }} context 監査を打った後か・監査を飛ばすか・対象ラベル
  * @returns {DecisionOutput} 判定の出力
  */
 function decideIssueStart(
   { issueNumber, state, labelNames, subIssues },
-  { hasRunIssueCheck, targetIssueLabel }
+  { hasRunIssueCheck, isIssueCheckSkipped, targetIssueLabel }
 ) {
   if (state !== 'OPEN') return buildStopOutput(`#${issueNumber} は close 済みです`)
 
   if (findReasonToSkipForOpenSubIssues(subIssues) !== null) {
-    return buildChooseChildOutput(issueNumber, subIssues)
+    return buildChooseChildOutput(issueNumber, subIssues, isIssueCheckSkipped)
   }
 
-  if (!hasRunIssueCheck && shouldRunIssueCheck(labelNames)) {
+  if (!hasRunIssueCheck && !isIssueCheckSkipped && shouldRunIssueCheck(labelNames)) {
     return buildRunIssueCheckOutput(issueNumber)
   }
 
-  const skipDecision = findSkipImplementationDecision({ state, labelNames }, targetIssueLabel)
+  const skipDecision = findSkipImplementationDecision({ state, labelNames }, targetIssueLabel, {
+    isWritebackCheckSkipped: isIssueCheckSkipped
+  })
   if (skipDecision !== null) return buildSkipOutput(skipDecision.reason, hasRunIssueCheck)
 
-  return buildProceedOutput(issueNumber)
+  return buildProceedOutput(issueNumber, isIssueCheckSkipped)
 }
 
 /**
@@ -279,12 +290,17 @@ function buildRunIssueCheckOutput(issueNumber) {
  * 実装へ進ませるときの出力を組む。
  *
  * @param {number} issueNumber 着手する Issue の番号
+ * @param {boolean} isIssueCheckSkipped 監査を飛ばして進むか（`--skip-issue-check`）。true なら案内の行は `/asap` の手順を指す
  * @returns {DecisionOutput} 判定の出力
  */
-function buildProceedOutput(issueNumber) {
+function buildProceedOutput(issueNumber, isIssueCheckSkipped) {
   return {
     headline: `進む：#${issueNumber} は実装へ進めます`,
-    guidanceLines: ['Issue の「実装フロー（使用するSkill）」の Skill を記載順に実行してください']
+    guidanceLines: [
+      isIssueCheckSkipped
+        ? '/asap の手順で進めてください（Issue の「実装フロー（使用するSkill）」の Skill は呼びません）'
+        : 'Issue の「実装フロー（使用するSkill）」の Skill を記載順に実行してください'
+    ]
   }
 }
 
@@ -294,9 +310,10 @@ function buildProceedOutput(issueNumber) {
  *
  * @param {number} parentIssueNumber 親 Issue の番号
  * @param {SubIssue[]} subIssues 親の sub-issue
+ * @param {boolean} isIssueCheckSkipped 監査を飛ばして進むか（`--skip-issue-check`）。true なら子の番号での打ち直しにも旗を付けさせる
  * @returns {DecisionOutput} 判定の出力（案内の行は、選べる子の番号・タイトル）
  */
-function buildChooseChildOutput(parentIssueNumber, subIssues) {
+function buildChooseChildOutput(parentIssueNumber, subIssues, isIssueCheckSkipped) {
   const openSubIssues = subIssues.filter(({ state }) => state === 'OPEN')
   const selectableSubIssues = openSubIssues.filter(
     ({ isInCurrentRepository }) => isInCurrentRepository
@@ -313,8 +330,9 @@ function buildChooseChildOutput(parentIssueNumber, subIssues) {
           `別のリポジトリの open な sub-issue が ${otherRepositorySubIssueCount} 件あります。番号だけでは打てないので、選ばないでください`
         ]
       : []
+  const rerunCommand = `${DECIDE_ISSUE_START_COMMAND} <子の番号>${isIssueCheckSkipped ? ` ${SKIP_ISSUE_CHECK_FLAG}` : ''}`
   return {
-    headline: `子を選ぶ：#${parentIssueNumber} は open な sub-issue を ${openSubIssues.length} 件持ちます。着手する子を下の一覧のタイトルの段番号から選び、子の番号で ${DECIDE_ISSUE_START_COMMAND} <子の番号> を打ち直してください`,
+    headline: `子を選ぶ：#${parentIssueNumber} は open な sub-issue を ${openSubIssues.length} 件持ちます。着手する子を下の一覧のタイトルの段番号から選び、子の番号で ${rerunCommand} を打ち直してください`,
     guidanceLines: [
       ...selectableSubIssues.map(({ number, title }) => `#${number} ${title}`),
       ...otherRepositoryNoteLines
