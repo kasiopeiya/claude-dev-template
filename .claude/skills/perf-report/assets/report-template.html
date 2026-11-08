@@ -177,25 +177,44 @@
 
           <h3>工数削減の効果は測れない</h3>
           <p>
-            経営層が最も知りたいのは、AI
-            で工数がどれだけ減ったかです。しかし、これは測れません。同じ作業を人間だけで行った場合と比べる対照実験が1プロジェクトではできず、体感も実測とずれるためです。
+            経営層が最も知りたいのは、AI で工数がどれだけ減ったかです。しかし、これは測れません（<a
+              href="#ref-metr-2026"
+              >METR, 2026</a
+            >）（<a href="#ref-deloitte-2025">Deloitte, 2025</a
+            >）。同じ作業を人間だけで行った場合と比べる対照実験が1プロジェクトではできず、体感も実測とずれるためです。
           </p>
           <p>
-            経験のある開発者16人が246件の課題に取り組んだ研究では、AI
+            体感は、実測の代わりになりません。回答した開発者・技術者の8割以上が、AI
+            で生産性が上がったと感じています（<a href="#ref-dora-2025">DORA, 2025</a
+            >）。一方で、経験のある開発者16人が246件の課題に取り組んだ研究では、AI
             を使うと19%遅くなったのに、本人たちは終えた後も20%速くなったと信じていました（<a
               href="#ref-metr-2025"
               >METR, 2025</a
-            >）。この研究の機関は、この結果が古くなったと注記したうえで研究を更新しようとしましたが、AI
+            >）。
+          </p>
+          <p>
+            対照実験そのものも難しくなっています。上の研究の機関は、この結果が古くなったと注記したうえで研究を更新しようとしましたが、AI
             無しで働く条件への参加を断る開発者が増え、選ばれ方の偏りで正しく測れなくなったと報告しています。本人が申告する速さも当てにならないとしています（<a
               href="#ref-metr-2026"
               >METR, 2026</a
+            >）。
+          </p>
+          <p>
+            開発に限らず、企業の AI 投資全体でも同じです。欧州・中東の経営層1,854人への調査では、AI
+            の投資対効果は、導入で最も解決しにくい課題の1つとされました。AI
+            はデータの整備や組織の見直しと同時に入るので、AI だけの効果を切り分けにくいためです（<a
+              href="#ref-deloitte-2025"
+              >Deloitte, 2025</a
             >）。
           </p>
 
           <h3>今回の測定項目</h3>
           <p>
             そこで工数削減の代わりに、どのくらいの仕事を AI
-            に任せられ、人間の仕事がどこに残るかを示す、次の5つを載せます。
+            に任せられ、人間の仕事がどこに残るかを示す、次の5つを載せます。ただし数字だけでは、何が起きているかは分かっても、なぜ起きたかは分かりません（<a
+              href="#ref-dora-2025"
+              >DORA, 2025</a
+            >）。そのため、指標ごとに、結果がなぜそうなったかの考察を添えます。
           </p>
           <table>
             <thead>
@@ -445,6 +464,16 @@
           </p>
           <ul>
             <li
+              id="ref-deloitte-2025"
+              data-citation-label="Deloitte, 2025"
+              data-citable-in-discussion="false"
+            >
+              <strong>Deloitte, 2025</strong>：<a
+                href="https://www.deloitte.com/global/en/issues/generative-ai/ai-roi-the-paradox-of-rising-investment-and-elusive-returns.html"
+                >AI ROI: The paradox of rising investment and elusive returns</a
+              ><br />考察では引かない（企業の AI 投資全体の調査で、開発の作業と比べるものではない）
+            </li>
+            <li
               id="ref-metr-2025"
               data-citation-label="METR, 2025"
               data-citable-in-discussion="false"
@@ -481,9 +510,11 @@
               data-citable-in-discussion="true"
             >
               <strong>DORA, 2025</strong>：<a
-                href="https://dora.dev/capabilities/working-in-small-batches/"
+                href="https://cloud.google.com/blog/products/ai-machine-learning/announcing-the-2025-dora-report"
+                >Announcing the 2025 DORA Report: State of AI-Assisted Software Development</a
+              >、<a href="https://dora.dev/capabilities/working-in-small-batches/"
                 >Working in small batches</a
-              >（2025年の DORA 調査から作った<a
+              >（同じ調査から作った<a
                 href="https://cloud.google.com/blog/products/ai-machine-learning/introducing-doras-inaugural-ai-capabilities-model"
                 >AI Capabilities Model</a
               >の1項目）<br />考察で引いてよい結果：小さいバッチで働くことは、AI
