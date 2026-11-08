@@ -4,7 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI 駆動開発 実績レポート</title>
+    <title>AI 駆動開発 パフォーマンスレポート</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -53,7 +53,8 @@
         line-height: 1.6;
         color: var(--mb-muted);
       }
-      .perf-limits-title {
+      .perf-limits-title,
+      .perf-discussion-title {
         margin: 16px 0 4px;
         font-size: 14px;
         font-weight: 700;
@@ -71,177 +72,286 @@
       <div class="mb-hero">
         <header class="mb-header">
           <div>
-            <h1>AI 駆動開発 実績レポート</h1>
+            <h1>AI 駆動開発 パフォーマンスレポート</h1>
             <p class="mb-meta-line">{{repository}} ／ {{from}} 〜 {{to}}</p>
           </div>
         </header>
 
-        <p class="mb-lede">
-          この期間に作業 Issue
-          を{{workIssueCount}}件処理し、そのうち{{aiOnlyCount}}件（{{aiOnlyPercent}}%）を AI
-          単独の分類で進めました。<!-- if:medianMinutes -->AI 単独の分類では、着手から PR
-          が出るまでの中央値は{{medianMinutes}}分です。<!-- endif --><!-- if:humanReviewPercent -->マージした
-          PR
-          の{{humanReviewPercent}}%は人間レビューの対象で、変更の{{under50Percent}}%は50行未満です。<!-- endif -->このやり方を他のプロジェクトへ広げるかを判断する材料としてまとめました。
-        </p>
-
         <nav class="mb-toc">
           <ol>
-            <li><a href="#throughput">Issue処理スループット</a></li>
-            <li><a href="#delegation">AIへの委譲度</a></li>
-            <li><a href="#speed">Issue１つあたりのリードタイム分布</a></li>
-            <li><a href="#review">人間レビュー対象の割合</a></li>
-            <li><a href="#size">変更の小ささ</a></li>
+            <li><a href="#summary">要約</a></li>
+            <li><a href="#introduction">イントロダクション</a></li>
+            <li><a href="#methods">材料および方法</a></li>
+            <li><a href="#results">結果および考察</a></li>
           </ol>
         </nav>
-
-        <div class="mb-summary">
-          <div class="perf-kpis">
-            <div>
-              <div class="perf-kpi-label">週あたりの作業 Issue</div>
-              <div class="perf-kpi-value">
-                {{fullWeekAverage}}<span class="perf-kpi-unit">件/週</span>
-              </div>
-              <div class="perf-kpi-note">
-                全日そろった{{fullWeekCount}}週の平均。合計{{workIssueCount}}件、週の幅は{{fullWeekMin}}〜{{fullWeekMax}}件
-              </div>
-            </div>
-            <div>
-              <div class="perf-kpi-label">AI 単独の分類</div>
-              <div class="perf-kpi-value">
-                {{aiOnlyPercent}}<span class="perf-kpi-unit">%</span>
-              </div>
-              <div class="perf-kpi-note">
-                {{workIssueCount}}件のうち{{aiOnlyCount}}件。着手前のラベルによる
-              </div>
-            </div>
-            <div>
-              <div class="perf-kpi-label">着手から PR まで</div>
-              <div class="perf-kpi-value">
-                {{medianMinutes}}<span class="perf-kpi-unit">分</span>
-              </div>
-              <div class="perf-kpi-note">
-                AI 単独の分類の中央値。{{targetIssueCount}}件のうち{{measuredIssueCount}}件を測定
-              </div>
-            </div>
-            <div>
-              <div class="perf-kpi-label">人間レビュー対象の割合</div>
-              <div class="perf-kpi-value">
-                {{humanReviewPercent}}<span class="perf-kpi-unit">%</span>
-              </div>
-              <div class="perf-kpi-note">
-                マージした PR {{mergedPullRequestCount}}件のうち{{humanReviewTargetCount}}件
-              </div>
-            </div>
-            <div>
-              <div class="perf-kpi-label">変更の大きさの中央値</div>
-              <div class="perf-kpi-value">
-                {{medianChangedLines}}<span class="perf-kpi-unit">行</span>
-              </div>
-              <div class="perf-kpi-note">
-                PR {{mergedPullRequestCount}}件。50行未満が{{under50Count}}件
-              </div>
-            </div>
-          </div>
-
-          <p class="perf-limits-title">どの数字にも共通する限界</p>
-          <ul>
-            <!-- if:noProductCode -->
-            <li>
-              中身はこの開発の仕組みづくりの実績です。<code>app/</code>・<code>infra/</code>
-              のファイルは0件です
-            </li>
-            <li><strong>プロダクトと本番では未検証</strong>です</li>
-            <!-- endif -->
-            <li>1人・1プロジェクトの自己評価で、他で再現するかは分かりません</li>
-            <li>
-              工数削減・時間短縮・体感値は載せません。1プロジェクトでは対照実験ができないためです
-            </li>
-          </ul>
-        </div>
       </div>
       <!-- /.mb-hero -->
 
       <div class="mb-wrap">
         <main class="mb-main">
-          <h2 id="throughput">Issue処理スループット</h2>
+          <h2 id="summary">要約</h2>
+
+          <p class="mb-lede">
+            この期間に作業 Issue
+            を{{workIssueCount}}件処理し、そのうち{{aiOnlyCount}}件（{{aiOnlyPercent}}%）を AI
+            単独の分類で進めました。<!-- if:medianMinutes -->AI 単独の分類では、着手から PR
+            が出るまでの中央値は{{medianMinutes}}分です。<!-- endif --><!-- if:humanReviewPercent -->マージした
+            PR
+            の{{humanReviewPercent}}%は人間レビューの対象で、変更の{{under50Percent}}%は50行未満です。<!-- endif -->次の開発プロジェクトへ学びを活かし、ハーネスを改善する根拠にするためにまとめました。
+          </p>
+
+          <div class="mb-summary">
+            <div class="perf-kpis">
+              <div>
+                <div class="perf-kpi-label">週あたりの作業 Issue</div>
+                <div class="perf-kpi-value">
+                  {{fullWeekAverage}}<span class="perf-kpi-unit">件/週</span>
+                </div>
+                <div class="perf-kpi-note">
+                  全日そろった{{fullWeekCount}}週の平均。合計{{workIssueCount}}件、週の幅は{{fullWeekMin}}〜{{fullWeekMax}}件
+                </div>
+              </div>
+              <div>
+                <div class="perf-kpi-label">AI 単独の分類</div>
+                <div class="perf-kpi-value">
+                  {{aiOnlyPercent}}<span class="perf-kpi-unit">%</span>
+                </div>
+                <div class="perf-kpi-note">
+                  {{workIssueCount}}件のうち{{aiOnlyCount}}件。着手前のラベルによる
+                </div>
+              </div>
+              <div>
+                <div class="perf-kpi-label">着手から PR まで</div>
+                <div class="perf-kpi-value">
+                  {{medianMinutes}}<span class="perf-kpi-unit">分</span>
+                </div>
+                <div class="perf-kpi-note">
+                  AI 単独の分類の中央値。{{targetIssueCount}}件のうち{{measuredIssueCount}}件を測定
+                </div>
+              </div>
+              <div>
+                <div class="perf-kpi-label">人間レビュー対象の割合</div>
+                <div class="perf-kpi-value">
+                  {{humanReviewPercent}}<span class="perf-kpi-unit">%</span>
+                </div>
+                <div class="perf-kpi-note">
+                  マージした PR {{mergedPullRequestCount}}件のうち{{humanReviewTargetCount}}件
+                </div>
+              </div>
+              <div>
+                <div class="perf-kpi-label">変更の大きさの中央値</div>
+                <div class="perf-kpi-value">
+                  {{medianChangedLines}}<span class="perf-kpi-unit">行</span>
+                </div>
+                <div class="perf-kpi-note">
+                  PR {{mergedPullRequestCount}}件。50行未満が{{under50Count}}件
+                </div>
+              </div>
+            </div>
+
+            <p class="perf-limits-title">どの数字にも共通する限界</p>
+            <ul>
+              <!-- if:noProductCode -->
+              <li>
+                中身はこの開発の仕組みづくりの実績です。<code>app/</code>・<code>infra/</code>
+                のファイルは0件です
+              </li>
+              <li><strong>プロダクトと本番では未検証</strong>です</li>
+              <!-- endif -->
+              <li>1人・1プロジェクトの自己評価で、他で再現するかは分かりません</li>
+              <li>
+                工数削減・時間短縮・体感値は載せません。1プロジェクトでは対照実験ができないためです
+              </li>
+            </ul>
+          </div>
+
+          <h2 id="introduction">イントロダクション</h2>
+
+          <h3>背景</h3>
+          <p>
+            このレポートは、AI
+            駆動開発の実績から学びを得て、次の開発プロジェクトに活かすためにまとめたものです。ハーネス（AI
+            の開発を支える仕組み）を分析し、改善する根拠にもします。
+          </p>
+
+          <h3>工数削減の効果は測れない</h3>
+          <p>
+            経営層が最も知りたいのは、AI
+            で工数がどれだけ減ったかです。しかし、これは測れません。同じ作業を人間だけで行った場合と比べる対照実験が1プロジェクトではできず、体感も実測とずれるためです（<a
+              href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/"
+              >METR の報告</a
+            >）。
+          </p>
+
+          <h3>今回の測定項目</h3>
+          <p>
+            そこで工数削減の代わりに、どのくらいの仕事を AI
+            に任せられ、人間の仕事がどこに残るかを示す、次の5つを載せます。
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th class="mb-rowlabel">測定項目</th>
+                <th>狙い</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mb-rowlabel">Issue処理スループット（週あたり作業 Issue）</td>
+                <td>
+                  AI 駆動開発でどのくらいの Issue を捌けるかの目安になる。件数が伸びない時期は、AI
+                  に任せにくい工程の候補として読む
+                </td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">AIへの委譲度</td>
+                <td>
+                  ほぼ AI 単独なら、人間の仕事は作業そのものより、Issue
+                  を作る判断やレビューに移っていると読める。AI
+                  単独が少なければ、ハーネスがまだ洗練されていない可能性がある
+                </td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">Issue１つあたりのリードタイム分布</td>
+                <td>
+                  ほとんどの作業を AI が行うので、AI
+                  の作業時間に近い目安になり、タスクをどのくらいで捌けるかのあたりを付けられる。人間と比べた削減効果は測れない
+                </td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">人間レビュー対象の割合</td>
+                <td>
+                  人間の確認に回る量が分かる。ボトルネックを探す入口になり、ハーネス改善の材料になる
+                </td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">変更の小ささ</td>
+                <td>1回の変更の大きさが分かる。件数と時間は、この大きさを前提に読む</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2 id="methods">材料および方法</h2>
+
+          <p>
+            対象は {{repository}} の {{from}}〜{{to}} です。データは GitHub の
+            Issue・PR・ボードの記録で、<code>scripts/perf-report.mjs</code>
+            が集計しました。
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th class="mb-rowlabel">測定項目</th>
+                <th>定義と定義元</th>
+                <th>測り方の注意</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mb-rowlabel">Issue処理スループット</td>
+                <td>
+                  completed で close した Issue から、PR
+                  のレビュー通知・子を持つ親・<code>phase</code>・週次の
+                  Issue・メモ（ラベルが無く本文が空）を除いた件数<br />定義元は、レビュー通知が
+                  <code>docs/policy/pr-review-policy.md</code>、親・<code>phase</code>・週次が
+                  <code>docs/policy/issue-policy.md</code>、メモが
+                  <code>scripts/perf-report.mjs</code><br />close
+                  した日（日本時間）で週に分ける（月曜始まり）<br />全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう
+                </td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">AIへの委譲度</td>
+                <td>
+                  Issue に付いたラベルだけで機械的に分類した件数<br /><code>ai-fixable</code> は
+                  <code>issue:decided</code>
+                  の有無を問わない<br />分類なしは、3択のラベルが無いものと
+                  <code>needs-human-decision</code> のまま close したもの<br />定義元は
+                  <code>docs/policy/issue-policy.md</code> のラベル表。分類なしは
+                  <code>scripts/perf-report.mjs</code>
+                </td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">Issue１つあたりのリードタイム分布</td>
+                <td>
+                  <code>ai-fixable</code> の作業 Issue で、ボードの Status が最初に
+                  <code>In Review</code>（PR が Issue に紐づいた時点）になった時刻と、その直前に
+                  <code>In progress</code>
+                  になった時刻の差<br />{{targetIssueCount}}件のうち{{measuredIssueCount}}件で数えた。<code
+                    >In progress</code
+                  >
+                  と <code>In Review</code> の両方の記録が無い Issue は数えない<br />割合は四捨五入のため、合計が100%にならないことがある
+                </td>
+                <td>
+                  Issue を作るまでの相談、自動検査、レビュー、マージの時間は含まない<br />AI
+                  が動いていた時間そのものではなく、人間の指示を待つ時間なども入る<br />失敗してやり直す前の時間は含まないので、その分だけ実際より短く見える
+                </td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">人間レビュー対象の割合</td>
+                <td>
+                  マージした PR のうち、<code>needs-human-review</code> が付いた割合<br />付く条件は
+                  <code>docs/policy/pr-review-policy.md</code> のレビュー方針の表が決める
+                </td>
+                <td>対象はルールで決まる。ルールが変わると割合も変わる</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">変更の小ささ</td>
+                <td>
+                  期間内にマージした PR の追加行数と削除行数の合計<br />割合は四捨五入のため、合計が100%にならないことがある
+                </td>
+                <td>
+                  200行と300行は、このプロジェクトが決めた分割の線（<code>docs/policy/pr-review-policy.md</code>）
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2 id="results">結果および考察</h2>
+
+          <h3 id="throughput">Issue処理スループット</h3>
 
           <figure class="mb-figure">
             <div class="mb-figure-frame">{{throughputFigure}}</div>
             <figcaption>
               fig.1 週ごとの作業 Issue
-              数（白抜きは全日そろっていない週で、期間の端で切れた週と今日を含む週が当たる）
+              数（白抜きは全日そろっていない週で、期間の端で切れた週と今日を含む週が当たる。白抜きの週は日数が足りず、他の週と比べられない）
             </figcaption>
           </figure>
 
-          <table>
-            <tr>
-              <td class="mb-rowlabel"><strong>定義</strong></td>
-              <td>
-                completed で close した Issue から、PR
-                のレビュー通知・子を持つ親・<code>phase</code>・週次の
-                Issue・メモ（ラベルが無く本文が空）を除いた件数<br />定義元は、レビュー通知が
-                <code>docs/policy/pr-review-policy.md</code>、親・<code>phase</code>・週次が
-                <code>docs/policy/issue-policy.md</code>、メモが <code>scripts/perf-report.mjs</code
-                ><br />close した日（日本時間）で週に分ける（月曜始まり）<br />全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>読み方</strong></td>
-              <td>
-                小さな Issue を流し続ける運用が、週単位で途切れていないかを見る<br />少ない週は、要件定義など件数に出にくい作業の時期のことがある
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>限界</strong></td>
-              <td>
-                件数は成果や価値の大きさを表さない<br />週ごとの件数は大きくぶれるので、1週の増減で良し悪しを判断しない<br />白抜きの週は日数が足りず、他の週と比べられない
-              </td>
-            </tr>
-          </table>
+          <p class="perf-discussion-title">考察</p>
+          <ul>
+            <li>少ない週は、要件定義など件数に出にくい作業の時期のことがある</li>
+            <li>件数は成果や価値の大きさを表さない</li>
+            <li>週ごとの件数はぶれることがあるので、1週の増減で良し悪しを判断しない</li>
+          </ul>
 
-          <h2 id="delegation">AIへの委譲度</h2>
+          <h3 id="delegation">AIへの委譲度</h3>
 
           <!-- if:delegationFigure -->
           <figure class="mb-figure">
             <div class="mb-figure-frame">{{delegationFigure}}</div>
-            <figcaption>
-              fig.2 作業 Issue {{workIssueCount}}件のラベル別の内訳（定義元：<code
-                >docs/policy/issue-policy.md</code
-              >
-              のラベル表。分類なしは <code>scripts/perf-report.mjs</code>）
-            </figcaption>
+            <figcaption>fig.2 作業 Issue {{workIssueCount}}件のラベル別の内訳</figcaption>
           </figure>
           <!-- endif -->
           <!-- if:noWorkIssue -->
           <p>期間内に作業 Issue が無いため、図を描きません。</p>
           <!-- endif -->
 
-          <table>
-            <tr>
-              <td class="mb-rowlabel"><strong>定義</strong></td>
-              <td>
-                Issue に付いたラベルだけで機械的に分類した件数<br /><code>ai-fixable</code> は
-                <code>issue:decided</code> の有無を問わない<br />分類なしは、3択のラベルが無いものと
-                <code>needs-human-decision</code> のまま close したもの
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>読み方</strong></td>
-              <td>
-                人の手をどれだけ残しているかを見る。他のプロジェクトで人をどこに置くかの目安になる
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>限界</strong></td>
-              <td>
-                ラベルは着手前の分類で、実際の作業の記録ではない<br />Issue
-                を作るまでの相談は含まない（人間と相談して方針を決めた Issue も AI 単独に入る）
-              </td>
-            </tr>
-          </table>
+          <p class="perf-discussion-title">考察</p>
+          <ul>
+            <li>
+              人の手をどれだけ残しているかを見る。他のプロジェクトで人をどこに置くかの目安になる
+            </li>
+            <li>ラベルは着手前の分類で、実際の作業の記録ではない</li>
+            <li>
+              Issue を作るまでの相談は含まない（人間と相談して方針を決めた Issue も AI 単独に入る）
+            </li>
+          </ul>
 
-          <h2 id="speed">Issue１つあたりのリードタイム分布</h2>
+          <h3 id="speed">Issue１つあたりのリードタイム分布</h3>
 
           <!-- if:speedFigure -->
           <figure class="mb-figure">
@@ -256,37 +366,16 @@
           <p>測れた Issue が無いため、図を描きません。</p>
           <!-- endif -->
 
-          <table>
-            <tr>
-              <td class="mb-rowlabel"><strong>定義</strong></td>
-              <td>
-                <code>ai-fixable</code> の作業 Issue で、ボードの Status が最初に
-                <code>In Review</code>（PR が Issue に紐づいた時点）になった時刻と、その直前に
-                <code>In progress</code>
-                になった時刻の差<br />{{targetIssueCount}}件のうち{{measuredIssueCount}}件で数えた。<code
-                  >In progress</code
-                >
-                と <code>In Review</code> の両方の記録が無い Issue は数えない<br />割合は四捨五入のため、合計が100%にならないことがある
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>読み方</strong></td>
-              <td>
-                AI の作業のスピード感をつかむ目安にする<br />1件は小さく割った Issue
-                で、大きな機能を作る時間ではない<br />8時間以上の帯は、エラーや判断待ちで止まっていた時間として読む
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>限界</strong></td>
-              <td>
-                <strong>人間が同じ作業にかかる時間との比較ではなく、何倍速いかは言えない</strong
-                ><br />Issue を作るまでの相談、自動検査、レビュー、マージの時間は含まない<br />AI
-                が動いていた時間そのものではなく、人間の指示を待つ時間なども入る<br />失敗してやり直す前の時間は含まないので、その分だけ実際より短く見える
-              </td>
-            </tr>
-          </table>
+          <p class="perf-discussion-title">考察</p>
+          <ul>
+            <li>AI の作業のスピード感をつかむ目安にする</li>
+            <li>
+              <strong>人間が同じ作業にかかる時間との比較ではなく、何倍速いかは言えない</strong>
+            </li>
+            <li>1件は Issue 1つ分の時間で、機能全体を作る時間ではない</li>
+          </ul>
 
-          <h2 id="review">人間レビュー対象の割合</h2>
+          <h3 id="review">人間レビュー対象の割合</h3>
 
           <!-- if:reviewFigure -->
           <figure class="mb-figure">
@@ -300,29 +389,19 @@
           <p>期間内にマージした PR が無いため、図を描きません。</p>
           <!-- endif -->
 
-          <table>
-            <tr>
-              <td class="mb-rowlabel"><strong>定義</strong></td>
-              <td>
-                マージした PR のうち、<code>needs-human-review</code> が付いた割合<br />付く条件は
-                <code>docs/policy/pr-review-policy.md</code> のレビュー方針の表が決める
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>読み方</strong></td>
-              <td>
-                人間の確認に回る変更がどれだけ残るかを見る<br />他のプロジェクトで、確認に要る人の量を考える目安になる
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>限界</strong></td>
-              <td>
-                対象になった割合で、人間が読んだ割合やかかった時間ではない<br />この割合だけでは、レビューがボトルネックかどうかは言えない<br />{{humanReviewTargetCount}}件のうち{{policyOrCicdCount}}件は判断基準や自動検査の変更（<code>policy</code>・<code>cicd</code>）で、プロダクト開発では内訳が変わる<br />対象はルールで決まる。ルールが変わると割合も変わる
-              </td>
-            </tr>
-          </table>
+          <p class="perf-discussion-title">考察</p>
+          <ul>
+            <li>人間の確認に回る変更がどれだけ残るかを見る</li>
+            <li>
+              対象になった割合で、人間が読んだ割合やかかった時間ではなく、これだけではレビューがボトルネックかどうかは言えない
+            </li>
+            <li>
+              {{humanReviewTargetCount}}件のうち{{policyOrCicdCount}}件は
+              <code>policy</code>・<code>cicd</code> の変更で、プロダクト開発では内訳が変わる
+            </li>
+          </ul>
 
-          <h2 id="size">変更の小ささ</h2>
+          <h3 id="size">変更の小ささ</h3>
 
           <figure class="mb-figure">
             <div class="mb-figure-frame">
@@ -332,24 +411,12 @@
             <figcaption>fig.5 マージした PR {{mergedPullRequestCount}}件の差分行数</figcaption>
           </figure>
 
-          <table>
-            <tr>
-              <td class="mb-rowlabel"><strong>定義</strong></td>
-              <td>
-                期間内にマージした PR の追加行数と削除行数の合計<br />割合は四捨五入のため、合計が100%にならないことがある
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>読み方</strong></td>
-              <td>
-                1回の変更を小さく保てているかを見る<br />平均は一部の大きな変更に引っ張られるので、中央値を中心に読む<br />200行と300行は、このプロジェクトが決めた分割の線（<code>docs/policy/pr-review-policy.md</code>）
-              </td>
-            </tr>
-            <tr>
-              <td class="mb-rowlabel"><strong>限界</strong></td>
-              <td>小さく回せている事実を示すだけで、有効さの証明ではない</td>
-            </tr>
-          </table>
+          <p class="perf-discussion-title">考察</p>
+          <ul>
+            <li>1回の変更を小さく保てているかを見る</li>
+            <li>平均は一部の大きな変更に引っ張られるので、中央値を中心に読む</li>
+            <li>変更の大きさを示すだけで、有効さの証明ではない</li>
+          </ul>
         </main>
         <!-- /.mb-main -->
       </div>
