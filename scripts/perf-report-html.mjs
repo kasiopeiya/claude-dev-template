@@ -1,12 +1,21 @@
 #!/usr/bin/env node
-// 責務: `scripts/perf-report.mjs` の JSON を標準入力で受け、`/perf-report` のひな形（report-template.html）の
-//   文字と数字と図（svg）を埋めて HTML を書き、その絶対パスを標準出力に返す。数える処理は `perf-report.mjs`、図を除く見た目と固定の文言はひな形が持つ。
+// 責務: 保存した `scripts/perf-report.mjs` の集計結果（JSON）と、会話中の AI が書いた考察ファイル（JSON）を読み、
+//   `/perf-report` のひな形（report-template.html）の文字と数字と図（svg）と考察を埋めて HTML を書き、その絶対パスを標準出力に返す。
+//   数える処理は `perf-report.mjs`、考察の中身は AI、図と考察を除く見た目と固定の文言はひな形が持つ。
 //
 // 設計意図（WHY）:
 // - ひな形をスクリプトで埋める。文章の指示を読んだ AI に HTML を書かせると、合意した見た目からずれる（表や節が増える）。
-//   同じ JSON から同じ HTML を出すためである（docs/policy/refined-engineer-judgment-principles.md「確率論より決定論」）。
+//   同じ集計結果と同じ考察ファイルから同じ HTML を出すためである（docs/policy/refined-engineer-judgment-principles.md「確率論より決定論」）。
+//   打つたびに変わるのは考察の中身だけで、AI に書かせるのは文だけにする（#1684）。
 // - 図を除く HTML をこのスクリプトに持たせない。ひな形を HTML のまま開いて見た目を確かめ・直せるようにし、文言を直すたびにコードを直さずに済ませる。
+//   例外は考察で、1文を箇条書きの1行（`<li>`）にして埋める。文の数が考察ファイルで変わるためである。
 //   `perf-report.mjs` にも足さない。あちらは取得と集計を担い、すでに大きい。
+// - 考察ファイルは、集計結果のファイル名の末尾 `-aggregate.json` を `-discussion.json` に替えた名前で引く。
+//   前に打った分の考察ファイルが、別の集計結果に使われないためである。
+// - 考察ファイルが無い・崩れている・5指標のどれかが抜けている・「考察」の文が「と考えられる」で終わらないときは、何も書かずに止まり、原因をすべて並べる。
+//   考察の無いレポートや、推測を事実のように書いたレポートを配らないためである。文末は機械で判定できるので、文章の指示に任せない。
+//   値が無い指標（期間内に作業 Issue・測れた Issue・マージした PR が無い）だけは、決まった1文（NO_VALUE_DISCUSSION_SENTENCE）を文末の検査から外す。
+//   「値が無い」は事実で、「と考えられる」で終えると推測に見えるためである。言い換えを許すと文末の検査が骨抜きになるので、1文に固定する。
 // - 図の svg はこのスクリプトが描く。ひな形に座標を書くと、棒の数が JSON で変わる図を表せないためである。縦棒の図（積み上げの棒も）は renderVerticalBarChart、横棒の図は renderHorizontalBarChart で描き、それぞれ基準線・棒・文字をそろえる。
 // - 同じ JSON なら出力先まで同じにするため、ここでは今日の日付を取らない。ファイル名の日付は JSON の `generatedOn` を使う。
 // - 値が無いときは null で表し、本文には `—` を出す（`NaN`・`null` を出さない）。0 は有効な値なので、無いこととは区別する。
@@ -18,7 +27,8 @@
 //   件数どうしの大小（部分が全体を超えないか）は確かめない。`perf-report.mjs` が作る JSON は、作り方からそろっている。
 // - 確かめた項目は、表に書いた名前でしか読めない。名前が表とずれたまま `—` や `NaN` を黙って埋めるより、止まる方がよい。
 //
-// 使い方: npm run --silent perf-report -- [--from YYYY-MM-DD] [--to YYYY-MM-DD] | npm run --silent perf-report-html
+// 使い方: npm run --silent perf-report-html -- tmp/perf-report/<日時>-perf-report-aggregate.json
+//   考察ファイル（同じフォルダの <日時>-perf-report-discussion.json）を先に書いておく。手順は `.claude/skills/perf-report/SKILL.md`
 
 import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
@@ -41,6 +51,11 @@ const PLACEHOLDER_PATTERN = /\{\{(\w+)\}\}/g
 const LEFTOVER_MARKER_PATTERN = /\{\{|<!-- (?:if:|endif)/
 const FULL_WEEK_SUMMARY_KEYS = ['weekCount', 'average', 'min', 'max']
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
+const AGGREGATE_FILE_SUFFIX = '-aggregate.json'
+const DISCUSSION_FILE_SUFFIX = '-discussion.json'
+const DISCUSSION_SENTENCE_ENDING_PATTERN = /と考えられる。?$/
+const NO_VALUE_DISCUSSION_SENTENCE = '期間内に値が無いので考察しない'
+const DISCUSSION_ENTRY_KEYS = ['resultSentences', 'discussionSentences']
 // TODO(#1643): 図を描く処理を足したら、図の場所を空文字で埋めるのをやめる
 const UNDRAWN_FIGURE_PLACEHOLDER_NAMES = []
 
@@ -238,18 +253,57 @@ const REPORT_FIELD_SPECS = [
   { name: 'hasProductCode', jsonPath: 'hasProductCode', isValid: isBoolean }
 ]
 
+// 考察を書く5指標。上から、ひな形に並ぶ順。metricKey は考察ファイルのキーで、ひな形の `{{<metricKey>ResultItems}}`・`{{<metricKey>DiscussionItems}}` の頭にも使う。
+// hasNoValue は、その指標の値が期間内に無いかを返す。値が無い指標だけ、NO_VALUE_DISCUSSION_SENTENCE を文末の検査から外す
+const DISCUSSION_METRICS = [
+  { metricKey: 'throughput', metricName: 'Issue処理スループット', hasNoValue: () => false },
+  {
+    metricKey: 'delegation',
+    metricName: 'AIへの委譲度',
+    hasNoValue: (readField) => readField('workIssueCount') === 0
+  },
+  {
+    metricKey: 'speed',
+    metricName: 'Issue１つあたりのリードタイム分布',
+    hasNoValue: (readField) => readField('measuredIssueCount') === 0
+  },
+  {
+    metricKey: 'review',
+    metricName: '人間レビュー対象の割合',
+    hasNoValue: (readField) => readField('mergedPullRequestCount') === 0
+  },
+  {
+    metricKey: 'size',
+    metricName: '変更の小ささ',
+    hasNoValue: (readField) => readField('mergedPullRequestCount') === 0
+  }
+]
+
 /**
- * CLI として実行したときの本体。標準入力の JSON から HTML を書き、絶対パスを標準出力に返す。
+ * CLI として実行したときの本体。引数の集計結果と、名前から引いた考察ファイルから HTML を書き、絶対パスを標準出力に返す。
  *
  * @returns {void}
- * @throws {BusinessError} 標準入力が perf-report の JSON として読めないとき（条件は parseReportJson・readReportFields）
+ * @throws {BusinessError} 引数が違うとき・集計結果か考察ファイルが読めないとき・考察ファイルが決まりに合わないとき（条件は readAggregatePathArgument・readJsonFile・readReportFields・readDiscussions）
  * @throws {TechnicalError} ひな形とこのスクリプトの対応がずれたとき（条件は fillTemplate）
  */
 function runCli() {
-  const readField = readReportFields(parseReportJson(readStandardInput()))
+  const aggregatePath = readAggregatePathArgument(process.argv.slice(2))
+  const readField = readReportFields(
+    readJsonFile({ filePath: aggregatePath, fileLabel: '集計結果' })
+  )
+  const discussions = readDiscussions({
+    discussionContent: readJsonFile({
+      filePath: deriveDiscussionPath(aggregatePath),
+      fileLabel: '考察ファイル'
+    }),
+    readField
+  })
   const html = fillTemplate({
     template: readReportTemplate(),
-    placeholderValues: buildPlaceholderValues(readField)
+    placeholderValues: {
+      ...buildPlaceholderValues(readField),
+      ...buildDiscussionPlaceholderValues(discussions)
+    }
   })
   console.log(
     writeReport({
@@ -262,10 +316,31 @@ function runCli() {
 }
 
 /**
- * @returns {string} 標準入力の中身
+ * @param {string[]} cliArguments コマンドに渡された引数
+ * @returns {string} 集計結果の絶対パス
+ * @throws {BusinessError} 引数が1つでないとき・ファイル名が `-aggregate.json` で終わらないとき
  */
-function readStandardInput() {
-  return readFileSync(0, 'utf8')
+function readAggregatePathArgument(cliArguments) {
+  const usageText =
+    '`npm run --silent perf-report -- [--from YYYY-MM-DD] [--to YYYY-MM-DD] > tmp/perf-report/<日時>-perf-report-aggregate.json` で集計結果を保存し、同じフォルダに <日時>-perf-report-discussion.json の考察ファイルを書いてから、`npm run --silent perf-report-html -- tmp/perf-report/<日時>-perf-report-aggregate.json` を打ってください（手順は .claude/skills/perf-report/SKILL.md）'
+  if (cliArguments.length !== 1) {
+    throw new BusinessError(`集計結果のパスを1つ渡してください。${usageText}`)
+  }
+  const [aggregatePath] = cliArguments
+  if (!aggregatePath.endsWith(AGGREGATE_FILE_SUFFIX)) {
+    throw new BusinessError(
+      `集計結果のファイル名は ${AGGREGATE_FILE_SUFFIX} で終えてください（考察ファイルの名前をここから決めるため）: ${aggregatePath}`
+    )
+  }
+  return path.resolve(aggregatePath)
+}
+
+/**
+ * @param {string} aggregatePath `-aggregate.json` で終わる集計結果の絶対パス
+ * @returns {string} 同じフォルダの、末尾を `-discussion.json` に替えた考察ファイルの絶対パス
+ */
+function deriveDiscussionPath(aggregatePath) {
+  return `${aggregatePath.slice(0, -AGGREGATE_FILE_SUFFIX.length)}${DISCUSSION_FILE_SUFFIX}`
 }
 
 /**
@@ -276,21 +351,199 @@ function readReportTemplate() {
 }
 
 /**
- * @param {string} standardInput 標準入力の中身
+ * @param {{ filePath: string, fileLabel: string }} jsonFile 読むファイルの絶対パスと、エラーに出す呼び名
  * @returns {unknown} JSON として読んだ結果。中身の形は確かめていない
- * @throws {BusinessError} 空のとき・JSON として読めないとき
+ * @throws {BusinessError} ファイルが無いとき・空のとき・JSON として読めないとき
  */
-function parseReportJson(standardInput) {
-  if (standardInput.trim() === '') {
-    throw new BusinessError(
-      '標準入力が空です。`npm run --silent perf-report | npm run --silent perf-report-html` のように、perf-report の JSON を渡してください'
-    )
+function readJsonFile({ filePath, fileLabel }) {
+  const jsonText = readExistingFile({ filePath, fileLabel })
+  if (jsonText.trim() === '') {
+    throw new BusinessError(`${fileLabel}が空です: ${filePath}`)
   }
   try {
-    return JSON.parse(standardInput)
+    return JSON.parse(jsonText)
   } catch (error) {
-    throw new BusinessError(`標準入力が JSON として読めません: ${error.message}`, { cause: error })
+    throw new BusinessError(
+      `${fileLabel}が JSON として読めません（${filePath}）: ${error.message}`,
+      {
+        cause: error
+      }
+    )
   }
+}
+
+/**
+ * @param {{ filePath: string, fileLabel: string }} targetFile 読むファイルの絶対パスと、エラーに出す呼び名
+ * @returns {string} ファイルの中身
+ * @throws {BusinessError} ファイルが無いとき
+ */
+function readExistingFile({ filePath, fileLabel }) {
+  try {
+    return readFileSync(filePath, 'utf8')
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+    throw new BusinessError(`${fileLabel}がありません: ${filePath}`, { cause: error })
+  }
+}
+
+/**
+ * 考察ファイルを確かめ、5指標ごとの「結果」と「考察」の文を取り出す。
+ *
+ * @param {{ discussionContent: unknown, readField: (fieldName: string) => any }} discussionSource JSON として読んだ考察ファイルと、readReportFields が返す、確かめ済みの項目を読む関数（値が無い指標を見分けるのに使う）
+ * @returns {Record<string, { resultSentences: string[], discussionSentences: string[] }>} metricKey ごとの文。「結果」が無い指標は空の配列
+ * @throws {BusinessError} 考察ファイルが決まりに合わないとき（合わない箇所をすべて並べる。条件は collectDiscussionProblems）
+ */
+function readDiscussions({ discussionContent, readField }) {
+  const discussionProblems = collectDiscussionProblems({ discussionContent, readField })
+  if (discussionProblems.length > 0) {
+    throw new BusinessError(
+      `考察ファイルが決まりに合いません。直して HTML を作る段だけを打ち直してください:\n- ${discussionProblems.join('\n- ')}`
+    )
+  }
+  return Object.fromEntries(
+    DISCUSSION_METRICS.map(({ metricKey }) => {
+      const { resultSentences = [], discussionSentences } = discussionContent[metricKey]
+      return [metricKey, { resultSentences, discussionSentences }]
+    })
+  )
+}
+
+/**
+ * @param {{ discussionContent: unknown, readField: (fieldName: string) => any }} discussionSource readDiscussions と同じ
+ * @returns {string[]} 決まりに合わない箇所の説明。オブジェクトでない・知らないキーがある・5指標のどれかが抜けている・指標ごとの形が違う（collectMetricDiscussionProblems）
+ */
+function collectDiscussionProblems({ discussionContent, readField }) {
+  if (!isPlainObject(discussionContent)) {
+    return ['考察ファイルの中身が、指標ごとのキーを持つオブジェクトではありません']
+  }
+  const metricKeys = DISCUSSION_METRICS.map(({ metricKey }) => metricKey)
+  const unknownKeys = Object.keys(discussionContent).filter(
+    (topLevelKey) => !metricKeys.includes(topLevelKey)
+  )
+  const missingMetrics = DISCUSSION_METRICS.filter(
+    ({ metricKey }) => !Object.hasOwn(discussionContent, metricKey)
+  )
+  return [
+    ...(unknownKeys.length > 0 ? [`知らないキーがあります: ${unknownKeys.join('・')}`] : []),
+    ...(missingMetrics.length > 0
+      ? [`指標が抜けています: ${missingMetrics.map(describeMetric).join('・')}`]
+      : []),
+    ...DISCUSSION_METRICS.filter(({ metricKey }) =>
+      Object.hasOwn(discussionContent, metricKey)
+    ).flatMap((metric) =>
+      collectMetricDiscussionProblems({
+        metric,
+        metricDiscussion: discussionContent[metric.metricKey],
+        hasNoValue: metric.hasNoValue(readField)
+      })
+    )
+  ]
+}
+
+/**
+ * @param {{ metric: { metricKey: string, metricName: string }, metricDiscussion: unknown, hasNoValue: boolean }} metricSource 指標と、考察ファイルのその指標の中身と、その指標の値が期間内に無いか
+ * @returns {string[]} 決まりに合わない箇所の説明。オブジェクトでない・知らないキーがある・「結果」が文の配列でない・「考察」が1文以上の文の配列でない・「考察」の文が「と考えられる」で終わらない（値が無い指標の NO_VALUE_DISCUSSION_SENTENCE は除く）
+ */
+function collectMetricDiscussionProblems({ metric, metricDiscussion, hasNoValue }) {
+  const metricLabel = describeMetric(metric)
+  if (!isPlainObject(metricDiscussion)) {
+    return [
+      `${metricLabel}: resultSentences と discussionSentences を持つオブジェクトではありません`
+    ]
+  }
+  const { resultSentences, discussionSentences } = metricDiscussion
+  const unknownKeys = Object.keys(metricDiscussion).filter(
+    (entryKey) => !DISCUSSION_ENTRY_KEYS.includes(entryKey)
+  )
+  const shapeProblems = [
+    ...(unknownKeys.length > 0
+      ? [`${metricLabel}: 知らないキーがあります: ${unknownKeys.join('・')}`]
+      : []),
+    ...(resultSentences === undefined || isSentenceList(resultSentences)
+      ? []
+      : [`${metricLabel}: resultSentences が、空でない文字列の配列ではありません`]),
+    ...(isSentenceList(discussionSentences) && discussionSentences.length > 0
+      ? []
+      : [`${metricLabel}: discussionSentences が、1文以上の空でない文字列の配列ではありません`])
+  ]
+  if (shapeProblems.length > 0) return shapeProblems
+  return discussionSentences
+    .filter((sentence) => !isAllowedDiscussionSentence({ sentence, hasNoValue }))
+    .map(
+      (sentence) =>
+        `${metricLabel}: 「考察」の文が「と考えられる」で終わっていません: 「${sentence}」`
+    )
+}
+
+/**
+ * @param {{ sentence: string, hasNoValue: boolean }} sentenceSource 「考察」の文1つと、その指標の値が期間内に無いか
+ * @returns {boolean} 「と考えられる」（句点は任意）で終わるか、値が無い指標の NO_VALUE_DISCUSSION_SENTENCE（句点は任意）なら true
+ */
+function isAllowedDiscussionSentence({ sentence, hasNoValue }) {
+  const trimmedSentence = sentence.trim()
+  if (DISCUSSION_SENTENCE_ENDING_PATTERN.test(trimmedSentence)) return true
+  return hasNoValue && trimmedSentence.replace(/。$/, '') === NO_VALUE_DISCUSSION_SENTENCE
+}
+
+/**
+ * @param {{ metricKey: string, metricName: string }} metric 考察を書く指標
+ * @returns {string} エラーに出す「throughput（Issue処理スループット）」の形の呼び名。直す人が考察ファイルのキーを探せるよう、キーを先に出す
+ */
+function describeMetric({ metricKey, metricName }) {
+  return `${metricKey}（${metricName}）`
+}
+
+/**
+ * @param {unknown} candidate 調べる値
+ * @returns {boolean} null でも配列でもないオブジェクトなら true
+ */
+function isPlainObject(candidate) {
+  return candidate !== null && typeof candidate === 'object' && !Array.isArray(candidate)
+}
+
+/**
+ * @param {unknown} candidate 調べる値
+ * @returns {boolean} すべてが空白だけでない文字列の配列なら true（空の配列も true）
+ */
+function isSentenceList(candidate) {
+  return (
+    Array.isArray(candidate) &&
+    candidate.every((sentence) => typeof sentence === 'string' && sentence.trim() !== '')
+  )
+}
+
+/**
+ * ひな形の `{{<metricKey>ResultItems}}`・`{{<metricKey>DiscussionItems}}` に入れる箇条書きを作る。「結果」が無い指標は null にして、ひな形の `if` の囲み（「結果」の見出しごと）を消す。
+ *
+ * @param {Record<string, { resultSentences: string[], discussionSentences: string[] }>} discussions readDiscussions が返す、metricKey ごとの文
+ * @returns {Record<string, string | null>} 名前ごとの、HTML にそのまま入れてよい `<li>` の並び
+ */
+function buildDiscussionPlaceholderValues(discussions) {
+  return Object.fromEntries(
+    DISCUSSION_METRICS.flatMap(({ metricKey }) => {
+      const { resultSentences, discussionSentences } = discussions[metricKey]
+      return [
+        [
+          `${metricKey}ResultItems`,
+          resultSentences.length > 0 ? renderSentenceItems(resultSentences) : null
+        ],
+        [`${metricKey}DiscussionItems`, renderSentenceItems(discussionSentences)]
+      ]
+    })
+  )
+}
+
+/**
+ * @param {string[]} sentences 1文以上の文
+ * @returns {string} 1文を1つの `<li>` にして改行でつないだ HTML。`{` `}` も文字参照にする。AI の文に `{{` があると、埋め終えた後のマーカーの検査がひな形の誤りと取り違えて止まるためである
+ */
+function renderSentenceItems(sentences) {
+  return sentences
+    .map(
+      (sentence) =>
+        `<li>${escapeHtml(sentence.trim()).replaceAll('{', '&#123;').replaceAll('}', '&#125;')}</li>`
+    )
+    .join('\n')
 }
 
 /**
@@ -309,7 +562,9 @@ function readReportFields(report) {
     if (!isValid(fieldValue)) invalidJsonPaths.push(jsonPath)
   }
   if (invalidJsonPaths.length > 0) {
-    throw new BusinessError(`JSON に、無いか型の違う値があります: ${invalidJsonPaths.join('・')}`)
+    throw new BusinessError(
+      `集計結果の JSON に、無いか型の違う値があります:${invalidJsonPaths.join('・')}`
+    )
   }
   return (fieldName) => {
     if (!fields.has(fieldName)) {
