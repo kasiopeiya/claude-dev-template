@@ -300,6 +300,91 @@
             </tbody>
           </table>
 
+          <h3>ラベルと状態の意味</h3>
+          <p>
+            このプロジェクトでは、Issue と PR
+            にラベル（分類の札）を付けて仕事を振り分けています。ボードは、Issue
+            の進み具合を列で管理する GitHub の画面です。
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th class="mb-rowlabel">名前</th>
+                <th class="mb-rowlabel">種類</th>
+                <th>意味</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="mb-rowlabel"><code>ai-fixable</code></td>
+                <td class="mb-rowlabel">Issue のラベル</td>
+                <td>AI が人間の判断を待たずに作業してよい Issue。図では「AI 単独」に数える</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>issue:decided</code></td>
+                <td class="mb-rowlabel">Issue のラベル</td>
+                <td>人間が決めるべき点を、作業の前に人間が決めた Issue</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>needs-human-decision</code></td>
+                <td class="mb-rowlabel">Issue のラベル</td>
+                <td>作業の前に、人間が方針を決める必要がある Issue</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>ready-for-human</code></td>
+                <td class="mb-rowlabel">Issue のラベル</td>
+                <td>方針は決まっているが、残りの作業を AI ができず、人間が行う Issue</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>human-ai-collaboration</code></td>
+                <td class="mb-rowlabel">Issue のラベル</td>
+                <td>
+                  人間と AI が対話しながら成果物を作る Issue（例：要件定義書を書く）。<code
+                    >ready-for-human</code
+                  >
+                  と一緒に付く
+                </td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>phase</code></td>
+                <td class="mb-rowlabel">Issue のラベル</td>
+                <td>
+                  Issue を大きな区分ごとにまとめる、最上位の入れ物の Issue。作業そのものではない
+                </td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel">completed</td>
+                <td class="mb-rowlabel">Issue の閉じ方</td>
+                <td>作業を終えて閉じたこと。「対応しない」と決めて閉じたものとは区別される</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>In progress</code></td>
+                <td class="mb-rowlabel">ボードの状態</td>
+                <td>AI か人間が、その Issue の作業を始めた</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>In Review</code></td>
+                <td class="mb-rowlabel">ボードの状態</td>
+                <td>作業の結果が PR として出て、Issue に紐づいた</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>needs-human-review</code></td>
+                <td class="mb-rowlabel">PR のラベル</td>
+                <td>マージの前か後に、人間がレビューする PR</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>policy</code></td>
+                <td class="mb-rowlabel">PR のラベル</td>
+                <td>開発の判断基準（ルールを書いた文書）を変える PR</td>
+              </tr>
+              <tr>
+                <td class="mb-rowlabel"><code>cicd</code></td>
+                <td class="mb-rowlabel">PR のラベル</td>
+                <td>自動テストや自動デプロイの仕組みを変える PR</td>
+              </tr>
+            </tbody>
+          </table>
+
           <h2 id="results">結果および考察</h2>
 
           <h3 id="throughput">Issue処理スループット</h3>
