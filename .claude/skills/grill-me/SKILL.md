@@ -27,7 +27,7 @@ If the caller passed a scope or a stopping condition in the arguments (another S
 
 Ask about something outside it only when one of these holds — the list is exhaustive:
 
-1. The topic is one of these three and the agreed sentence touches it: how data is stored and shaped, an interface exposed outside the system, the authn/authz or billing boundary. (Getting these wrong later throws away what this scope produced.)
+1. The topic is one of these and the agreed sentence touches it: how data is stored and shaped, an interface exposed outside the system, the authn/authz or billing boundary, where boundaries are placed (deployment topology, internal code structure, directory-structure policy). (Getting these wrong later throws away what this scope produced.)
 2. `docs/requirements.md` states a constraint on what the agreed sentence touches (especially SLI/SLO in 非機能要件).
 3. The user raised the topic themselves.
 
