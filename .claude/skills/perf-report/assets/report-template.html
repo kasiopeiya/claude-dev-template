@@ -154,8 +154,7 @@
             <ul>
               <!-- if:noProductCode -->
               <li>
-                中身はこの開発の仕組みづくりの実績です。<code>app/</code>・<code>infra/</code>
-                のファイルは0件です
+                中身はこの開発の仕組みづくりの実績です。アプリとインフラのコードの変更は0件です
               </li>
               <li><strong>プロダクトと本番では未検証</strong>です</li>
               <!-- endif -->
@@ -236,14 +235,13 @@
 
           <p>
             対象は {{repository}} の {{from}}〜{{to}} です。データは GitHub の
-            Issue・PR・ボードの記録で、<code>scripts/perf-report.mjs</code>
-            が集計しました。
+            Issue・PR・ボードの記録で、集計用のスクリプトで機械的に数えました。
           </p>
           <table>
             <thead>
               <tr>
                 <th class="mb-rowlabel">測定項目</th>
-                <th>定義と定義元</th>
+                <th>定義</th>
                 <th>測り方の注意</th>
               </tr>
             </thead>
@@ -253,10 +251,7 @@
                 <td>
                   completed で close した Issue から、PR
                   のレビュー通知・子を持つ親・<code>phase</code>・週次の
-                  Issue・メモ（ラベルが無く本文が空）を除いた件数<br />定義元は、レビュー通知が
-                  <code>docs/policy/pr-review-policy.md</code>、親・<code>phase</code>・週次が
-                  <code>docs/policy/issue-policy.md</code>、メモが
-                  <code>scripts/perf-report.mjs</code><br />close
+                  Issue・メモ（ラベルが無く本文が空）を除いた件数<br />close
                   した日（日本時間）で週に分ける（月曜始まり）<br />全日そろった週とは、月曜から日曜までをすべて数え、今日より前に終わった週をいう
                 </td>
                 <td>—</td>
@@ -267,9 +262,7 @@
                   Issue に付いたラベルだけで機械的に分類した件数<br /><code>ai-fixable</code> は
                   <code>issue:decided</code>
                   の有無を問わない<br />分類なしは、3択のラベルが無いものと
-                  <code>needs-human-decision</code> のまま close したもの<br />定義元は
-                  <code>docs/policy/issue-policy.md</code> のラベル表。分類なしは
-                  <code>scripts/perf-report.mjs</code>
+                  <code>needs-human-decision</code> のまま close したもの
                 </td>
                 <td>—</td>
               </tr>
@@ -292,8 +285,8 @@
               <tr>
                 <td class="mb-rowlabel">人間レビュー対象の割合</td>
                 <td>
-                  マージした PR のうち、<code>needs-human-review</code> が付いた割合<br />付く条件は
-                  <code>docs/policy/pr-review-policy.md</code> のレビュー方針の表が決める
+                  マージした PR のうち、<code>needs-human-review</code>
+                  が付いた割合<br />付く条件は、このプロジェクトのレビュー方針が決める
                 </td>
                 <td>対象はルールで決まる。ルールが変わると割合も変わる</td>
               </tr>
@@ -302,9 +295,7 @@
                 <td>
                   期間内にマージした PR の追加行数と削除行数の合計<br />割合は四捨五入のため、合計が100%にならないことがある
                 </td>
-                <td>
-                  200行と300行は、このプロジェクトが決めた分割の線（<code>docs/policy/pr-review-policy.md</code>）
-                </td>
+                <td>200行と300行は、このプロジェクトが決めた分割の線</td>
               </tr>
             </tbody>
           </table>
