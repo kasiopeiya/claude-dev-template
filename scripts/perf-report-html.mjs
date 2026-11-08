@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// 責務: 保存した `scripts/perf-report.mjs` の集計結果（JSON）と、会話中の AI が書いた考察ファイル（JSON）を読み、
+// 責務: 保存した `scripts/perf-report.mjs` の集計結果（JSON）と、会話中の AI が書いた考察ファイル（JSON）を読んで、考察を決まりと集計結果に照らして確かめ、
 //   `/perf-report` のひな形（report-template.html）の文字と数字と図（svg）と考察を埋めて HTML を書き、その絶対パスを標準出力に返す。
 //   数える処理は `perf-report.mjs`、考察の中身は AI、図と考察を除く見た目と固定の文言はひな形が持つ。
 //
@@ -12,8 +12,10 @@
 //   `perf-report.mjs` にも足さない。あちらは取得と集計を担い、すでに大きい。
 // - 考察ファイルは、集計結果のファイル名の末尾 `-aggregate.json` を `-discussion.json` に替えた名前で引く。
 //   前に打った分の考察ファイルが、別の集計結果に使われないためである。
-// - 考察ファイルが無い・崩れている・5指標のどれかが抜けている・「考察」の文が「と考えられる」で終わらないときは、何も書かずに止まり、原因をすべて並べる。
-//   考察の無いレポートや、推測を事実のように書いたレポートを配らないためである。文末は機械で判定できるので、文章の指示に任せない。
+// - 考察ファイルが無い・崩れている・5指標のどれかが抜けている・「考察」の文が「と考えられる」で終わらない・集計結果の Issue・PR のタイトルをそのまま含むときは、
+//   何も書かずに止まり、原因をすべて並べる。考察の無いレポートや、推測を事実のように書いたレポートを配らないためである。文末は機械で判定できるので、文章の指示に任せない。
+//   タイトルにはパスやラベル名が入り、レポートを配る相手には意味が分からない。集計結果と突き合わせれば機械で判定できるので、これも文章の指示に任せない（#1685）。
+//   照合するのはタイトル全体で、タイトルの一部だけを写した文は止めない。
 //   値が無い指標（期間内に作業 Issue・測れた Issue・マージした PR が無い）だけは、決まった1文（NO_VALUE_DISCUSSION_SENTENCE）を文末の検査から外す。
 //   「値が無い」は事実で、「と考えられる」で終えると推測に見えるためである。言い換えを許すと文末の検査が骨抜きになるので、1文に固定する。
 // - 図の svg はこのスクリプトが描く。ひな形に座標を書くと、棒の数が JSON で変わる図を表せないためである。縦棒の図（積み上げの棒も）は renderVerticalBarChart、横棒の図は renderHorizontalBarChart で描き、それぞれ基準線・棒・文字をそろえる。
@@ -249,7 +251,14 @@ const REPORT_FIELD_SPECS = [
   { name: 'over300Count', jsonPath: 'pullRequestDiffLines.bandCounts.over300', isValid: isCount },
   { name: 'humanReviewTargetCount', jsonPath: 'humanReviewTargets.targetCount', isValid: isCount },
   { name: 'policyOrCicdCount', jsonPath: 'humanReviewTargets.policyOrCicdCount', isValid: isCount },
-  { name: 'hasProductCode', jsonPath: 'hasProductCode', isValid: isBoolean }
+  { name: 'hasProductCode', jsonPath: 'hasProductCode', isValid: isBoolean },
+  // 1件ごとの記録は、考察の文がタイトルをそのまま含まないかの検査にだけ使う
+  { name: 'workIssueRecords', jsonPath: 'workIssueRecords', isValid: isTitledRecordList },
+  {
+    name: 'mergedPullRequestRecords',
+    jsonPath: 'mergedPullRequestRecords',
+    isValid: isTitledRecordList
+  }
 ]
 
 // 考察を書く5指標。上から、ひな形に並ぶ順。metricKey は考察ファイルのキーで、ひな形の `{{<metricKey>DiscussionItems}}` の頭にも使う。
@@ -406,12 +415,13 @@ function readDiscussions({ discussionContent, readField }) {
 
 /**
  * @param {{ discussionContent: unknown, readField: (fieldName: string) => any }} discussionSource readDiscussions と同じ
- * @returns {string[]} 決まりに合わない箇所の説明。オブジェクトでない・知らないキーがある・5指標のどれかが抜けている・指標ごとの形が違う（collectMetricDiscussionProblems）
+ * @returns {string[]} 決まりに合わない箇所の説明。オブジェクトでない・知らないキーがある・5指標のどれかが抜けている・指標ごとの考察が決まりに合わない（collectMetricDiscussionProblems）
  */
 function collectDiscussionProblems({ discussionContent, readField }) {
   if (!isPlainObject(discussionContent)) {
     return ['考察ファイルの中身が、指標ごとのキーを持つオブジェクトではありません']
   }
+  const recordTitles = collectRecordTitles(readField)
   const metricKeys = DISCUSSION_METRICS.map(({ metricKey }) => metricKey)
   const unknownKeys = Object.keys(discussionContent).filter(
     (topLevelKey) => !metricKeys.includes(topLevelKey)
@@ -430,27 +440,42 @@ function collectDiscussionProblems({ discussionContent, readField }) {
       collectMetricDiscussionProblems({
         metric,
         metricDiscussion: discussionContent[metric.metricKey],
-        hasNoValue: metric.hasNoValue(readField)
+        hasNoValue: metric.hasNoValue(readField),
+        recordTitles
       })
     )
   ]
 }
 
 /**
- * @param {{ metric: { metricKey: string, metricName: string }, metricDiscussion: unknown, hasNoValue: boolean }} metricSource 指標と、考察ファイルのその指標の中身と、その指標の値が期間内に無いか
- * @returns {string[]} 決まりに合わない箇所の説明。1文以上の空でない文字列の配列でない・「と考えられる」で終わらない文がある（値が無い指標の NO_VALUE_DISCUSSION_SENTENCE は除く）
+ * @param {(fieldName: string) => any} readField readReportFields が返す、確かめ済みの項目を読む関数
+ * @returns {string[]} 集計結果の作業 Issue とマージした PR のタイトル。前後の空白を除き、重複を除いたもの
  */
-function collectMetricDiscussionProblems({ metric, metricDiscussion, hasNoValue }) {
+function collectRecordTitles(readField) {
+  const records = [...readField('workIssueRecords'), ...readField('mergedPullRequestRecords')]
+  return [...new Set(records.map(({ title }) => title.trim()))]
+}
+
+/**
+ * @param {{ metric: { metricKey: string, metricName: string }, metricDiscussion: unknown, hasNoValue: boolean, recordTitles: string[] }} metricSource 指標と、考察ファイルのその指標の中身と、その指標の値が期間内に無いかと、集計結果のタイトル（collectRecordTitles）
+ * @returns {string[]} 決まりに合わない箇所の説明。1文以上の空でない文字列の配列でない・「と考えられる」で終わらない文がある（値が無い指標の NO_VALUE_DISCUSSION_SENTENCE は除く）・集計結果のタイトルをそのまま含む文がある
+ */
+function collectMetricDiscussionProblems({ metric, metricDiscussion, hasNoValue, recordTitles }) {
   const metricLabel = describeMetric(metric)
   if (!isSentenceList(metricDiscussion) || metricDiscussion.length === 0) {
     return [`${metricLabel}: 「考察」の文が、1文以上の空でない文字列の配列ではありません`]
   }
-  return metricDiscussion
-    .filter((sentence) => !isAllowedDiscussionSentence({ sentence, hasNoValue }))
-    .map(
-      (sentence) =>
-        `${metricLabel}: 「考察」の文が「と考えられる」で終わっていません: 「${sentence}」`
-    )
+  return metricDiscussion.flatMap((sentence) => [
+    ...(isAllowedDiscussionSentence({ sentence, hasNoValue })
+      ? []
+      : [`${metricLabel}: 「考察」の文が「と考えられる」で終わっていません: 「${sentence}」`]),
+    ...recordTitles
+      .filter((recordTitle) => sentence.includes(recordTitle))
+      .map(
+        (recordTitle) =>
+          `${metricLabel}: 「考察」の文が、集計結果の Issue・PR のタイトル「${recordTitle}」をそのまま含んでいます。何の作業かを言葉で言い換えてください: 「${sentence}」`
+      )
+  ])
 }
 
 /**
@@ -607,6 +632,20 @@ function isFullWeekSummaryOrNull(candidate) {
  */
 function isBoolean(candidate) {
   return typeof candidate === 'boolean'
+}
+
+/**
+ * @param {unknown} candidate 調べる値
+ * @returns {boolean} すべてが、空白だけでない文字列の title を持つオブジェクトの配列なら true（空の配列も true）。空のタイトルを通すと、どの文もそれを含むと判定されて止まる
+ */
+function isTitledRecordList(candidate) {
+  return (
+    Array.isArray(candidate) &&
+    candidate.every(
+      (record) =>
+        isPlainObject(record) && typeof record.title === 'string' && record.title.trim() !== ''
+    )
+  )
 }
 
 /**
