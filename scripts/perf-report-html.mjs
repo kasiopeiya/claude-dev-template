@@ -64,7 +64,8 @@ const NO_VALUE_DISCUSSION_SENTENCE = '期間内に値が無いので考察しな
 const PARENTHESIZED_TEXT_PATTERN = /[（(]([^（）()]*)[）)]/g
 // 英字を条件に入れるのは、日付や件数だけのかっこ（「（2026-10-07）」など）を出典として拾わないためである
 const CITATION_LIKE_PATTERN = /(?=.*[A-Za-z])(?=.*\d{4})/
-const CITATION_FORM_PATTERN = /^（([A-Za-z][A-Za-z ]*, \d{4})）$/
+// 名前にピリオドを許すのは、「Peng et al., 2023」のような共著の表記を、形の崩れではなく参考文献との照合で判定するためである
+const CITATION_FORM_PATTERN = /^（([A-Za-z][A-Za-z. ]*, \d{4})）$/
 // ひな形の参考文献の項目。属性の並びは Prettier が折り返すので、開きタグ全体を拾ってから属性を読む
 const REFERENCE_ITEM_TAG_PATTERN = /<li\b[^>]*\bdata-citation-label="[^"]*"[^>]*>/g
 const REFERENCE_LABEL_ATTRIBUTE_PATTERN = /\bdata-citation-label="([^"]*)"/
