@@ -163,6 +163,10 @@
               <li>
                 工数削減・時間短縮・体感値は載せません。1プロジェクトでは対照実験ができないためです
               </li>
+              <li>
+                上の数字は目標値ではなく、ハーネスを改善する材料と、AI
+                駆動開発の工数を見積もるときの参考値です
+              </li>
             </ul>
           </div>
 
@@ -178,7 +182,11 @@
           <h3>工数削減の効果は、このレポートでは測らない</h3>
           <p>
             経営層が最も知りたいのは、AI
-            で工数がどれだけ減ったかです。しかし、このレポートではこれを測れません。同じ作業を人間だけで行った場合と比べる対照実験が1プロジェクトではできず、体感も実測とずれるためです。
+            で工数がどれだけ減ったかです。欧州・中東の経営層1,854人への調査でも、AI
+            の投資対効果は、導入で最も解決しにくい課題の1つに挙がっています（<a
+              href="#ref-deloitte-2025"
+              >Deloitte, 2025</a
+            >）。しかし、このレポートではこれを測れません。同じ作業を人間だけで行った場合と比べる対照実験が1プロジェクトではできず、体感も実測とずれるためです。
           </p>
           <p>
             体感は、実測の代わりになりません。回答した開発者・技術者の8割以上が、AI
@@ -187,32 +195,29 @@
             を使うと19%遅くなったのに、本人たちは終えた後も20%速くなったと信じていました（<a
               href="#ref-metr-2025"
               >METR, 2025</a
-            >）。
-          </p>
-          <p>
-            対照実験そのものも難しくなっています。上の研究の機関は、この結果が古くなったと注記したうえで研究を更新しようとしましたが、AI
-            無しで働く条件への参加を断る開発者が増え、選ばれ方の偏りで正しく測れなくなったと報告しています。本人が申告する速さも当てにならないとしています（<a
+            >）。METR はその後、この結果は古くなり、いまは AI
+            で速くなっている可能性が高いと注記しました。ただし、新しい推定も信頼できないとしています。AI
+            無しで働く条件への参加を断る開発者が増え、選ばれ方の偏りで正しく測れなくなったためで、本人が申告する速さも当てにならないと改めて述べています（<a
               href="#ref-metr-2026"
               >METR, 2026</a
             >）。
           </p>
           <p>
-            工数削減を測りやすいのは、課題が決まっていて、出来上がりを機械で判定できる定型的な作業です。たとえば
-            GitHub Copilot の対照実験では、「JavaScript で HTTP
+            工数削減を測れた研究は、課題が決まっているか、成果物の件数だけを数えるものです。GitHub
+            Copilot の対照実験では、「JavaScript で HTTP
             サーバを作る」という1つの課題を全員に与え、Copilot
             を使った組が使わない組より55.8%速く終えました（<a href="#ref-peng-2023"
               >Peng et al., 2023</a
-            >）。しかし実際の開発の多くは、何を作るかや、どこまでできれば完成かが作業の中で決まっていく非定型業務（オープンエンドなタスク）です。決まった課題での結果は、そのまま当てはめられません（<a
+            >）。3社の開発者4,867人を対象にした実務での対照実験では、AI
+            を使える組の完了タスク数が26%増えましたが、効果は経験の浅い開発者に偏り、コードの質は測られていません（<a
+              href="#ref-cui-2025"
+              >Cui et al., 2025</a
+            >）。しかし実際の開発の多くは、何を作るかや、どこまでできれば完成かが作業の中で決まっていく非定型業務（オープンエンドなタスク）です。決まった課題や件数だけの結果は、そのまま当てはめられません（<a
               href="#ref-metr-2025"
               >METR, 2025</a
-            >）。
-          </p>
-          <p>
-            開発に限らず、企業の AI 投資全体でも同じです。欧州・中東の経営層1,854人への調査では、AI
-            の投資対効果は、導入で最も解決しにくい課題の1つとされました。AI
-            はデータの整備や組織の見直しと同時に入るので、AI だけの効果を切り分けにくいためです（<a
-              href="#ref-deloitte-2025"
-              >Deloitte, 2025</a
+            >）。DORA も、AI の投資対効果は導入直後に一時的に下がる J
+            カーブを描くとし、その計算は確度の低い見積もりだと断っています（<a href="#ref-dora-2026"
+              >DORA, 2026</a
             >）。
           </p>
 
@@ -220,8 +225,8 @@
           <p>
             開発チームの成果を測る代表的な指標は、DORA
             のソフトウェアデリバリーの指標です。いまは、変更のリードタイム・デプロイ頻度・失敗したデプロイからの復旧時間・変更失敗率・デプロイのやり直し率の5つです（<a
-              href="#ref-dora-2026"
-              >DORA, 2026</a
+              href="#ref-dora-metrics-guide-2026"
+              >DORA Metrics Guide, 2026</a
             >）。
           </p>
           <p>
@@ -237,9 +242,17 @@
             そこでこのレポートは、チームの中で完結する Issue と PR
             の記録から、いまのチームの働き方を測ります。ただし、Issue の件数や PR
             の差分行数は、上で危ういとした作業量の指標に近いものです。指標を目標にすると、指標をよく見せること自体が目的になり、指標が役に立たなくなります。グッドハートの法則と呼ばれる現象で、DORA
-            も指標を目標にすると数字をごまかす動きを招くと注意しています（<a href="#ref-dora-2026"
-              >DORA, 2026</a
-            >）。そのため、ここで測る数字は KPI にはせず、ハーネスを改善する材料として読みます。
+            も指標を目標にすると数字をごまかす動きを招くと注意しています（<a
+              href="#ref-dora-metrics-guide-2026"
+              >DORA Metrics Guide, 2026</a
+            >）。そのため、ここで測る数字は目標値にはしません。
+          </p>
+          <p>
+            それでも、冒頭の「AI
+            で工数がどれだけ減ったか」に、間接的に答える材料にはなります。人間と比べた削減率は出せませんが、AI
+            駆動開発でどのくらいの工数がかかるかを見積もるときの参考値にはなるからです。たとえば、人間と方針を詰める工程（要件定義など）では人間レビューの対象が多く工数削減をあまり見込めない、構築の工程では
+            AI
+            単独の分類が多くスループットも高い、といった工程ごとの違いにあたりを付けられるはずです。あくまで参考値ですが、測れない問いに対してできることはやる、という立場です。そのため、ここで測る数字は、ハーネスを改善する材料と、次のプロジェクトの工数を見積もる参考値として読みます。
           </p>
 
           <h3>今回の測定項目</h3>
@@ -283,12 +296,19 @@
               <tr>
                 <td class="mb-rowlabel">人間レビュー対象の割合</td>
                 <td>
-                  人間の確認に回る量が分かる。AI
-                  が生成した大きな変更はレビューが難しく、1行あたりの確認の負担も人間が書いたコードより大きくなりうるとされる（<a
+                  人間の確認に回る量が分かる。大きな変更はレビューが難しく、AI
+                  が生成したコードは1行あたりの確認の負担が人間が書いたコードより大きくなりうるとされる（<a
                     href="#ref-dora-2025"
                     >DORA, 2025</a
                   >）。AI
-                  が書く量が増えるほど、人間の確認が全体を止める場所になりうるので、ボトルネックを探す入口として測る。ハーネス改善の材料にもなる
+                  でコードの量が増えると確認の負担が膨らみ、手動のレビューの門が追いつかなくなるとされ（<a
+                    href="#ref-dora-2026"
+                    >DORA, 2026</a
+                  >）、AI の利用が多いチームではマージした PR
+                  が98%増える一方でレビュー時間が91%増えたという報告もある（<a
+                    href="#ref-faros-2025"
+                    >Faros AI, 2025</a
+                  >）。人間の確認が全体を止める場所になりうるので、ボトルネックを探す入口として測る。ハーネス改善の材料にもなる
                 </td>
               </tr>
               <tr>
@@ -496,6 +516,18 @@
           <p>本文と考察の出典です。</p>
           <ul>
             <li
+              id="ref-cui-2025"
+              data-citation-label="Cui et al., 2025"
+              data-citable-in-discussion="false"
+            >
+              <strong>Cui et al., 2025</strong>：Zheyuan Cui, Mert Demirer, Sonia Jaffe, Leon
+              Musolff, Sida Peng, Tobias Salz.
+              <a href="https://pubsonline.informs.org/doi/10.1287/mnsc.2025.00535"
+                >The Effects of Generative AI on High-Skilled Work: Evidence from Three Field
+                Experiments with Software Developers</a
+              >. Management Science
+            </li>
+            <li
               id="ref-deloitte-2025"
               data-citation-label="Deloitte, 2025"
               data-citable-in-discussion="false"
@@ -504,6 +536,16 @@
                 href="https://www.deloitte.com/global/en/issues/generative-ai/ai-roi-the-paradox-of-rising-investment-and-elusive-returns.html"
                 >AI ROI: The paradox of rising investment and elusive returns</a
               >
+            </li>
+            <li
+              id="ref-faros-2025"
+              data-citation-label="Faros AI, 2025"
+              data-citable-in-discussion="false"
+            >
+              <strong>Faros AI, 2025</strong>：<a
+                href="https://www.faros.ai/blog/ai-productivity-paradox-report-2025"
+                >The AI Productivity Paradox Report 2025</a
+              >（2025年6月時点の分析）
             </li>
             <li
               id="ref-forsgren-2018"
@@ -575,7 +617,17 @@
               data-citation-label="DORA, 2026"
               data-citable-in-discussion="false"
             >
-              <strong>DORA, 2026</strong>：<a href="https://dora.dev/guides/dora-metrics-four-keys/"
+              <strong>DORA, 2026</strong>：<a href="https://dora.dev/ai/roi/report/"
+                >The ROI of AI-assisted Software Development</a
+              >（v. 2026.1）
+            </li>
+            <li
+              id="ref-dora-metrics-guide-2026"
+              data-citation-label="DORA Metrics Guide, 2026"
+              data-citable-in-discussion="false"
+            >
+              <strong>DORA Metrics Guide, 2026</strong>：<a
+                href="https://dora.dev/guides/dora-metrics-four-keys/"
                 >DORA's software delivery performance metrics</a
               >（2026年1月5日更新）
             </li>
