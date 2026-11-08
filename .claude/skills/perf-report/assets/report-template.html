@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 値の場所は二重の波かっこで名前を囲んで示す。if:名前 と endif のコメントで囲んだ部分は、その名前の値が無いときに消す。参考文献の項目の data-citation-label（出典の表記）と data-citable-in-discussion（考察で引いてよいか）は、考察の出典を確かめるためにスクリプトが読む -->
+<!-- 値の場所は二重の波かっこで名前を囲んで示す。if:名前 と endif のコメントで囲んだ部分は、その名前の値が無いときに消す。参考文献の項目の data-citation-label（出典の表記）と data-citable-in-discussion（考察で引いてよいか）は、考察の出典を確かめるためにスクリプトが読む。考察で引いてよい結果は、その項目の中のコメントに書く（読み手には見せない） -->
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
@@ -489,9 +489,7 @@
 
           <h2 id="references">参考文献</h2>
 
-          <p>
-            本文の出典です。考察で研究と比べるときは、「考察で引いてよい」とした結果だけを引きます。
-          </p>
+          <p>本文と考察の出典です。</p>
           <ul>
             <li
               id="ref-deloitte-2025"
@@ -540,8 +538,8 @@
               <strong>DORA, 2024</strong>：<a
                 href="https://cloud.google.com/blog/products/devops-sre/announcing-the-2024-dora-report"
                 >Announcing the 2024 DORA report</a
-              ><br />考察で引いてよい結果：AI
-              の導入とともに、デリバリーの安定性が推定7.2%、スループットが推定1.5%下がった。小さいバッチや確かなテストなどの基本を守らないと、開発のやり方を良くしてもデリバリーは良くならない
+              >
+              <!-- 考察で引いてよい結果：AI の導入とともに、デリバリーの安定性が推定7.2%、スループットが推定1.5%下がった。小さいバッチや確かなテストなどの基本を守らないと、開発のやり方を良くしてもデリバリーは良くならない -->
             </li>
             <li
               id="ref-dora-2025"
@@ -556,9 +554,8 @@
               >（同じ調査から作った<a
                 href="https://cloud.google.com/blog/products/ai-machine-learning/introducing-doras-inaugural-ai-capabilities-model"
                 >AI Capabilities Model</a
-              >の1項目）<br />考察で引いてよい結果：小さいバッチで働くことは、AI
-              の導入がプロダクトの成果に与える良い効果を強める。大きな変更はレビュー・テスト・統合が難しく、AI
-              が生成したコードは1行あたりの確認の負担が大きくなりうる
+              >の1項目）
+              <!-- 考察で引いてよい結果：小さいバッチで働くことは、AI の導入がプロダクトの成果に与える良い効果を強める。大きな変更はレビュー・テスト・統合が難しく、AI が生成したコードは1行あたりの確認の負担が大きくなりうる -->
             </li>
             <li
               id="ref-dora-2026"
