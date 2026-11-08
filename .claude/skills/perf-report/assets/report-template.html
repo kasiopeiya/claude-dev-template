@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- 値の場所は二重の波かっこで名前を囲んで示す。if:名前 と endif のコメントで囲んだ部分は、その名前の値が無いときに消す -->
+<!-- 値の場所は二重の波かっこで名前を囲んで示す。if:名前 と endif のコメントで囲んだ部分は、その名前の値が無いときに消す。参考文献の項目の data-citation-label（出典の表記）と data-citable-in-discussion（考察で引いてよいか）は、考察の出典を確かめるためにスクリプトが読む -->
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
@@ -83,6 +83,7 @@
             <li><a href="#introduction">イントロダクション</a></li>
             <li><a href="#methods">材料および方法</a></li>
             <li><a href="#results">結果および考察</a></li>
+            <li><a href="#references">参考文献</a></li>
           </ol>
         </nav>
       </div>
@@ -177,9 +178,17 @@
           <h3>工数削減の効果は測れない</h3>
           <p>
             経営層が最も知りたいのは、AI
-            で工数がどれだけ減ったかです。しかし、これは測れません。同じ作業を人間だけで行った場合と比べる対照実験が1プロジェクトではできず、体感も実測とずれるためです（<a
-              href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/"
-              >METR の報告</a
+            で工数がどれだけ減ったかです。しかし、これは測れません。同じ作業を人間だけで行った場合と比べる対照実験が1プロジェクトではできず、体感も実測とずれるためです。
+          </p>
+          <p>
+            経験のある開発者16人が246件の課題に取り組んだ研究では、AI
+            を使うと19%遅くなったのに、本人たちは終えた後も20%速くなったと信じていました（<a
+              href="#ref-metr-2025"
+              >METR, 2025</a
+            >）。この研究の機関は、この結果が古くなったと注記したうえで研究を更新しようとしましたが、AI
+            無しで働く条件への参加を断る開発者が増え、選ばれ方の偏りで正しく測れなくなったと報告しています。本人が申告する速さも当てにならないとしています（<a
+              href="#ref-metr-2026"
+              >METR, 2026</a
             >）。
           </p>
 
@@ -221,12 +230,26 @@
               <tr>
                 <td class="mb-rowlabel">人間レビュー対象の割合</td>
                 <td>
-                  人間の確認に回る量が分かる。ボトルネックを探す入口になり、ハーネス改善の材料になる
+                  人間の確認に回る量が分かる。AI
+                  が生成した大きな変更はレビューが難しく、1行あたりの確認の負担も人間が書いたコードより大きくなりうるとされる（<a
+                    href="#ref-dora-2025"
+                    >DORA, 2025</a
+                  >）。AI
+                  が書く量が増えるほど、人間の確認が全体を止める場所になりうるので、ボトルネックを探す入口として測る。ハーネス改善の材料にもなる
                 </td>
               </tr>
               <tr>
                 <td class="mb-rowlabel">変更の小ささ</td>
-                <td>1回の変更の大きさが分かる。件数と時間は、この大きさを前提に読む</td>
+                <td>
+                  1回の変更の大きさが分かる。小さいバッチで働くことは開発と組織の成果を予測し、AI
+                  の導入がプロダクトの成果に与える良い効果を強めるとされる（<a href="#ref-dora-2025"
+                    >DORA, 2025</a
+                  >）。AI
+                  の導入とともにデリバリーの安定性が推定7.2%下がり、小さいバッチなどの基本を守ることが要るとされた（<a
+                    href="#ref-dora-2024"
+                    >DORA, 2024</a
+                  >）。件数と時間は、この大きさを前提に読む
+                </td>
               </tr>
             </tbody>
           </table>
@@ -413,6 +436,60 @@
           <ul>
             <li>平均は一部の大きな変更に引っ張られるので、中央値を中心に読む</li>
             <li>変更の大きさを示すだけで、有効さの証明ではない</li>
+          </ul>
+
+          <h2 id="references">参考文献</h2>
+
+          <p>
+            本文の出典です。考察で研究と比べるときは、「考察で引いてよい」とした結果だけを引きます。
+          </p>
+          <ul>
+            <li
+              id="ref-metr-2025"
+              data-citation-label="METR, 2025"
+              data-citable-in-discussion="false"
+            >
+              <strong>METR, 2025</strong>：<a
+                href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/"
+                >Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer
+                Productivity</a
+              ><br />考察では引かない（結果は速さと体感の数字で、このレポートが載せないものに当たる）
+            </li>
+            <li
+              id="ref-metr-2026"
+              data-citation-label="METR, 2026"
+              data-citable-in-discussion="false"
+            >
+              <strong>METR, 2026</strong>：<a href="https://metr.org/blog/2026-02-24-uplift-update/"
+                >We are Changing our Developer Productivity Experiment Design</a
+              ><br />考察では引かない（同上）
+            </li>
+            <li
+              id="ref-dora-2024"
+              data-citation-label="DORA, 2024"
+              data-citable-in-discussion="true"
+            >
+              <strong>DORA, 2024</strong>：<a
+                href="https://cloud.google.com/blog/products/devops-sre/announcing-the-2024-dora-report"
+                >Announcing the 2024 DORA report</a
+              ><br />考察で引いてよい結果：AI
+              の導入とともに、デリバリーの安定性が推定7.2%、スループットが推定1.5%下がった。小さいバッチや確かなテストなどの基本を守らないと、開発のやり方を良くしてもデリバリーは良くならない
+            </li>
+            <li
+              id="ref-dora-2025"
+              data-citation-label="DORA, 2025"
+              data-citable-in-discussion="true"
+            >
+              <strong>DORA, 2025</strong>：<a
+                href="https://dora.dev/capabilities/working-in-small-batches/"
+                >Working in small batches</a
+              >（2025年の DORA 調査から作った<a
+                href="https://cloud.google.com/blog/products/ai-machine-learning/introducing-doras-inaugural-ai-capabilities-model"
+                >AI Capabilities Model</a
+              >の1項目）<br />考察で引いてよい結果：小さいバッチで働くことは、AI
+              の導入がプロダクトの成果に与える良い効果を強める。大きな変更はレビュー・テスト・統合が難しく、AI
+              が生成したコードは1行あたりの確認の負担が大きくなりうる
+            </li>
           </ul>
         </main>
         <!-- /.mb-main -->
