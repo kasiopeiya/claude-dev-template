@@ -35,6 +35,7 @@ hook:
       '.claude/skills/auto-fix-ci/**/*.md',
       '.claude/skills/auto-resolve-conflict/**/*.md',
       '.claude/skills/design/SKILL.md',
+      '.claude/skills/asap/SKILL.md',
       '.claude/skills/code-review/**/*.md',
       '.claude/skills/doc-review/**/*.md',
       '.claude/skills/cdk-review/**/*.md',
