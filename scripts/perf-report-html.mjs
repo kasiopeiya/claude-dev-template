@@ -442,7 +442,7 @@ function buildPlaceholderValues(readField) {
     ...Object.fromEntries(
       UNDRAWN_FIGURE_PLACEHOLDER_NAMES.map((placeholderName) => [placeholderName, ''])
     ),
-    repository: escapeHtml(readField('repository')),
+    repositoryName: escapeHtml(readField('repository').split('/').pop()),
     from: escapeHtml(readField('from')),
     to: escapeHtml(readField('to')),
     workIssueCount: formatNumber(workIssueCount),
