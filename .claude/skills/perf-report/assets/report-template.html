@@ -87,10 +87,10 @@
 
         <nav class="mb-toc">
           <ol>
-            <li><a href="#throughput">処理した量</a></li>
-            <li><a href="#delegation">AI に任せた度合い</a></li>
-            <li><a href="#speed">着手から PR が出るまでの時間</a></li>
-            <li><a href="#review">人間レビューの対象</a></li>
+            <li><a href="#throughput">Issue処理スループット</a></li>
+            <li><a href="#delegation">AIへの委譲度</a></li>
+            <li><a href="#speed">Issue１つあたりのリードタイム分布</a></li>
+            <li><a href="#review">人間レビュー対象の割合</a></li>
             <li><a href="#size">変更の小ささ</a></li>
           </ol>
         </nav>
@@ -125,7 +125,7 @@
               </div>
             </div>
             <div>
-              <div class="perf-kpi-label">人間レビューの対象</div>
+              <div class="perf-kpi-label">人間レビュー対象の割合</div>
               <div class="perf-kpi-value">
                 {{humanReviewPercent}}<span class="perf-kpi-unit">%</span>
               </div>
@@ -164,7 +164,7 @@
 
       <div class="mb-wrap">
         <main class="mb-main">
-          <h2 id="throughput">処理した量</h2>
+          <h2 id="throughput">Issue処理スループット</h2>
 
           <figure class="mb-figure">
             <div class="mb-figure-frame">{{throughputFigure}}</div>
@@ -200,7 +200,7 @@
             </tr>
           </table>
 
-          <h2 id="delegation">AI に任せた度合い</h2>
+          <h2 id="delegation">AIへの委譲度</h2>
 
           <!-- if:delegationFigure -->
           <figure class="mb-figure">
@@ -241,7 +241,7 @@
             </tr>
           </table>
 
-          <h2 id="speed">着手から PR が出るまでの時間</h2>
+          <h2 id="speed">Issue１つあたりのリードタイム分布</h2>
 
           <!-- if:speedFigure -->
           <figure class="mb-figure">
@@ -286,7 +286,7 @@
             </tr>
           </table>
 
-          <h2 id="review">人間レビューの対象</h2>
+          <h2 id="review">人間レビュー対象の割合</h2>
 
           <!-- if:reviewFigure -->
           <figure class="mb-figure">
