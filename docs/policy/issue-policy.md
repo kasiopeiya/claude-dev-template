@@ -8,6 +8,7 @@ hook:
       'scripts/decide-issue-start.mjs',
       'scripts/perf-report.mjs',
       'scripts/perf-report-html.mjs',
+      'scripts/progress-report.mjs',
       'scripts/lib/work-issues.mjs',
       'scripts/auto-programmer/README.md',
       'scripts/ci/doc-audit-weekly-issue.mjs',
