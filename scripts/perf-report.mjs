@@ -9,9 +9,6 @@
 // - 数える処理をスクリプトに置く。報告の数字は誰が打っても同じでなければならず、AI に数えさせると打つたびにぶれる。
 // - 検索は週ごとに分けて打つ。GitHub の検索は1回で 1000 件までしか返さないので、期間をまとめて打つと、長い期間で黙って欠ける。
 //   それでも 1000 件を超える週は、欠けたまま数えず失敗にする。
-// - 親かどうかは subIssues の有無で決める。`tracking-issue` は第2階層の親にしか付かない（#1587）。
-// - レビュー通知は bot 名義に限る。`needs-human-review` は PR のラベルで、作業でないのは bot が起票する通知の Issue だけである。
-// - ラベルも本文も無い Issue はメモとして除く。#835 の子に資料の見出しだけを書いたものがあり（#939 など）、何の作業かを確かめられない。
 // - 委譲の分類はラベルだけで決める。他のリポジトリでも同じ Skill が使えるようにするためである（#1591）。
 //   無人実行の記録（runs.jsonl）は使わない。無人実行の定義に問題があり、端末ごとの記録でもある。
 // - 差分行数の帯は docs/policy/pr-review-policy.md「見積もりで割る線」の 200行・300行に合わせる（#1592）。
@@ -36,6 +33,12 @@ import { parseArgs } from 'node:util'
 
 import { runJson, runOrThrow } from './auto-programmer/shell.mjs'
 import { BusinessError, TechnicalError } from './lib/errors.mjs'
+import {
+  EXCLUSION_REASONS,
+  EXCLUSION_TARGET_FIELDS,
+  HUMAN_REVIEW_LABEL,
+  findExclusionReason
+} from './lib/work-issues.mjs'
 
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 const MILLISECONDS_PER_MINUTE = 60 * 1000
@@ -50,9 +53,6 @@ const REPORT_TIMEZONE_NAME = 'Asia/Tokyo'
 const REPORT_UTC_OFFSET = '+09:00'
 const REPORT_UTC_OFFSET_MILLISECONDS = 9 * 60 * 60 * 1000
 
-const HUMAN_REVIEW_LABEL = 'needs-human-review'
-const ROOT_ISSUE_LABEL = 'phase'
-const WEEKLY_ISSUE_LABELS = ['doc-audit-weekly', 'code-policy-weekly']
 const AI_FIXABLE_LABEL = 'ai-fixable'
 const READY_FOR_HUMAN_LABEL = 'ready-for-human'
 const COLLABORATION_LABEL = 'human-ai-collaboration'
@@ -86,11 +86,7 @@ const CLOSED_ISSUES_QUERY = `query($searchQuery: String!, $endCursor: String) {
       ... on Issue {
         number
         title
-        stateReason
-        body
-        author { __typename }
-        labels(first: 50) { nodes { name } }
-        subIssues { totalCount }
+        ${EXCLUSION_TARGET_FIELDS}
       }
     }
   }
@@ -149,23 +145,6 @@ const MERGED_PULL_REQUESTS_QUERY = `query($searchQuery: String!, $endCursor: Str
  * @property {string} delegationCategory 委譲の分類
  * @property {string} closedWeekStart close された週の月曜日（YYYY-MM-DD）
  */
-
-// 上から順に当て、最初に当たった理由だけで数える。理由ごとの件数を足すと、除外した総数に一致する
-const EXCLUSION_RULES = [
-  { reason: 'notCompleted', matches: (issue) => issue.stateReason !== 'COMPLETED' },
-  {
-    reason: 'reviewNotification',
-    matches: (issue) =>
-      issue.author?.__typename === 'Bot' && hasAnyLabel(issue, [HUMAN_REVIEW_LABEL])
-  },
-  { reason: 'parent', matches: (issue) => issue.subIssues.totalCount > 0 },
-  { reason: 'rootIssue', matches: (issue) => hasAnyLabel(issue, [ROOT_ISSUE_LABEL]) },
-  { reason: 'weeklyIssue', matches: (issue) => hasAnyLabel(issue, WEEKLY_ISSUE_LABELS) },
-  {
-    reason: 'memo',
-    matches: (issue) => issue.labels.nodes.length === 0 && issue.body.trim() === ''
-  }
-]
 
 // 上から順に当て、最初に当たった分類だけで数える。最後の分類がすべてを受けるので、分類ごとの件数を足すと作業 Issue の件数に一致する。
 // 共同は人間単独より先に当てる。共同の Issue は `ready-for-human` も持つためである
@@ -443,9 +422,9 @@ function tallyIssues(issues) {
   const workIssues = []
   let workIssueCount = 0
   for (const issue of issues) {
-    const matchedRule = EXCLUSION_RULES.find(({ matches }) => matches(issue))
-    if (matchedRule) {
-      excludedCounts[matchedRule.reason] += 1
+    const exclusionReason = findExclusionReason(issue)
+    if (exclusionReason) {
+      excludedCounts[exclusionReason] += 1
       continue
     }
     workIssueCount += 1
@@ -508,7 +487,7 @@ function isFullWeek({ weekStart, weekEnd, countedFrom, countedTo }, today) {
  * @returns {Record<string, number>} 除外の理由ごとの件数をすべて 0 にしたもの
  */
 function createEmptyExcludedCounts() {
-  return Object.fromEntries(EXCLUSION_RULES.map(({ reason }) => [reason, 0]))
+  return Object.fromEntries(EXCLUSION_REASONS.map((reason) => [reason, 0]))
 }
 
 /**
@@ -518,7 +497,7 @@ function createEmptyExcludedCounts() {
 function sumExcludedCounts(tallies) {
   const totalCounts = createEmptyExcludedCounts()
   for (const { excludedCounts } of tallies) {
-    for (const { reason } of EXCLUSION_RULES) totalCounts[reason] += excludedCounts[reason]
+    for (const reason of EXCLUSION_REASONS) totalCounts[reason] += excludedCounts[reason]
   }
   return totalCounts
 }
