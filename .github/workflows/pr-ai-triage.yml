@@ -63,17 +63,91 @@ jobs:
       # パス判定は決定論的なので AI ステップより前で機械が落とす（policy-driven-development-policy
       # 「自動検知できる Rule は、その場でガードレールにする」）。対象パスの正は
       # docs/policy/pr-review-policy.md の policy 行で、ここはその写し。
+      # 例外：名指しのポリシーの applies-to へ具体パスを足すだけの差分には付けない。条件の正は同ポリシーの
+      # 「applies-to への具体パスの追記は policy の対象外にする」節で、ここはその写し。判定できないときは付ける。
       - name: Label policy changes for human review
         if: steps.pr.outputs.number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ steps.pr.outputs.number }}
+          REPO: ${{ github.repository }}
         run: |
           if ! gh pr diff "$PR" --name-only |
             grep -qE '^(docs/policy/|docs/policy-hub\.md$|CLAUDE\.md$)'; then
             echo "no policy path touched; skipping"
             exit 0
           fi
+
+          # 名指しのポリシー（空白区切り）。足すときは、そのポリシーの applies-to が判定表として読まれていないことを先に確かめる。
+          exempt_policies="docs/policy/issue-policy.md"
+
+          # $2 のファイルの $1 時点の版で、frontmatter を閉じる --- の行番号を出す。frontmatter が無ければ失敗。
+          frontmatter_end() {
+            gh api -H 'Accept: application/vnd.github.raw+json' "repos/$REPO/contents/$2?ref=$1" |
+              awk 'NR == 1 && $0 != "---" { bad = 1 }
+                   $0 == "---" && !bad { n++; if (n == 2) end = NR }
+                   END { if (bad || !end) exit 1; print end }'
+          }
+
+          # $1 の差分が、frontmatter の applies-to に具体パスの行を足すだけなら 0。そうでなければ、判定できないときも 1。
+          # 古い版の行番号は merge-base 次第で決まるので使わない。新しい版の行番号だけで、足した行・削った行の位置を見る。
+          only_adds_concrete_paths() {
+            local head end
+            head=$(gh pr view "$PR" --json headRefOid --jq .headRefOid) || return 1
+            end=$(frontmatter_end "$head" "$1") || return 1
+            gh pr diff "$PR" --color never |
+              awk -v path="$1" -v fm_end="$end" -v q="'" '
+                /^diff --git / { on = ($NF == "b/" path); hunk = 0; next }
+                !on { next }
+                /^@@ / {
+                  hunk = 1
+                  match($0, /\+[0-9]+(,[0-9]+)?/)
+                  split(substr($0, RSTART + 1, RLENGTH - 1), r, ",")
+                  n = r[1] + (r[2] == "0" ? 1 : 0)
+                  next
+                }
+                !hunk || /^\\/ { next }
+                {
+                  c = substr($0, 1, 1)
+                  v = substr($0, 2)
+                  if (c == "+") {
+                    # ワイルドカードを通さないよう、パスに使える文字を許可リストで縛る。
+                    if (v !~ ("^[ \t]*" q "[A-Za-z0-9._/-]+" q ",?[ \t]*$") || n >= fm_end) bad = 1
+                    gsub(/^[ \t]+|[ \t]+$/, "", v); sub(/,$/, "", v)
+                    added[v]++; n++
+                  } else if (c == "-") {
+                    if (n > fm_end) bad = 1
+                    gsub(/^[ \t]+|[ \t]+$/, "", v); sub(/,$/, "", v)
+                    removed[v]++
+                  } else n++
+                }
+                END {
+                  # 最後の要素の後ろに足すと、prettier（trailingComma: none）が直前の行へカンマを付けるので、その行が削除に出る。
+                  # 削った行は、同じパスを足した行と対になるものだけ許す。
+                  for (k in removed) if (removed[k] > added[k]) bad = 1
+                  total = 0
+                  for (k in added) total += added[k]
+                  exit (bad || total == 0)
+                }'
+          }
+
+          exempt=false
+          policy_files=$(gh pr diff "$PR" --name-only |
+            grep -E '^(docs/policy/|docs/policy-hub\.md$|CLAUDE\.md$)') || policy_files=""
+          if [ -n "$policy_files" ]; then
+            exempt=true
+            for f in $policy_files; do
+              case " $exempt_policies " in
+                *" $f "*) only_adds_concrete_paths "$f" || exempt=false ;;
+                *) exempt=false ;;
+              esac
+            done
+          fi
+          if [ "$exempt" = true ]; then
+            echo "only concrete paths added to applies-to; skipping"
+            exit 0
+          fi
+
           # ラベルが未作成のリポジトリでも動くよう、無ければ作る（既存なら何もしない）。
           existing=$(gh label list --limit 200 --json name --jq '.[].name')
           grep -qx 'policy' <<< "$existing" ||
