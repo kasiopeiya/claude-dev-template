@@ -8,7 +8,8 @@
 // - 作業 Issue の定義は `scripts/lib/work-issues.mjs` の `findExclusionReason` に任せ、ここに写さない。
 //   定義が2か所になると、片方だけ直したときに `/perf-report` の `workIssueCount` と食い違う。
 // - 人は Issue の assignee で分ける。PR の作成者では分けない。マージした PR がすべて bot 名義のリポジトリがあり、全件が bot の欄に入るためである。
-//   `/quick-issue` などは `--assignee @me` で起票するので、assignee は起票した人になる。起票した人と片付けた人が違う Issue は、起票した人の欄に載る。
+//   assignee は、起票した人（`/quick-issue` などは `--assignee @me` で起票する）と、着手した人（着手時に打つ `npm run move-issue-card` が足す）になる。
+//   2人が違う Issue は、両方の欄に載る。
 // - 「担当なし」は、GitHub のログイン名に使えない文字（日本語）で書く。実在のログイン名と衝突しない。
 // - 対象のリポジトリは、コマンドを打ったリポジトリに固定する。
 // - 検索は期間をまとめて1回で打つ。GitHub の検索は1回で 1000 件までしか返さないので、超えたら、欠けたまま返さず失敗にする。
