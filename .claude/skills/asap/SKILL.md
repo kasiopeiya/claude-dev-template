@@ -64,7 +64,7 @@ date +%s; npm run close-issues; npm run prune-merged-branches-and-worktrees; npm
 npm run --silent decide-issue-start -- <番号> --skip-issue-check
 ```
 
-出力の1行目の指示に従う。止まる指示なら、着手せず、理由を人間に伝えて終了する。子を選ぶ指示なら、選んだ子の番号で、旗付きの `decide-issue-start` と `move-issue-card` を打ち直す。この Skill は実装フローの Skill を呼ばないので、Skill の起動直前に打つ機会が無い。打たないと、子のカードが In progress を通らず、時間を測れない。以降の Issue 番号は子の番号に読み替える。
+出力の1行目の指示に従う。止まる指示なら、着手せず、理由を人間に伝えて終了する。子を選ぶ指示なら、選んだ子の番号で、旗付きの `decide-issue-start` と `move-issue-card` を打ち直す。この Skill は実装フローの Skill を呼ばないので、Skill の起動直前に打つ機会が無い。打たないと、子のカードが In progress を通らず、時間を測れない。子の担当者にも自分が載らない。以降の Issue 番号は子の番号に読み替える。
 
 次に、`/git-commit` の「並行セッションを検出する」の手順どおりに並行セッションを数える。worktree を切る条件に当たれば、そこの手順で専用の worktree を切って入ってから編集する。
 
