@@ -29,6 +29,10 @@
 // - 割合は件数から四捨五入して整数にする。JSON の小数第1位の割合をさらに丸めると、二重に丸めて1ずれることがある。
 // - 埋め終えてから書く。入力が読めない・ひな形に知らない `{{名前}}` が残る・マーカーが残るときは、何も書かずに止まる。
 //   ひな形とこのスクリプトの対応がずれたときに、崩れた HTML を黙って出さないためである。
+// - 書く直前に、design-system の CSS・JS を HTML に埋め込み（scripts/lib/inline-design-system.mjs）、フォルダはコピーしない。
+//   レポートは配る資料で、フォルダごと渡さないと受け手の画面で崩れる。/html と違い、出した HTML を手で直さない決まり
+//   （.claude/skills/perf-report/SKILL.md「崩れを見つけても HTML を直さない」）なので、埋め込まない作業用を残す理由が無い。
+//   ひな形は `./design-system/` を読むタグのままにし、`.claude/skills/html/` を基準に解いて、/html と同じ design-system を読む。
 // - JSON は、使う項目すべてを型まで確かめてから読む。ファイル名に使う日付は形も確かめる（パスに混ざらないようにする）。
 //   件数どうしの大小（部分が全体を超えないか）は確かめない。`perf-report.mjs` が作る JSON は、作り方からそろっている。
 // - 確かめた項目は、表に書いた名前でしか読めない。名前が表とずれたまま `—` や `NaN` を黙って埋めるより、止まる方がよい。
@@ -36,18 +40,19 @@
 // 使い方: npm run --silent perf-report-html -- tmp/perf-report/<日時>-perf-report-aggregate.json
 //   考察ファイル（同じフォルダの <日時>-perf-report-discussion.json）を先に書いておく。手順は `.claude/skills/perf-report/SKILL.md`
 
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { BusinessError, TechnicalError } from './lib/errors.mjs'
+import { inlineLocalStylesAndScripts } from './lib/inline-design-system.mjs'
 
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const TEMPLATE_PATH = path.join(
   REPOSITORY_ROOT,
   '.claude/skills/perf-report/assets/report-template.html'
 )
-const DESIGN_SYSTEM_PATH = path.join(REPOSITORY_ROOT, '.claude/skills/html/design-system')
+const DESIGN_SYSTEM_BASE_DIRECTORY = path.join(REPOSITORY_ROOT, '.claude/skills/html')
 const OUTPUT_DIRECTORY = path.join(REPOSITORY_ROOT, 'tmp/perf-report')
 
 const MISSING_VALUE_TEXT = '—'
@@ -302,7 +307,7 @@ const DISCUSSION_METRICS = [
  * CLI として実行したときの本体。引数の集計結果と、名前から引いた考察ファイルから HTML を書き、絶対パスを標準出力に返す。
  *
  * @returns {void}
- * @throws {BusinessError} 引数が違うとき・集計結果か考察ファイルが読めないとき・考察ファイルが決まりに合わないとき（条件は readAggregatePathArgument・readJsonFile・readReportFields・readDiscussions）
+ * @throws {BusinessError} 引数が違うとき・集計結果か考察ファイルが読めないとき・考察ファイルが決まりに合わないとき・デザインシステムを埋め込めないとき（条件は readAggregatePathArgument・readJsonFile・readReportFields・readDiscussions・writeReport）
  * @throws {TechnicalError} ひな形とこのスクリプトの対応がずれたとき（条件は readReferences・fillTemplate）
  */
 function runCli() {
@@ -910,20 +915,21 @@ function lookUpValue(placeholderValues, placeholderName) {
 }
 
 /**
- * HTML を書く。同じ名前の HTML が既にあれば上書きする。デザインシステムは同じフォルダへコピーし、既にあるファイルは上書きしない。
+ * デザインシステムの CSS・JS を埋め込んだ HTML を書く。同じ名前の HTML が既にあれば上書きする。
  *
  * @param {{ generatedOn: string, from: string, to: string, html: string }} output YYYY-MM-DD の形を確かめた日付3つ（ファイル名に使う）と、書く HTML
  * @returns {string} 書いた HTML の絶対パス
+ * @throws {BusinessError} デザインシステムを埋め込めないとき（条件は inlineLocalStylesAndScripts）
  */
 function writeReport({ generatedOn, from, to, html }) {
   const reportDate = generatedOn.replaceAll('-', '')
   const reportPath = path.join(OUTPUT_DIRECTORY, `${reportDate}-perf-report-${from}-${to}.html`)
-  mkdirSync(OUTPUT_DIRECTORY, { recursive: true })
-  cpSync(DESIGN_SYSTEM_PATH, path.join(OUTPUT_DIRECTORY, 'design-system'), {
-    recursive: true,
-    force: false
+  const standaloneHtml = inlineLocalStylesAndScripts({
+    htmlText: html,
+    baseDirectoryPath: DESIGN_SYSTEM_BASE_DIRECTORY
   })
-  writeFileSync(reportPath, html)
+  mkdirSync(OUTPUT_DIRECTORY, { recursive: true })
+  writeFileSync(reportPath, standaloneHtml)
   return reportPath
 }
 
