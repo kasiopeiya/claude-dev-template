@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // 責務: 指定した期間に完了した作業 Issue を、assignee ごとにまとめ、各 Issue の本文と、Issue を閉じた PR のタイトルを添えて、JSON で標準出力に返す。
+//   既定では打った人（gh にログインしている人）の欄だけを返し、--all を付けたときだけ全員の欄を返す。
 //   チームの進捗報告で「人ごとにやったこと」を一覧にする材料である。総括の文章は書かない（後続の Skill が、この結果を読んで書く）。
 //
 // 設計意図（WHY）:
@@ -9,17 +10,20 @@
 //   定義が2か所になると、片方だけ直したときに `/perf-report` の `workIssueCount` と食い違う。
 // - 人は Issue の assignee で分ける。PR の作成者では分けない。マージした PR がすべて bot 名義のリポジトリがあり、全件が bot の欄に入るためである。
 //   assignee は、起票した人（`/quick-issue` などは `--assignee @me` で起票する）と、着手した人（着手時に打つ `npm run move-issue-card` が足す）になる。
-//   2人が違う Issue は、両方の欄に載る。
+//   2人が違う Issue は、--all では両方の欄に載る。
+// - 既定で打った人の欄だけにする理由は、`/progress-report` の SKILL.md が持つ。
+//   打った人は `gh api user` のログイン名で決める。`npm run move-issue-card` が `--add-assignee @me` で足す担当者と同じ人を指す。
+//   既定でも、他人と共同で assignee の Issue は自分の欄に載る。
 // - 「担当なし」は、GitHub のログイン名に使えない文字（日本語）で書く。実在のログイン名と衝突しない。
 // - 対象のリポジトリは、コマンドを打ったリポジトリに固定する。
 // - 検索は期間をまとめて1回で打つ。GitHub の検索は1回で 1000 件までしか返さないので、超えたら、欠けたまま返さず失敗にする。
 //   1週間ほどの報告を想定し、1000 件を超える長い期間は扱わない。期間を縮めれば解消するので、失敗は利用者が直せる誤り（BusinessError）にする。
 // - Issue を閉じた PR は、マージ済みのものだけを載せる。閉じただけでマージしていない PR は、Issue を片付けた記録にならない。
 // - タイトル先頭の段番号（`1. `・`1〜3. `）は外す。Issue の並び順を表す印で、何の作業かを表さない。
-// - 日付の読み方（`parsePeriod` など）は `scripts/perf-report.mjs` と同じ形で持つ。同ファイルは末尾で `runCli()` を直接実行するので import できない。
+// - 日付の読み方（`parseReportOptions` など）は `scripts/perf-report.mjs` の `parsePeriod` などと同じ形で持つ。同ファイルは末尾で `runCli()` を直接実行するので import できない。
 // - 日付は固定幅の文字列のまま大小を比べる（`--from` と `--to` の前後）。年を 4 桁に収まる範囲へ絞るのはそのためである。
 //
-// 使い方: npm run --silent progress-report -- [--from YYYY-MM-DD] [--to YYYY-MM-DD]
+// 使い方: npm run --silent progress-report -- [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--all]
 //   日付は日本時間で読む。--to の既定は今日、--from の既定は --to の6日前（--to の日を含めて7日）である
 
 import { parseArgs } from 'node:util'
@@ -88,24 +92,38 @@ const CLOSED_ISSUES_QUERY = `query($searchQuery: String!, $endCursor: String) {
  * CLI として実行したときの本体。assignee ごとの作業 Issue を JSON で標準出力に返す。
  *
  * @returns {void}
- * @throws {BusinessError} 期間の引数が不正なとき・検索の上限を超えて数え切れないとき
+ * @throws {BusinessError} 引数が不正なとき・検索の上限を超えて数え切れないとき
  * @throws {TechnicalError} gh が失敗したとき
  */
 function runCli() {
   const today = getTodayInReportTimezone()
-  const { from, to } = parsePeriod(process.argv.slice(2), today)
+  const { from, to, shouldReportAllAssignees } = parseReportOptions(process.argv.slice(2), today)
   const repository = readCurrentRepository()
-  const closedWorkIssues = fetchClosedIssues({ repository, from, to }).filter(
+  const assignee = shouldReportAllAssignees ? null : readCurrentLogin()
+  const closedWorkIssues = fetchClosedIssues({ repository, from, to, assignee }).filter(
     (closedIssue) => findExclusionReason(closedIssue) === null
   )
+  const assigneeSections = groupByAssignee(closedWorkIssues)
   const report = {
     repository,
     from,
     to,
     workIssueCount: closedWorkIssues.length,
-    assigneeSections: groupByAssignee(closedWorkIssues)
+    assigneeSections:
+      assignee === null
+        ? assigneeSections
+        : assigneeSections.filter((section) => isSameLogin(section.assignee, assignee))
   }
   console.log(JSON.stringify(report, null, 2))
+}
+
+/**
+ * @param {string} left 比べるログイン名
+ * @param {string} right 比べるログイン名
+ * @returns {boolean} 同じ人なら true。GitHub のログイン名は大文字小文字を区別しないので、小文字にそろえて比べる
+ */
+function isSameLogin(left, right) {
+  return left.toLowerCase() === right.toLowerCase()
 }
 
 /**
@@ -174,12 +192,14 @@ function compareAssigneeSections(left, right) {
 /**
  * 日本時間の範囲に close された Issue を、最後のページまで引く。
  *
- * @param {{ repository: string, from: string, to: string }} searchRange 対象のリポジトリ（owner/repo）と、範囲の初日・最終日（YYYY-MM-DD）
+ * @param {{ repository: string, from: string, to: string, assignee: string | null }} searchCondition 対象のリポジトリ（owner/repo）、範囲の初日・最終日（YYYY-MM-DD）、
+ *   絞り込む assignee のログイン名（null なら絞らない）
  * @returns {ClosedIssue[]} close された Issue
  * @throws {BusinessError} 検索の上限を超えて数え切れないとき
  * @throws {TechnicalError} gh が失敗したとき
  */
-function fetchClosedIssues({ repository, from, to }) {
+function fetchClosedIssues({ repository, from, to, assignee }) {
+  const assigneeQualifier = assignee === null ? '' : ` assignee:${assignee}`
   const pages = runJson('gh', [
     'api',
     'graphql',
@@ -188,7 +208,7 @@ function fetchClosedIssues({ repository, from, to }) {
     '-f',
     `query=${CLOSED_ISSUES_QUERY}`,
     '-f',
-    `searchQuery=repo:${repository} is:issue is:closed closed:${formatSearchRange(from, to)}`
+    `searchQuery=repo:${repository} is:issue is:closed closed:${formatSearchRange(from, to)}${assigneeQualifier}`
   ])
   const { issueCount } = pages[0].data.search
   if (issueCount > SEARCH_RESULT_LIMIT) {
@@ -200,33 +220,33 @@ function fetchClosedIssues({ repository, from, to }) {
 }
 
 /**
- * コマンドラインの引数から期間を決める。
+ * コマンドラインの引数から、期間と全員分を出すかを決める。
  *
- * @param {string[]} commandLineArguments `--from`・`--to` を含む引数
- * @param {string} today 今日（YYYY-MM-DD）。引数を省いたときの既定値に使う
- * @returns {{ from: string, to: string }} 期間の初日と最終日
+ * @param {string[]} commandLineArguments `--from`・`--to`・`--all` を含む引数
+ * @param {string} today 今日（YYYY-MM-DD）。期間を省いたときの既定値に使う
+ * @returns {{ from: string, to: string, shouldReportAllAssignees: boolean }} 期間の初日と最終日と、全員の欄を出すか（`--all` を付けたら true）
  * @throws {BusinessError} 引数が読めないとき・日付が対応範囲の外か実在しないとき・初日が最終日より後のとき
  */
-function parsePeriod(commandLineArguments, today) {
-  const { values } = parsePeriodOptions(commandLineArguments)
+function parseReportOptions(commandLineArguments, today) {
+  const { values } = parseCommandLineOptions(commandLineArguments)
   const to = values.to ?? today
   assertSupportedDate(to)
   const from = values.from ?? addDays(to, 1 - DEFAULT_PERIOD_DAYS)
   assertSupportedDate(from)
   if (from > to) throw new BusinessError(`--from が --to より後です: ${from} > ${to}`)
-  return { from, to }
+  return { from, to, shouldReportAllAssignees: values.all ?? false }
 }
 
 /**
  * @param {string[]} commandLineArguments コマンドラインの引数
- * @returns {{ values: { from?: string, to?: string } }} 読み取った引数
+ * @returns {{ values: { from?: string, to?: string, all?: boolean } }} 読み取った引数
  * @throws {BusinessError} 知らない引数があるとき・値が無いとき
  */
-function parsePeriodOptions(commandLineArguments) {
+function parseCommandLineOptions(commandLineArguments) {
   try {
     return parseArgs({
       args: commandLineArguments,
-      options: { from: { type: 'string' }, to: { type: 'string' } }
+      options: { from: { type: 'string' }, to: { type: 'string' }, all: { type: 'boolean' } }
     })
   } catch (error) {
     throw new BusinessError(error.message, { cause: error })
@@ -272,6 +292,14 @@ function formatSearchRange(from, to) {
  */
 function readCurrentRepository() {
   return runJson('gh', ['repo', 'view', '--json', 'nameWithOwner']).nameWithOwner
+}
+
+/**
+ * @returns {string} gh にログインしている人のログイン名
+ * @throws {TechnicalError} gh が失敗したとき
+ */
+function readCurrentLogin() {
+  return runJson('gh', ['api', 'user']).login
 }
 
 /**
