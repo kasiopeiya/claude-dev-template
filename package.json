@@ -26,6 +26,7 @@
     "select-flow-skills": "node scripts/select-flow-skills.mjs",
     "prune-merged-branches-and-worktrees": "node scripts/prune-merged-branches-and-worktrees.mjs",
     "count-registered-worktree-sessions": "node scripts/count-registered-worktree-sessions.mjs",
+    "export-standalone-html": "node scripts/export-standalone-html.mjs",
     "gen:adr-index": "node scripts/generate-adr-index.mjs",
     "knip": "knip",
     "knip:fix": "knip --fix"
