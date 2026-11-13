@@ -1,21 +1,23 @@
 ---
 name: progress-report
-description: 指定した期間に片付けた作業 Issue を人ごとに分け、人ごとの総括を添えた Markdown をターミナルに出す。チームの進捗報告をチャットへそのまま貼るときに使う。「progress-report」「進捗報告を作って」と指示されたとき。
-argument-hint: '[--from YYYY-MM-DD] [--to YYYY-MM-DD]（省くと今日までの7日）'
+description: 指定した期間に片付けた作業 Issue を人ごとに分け、人ごとの総括を添えた Markdown をターミナルに出す。既定は打った人の分だけで、--all で全員分を出す。チームの進捗報告をチャットへそのまま貼るときに使う。「progress-report」「進捗報告を作って」と指示されたとき。
+argument-hint: '[--from YYYY-MM-DD] [--to YYYY-MM-DD] [--all]（期間を省くと今日までの7日。--all を省くと自分の分だけ）'
 disable-model-invocation: true
 ---
 
 # 進捗報告
 
-期間の引数: `$ARGUMENTS`
+引数（期間と `--all`）: `$ARGUMENTS`
 
 人間だけが打てる。
 
 `/perf-report` との違い：`/perf-report` は経営寄りの読み手に向けた HTML で、人ごとに分けない。この Skill はチームの会議やチャットに貼る Markdown で、人ごとに分ける。
 
+既定は打った人（`gh` にログインしている人）の分だけにする。打つ人が欲しいのはたいてい自分の報告で、全員分だと自分の欄を探す手間と、要らない人の総括を書く時間がかかるからである。全員分が要るときは `--all` を付ける。
+
 ## なぜ一覧をスクリプトに任せるか
 
-AI に Issue を数えさせると、レビュー通知や親 Issue を数えるかが打つたびにぶれ、報告どうしを比べられない。そこで、一覧は `scripts/progress-report.mjs` が出し、AI は総括の文章だけを書く。
+AI に Issue を数えさせると、レビュー通知や親 Issue を数えるかが打つたびにぶれ、報告どうしを比べられない。そこで、一覧は `scripts/progress-report.mjs` が出し、AI は総括の文章だけを書く。誰の分を出すかの絞り込みも、同じ理由でスクリプトが行う。
 
 ## 手順
 
@@ -26,7 +28,7 @@ npm run --silent progress-report -- $ARGUMENTS
 ```
 
 - **失敗したら**：標準エラーをそのまま伝えて終える。Issue を手で数えて補わない
-- **`workIssueCount` が 0 のとき**：期間内に作業 Issue が無かったことを1行で伝えて終える。このとき JSON は `{"repository":"owner/repo","from":"2020-01-01","to":"2020-01-01","workIssueCount":0,"assigneeSections":[]}` の形になる
+- **`workIssueCount` が 0 のとき**：期間内に作業 Issue が無かったこと（`--all` が無ければ、自分の分が無かったこと）を1行で伝えて終える。このとき JSON は `{"repository":"owner/repo","from":"2020-01-01","to":"2020-01-01","workIssueCount":0,"assigneeSections":[]}` の形になる
 
 JSON の `assigneeSections` は人ごとの欄の配列で、1つの欄は次のキーを持つ。
 
@@ -39,7 +41,7 @@ JSON の `assigneeSections` は人ごとの欄の配列で、1つの欄は次の
 
 `assigneeSections` を、出てきた順のまま並べる。`assignee` はそのまま1行に書き（`#` は付けない）、`workIssues` は `- #<number> 「<title>」` の1行にする。
 
-- **Issue を足さない・省かない・並べ替えない**：assignee が複数の Issue が、全員の欄に載るのも仕様である
+- **Issue を足さない・省かない・並べ替えない**：`--all` を付けたとき、assignee が複数の Issue が全員の欄に載るのも仕様である
 - **`title` は書き換えない**：タイトル先頭の着手順の数字（`3. `・`1〜3. `）は、スクリプトが外してある
 
 ### 3. 総括を書く
