@@ -82,7 +82,7 @@ flowchart LR
 
 - PRの変更ファイルを見て変更種別ラベルをつける（AI）
 - pr-review-policy をもとにPRの人間レビューが必要かを判定する（AI。`needs-human-review` ラベルをつける）
-- pr-review-policy でパスだけで方針が決まる行に当たる PR には、AI より前に決定論のステップでも `needs-human-review` ラベルをつける
+- pr-review-policy でパスだけで方針が決まる行に当たる PR には、AI より前に決定論のステップでも `needs-human-review` ラベルをつける。ただし `policy` 行は、名指しのポリシーの `applies-to` へ具体パスを足すだけの差分を除く（条件は pr-review-policy が定める）
 - 人間レビューが必要なPRのサイズを判定し、結果をコメントする（スクリプト。NG でもマージは止めない）
 - 人間レビューが必要なPRには、レビュー用の Issue を1件起票する。PR が閉じたら、別ワークフロー `close-human-review-issue.yml` がその Issue を閉じる
 
