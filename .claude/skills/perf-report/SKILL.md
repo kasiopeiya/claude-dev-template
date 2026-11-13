@@ -53,7 +53,7 @@ npm run --silent perf-report-html -- tmp/perf-report/<日時>-perf-report-aggreg
 HTML を書き、その絶対パスを返す。
 
 - **失敗したら**：考察ファイルが無い・崩れている・指標のどれかが抜けている・「考察」の文が「と考えられる」で終わらない・集計結果のタイトルをそのまま含む・出典の形が崩れている・考察で引いてよい参考文献に無い出典があるときは、エラーに原因が並ぶ。考察ファイルを直して、この段だけを打ち直す。手順1は打ち直さない。期間の終わりの既定が今日なので件数がずれ、考察と図の数が食い違うためである。考察ファイル以外の原因なら、エラーをそのまま伝えて終える
-- **置き場**：`tmp/perf-report/{yyyymmdd}-perf-report-{from}-{to}.html`。`.claude/skills/html/design-system/` も同じフォルダへコピーされる（既にあれば上書きしない）。同じ日に同じ期間で打つと、HTML は上書きされる
+- **置き場**：`tmp/perf-report/{yyyymmdd}-perf-report-{from}-{to}.html`。同じ日に同じ期間で打つと、HTML は上書きされる
 
 ### 4. 描画を確かめる
 
