@@ -2256,7 +2256,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="deletion-advocate-agent" id="efxmxlBoetddj98Wx8Ri">
-    <mxGraphModel dx="1758" dy="1388" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1885" dy="1133" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="QDaxBL2OE9wjjR2mA8Qn-0" />
         <mxCell id="QDaxBL2OE9wjjR2mA8Qn-1" parent="QDaxBL2OE9wjjR2mA8Qn-0" />
@@ -2313,7 +2313,7 @@
         <mxCell id="dAa1-20" edge="1" parent="QDaxBL2OE9wjjR2mA8Qn-1" source="dAa1-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;endSize=10;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="dAa1-8" value="">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="dAa1-21" parent="QDaxBL2OE9wjjR2mA8Qn-1" style="text;whiteSpace=wrap;html=1;fontSize=35;fillColor=none;align=left;verticalAlign=middle;" value="&lt;b&gt;書き手と評価者を切り離す。この遮断が「削除の圧力」になる&lt;/b&gt;" vertex="1">
+        <mxCell id="dAa1-21" parent="QDaxBL2OE9wjjR2mA8Qn-1" style="text;whiteSpace=wrap;html=1;fontSize=35;fillColor=none;align=left;verticalAlign=middle;" value="&lt;b&gt;AIの悪い癖に対し、逆方向の圧力をかける仕組みづくりが重要&lt;/b&gt;" vertex="1">
           <mxGeometry height="127" width="1278" x="171" y="980" as="geometry" />
         </mxCell>
         <mxCell id="ETBtJFankpZn8yHRKg1P-0" parent="QDaxBL2OE9wjjR2mA8Qn-1" style="sketch=0;points=[[0,0,0],[0.25,0,0],[0.5,0,0],[0.75,0,0],[1,0,0],[0,1,0],[0.25,1,0],[0.5,1,0],[0.75,1,0],[1,1,0],[0,0.25,0],[0,0.5,0],[0,0.75,0],[1,0.25,0],[1,0.5,0],[1,0.75,0]];outlineConnect=0;fontColor=#232F3E;fillColor=#000000;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.robotics;" value="" vertex="1">
