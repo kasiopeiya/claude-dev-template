@@ -38,13 +38,19 @@ GitHub Actions の workflow をレビューしてください。あなたはレ�
 
 ### 差分ファイルを書く
 
-判定範囲が差分で追跡済みのファイルの差分を、次のコマンドで `tmp/`（git 管理外）配下に書く。シェル変数は Bash ツールの呼び出しをまたいで残らないので、全ファイル分を1回で書く。
+判定範囲が差分で追跡済みのファイルの差分を、`tmp/`（git 管理外）配下に書く。コマンドは1本ずつ分けて打つ。worktree に入ったセッションでは、git を含む複合コマンドが止められるためである。まず書き先を作る。
 
 ```bash
-dir=tmp/actions-review/$(date +%Y%m%d-%H%M%S) && mkdir -p "$dir" && for p in <パス> <パス>; do git diff HEAD -- "$p" > "$dir/${p//\//__}.diff"; done && echo "$dir"
+dir=tmp/actions-review/$(date +%Y%m%d-%H%M%S) && mkdir -p "$dir" && echo "$dir"
 ```
 
-追跡済みの差分ファイルが無くても、`$dir`（`tmp/actions-review/<日時>`）は作る。Phase 2 が新しい組の一覧をここに書く。
+出力されたパスを、以下の `<dir>` にそのまま書く（シェル変数は Bash ツールの呼び出しをまたいで残らない）。追跡済みの対象ごとに1本、差分を書く。
+
+```bash
+git diff HEAD -- <パス> > <dir>/<パスの / を __ にした名前>.diff
+```
+
+追跡済みの差分ファイルが無くても、`<dir>`（`tmp/actions-review/<日時>`）は作る。Phase 2 が新しい組の一覧をここに書く。
 
 未追跡の新規ファイルは差分ファイルを書かない（全行が追加行なので、agent は対象ファイルを読めば足りる）。
 

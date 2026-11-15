@@ -20,11 +20,13 @@ Issue 番号は空白区切りで複数渡せる。このブランチで片付�
 
 材料は Issue とこのブランチのコミットだけにする。コミットの範囲は、PR の作成先と同じデフォルトブランチ（GitHub のリポジトリ設定）からの差分にする。
 
-デフォルトブランチ名は `gh` で GitHub から引く（`origin/HEAD` は clone した時点の値のまま残り、無いリポジトリもあるため使わない）。シェル変数は Bash ツールの呼び出しをまたいで残らないので、1回で実行する。
+デフォルトブランチ名は `gh` で GitHub から引く（`origin/HEAD` は clone した時点の値のまま残り、無いリポジトリもあるため使わない）。コマンドは1行ずつ別の Bash 呼び出しで打つ。worktree に入ったセッションでは、git を含む複合コマンドが止められるためである。2行目の出力を、3行目以降の `<デフォルトブランチ>` に入れる。
 
 ```bash
 for n in $ARGUMENTS; do gh issue view "$n" --json number,title,body; done
-base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && git log --format='%s%n%n%b' "origin/$base..HEAD"
+gh repo view --json defaultBranchRef --jq .defaultBranchRef.name
+git fetch origin <デフォルトブランチ>
+git log --format='%s%n%n%b' origin/<デフォルトブランチ>..HEAD
 ```
 
 渡した Issue ごとに、open な sub-issue（子の Issue）を引く。`state` が `OPEN` の子が1件以上ある番号を「open な子を持つ」と判定する。`subIssues.totalCount` では判定しない（close 済みの子も数えるため）。

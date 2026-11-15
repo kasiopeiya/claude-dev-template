@@ -229,10 +229,13 @@ find docs/adr -maxdepth 1 -name '[0-9][0-9][0-9]-*.md' -print -delete && npm run
 
 立ち上げの Issue の番号を `<番号>` とする。
 
-1. 立ち上げのブランチ `chore/issue-<番号>` に移る。ローカルにあれば `git switch chore/issue-<番号>` で移る。無ければ、デフォルトブランチの最新から作る。デフォルトブランチ名は、origin を名指しして GitHub から引く（upstream など別の remote と取り違えない）。シェル変数は Bash ツールの呼び出しをまたいで残らないので、1回で実行する。
+1. 立ち上げのブランチ `chore/issue-<番号>` に移る。ローカルにあれば `git switch chore/issue-<番号>` で移る。無ければ、デフォルトブランチの最新から作る。デフォルトブランチ名は、origin を名指しして GitHub から引く（upstream など別の remote と取り違えない）。コマンドは1行ずつ別の Bash 呼び出しで打つ。worktree に入ったセッションでは、git を含む複合コマンドが止められるためである。1行目の出力を2行目の `<origin の URL>` に、2行目の出力を3行目以降の `<デフォルトブランチ>` に入れる。
 
    ```bash
-   base=$(gh repo view "$(git remote get-url origin)" --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && git switch -c chore/issue-<番号> --no-track "origin/$base"
+   git remote get-url origin
+   gh repo view <origin の URL> --json defaultBranchRef --jq .defaultBranchRef.name
+   git fetch origin <デフォルトブランチ>
+   git switch -c chore/issue-<番号> --no-track origin/<デフォルトブランチ>
    ```
 
    git が「Your local changes ... would be overwritten」で断ったら、人間の未コミットの変更と重なっている。メッセージを見せ、人間の手作業（コミットか stash で片付ける）として扱う。済まなければ、この手順の残りを飛ばす
@@ -240,8 +243,12 @@ find docs/adr -maxdepth 1 -name '[0-9][0-9][0-9]-*.md' -print -delete && npm run
 2. `/setup` の変更だけを `git add <パス>` でステージし、`/git-commit stage` でコミットする。ワーキングツリー全体はステージしない（人間の作業中の変更を混ぜないため）。`/setup` の変更が無ければ（前回の `/setup` でコミット済みなど）飛ばす
 3. push の前に、デフォルトブランチの最新を取り込む。`npm run gen:adr-index` で差分が出たら、`git add docs/adr/adr-index.md` して `/git-commit stage` でコミットする
 
+   デフォルトブランチ名は、1. と同じ1・2行目で引く（1. で引いていれば、その名前を使う）。コマンドは1行ずつ別の Bash 呼び出しで打つ。
+
    ```bash
-   base=$(gh repo view "$(git remote get-url origin)" --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && git merge --no-edit "origin/$base" && npm run gen:adr-index
+   git fetch origin <デフォルトブランチ>
+   git merge --no-edit origin/<デフォルトブランチ>
+   npm run gen:adr-index
    ```
 
 4. `git push -u origin HEAD` で push し、`/pr-body <番号>` を流す。`/pr-body` が「PR が現れない」で止まったら、PR を作る `pipeline.yml` の実行を引き、落ちたジョブのログを見る。
