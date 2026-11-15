@@ -1,6 +1,6 @@
 ---
 name: doc-consistency-reviewer-agent
-description: docs/ 配下、.claude/ の Skill・agent・Rule、ルートの CLAUDE.md の複数ドキュメントを横断的に走査し、文書間の重複（DRY違反）と矛盾を検出する専門エージェント。単一ドキュメントの品質は doc-reviewer-agent の責務。
+description: docs/ 配下、.claude/ の Skill・agent・Rule、ルートの CLAUDE.md の複数ドキュメントを横断的に走査し、文書間の重複（DRY違反）と矛盾を検出する専門エージェント。
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high
