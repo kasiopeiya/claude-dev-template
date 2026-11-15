@@ -32,12 +32,11 @@ Use sequence diagrams to document:
 - **Event Processing** - Show async message flows and event handling
 - **Error Scenarios** - Illustrate failure paths and recovery mechanisms
 - **Database Transaction Flows** - Document data access patterns
-- **Complex Business Processes** - Break down multi-step workflows
 
 **When NOT to use sequence diagrams:**
 
 - System structure (use architecture diagrams)
-- Workflow logic (use activity diagrams)
+- Branching, merging, or loops inside one actor (use activity diagrams)
 - Static relationships (use class/component diagrams)
 
 ---

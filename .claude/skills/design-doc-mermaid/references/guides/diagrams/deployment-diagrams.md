@@ -627,6 +627,5 @@ Examples: `examples/spring-boot/`, `examples/fastapi/`, etc.
 
 **Next Steps:**
 
-- See `activity-diagrams.md` for workflow visualization
 - See `code-to-diagram/` for IaC-to-diagram examples
 - See language-specific examples for framework-specific patterns
