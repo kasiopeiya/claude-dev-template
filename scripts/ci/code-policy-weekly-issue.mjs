@@ -18,6 +18,7 @@ import { fileURLToPath } from 'url'
 import { TechnicalError } from '../lib/errors.mjs'
 import {
   GITHUB_ISSUE_BODY_MAX_LENGTH,
+  PARALLEL_FLOW_NOTE,
   assertEmbeddablePaths,
   createIssue,
   ensureLabelExists,
@@ -123,8 +124,10 @@ function buildWeeklyIssueBody(targetFiles) {
     (lens) => `/code-review --full --lens ${lens} ${targetFiles.join(' ')}`
   )
   const reviewTasks = reviewCommands.map((command) => `- [ ] \`${command}\` を実行する`).join('\n')
+  // 各レンズの行は順を 1 にそろえる。レンズ同士は互いの出力を使わず、
+  // 走らせる code-reviewer-agent は Edit・Write のツールを持たないので、ファイルも書き換えない
   const implementationFlowRows = reviewCommands
-    .map((command, index) => `| ${index + 1}   | 定期チェックの実行 | \`${command}\` |`)
+    .map((command) => `| 1   | 定期チェックの実行 | \`${command}\` |`)
     .join('\n')
 
   const body = `## この変更が必要な理由
@@ -158,6 +161,8 @@ ${targetFilesSection}
 - **却下した案**：なし
 
 ## 実装フロー（使用するSkill）
+
+${PARALLEL_FLOW_NOTE}
 
 | 順  | 変更種別           | 使用Skill                  |
 | --- | ------------------ | --------------------------- |
