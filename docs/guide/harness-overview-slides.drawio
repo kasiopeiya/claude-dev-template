@@ -2611,6 +2611,231 @@
       </root>
     </mxGraphModel>
   </diagram>
+  <diagram name="subagent-use-cases" id="subAgentUseCases01">
+    <mxGraphModel dx="1555" dy="1221" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+      <root>
+        <mxCell id="sau1-0" />
+        <mxCell id="sau1-1" parent="sau1-0" />
+        <mxCell id="sau1-2" parent="sau1-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="他者の目の導入と重作業のアウトソーシング" vertex="1">
+          <mxGeometry height="64" width="1383" x="37" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-3" connectable="0" parent="sau1-1" style="group" value="" vertex="1">
+          <mxGeometry height="100" width="1383" x="37" y="13" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-4" parent="sau1-3" style="text;whiteSpace=wrap;html=1;fontSize=75;" value="SubAgentの使い所" vertex="1">
+          <mxGeometry height="100" width="1371.8949969116738" x="11.105003088326129" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-5" parent="sau1-3" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
+          <mxGeometry height="90" width="5.979617047560223" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-6" parent="sau1-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=30;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;自分の答案を自分で採点すると、いつも満点になる&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;　→ 採点は、答案しか知らない別のAIに頼む&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="1480" x="61" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-7" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=28;fontStyle=1;align=center;verticalAlign=middle;" value="" vertex="1">
+          <mxGeometry height="70" width="190" x="61" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-8" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=28;fontStyle=1;align=center;verticalAlign=middle;" value="① 他者の目を入れる" vertex="1">
+          <mxGeometry height="70" width="645" x="251" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-9" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=28;fontStyle=1;align=center;verticalAlign=middle;" value="② 重い作業は外に出す" vertex="1">
+          <mxGeometry height="70" width="645" x="896" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-10" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=center;fontStyle=1;" value="起きること" vertex="1">
+          <mxGeometry height="140" width="190" x="61" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-11" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="作った本人がレビューすると「問題ありません」と返る（自己偏愛バイアス）" vertex="1">
+          <mxGeometry height="140" width="645" x="251" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-12" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="テストのログや長い資料の読み込みが会話に混ざり、本筋の精度が落ちる" vertex="1">
+          <mxGeometry height="140" width="645" x="896" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-13" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=center;fontStyle=1;" value="頼み方" vertex="1">
+          <mxGeometry height="140" width="190" x="61" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-14" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="成果物だけを渡す。経緯・作者・「これで良い？」は渡さない" vertex="1">
+          <mxGeometry height="140" width="645" x="251" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-15" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="別の文脈で処理させ、要約だけを返させる" vertex="1">
+          <mxGeometry height="140" width="645" x="896" y="550" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-16" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=center;fontStyle=1;" value="例" vertex="1">
+          <mxGeometry height="160" width="190" x="61" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-17" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="/code-review・/doc-review のレビュー役、&lt;br&gt;deletion-advocate-agent" vertex="1">
+          <mxGeometry height="160" width="645" x="251" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-18" parent="sau1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="/code-ci・/unit-test（テストを回して結果だけ返す）、/broken-window-issue（起票を裏で済ませる）" vertex="1">
+          <mxGeometry height="160" width="645" x="896" y="690" as="geometry" />
+        </mxCell>
+        <mxCell id="sau1-19" parent="sau1-1" style="text;whiteSpace=wrap;html=1;fontSize=35;fillColor=none;align=left;verticalAlign=top;" value="&lt;b&gt;SubAgent は「経緯を知らない同僚」。知らないことが、そのまま強みになる&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 22px; color: rgb(102, 102, 102);&quot;&gt;※ 自己偏愛バイアスは、AI が自分の出力を高く評価する傾向（Panickssery ら, 2024）。効くのは別の AI に渡すことそのものより、作者を伏せること&lt;/span&gt;" vertex="1">
+          <mxGeometry height="160" width="1370" x="171" y="900" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="subagent-review-lenses" id="subAgentReviewLenses01">
+    <mxGraphModel dx="1555" dy="1221" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+      <root>
+        <mxCell id="srl1-0" />
+        <mxCell id="srl1-1" parent="srl1-0" />
+        <mxCell id="srl1-2" parent="srl1-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="何でも屋１人より、専門エージェント分業" vertex="1">
+          <mxGeometry height="64" width="1383" x="37" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-3" connectable="0" parent="srl1-1" style="group" value="" vertex="1">
+          <mxGeometry height="100" width="1383" x="37" y="13" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-4" parent="srl1-3" style="text;whiteSpace=wrap;html=1;fontSize=75;" value="レビューは観点を絞れ" vertex="1">
+          <mxGeometry height="100" width="1371.8949969116738" x="11.105003088326129" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-5" parent="srl1-3" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
+          <mxGeometry height="90" width="5.979617047560223" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-6" parent="srl1-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=30;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;1人に全部見させると、一番見つけたいバグへの注意が規約チェックに奪われる&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;　→ 観点ごとに専門家を立て、同時に見させる&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="1480" x="61" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-7" parent="srl1-1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=center;verticalAlign=middle;spacing=12;fillColor=none;" value="&lt;font style=&quot;font-size: 30px;&quot;&gt;&lt;b&gt;/code-review&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size: 22px;&quot;&gt;（メイン）&lt;/font&gt;" vertex="1">
+          <mxGeometry height="448" width="220" x="61" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-8" parent="srl1-1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=left;verticalAlign=middle;spacing=12;fillColor=none;" value="&lt;font style=&quot;font-size: 22px;&quot;&gt;メインは結果をまとめ、レンズ（並列に起動する SubAgent 1回分の担当範囲）同士の言い分が食い違ったときだけ裁く（判定はやり直さない）&lt;/font&gt;" vertex="1">
+          <mxGeometry height="448" width="241" x="1300" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-9" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=26;fontStyle=1;align=center;verticalAlign=middle;" value="専門家" vertex="1">
+          <mxGeometry height="50" width="240" x="400" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-10" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=26;fontStyle=1;align=center;verticalAlign=middle;" value="見るのはこれだけ" vertex="1">
+          <mxGeometry height="50" width="540" x="640" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-11" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=20;fontStyle=1;" value="バグ探し" vertex="1">
+          <mxGeometry height="80" width="240" x="400" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-12" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=20;" value="どんな入力・順番で壊れるか" vertex="1">
+          <mxGeometry height="80" width="540" x="640" y="400" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-13" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=20;fontStyle=1;" value="セキュリティ" vertex="1">
+          <mxGeometry height="80" width="240" x="400" y="492" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-14" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=20;" value="攻撃者の目で見て破れるか" vertex="1">
+          <mxGeometry height="80" width="540" x="640" y="492" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-15" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=20;fontStyle=1;" value="設計の形" vertex="1">
+          <mxGeometry height="80" width="240" x="400" y="584" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-16" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=20;" value="変更に強い形か" vertex="1">
+          <mxGeometry height="80" width="540" x="640" y="584" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-17" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=20;fontStyle=1;" value="決まりどおりか" vertex="1">
+          <mxGeometry height="80" width="240" x="400" y="676" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-18" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=20;" value="ポリシー・規約と合っているか" vertex="1">
+          <mxGeometry height="80" width="540" x="640" y="676" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-19" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=20;fontStyle=1;" value="テスト" vertex="1">
+          <mxGeometry height="80" width="240" x="400" y="768" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-20" parent="srl1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=left;spacingLeft=20;" value="テストが足りていて、正しく書けているか" vertex="1">
+          <mxGeometry height="80" width="540" x="640" y="768" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-21" edge="1" parent="srl1-1" source="srl1-7" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.0893;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="srl1-11" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-22" edge="1" parent="srl1-1" source="srl1-12" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.0893;entryDx=0;entryDy=0;" target="srl1-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-23" edge="1" parent="srl1-1" source="srl1-7" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.2946;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="srl1-13" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-24" edge="1" parent="srl1-1" source="srl1-14" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.2946;entryDx=0;entryDy=0;" target="srl1-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-25" edge="1" parent="srl1-1" source="srl1-7" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="srl1-15" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-26" edge="1" parent="srl1-1" source="srl1-16" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="srl1-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-27" edge="1" parent="srl1-1" source="srl1-7" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.7054;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="srl1-17" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-28" edge="1" parent="srl1-1" source="srl1-18" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.7054;entryDx=0;entryDy=0;" target="srl1-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-29" edge="1" parent="srl1-1" source="srl1-7" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.9107;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="srl1-19" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-30" edge="1" parent="srl1-1" source="srl1-20" style="endArrow=classic;html=1;rounded=0;strokeWidth=2;endSize=10;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.9107;entryDx=0;entryDy=0;" target="srl1-8" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="srl1-31" parent="srl1-1" style="text;whiteSpace=wrap;html=1;fontSize=35;fillColor=none;align=left;verticalAlign=top;" value="&lt;b&gt;「全部見て」より「セキュリティだけ見て」の方が深く見る。人間もAIも同じ&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 22px; color: rgb(102, 102, 102);&quot;&gt;※ まとめる軸はポリシーの文書ごとではなく、問いの種類ごと。文書ごとに割ったら、バグ探しの担当がどのレンズにも立たなかった（#486）。専門家を増やすのは、1人で見落としてから。plan-reviewer-agent は1体で、仕込んだ抜けを3回とも拾ったので分けていない（ADR-013）&lt;/span&gt;" vertex="1">
+          <mxGeometry height="190" width="1370" x="171" y="900" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="subagent-speed-tradeoff" id="subAgentSpeedTradeoff01">
+    <mxGraphModel dx="1555" dy="1221" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+      <root>
+        <mxCell id="sst1-0" />
+        <mxCell id="sst1-1" parent="sst1-0" />
+        <mxCell id="sst1-2" parent="sst1-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="小さな変更はSkillで、大きな変更はSubAgentでレビュー" vertex="1">
+          <mxGeometry height="64" width="1383" x="37" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-3" connectable="0" parent="sst1-1" style="group" value="" vertex="1">
+          <mxGeometry height="100" width="1540" x="37" y="13" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-4" parent="sst1-3" style="text;whiteSpace=wrap;html=1;fontSize=75;" value="SubAgentの使用はスピードとトレードオフ" vertex="1">
+          <mxGeometry height="100" width="1528.8949969116738" x="11.105003088326129" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-5" parent="sst1-3" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
+          <mxGeometry height="90" width="5.979617047560223" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-6" parent="sst1-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=30;" value="&lt;span style=&quot;font-size: 30px;&quot;&gt;専門家は毎回ゼロから読み直す。1行の手直しのたびに5人呼んでいたら、開発が止まる&lt;/span&gt;&lt;div&gt;&lt;span style=&quot;font-size: 30px;&quot;&gt;　→ 小さな手直しは、よく指摘される所だけ自分で見て、その場で直す&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="100" width="1480" x="61" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-7" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=28;fontStyle=1;align=center;verticalAlign=middle;" value="" vertex="1">
+          <mxGeometry height="70" width="190" x="61" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-8" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=28;fontStyle=1;align=center;verticalAlign=middle;" value="専門家チーム（重い版）" vertex="1">
+          <mxGeometry height="70" width="645" x="251" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-9" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=28;fontStyle=1;align=center;verticalAlign=middle;" value="セルフチェック（軽い版）" vertex="1">
+          <mxGeometry height="70" width="645" x="896" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-10" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=center;fontStyle=1;" value="文書" vertex="1">
+          <mxGeometry height="110" width="190" x="61" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-11" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=25;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="/doc-review：最大5レンズを並列" vertex="1">
+          <mxGeometry height="110" width="645" x="251" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-12" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=25;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="/quick-doc-review：繰り返し指摘されてきた項目だけ" vertex="1">
+          <mxGeometry height="110" width="645" x="896" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-13" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=center;fontStyle=1;" value="コード" vertex="1">
+          <mxGeometry height="110" width="190" x="61" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-14" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=25;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="/code-review：5レンズを並列" vertex="1">
+          <mxGeometry height="110" width="645" x="251" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-15" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=25;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="/quick-code-review：バグ・セキュリティ・決まりの3観点だけ" vertex="1">
+          <mxGeometry height="110" width="645" x="896" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-16" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=26;verticalAlign=middle;align=center;fontStyle=1;" value="使う場面" vertex="1">
+          <mxGeometry height="110" width="190" x="61" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-17" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=25;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="新しく書いた・大きく書き足した" vertex="1">
+          <mxGeometry height="110" width="645" x="251" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-18" parent="sst1-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=25;verticalAlign=middle;align=left;spacingLeft=24;spacingRight=16;" value="小さく手直しした" vertex="1">
+          <mxGeometry height="110" width="645" x="896" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-19" parent="sst1-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=top;fontColor=light-dark(#000000,#000000);fontSize=26;" value="どの Skill を回すかは npm run select-flow-skills が変更したパスから出す。重い版か軽い版かは、変更の規模（新規・大幅加筆か直接編集か）で選ぶ" vertex="1">
+          <mxGeometry height="80" width="1480" x="61" y="765" as="geometry" />
+        </mxCell>
+        <mxCell id="sst1-20" parent="sst1-1" style="text;whiteSpace=wrap;html=1;fontSize=32;fillColor=none;align=left;verticalAlign=top;" value="&lt;b&gt;削るのは観点、正しさは削らない。&lt;br&gt;ただし「要らない行」の判定だけは、軽い版でも他者の目に任せる（自己偏愛バイアス）&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 22px; color: rgb(102, 102, 102);&quot;&gt;※ アプリ本体のコードは、小さな手直しでも重い版（/code-review）。保守性が要るので、設計の形・テストの観点を削れない。&lt;br&gt;/quick-code-review はハーネスのスクリプト専用で、保守性の観点を削っている&lt;/span&gt;" vertex="1">
+          <mxGeometry height="200" width="1370" x="171" y="880" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
   <diagram name="adr" id="EkK5bBf9N_955zuLFvb_">
     <mxGraphModel dx="1580" dy="1241" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
