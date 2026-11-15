@@ -28,10 +28,23 @@ Bash で `git diff HEAD --name-only --diff-filter=ACMR`（未コミットの変�
 
 ### 差分ファイルとテストファイルの一覧を書く
 
-追跡済みの対象の差分と、テストファイルの一覧を、`tmp/`（git 管理外）配下に書く。シェル変数は Bash ツールの呼び出しをまたいで残らないので、1回で書く。
+追跡済みの対象の差分と、テストファイルの一覧を、`tmp/`（git 管理外）配下に書く。コマンドは1本ずつ分けて打つ。worktree に入ったセッションでは、git を含む複合コマンドが止められるためである。まず書き先を作る。
 
 ```bash
-dir=tmp/test-spec-review/$(date +%Y%m%d-%H%M%S) && mkdir -p "$dir" && for p in <追跡済みの対象のパス> <追跡済みの対象のパス>; do git diff HEAD -- "$p" > "$dir/${p//\//__}.diff"; done && { git ls-files '*.test.ts' '*.test.tsx' '*.spec.ts' '*.spec.tsx'; git ls-files --others --exclude-standard '*.test.ts' '*.test.tsx' '*.spec.ts' '*.spec.tsx'; } | sort -u > "$dir/test-files.txt" && echo "$dir"
+dir=tmp/test-spec-review/$(date +%Y%m%d-%H%M%S) && mkdir -p "$dir" && echo "$dir"
+```
+
+出力されたパスを、以下の `<dir>` にそのまま書く（シェル変数は Bash ツールの呼び出しをまたいで残らない）。追跡済みの対象ごとに1本、差分を書く。
+
+```bash
+git diff HEAD -- <パス> > <dir>/<パスの / を __ にした名前>.diff
+```
+
+テストファイルの一覧を、2本で書く。
+
+```bash
+git ls-files '*.test.ts' '*.test.tsx' '*.spec.ts' '*.spec.tsx' > <dir>/test-files.txt
+git ls-files --others --exclude-standard '*.test.ts' '*.test.tsx' '*.spec.ts' '*.spec.tsx' >> <dir>/test-files.txt
 ```
 
 テストファイルの一覧は、差分のテストだけでなく、追跡されたテストファイル全体にする。差分のファイルだけを渡すと、規則のテストが既存のファイルにあっても見えず、「テストが無い」と過検知する。`.test.mjs` は含めない（このリポジトリではハーネスのスクリプトのテストで、プロダクトの要件を確かめるものではない）。
