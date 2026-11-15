@@ -745,9 +745,35 @@ erDiagram
 
 ---
 
+### ❌ Error 24: Entity Alias Inside a Relationship Line
+
+**Severity:** 🔴 Critical
+
+**Problem:** 日本語の箱名（別名）を、関係の行の中で `["…"]` と書いている。別名は、関係の行とは別の行で宣言し、関係の行では ID だけを使う。
+
+**Incorrect:**
+
+```text
+erDiagram
+    MEMBER["会員"] ||--o{ LOT["ロット"] : 持つ
+```
+
+**Correct:**
+
+```mermaid
+erDiagram
+    MEMBER["会員"]
+    LOT["ロット"]
+    MEMBER ||--o{ LOT : 持つ
+```
+
+**Error Message:** `Parse error on line 2: ... Expecting 'EOF', 'NEWLINE', ... got 'ONLY_ONE'`
+
+---
+
 ## Gantt Charts
 
-### ❌ Error 24: Reserved Words as Task Names
+### ❌ Error 25: Reserved Words as Task Names
 
 **Severity:** 🔴 Critical
 
@@ -780,7 +806,7 @@ gantt
 
 ---
 
-### ❌ Error 25: Missing Comma in Date Specification
+### ❌ Error 26: Missing Comma in Date Specification
 
 **Severity:** 🟠 High - Browser-dependent (fails in Firefox)
 
@@ -806,7 +832,7 @@ gantt
 
 ---
 
-### ❌ Error 26: Special Characters in Task Names
+### ❌ Error 27: Special Characters in Task Names
 
 **Severity:** 🟠 High
 
@@ -840,7 +866,7 @@ gantt
 
 ---
 
-### ❌ Error 27: Incorrect After Dependency Syntax
+### ❌ Error 28: Incorrect After Dependency Syntax
 
 **Severity:** 🟡 Medium
 
@@ -868,7 +894,7 @@ gantt
 
 ## Pie Charts
 
-### ❌ Error 28: Non-Positive Values
+### ❌ Error 29: Non-Positive Values
 
 **Severity:** 🟠 High - Silent failure
 
@@ -1038,5 +1064,5 @@ python scripts/mermaid_to_image.py diagram.mmd output.png
 
 **Version:** 1.0
 **Last Updated:** 2025-01-13
-**Total Errors Documented:** 28
+**Total Errors Documented:** 29
 **Research Sources:** GitHub Issues (mermaid-js/mermaid), Stack Overflow, Mermaid Official Docs, Community Forums
