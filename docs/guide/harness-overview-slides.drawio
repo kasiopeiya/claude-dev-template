@@ -1,4 +1,4 @@
-<mxfile host="Electron" pages="39">
+<mxfile host="Electron" pages="40">
   <diagram name="slice1" id="Xg8CzgBqZuD8Hr5OrZfq">
     <mxGraphModel dx="1851" dy="1165" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
@@ -2729,6 +2729,125 @@
         </mxCell>
         <mxCell id="U67gXa6Lg-6HGCjjAm3D-43" parent="zjYL8aobfoZp46j0O7pl-1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;align=center;fillColor=#000000;shape=mxgraph.mscae.oms.log_management;fontColor=#000000;" value="" vertex="1">
           <mxGeometry height="56" width="50" x="678" y="746" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="doc-roles" id="docRoles7Qm2KxPg01">
+    <mxGraphModel dx="1461" dy="1147" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+      <root>
+        <mxCell id="docRoles7Qm2Kx-0" />
+        <mxCell id="docRoles7Qm2Kx-1" parent="docRoles7Qm2Kx-0" />
+        <mxCell id="docRoles7Qm2Kx-2" parent="docRoles7Qm2Kx-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="誰が何のために読むかで、書く場所を分ける" vertex="1">
+          <mxGeometry height="64" width="1383" x="37" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-3" connectable="0" parent="docRoles7Qm2Kx-1" style="group" value="" vertex="1">
+          <mxGeometry height="100" width="1383" x="37" y="13" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-4" parent="docRoles7Qm2Kx-3" style="text;whiteSpace=wrap;html=1;fontSize=75;" value="ドキュメントの対象読者と役割" vertex="1">
+          <mxGeometry height="100" width="1371.8949969116738" x="11.105003088326129" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-5" parent="docRoles7Qm2Kx-3" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
+          <mxGeometry height="90" width="5.979617047560223" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-6" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=26;fontStyle=1;align=center;verticalAlign=middle;" value="ドキュメント" vertex="1">
+          <mxGeometry height="60" width="330" x="61" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-7" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=26;fontStyle=1;align=center;verticalAlign=middle;" value="主な読者" vertex="1">
+          <mxGeometry height="60" width="220" x="391" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-8" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=#000000;fontColor=#FFFFFF;fontSize=26;fontStyle=1;align=center;verticalAlign=middle;" value="役割" vertex="1">
+          <mxGeometry height="60" width="930" x="611" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-9" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="要件定義書" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-10" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="人間・AI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-11" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="合意した仕様" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-12" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="Issue" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="364" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-13" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="人間・AI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="364" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-14" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="タスクの詳細・履歴・一覧" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="364" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-15" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="設計書" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="448" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-16" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="人間・AI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="448" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-17" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="いまの設計の概要とその意図、重要な設計ポイント" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="448" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-18" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="ADR" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="532" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-19" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="主にAI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="532" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-20" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="重要な設計判断の背景" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="532" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-21" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="コミットメッセージ" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="616" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-22" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="主にAI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="616" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-23" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="詳細な設計判断の背景、変更の意図" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="616" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-24" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="ガイド" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-25" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="人間" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-26" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="人間の理解を促すための文書" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="700" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-27" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="コードコメント" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="784" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-28" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="人間・AI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="784" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-29" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="実装の意図（特に設計書に書かないレベルのもの）" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="784" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-30" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="Policy" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="868" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-31" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="AI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="868" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-32" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="AI に方針と正解を示す（抽象的・本質的な記載が中心）" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="868" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-33" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="Rule" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="952" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-34" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="AI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="952" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-35" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#FFFFFF,#FFFFFF);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="書き方の正解（How）" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="952" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-36" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;fontStyle=1;" value="Sample" vertex="1">
+          <mxGeometry height="84" width="330" x="61" y="1036" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-37" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=center;" value="AI" vertex="1">
+          <mxGeometry height="84" width="220" x="391" y="1036" as="geometry" />
+        </mxCell>
+        <mxCell id="docRoles7Qm2Kx-38" parent="docRoles7Qm2Kx-1" style="rounded=0;whiteSpace=wrap;html=1;strokeColor=#000000;fillColor=light-dark(#F0EEEA,#F0EEEA);fontColor=light-dark(#000000,#000000);fontSize=28;verticalAlign=middle;align=left;spacingLeft=24;" value="正解の見本" vertex="1">
+          <mxGeometry height="84" width="930" x="611" y="1036" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
