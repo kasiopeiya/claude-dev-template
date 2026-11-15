@@ -28,6 +28,9 @@
 //   で止める判定だけを外す。close 済み・子を持つ親・人間向けのラベル・対象ラベルが無い、の判定は旗の有無で変えない。
 //   子を選ばせるときは、打ち直しにも旗を付けさせる。旗なしで打ち直すと、子の判定で `監査する：` が返るため。
 // - 対象ラベルは config.mjs の targetIssueLabel から読み、このファイルには持たない。
+// - `進む：` の1行目に、実装フローの表の「順」の読み方（同じ順の Skill は並行して起動してよい）を載せる。
+//   CLAUDE.md は「記載順に実行する」と書くだけで、従わせるのはこの1行目だけである。CLAUDE.md を変えずに、
+//   ここで「順」の意味を宣言する。
 //
 // 使い方: npm run --silent decide-issue-start -- <Issue番号> [--after-issue-check | --skip-issue-check]
 //   `--silent` が無いと、npm が先に `> root@1.0.0 …` の見出し行を出し、1行目が判定の語にならない
@@ -53,6 +56,10 @@ const SKIP_ISSUE_CHECK_FLAG = '--skip-issue-check'
 const USAGE_MESSAGE = `Issue 番号を渡してください（例: npm run --silent decide-issue-start -- 123 [${AFTER_ISSUE_CHECK_FLAG} | ${SKIP_ISSUE_CHECK_FLAG}]）`
 
 const DECIDE_ISSUE_START_COMMAND = 'npm run --silent decide-issue-start --'
+
+// 実装フローの表の「順」の読み方。`進む：` の1行目に載せる
+const PARALLEL_FLOW_INSTRUCTION =
+  'Issue の「実装フロー（使用するSkill）」は順の小さい行から実行し、同じ順の Skill は互いに独立なので、結果を待たずに続けて起動してよい'
 
 // GraphQL が sub-issue を一度に返せる件数の上限。超えていたら、読み落とした子を選び損ねるので止める
 const SUB_ISSUE_FETCH_LIMIT = 100
@@ -294,13 +301,18 @@ function buildRunIssueCheckOutput(issueNumber) {
  * @returns {DecisionOutput} 判定の出力
  */
 function buildProceedOutput(issueNumber, isIssueCheckSkipped) {
+  const headline = `進む：#${issueNumber} は実装へ進めます`
+  if (isIssueCheckSkipped) {
+    return {
+      headline,
+      guidanceLines: [
+        '/asap の手順で進めてください（Issue の「実装フロー（使用するSkill）」の Skill は呼びません）'
+      ]
+    }
+  }
   return {
-    headline: `進む：#${issueNumber} は実装へ進めます`,
-    guidanceLines: [
-      isIssueCheckSkipped
-        ? '/asap の手順で進めてください（Issue の「実装フロー（使用するSkill）」の Skill は呼びません）'
-        : 'Issue の「実装フロー（使用するSkill）」の Skill を記載順に実行してください'
-    ]
+    headline: `${headline}。${PARALLEL_FLOW_INSTRUCTION}`,
+    guidanceLines: []
   }
 }
 

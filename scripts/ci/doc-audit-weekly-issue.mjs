@@ -20,6 +20,7 @@ import { fileURLToPath } from 'url'
 
 import {
   GITHUB_ISSUE_BODY_MAX_LENGTH,
+  PARALLEL_FLOW_NOTE,
   assertEmbeddablePaths,
   createIssue,
   ensureLabelExists,
@@ -85,6 +86,7 @@ const WEEKLY_ISSUE_TITLE_WITH_SLIM_CHECK = `${WEEKLY_ISSUE_TITLE_WITHOUT_SLIM_CH
  * @property {string} resultNote 「タスク一覧」の実行結果コメントの括弧内に足す文
  * @property {string} completionLine 「完了条件」に足す行（先頭は改行）
  * @property {string} targetsLine 「現状」の対象箇所の次に足す行（先頭は改行）
+ * @property {string} flowNote 「実装フロー」の表の直前に足す文（先頭は空行）
  * @property {string} flowRow 「実装フロー」の表に足す行（先頭は改行）
  */
 
@@ -97,6 +99,7 @@ const NO_SLIM_CHECK = {
   resultNote: '',
   completionLine: '',
   targetsLine: '',
+  flowNote: '',
   flowRow: ''
 }
 
@@ -334,12 +337,14 @@ function buildSlimCheck(slimTargets) {
     reasonNote: `
 あわせて、毎回全文が読まれる文書のうち ${targetPathsLabel} が今回の対象に含まれるため、その減量チェックも載せている。
 これらは文字数がそのまま毎回のコンテキスト消費になり、上限内なら足されるばかりで、後から削る仕組みが他に無い。`,
-    approachNote: `続けて \`${command}\` を実行し、毎回読まれる文書の減量候補を Issue に起票する（文書そのものは直さない）。`,
+    approachNote: `あわせて \`${command}\` を実行し、毎回読まれる文書の減量候補を Issue に起票する（文書そのものは直さない）。`,
     taskLine: `\n- [ ] \`${command}\` を実行する`,
     resultNote: '。減量チェックの結果も同じコメントに、チェックごとに分けて書く',
     completionLine: `\n- [ ] \`${SLIM_COMMAND_NAME}\` の結果（起票した Issue の番号、または「該当なし」）が、そのコメントに書かれている`,
     targetsLine: `\n- **減量チェックの対象**：\n${formatPathBulletList(slimTargets)}`,
-    flowRow: `\n| 2   | 減量チェックの実行 | \`${command}\` |`
+    flowNote: `\n${PARALLEL_FLOW_NOTE}\n`,
+    // 順は /doc-consistency の行と同じ 1 にする。2件は互いの出力を使わず、どちらも Issue を起票するだけで文書を編集しない
+    flowRow: `\n| 1   | 減量チェックの実行 | \`${command}\` |`
   }
 }
 
@@ -442,7 +447,7 @@ ${targetDocsSection}${slimCheck.targetsLine}
  */
 function renderImplementationFlowSection({ docConsistencyCommand, slimCheck }) {
   return `## 実装フロー（使用するSkill）
-
+${slimCheck.flowNote}
 | 順  | 変更種別         | 使用Skill             |
 | --- | ---------------- | ---------------------- |
 | 1   | 定期チェックの実行 | \`${docConsistencyCommand}\` |${slimCheck.flowRow}`
