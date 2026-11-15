@@ -17,7 +17,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="AIDD" id="VuWgp9L6Yji_PRQnP5GD">
-    <mxGraphModel dx="1580" dy="1241" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="2678" dy="2103" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="FyGJfU2ifQTK040_GAB6-0" />
         <mxCell id="FyGJfU2ifQTK040_GAB6-1" parent="FyGJfU2ifQTK040_GAB6-0" />
@@ -107,13 +107,6 @@
         </mxCell>
         <mxCell id="vQYDSzbU85PNXJMO-AKz-3" edge="1" parent="FyGJfU2ifQTK040_GAB6-1" source="FyGJfU2ifQTK040_GAB6-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;defaultLabelBackgroundColor=page;" target="vQYDSzbU85PNXJMO-AKz-1">
           <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="c-OzjW3V__qsWPvon41H-0" edge="1" parent="FyGJfU2ifQTK040_GAB6-1" style="edgeStyle=none;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;defaultLabelBackgroundColor=page;" value="a">
-          <mxGeometry relative="1" width="80" as="geometry">
-            <Array as="points" />
-            <mxPoint x="800" y="600" as="sourcePoint" />
-            <mxPoint x="880" y="600" as="targetPoint" />
-          </mxGeometry>
         </mxCell>
       </root>
     </mxGraphModel>
