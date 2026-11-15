@@ -4,11 +4,7 @@ Activity diagrams show workflows, business processes, and algorithmic flows. The
 
 ## When to Use Activity Diagrams
 
-- **Business workflows**: Order processing, approval flows, customer journeys
-- **System processes**: Data pipelines, ETL jobs, batch processing
-- **User interactions**: Login flows, checkout processes, form submissions
-- **Decision trees**: Conditional logic, branching scenarios
-- **Algorithm visualization**: Step-by-step processes with conditions
+Read this guide after [the type selection table](../../diagram-type-selection.md) chose flowchart: branching, merging, and loops that fit no other row.
 
 ## Basic Syntax
 
@@ -226,7 +222,7 @@ flowchart TD
 
 ## Swimlane Activity Diagrams
 
-Show responsibilities across different actors or systems:
+Show responsibilities across different actors or systems. If the subject is actors exchanging messages in time order, use sequenceDiagram instead:
 
 ```mermaid
 flowchart TD
