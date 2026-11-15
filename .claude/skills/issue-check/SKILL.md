@@ -176,7 +176,7 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 ```
 
 ```bash
-gh issue close <番号> --comment "<なぜ不要と判定したかを、引用またはコマンド出力を添えて>"
+gh issue close <番号> --reason "not planned" --comment "<なぜ不要と判定したかを、引用またはコマンド出力を添えて>"
 ```
 
 ## Phase 4: 報告
