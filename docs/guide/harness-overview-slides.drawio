@@ -1,4 +1,4 @@
-<mxfile host="Electron" pages="40">
+<mxfile host="Electron" pages="41">
   <diagram name="slice1" id="Xg8CzgBqZuD8Hr5OrZfq">
     <mxGraphModel dx="1851" dy="1165" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
@@ -2927,6 +2927,159 @@
         </mxCell>
         <mxCell id="kfdeUxE_ikWW_ZSU73b0-7" parent="kfdeUxE_ikWW_ZSU73b0-1" style="text;whiteSpace=wrap;html=1;fontSize=35;fillColor=none;" value="hoge" vertex="1">
           <mxGeometry height="127" width="1278" x="171" y="896" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="human-review-feedback" id="humanReviewFeedback01">
+    <mxGraphModel dx="1580" dy="1241" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+      <root>
+        <mxCell id="hrf-0" />
+        <mxCell id="hrf-1" parent="hrf-0" />
+        <mxCell id="hrf-lead" parent="hrf-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="人間レビューは品質担保として使ってはいけない。多層的対策で品質担保を仕組み化&lt;div&gt;&lt;br&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="64" width="1526" x="37" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-tg" connectable="0" parent="hrf-1" style="group" value="" vertex="1">
+          <mxGeometry height="100" width="1526" x="37" y="13" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-title" parent="hrf-tg" style="text;whiteSpace=wrap;html=1;fontSize=66;verticalAlign=middle;" value="人間レビュー指摘は仕組みに問題があると考える" vertex="1">
+          <mxGeometry height="100" width="1514" x="11.1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-bar" parent="hrf-tg" style="whiteSpace=wrap;html=1;fillColor=#000000;" value="" vertex="1">
+          <mxGeometry height="90" width="6" y="5" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-zone-before" parent="hrf-1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#E6E4DD;fontSize=24;" value="書く前" vertex="1">
+          <mxGeometry height="40" width="385" x="160" y="258" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-zone-during" parent="hrf-1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#E6E4DD;fontSize=24;" value="書く最中" vertex="1">
+          <mxGeometry height="40" width="165" x="555" y="258" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-zone-after" parent="hrf-1" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;strokeColor=none;fillColor=#E6E4DD;fontSize=24;" value="書いた後" vertex="1">
+          <mxGeometry height="40" width="640" x="730" y="258" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-harness" parent="hrf-1" style="rounded=1;arcSize=6;whiteSpace=wrap;html=1;dashed=1;dashPattern=12 12;fillColor=none;strokeWidth=3;" value="" vertex="1">
+          <mxGeometry height="330" width="990" x="140" y="312" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-harness-label" parent="hrf-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;align=left;fontSize=26;" value="仕組み" vertex="1">
+          <mxGeometry height="40" width="120" x="156" y="318" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-plan" parent="hrf-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=center;verticalAlign=middle;fillColor=#F0EEEA;fontSize=32;" value="Plan&lt;br&gt;レビュー" vertex="1">
+          <mxGeometry height="150" width="150" x="160" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-plan-icon" parent="hrf-1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#000000;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.robotics;" value="" vertex="1">
+          <mxGeometry height="55" width="55" x="208" y="375" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-issue" parent="hrf-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=center;verticalAlign=middle;fillColor=#F0EEEA;fontSize=32;" value="Issue&lt;br&gt;レビュー" vertex="1">
+          <mxGeometry height="150" width="150" x="400" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-issue-icon" parent="hrf-1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#000000;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.robotics;" value="" vertex="1">
+          <mxGeometry height="55" width="55" x="448" y="375" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-ai1" parent="hrf-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=center;verticalAlign=middle;fillColor=#F0EEEA;fontSize=32;" value="AI 1次&lt;br&gt;レビュー" vertex="1">
+          <mxGeometry height="150" width="150" x="730" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-ai1-icon" parent="hrf-1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#000000;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.robotics;" value="" vertex="1">
+          <mxGeometry height="55" width="55" x="778" y="375" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-guard" parent="hrf-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=center;verticalAlign=middle;fillColor=#F0EEEA;fontSize=32;" value="ガード&lt;br&gt;レール" vertex="1">
+          <mxGeometry height="150" width="150" x="960" y="450" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-guard-icon" parent="hrf-1" style="sketch=0;pointerEvents=1;shadow=0;dashed=0;html=1;strokeColor=none;fillColor=#505050;labelPosition=center;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;align=center;shape=mxgraph.office.concepts.settings;" value="" vertex="1">
+          <mxGeometry height="56" width="56" x="1007" y="375" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-impl" parent="hrf-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=28;" value="実装" vertex="1">
+          <mxGeometry height="40" width="100" x="590" y="463" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-answer" parent="hrf-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=2;fillColor=#FFFFFF;align=center;verticalAlign=middle;fontSize=22;" value="正解（Policy・Rule）を&lt;br&gt;見ながら書く" vertex="1">
+          <mxGeometry height="80" width="250" x="515" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-answer-to-impl" edge="1" parent="hrf-1" source="hrf-answer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;dashed=1;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="hrf-impl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-human" parent="hrf-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=5;align=center;verticalAlign=middle;fillColor=#FFFFFF;fontSize=32;" value="人間&lt;br&gt;レビュー&lt;br&gt;&lt;span style=&quot;font-size: 24px;&quot;&gt;（最終関門）&lt;/span&gt;&lt;br&gt;&lt;span style=&quot;font-size: 20px; color: #666666;&quot;&gt;指摘ゼロが理想&lt;/span&gt;" vertex="1">
+          <mxGeometry height="180" width="190" x="1180" y="435" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-human-icon" parent="hrf-1" style="shape=actor;whiteSpace=wrap;html=1;" value="" vertex="1">
+          <mxGeometry height="57" width="40" x="1255" y="367" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-main" parent="hrf-1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#000000;strokeColor=#000000;fontColor=#FFFFFF;fontSize=28;fontStyle=1;" value="main" vertex="1">
+          <mxGeometry height="60" width="120" x="1415" y="495" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-periodic" parent="hrf-1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;strokeColor=#000000;strokeWidth=3;align=center;verticalAlign=middle;fillColor=#F0EEEA;fontSize=32;" value="定期&lt;br&gt;チェック&lt;br&gt;&lt;span style=&quot;font-size: 24px;&quot;&gt;（週次）&lt;/span&gt;" vertex="1">
+          <mxGeometry height="150" width="150" x="1400" y="662" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-periodic-icon" parent="hrf-1" style="sketch=0;outlineConnect=0;fontColor=#232F3E;fillColor=#000000;strokeColor=#ffffff;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.robotics;" value="" vertex="1">
+          <mxGeometry height="45" width="45" x="1453" y="610" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-main-to-periodic" edge="1" parent="hrf-1" source="hrf-main" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;endArrow=block;endFill=1;exitX=0.15;exitY=1;exitDx=0;exitDy=0;entryX=0.2200;entryY=0;entryDx=0;entryDy=0;" target="hrf-periodic">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-periodic-to-main" edge="1" parent="hrf-1" source="hrf-periodic" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;endArrow=block;endFill=1;exitX=0.7800;exitY=0;exitDx=0;exitDy=0;entryX=0.85;entryY=1;entryDx=0;entryDy=0;" target="hrf-main">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-in" edge="1" parent="hrf-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;endArrow=block;endFill=1;" target="hrf-plan">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="25" y="525" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hrf-e1" edge="1" parent="hrf-1" source="hrf-plan" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;endArrow=block;endFill=1;" target="hrf-issue">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-e2" edge="1" parent="hrf-1" source="hrf-issue" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;endArrow=block;endFill=1;" target="hrf-ai1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-e3" edge="1" parent="hrf-1" source="hrf-ai1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;endArrow=block;endFill=1;" target="hrf-guard">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-e4" edge="1" parent="hrf-1" source="hrf-guard" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;endArrow=block;endFill=1;" target="hrf-human">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-e5" edge="1" parent="hrf-1" source="hrf-human" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;endArrow=block;endFill=1;" target="hrf-main">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d0-0" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="37" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d0-1" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="61" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d0-2" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="85" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d0-3" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="109" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d1-0" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="322" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d1-1" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="346" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d1-2" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="370" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d2-0" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="619" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d2-1" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="643" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-d3-0" parent="hrf-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#D32F2F;strokeColor=none;" value="" vertex="1">
+          <mxGeometry height="18" width="18" x="911" y="516" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-defect-label" parent="hrf-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=24;fontColor=#D32F2F;" value="欠陥" vertex="1">
+          <mxGeometry height="34" width="100" x="32" y="467" as="geometry" />
+        </mxCell>
+        <mxCell id="hrf-feedback" edge="1" parent="hrf-1" source="hrf-human" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeWidth=4;strokeColor=#000000;endArrow=block;endFill=1;endSize=14;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" target="hrf-harness">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1275" y="880" />
+              <mxPoint x="635" y="880" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="hrf-feedback-label" parent="hrf-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;fontSize=28;" value="&lt;b style=&quot;font-size: 34px;&quot;&gt;指摘が出た＝仕組みの穴&lt;/b&gt;&lt;br&gt;→ Policy・Rule・ガードレールを直す" vertex="1">
+          <mxGeometry height="100" width="880" x="520" y="894" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
