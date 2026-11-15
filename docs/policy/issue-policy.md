@@ -220,6 +220,8 @@ PR に付く `needs-human-review` などのラベルの意味は `pr-review-poli
 
 人間が決めた条件は、「対応方針」に「人間が決めたこと」として1条件1行で書く（行の形は `/quick-issue`）。`needs-human-decision` に戻されずに済むのは、この行に書いた条件だけである。`/issue-check` がどの条件を差し戻しの理由から外すかの細部は、`/issue-check` の監査基準が持つ。
 
+**`ai-fixable` か `issue:decided` の Issue のタスク一覧に、「人間に確かめる」「人間に聞く」タスクを入れない。** 未決の判断は、起票するセッションで人間に聞いて決めるか、推奨案として「対応方針」に書く（上の「案が2つ以上ある」の扱い）。人間が決める判断が残り、それが「人間が決めるべき Issue の条件」に当たるなら `needs-human-decision` にする。`ready-for-human` の「（人間）」タスクは当たらない。決定済みの印と未決の判断が同じ Issue に同居すると、着手した AI が人間に同じ判断を二度求め、無人実行も止まるからである（#1808）。
+
 ## 無人実行が止まったら `needs-human-check` を付ける
 
 無人実行（Auto-Programmer と、それが起動する `/auto-dev`・`/auto-fix-ci`・`/auto-resolve-conflict`）が予定した終わり方以外で止まったら、Issue に `needs-human-check` を付ける。止まった Issue を、人間がこのラベル1つで引けるようにするためである。止まり方ごとに印を変えたり、ボードの列で示したりすると、引き漏れる（#1000）。
