@@ -1,6 +1,6 @@
 ---
 name: test-spec-review
-description: テストが、要件定義書の規則の条件を破る入力を確かめているかをレビューする。範囲は今の差分・名指しした機能・全部の3つ。「test-spec-review」「テストを要件と照らして」と指示されたとき。
+description: テストが、要件定義書の規則の条件を破る入力と、具体値どおりの期待値を確かめているかをレビューする。範囲は今の差分・名指しした機能・全部の3つ。「test-spec-review」「テストを要件と照らして」と指示されたとき。
 argument-hint: '[<機能名> | --all]（省略時は今の差分）'
 allowed-tools: Task, Bash, Read
 ---
