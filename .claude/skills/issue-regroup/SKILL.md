@@ -145,7 +145,7 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 ```
 
 ```bash
-gh issue close <元の親の番号> --comment "open な子が全部ブロッカー待ちだったため、#<移動先> へ移して close した。移した子: #<番号>, #<番号>"
+gh issue close <元の親の番号> --reason "not planned" --comment "open な子が全部ブロッカー待ちだったため、#<移動先> へ移して close した。移した子: #<番号>, #<番号>"
 ```
 
 `gh` は、Phase 4 で読んだ issue-update の「`gh` の叩き方」のとおり、1件ずつ順に叩きます。
