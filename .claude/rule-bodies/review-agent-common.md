@@ -1,8 +1,13 @@
 # レビュー系 agent の共通規約
 
-レビュー系 agent（`actions-reviewer-agent`・`architecture-reviewer-agent`・`cdk-reviewer-agent`・`code-reviewer-agent`・`doc-reviewer-agent`・`requirements-reviewer-agent`）に共通する、入力の検証・差分の判定・判定の定義・出力形式の約束を定める。レンズの一覧と担当観点、観点ごとの手順は各 agent の定義が正典で、ここには書かない。
+レビュー系 agent（`actions-reviewer-agent`・`architecture-reviewer-agent`・`cdk-reviewer-agent`・`code-reviewer-agent`・`doc-reviewer-agent`・`requirements-reviewer-agent`・`test-spec-reviewer-agent`）に共通する、入力の検証・差分の判定・判定の定義・出力形式の約束を定める。レンズの一覧と担当観点、観点ごとの手順は各 agent の定義が正典で、ここには書かない。
 
 以下の「観点一覧」は、各 agent の定義が判定基準として指す `references/review-criteria.md` をいう。`requirements-reviewer-agent` は、要件定義書のポリシーの「レビューチェックリスト」を観点一覧、NG サインを「違反と判定する条件」、Phase 4 の重大度の当て方を「severity の決め方」と読み替える。
+
+`test-spec-reviewer-agent` は、指摘がテストの無いことなので、次の2点を読み替える。
+
+- 指摘の引用は、要件の原文と、テストの欠落を確かめた範囲（テストファイル・`describe` の範囲）にする。「判定の定義」の「原因になった差分の行を引用する」には従わない
+- 差分は、照らす規則を決めるためだけに使う。その規則のテストの欠けは、差分の前からあるものも出す。「差分の判定」の「差分の外に前からある欠陥は、探さない」には従わない
 
 ## 対象読者
 
@@ -10,7 +15,7 @@
 
 ## 置き場を選んだ理由
 
-これらの agent を呼ぶ Skill は agent ごとに分かれ（`/actions-review` から `/requirements-review` まで）、共通の持ち主になる Skill が無い。そこで [policy-driven-development-policy](../../docs/policy/policy-driven-development-policy.md)「パスで言えない How は、その行為を担う Skill に置くか、Skill から直接リンクで読ませる Rule にする」に従い、`.claude/rule-bodies/` に置く。`.claude/rules/` には動かさない（毎回全文が読み込まれる）。review-subagent-lens-policy にも書かない（Policy は「どれを選ぶか」を書く場所で、選んだ後の How は Rule に置く。ADR-014）。
+これらの agent を呼ぶ Skill は agent ごとに分かれ（`/actions-review` から `/test-spec-review` まで）、共通の持ち主になる Skill が無い。そこで [policy-driven-development-policy](../../docs/policy/policy-driven-development-policy.md)「パスで言えない How は、その行為を担う Skill に置くか、Skill から直接リンクで読ませる Rule にする」に従い、`.claude/rule-bodies/` に置く。`.claude/rules/` には動かさない（毎回全文が読み込まれる）。review-subagent-lens-policy にも書かない（Policy は「どれを選ぶか」を書く場所で、選んだ後の How は Rule に置く。同ポリシー「Policy と Rule を分ける線は「どれを選ぶか」か「選んだ後の How」かである」）。
 
 ## 入力の検証
 
