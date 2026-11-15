@@ -71,10 +71,10 @@ Plan を書き出したら、`/check-plan` の前に、Plan の新しい技術�
 2. 名前ごとに、大文字小文字を区別しない文字列検索で照合する。どこにもヒットしなければ新しい
 
    ```bash
-   grep -rliF -- "<名前>" docs/adr docs/design $(git ls-files 'package.json' '*/package.json') $(git ls-files README.md .claude)
+   git grep -liF -- "<名前>" -- docs/adr docs/design 'package.json' '*/package.json' README.md .claude
    ```
 
-   `README.md`・`.claude/` は `git ls-files` で追跡されたものだけを渡す。端末ごとに作られる `.claude/settings.local.json` を混ぜると、同じ名前の判定が端末で変わるからである。
+   `git grep` は追跡されたファイルだけを探すので、端末ごとに作られる `.claude/settings.local.json` は混ざらない（混ぜると、同じ名前の判定が端末で変わる）。`$(git ls-files ...)` を使わないのは、worktree に入ったセッションで、git を含む複合コマンドが止められるためである。
 
 3. 新しい技術要素が無ければ、聞かずに `/check-plan <Planパス>` を実行する
 4. あれば `AskUserQuestion` で、新しい技術要素の名前を挙げて「外部の制約を調べる `/premise-check` を実行するか」を聞く。選択肢は「実行する」「実行しない」の2つ

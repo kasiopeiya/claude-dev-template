@@ -10,6 +10,7 @@ hook:
       '.claude/skills/design/SKILL.md',
       '.claude/skills/auto-dev/SKILL.md',
       '.claude/skills/asap/SKILL.md',
+      '.claude/skills/tdd/SKILL.md',
       '.claude/rule-bodies/review-fix-loop.md'
     ]
 ---

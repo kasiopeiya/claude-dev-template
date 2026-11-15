@@ -57,10 +57,12 @@ Issue の state が `OPEN` でなければ直す意味が無いので、離脱�
 
 ### Phase 3: 原因がこの PR にあるか確かめる
 
-デフォルトブランチ名は `gh` で GitHub から引く（`origin/HEAD` は clone した時点の値のまま残り、使い回す clone では古くなるため使わない）。シェル変数は Bash ツールの呼び出しをまたいで残らないので、1回で実行し、出力した名前を以降の `<デフォルトブランチ>` に入れる。
+デフォルトブランチ名は `gh` で GitHub から引く（`origin/HEAD` は clone した時点の値のまま残り、使い回す clone では古くなるため使わない）。コマンドは1行ずつ別の Bash 呼び出しで打つ。worktree に入ったセッションでは、git を含む複合コマンドが止められるためである。
 
 ```bash
-base=$(gh repo view --json defaultBranchRef --jq .defaultBranchRef.name) && git fetch origin "$base" && echo "デフォルトブランチ: $base" && git diff --name-only "origin/$base...HEAD"
+gh repo view --json defaultBranchRef --jq .defaultBranchRef.name
+git fetch origin <デフォルトブランチ>
+git diff --name-only origin/<デフォルトブランチ>...HEAD
 ```
 
 次のどれかなら、この PR の差分では直せないので離脱する。
