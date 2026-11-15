@@ -74,10 +74,10 @@ gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number
 2. 名前ごとに、大文字小文字を区別しない文字列検索で照合する。どこにもヒットしなければ新しい
 
    ```bash
-   grep -rliF -- "<名前>" docs/adr docs/design $(git ls-files 'package.json' '*/package.json') $(git ls-files README.md .claude)
+   git grep -liF -- "<名前>" -- docs/adr docs/design 'package.json' '*/package.json' README.md .claude
    ```
 
-   `README.md`・`.claude/` は `git ls-files` で追跡されたものだけを渡します。端末ごとに作られる `.claude/settings.local.json` を混ぜると、同じ名前の判定が端末によって変わるためです。
+   `git grep` は追跡されたファイルだけを探すので、端末ごとに作られる `.claude/settings.local.json` は混ざりません（混ぜると、同じ名前の判定が端末によって変わります）。`$(git ls-files ...)` を使わないのは、worktree に入ったセッションで、git を含む複合コマンドが止められるためです。
 
 3. 新しい名前が1つでもあれば、1. のファイルの絶対パスだけを `premise-checker-agent` に渡す。Issue の経緯や「ここを見てほしい」という注文は渡さない
 
