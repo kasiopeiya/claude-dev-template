@@ -5,7 +5,17 @@ description: Interview the user relentlessly about a plan or design until reachi
 
 ## Agree the scope first — always
 
-**Before anything else**, agree on one sentence with the user and get an explicit yes. That sentence is the scope of this interview.
+**Before any other question**, agree on one sentence with the user and get an explicit yes. That sentence is the scope of this interview. Only the reason below comes before it.
+
+**Take the user's reason in their own words, before writing the sentence.** A request is usually phrased as a solution, and the reason behind it is known only to the user — anything you write in its place is a guess (the same idea as `/elicit-requirements`「解決策と目的を分離する」). Take it in this order:
+
+1. **Invoked from an Issue**: if the Issue has a `**人間の発言**` line, quote it. If it has none but its トレース names a 機能ID or BR of `docs/requirements.md`, don't ask, and record `人間の発言：なし（要件定義書 <ID> による）` — the intent lives in the requirements the customer already reviewed. If neither, go to 3.
+2. **Otherwise**, if the user's message says what happened or what is troubling them, quote it verbatim. A sentence that names a solution or the thing to build（「〜を作りたい」「〜の仕組みが欲しい」）does not count — counting it would mean the question never fires.
+3. If nothing above applies, ask in prose, not as AskUserQuestion options:
+
+   > 何が起きて、これを作ろうと思ったのですか？（それが無いと何が困りますか）
+
+Quote the reason in the same reply that presents the sentence, so one yes confirms both. Never write the reason yourself, and never offer guessed reasons as options: once picked, your guess is kept as the user's words. Write the sentence so that it serves the quoted reason. Carry the quote verbatim to the end; `/to-plan` copies it into the Plan.
 
 **By default the sentence is a thin vertical slice（曳光弾）** — start small and grow later (refined-engineer-judgment-principles「小さく始めて育てる」). Don't ask for it: write the thinnest path from entry to exit that the request implies, as one sentence. If the sentence you wrote lists features rather than one path, cut it down to one path before presenting it. Only when the request gives too little to write one path (e.g. `/grill-me` with no context), ask this instead:
 
@@ -19,7 +29,7 @@ When the work is not code — a Skill definition, a policy, a guide — read「�
 
 Ask for an **externally observable state** of what is being built, not a restatement of the work（✅「dev に `cdk deploy` が通り、スタックができた」／❌「CDK を書く」）. Don't ask when this interview ends — **Stop** below already fixes that, so the answer would be the same every time and narrow nothing. If the user's answer names the end of the interview instead of the thing being built（❌「Issue 作成まで」）, say so and ask again.
 
-If the caller passed a scope or a stopping condition in the arguments (another Skill may invoke this one), adopt it as the agreed sentence as is — don't cut it down to one path — and ask neither question: the caller already fixed the scope, and asking the user again only widens it.
+If the caller passed a scope or a stopping condition in the arguments (another Skill may invoke this one), adopt it as the agreed sentence as is — don't cut it down to one path — and ask neither question, nor for the reason: the caller already fixed the scope, and asking the user again only widens it.
 
 **Look up past decisions next — always.** Right after the scope is agreed (or adopted from the caller) and before the first question, run `/past-decision-search` with the Skill tool, passing the mechanisms, paths, and keywords that appear on the agreed sentence. Do this every time, not only when it seems needed: an AI cannot tell which past decisions it is missing. When a recommendation would overturn a decision it returned, cite that decision and say why it should be overturned.
 
@@ -35,7 +45,7 @@ These are never reasons to ask:「後で困るから今決めておく」「つ�
 
 **Not-now list.** Every topic you did not ask about goes on a Not-now list — one line each, in the form `<論点> — <何が起きたら決める必要が出るか>`. Present it at the end alongside the confirmed decisions, and tell the user it carries into the Plan's スコープ「やらないこと」. It records a deferral, not a rejection. When a rebuttal (e.g. from `/devil`) raises a topic outside the agreed sentence, put it on this list instead of turning it into a question — even if the rebuttal holds.
 
-**Stop** once every element of the agreed sentence has a decision, and hand control back instead of continuing indefinitely. If the caller passed a stopping condition in the arguments, that one wins.
+**Stop** once every element of the agreed sentence has a decision, and hand control back instead of continuing indefinitely. When you present the confirmed decisions, mark each decision's reason: the user's own words in「」, and （AI案を選択） when the user only picked your option or recommendation — the Plan and Issues keep these marks so a later reader can tell who gave the reason. If the caller passed a stopping condition in the arguments, that one wins.
 
 ## Interview
 
