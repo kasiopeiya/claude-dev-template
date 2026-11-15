@@ -286,6 +286,8 @@ AI の作業と、ポリシーの「人間しかできない作業の条件」�
 - [ ] 既存 Issue と重複しないか `gh issue list --state all --search "<タイトルの主要語>"` で確認した（`--state all` を外すと open だけを見ることになり、**却下済み（NOT_PLANNED）の同じ提案を再起票する**）
 - [ ] 該当するポリシー・rules を `docs/policy-hub.md` と `.claude/rules/` から探した
 - [ ] 見つかったポリシー・rules と「タスク一覧」「完了条件」を照合し、反する作業を指示していない（反していたらタスク側を直した）
+- [ ] 「対応方針」の各手順が、「この変更が必要な理由」1行目の困りごとそのものを解く。周辺の手当て（一覧に載せる等）だけの手順は外した。「対応方針」の根拠に、1行目を解く手順を名指しした
+- [ ] 同じ種類の問題を、別の領域（コード・別の文書）がすでに解いている規約が無いか、`.claude/rules/`・`docs/policy/` を `git grep` で探した。あれば流用し、流用しないなら理由を根拠に書いた
 - [ ] `ai-fixable` / `needs-human-decision` / `ready-for-human` のどれか1つだけを決めた
 - [ ] ポリシーの「Issue に付けるラベル」表で `broken-window` を付けるかを決めた（当たれば `broken-window` を付けた）
 - [ ] ポリシーの「Issue に付けるラベル」表で `human-correction` を付けるかを決めた（当たれば `human-correction` を付けた）
