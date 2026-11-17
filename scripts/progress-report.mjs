@@ -20,11 +20,13 @@
 //   1週間ほどの報告を想定し、1000 件を超える長い期間は扱わない。期間を縮めれば解消するので、失敗は利用者が直せる誤り（BusinessError）にする。
 // - Issue を閉じた PR は、マージ済みのものだけを載せる。閉じただけでマージしていない PR は、Issue を片付けた記録にならない。
 // - タイトル先頭の段番号（`1. `・`1〜3. `）は外す。Issue の並び順を表す印で、何の作業かを表さない。
-// - 日付の読み方（`parseReportOptions` など）は `scripts/perf-report.mjs` の `parsePeriod` などと同じ形で持つ。同ファイルは末尾で `runCli()` を直接実行するので import できない。
-// - 日付は固定幅の文字列のまま大小を比べる（`--from` と `--to` の前後）。年を 4 桁に収まる範囲へ絞るのはそのためである。
+// - 期間は「今日を含む過去の日数」だけで受け取り、最終日は常に今日にする。報告はいつも「今日まで」に使うので、
+//   打つ人に日付を数えさせない。
+// - 日付の計算（`addDays` など）は `scripts/perf-report.mjs` と同じ形で持つ。同ファイルは末尾で `runCli()` を直接実行するので import できない。
+// - 日数が大きすぎて初日の年が 4 桁に収まらないときは失敗にする。`formatDate` が YYYY-MM-DD の形を返すのは 4 桁の年だけである。
 //
-// 使い方: npm run --silent progress-report -- [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--all]
-//   日付は日本時間で読む。--to の既定は今日、--from の既定は --to の6日前（--to の日を含めて7日）である
+// 使い方: npm run --silent progress-report -- [日数] [--all]
+//   日付は日本時間で読む。日数は今日を含む過去の日数で、省くと7（今日とその6日前まで）である
 
 import { parseArgs } from 'node:util'
 
@@ -220,33 +222,40 @@ function fetchClosedIssues({ repository, from, to, assignee }) {
 }
 
 /**
- * コマンドラインの引数から、期間と全員分を出すかを決める。
+ * コマンドラインの引数から、期間と全員分を出すかを決める。期間の最終日は常に今日である。
  *
- * @param {string[]} commandLineArguments `--from`・`--to`・`--all` を含む引数
- * @param {string} today 今日（YYYY-MM-DD）。期間を省いたときの既定値に使う
+ * @param {string[]} commandLineArguments 日数（省略可）と `--all` を含む引数
+ * @param {string} today 今日（YYYY-MM-DD）。期間の最終日にする
  * @returns {{ from: string, to: string, shouldReportAllAssignees: boolean }} 期間の初日と最終日と、全員の欄を出すか（`--all` を付けたら true）
- * @throws {BusinessError} 引数が読めないとき・日付が対応範囲の外か実在しないとき・初日が最終日より後のとき
+ * @throws {BusinessError} 引数が読めないとき・日数が2つ以上あるか1以上の整数でないとき・初日が対応する年の範囲の外になるとき
  */
 function parseReportOptions(commandLineArguments, today) {
-  const { values } = parseCommandLineOptions(commandLineArguments)
-  const to = values.to ?? today
-  assertSupportedDate(to)
-  const from = values.from ?? addDays(to, 1 - DEFAULT_PERIOD_DAYS)
-  assertSupportedDate(from)
-  if (from > to) throw new BusinessError(`--from が --to より後です: ${from} > ${to}`)
-  return { from, to, shouldReportAllAssignees: values.all ?? false }
+  const { values, positionals } = parseCommandLineOptions(commandLineArguments)
+  if (positionals.length > 1) {
+    throw new BusinessError(`日数は1つだけ渡してください: ${positionals.join(' ')}`)
+  }
+  const periodDays =
+    positionals.length === 0 ? DEFAULT_PERIOD_DAYS : parsePeriodDays(positionals[0])
+  const from = addDays(today, 1 - periodDays)
+  if (!isSupportedDate(from)) {
+    throw new BusinessError(
+      `日数が大きすぎます。初日が ${MIN_SUPPORTED_YEAR} 年より前になります: ${periodDays}`
+    )
+  }
+  return { from, to: today, shouldReportAllAssignees: values.all ?? false }
 }
 
 /**
  * @param {string[]} commandLineArguments コマンドラインの引数
- * @returns {{ values: { from?: string, to?: string, all?: boolean } }} 読み取った引数
- * @throws {BusinessError} 知らない引数があるとき・値が無いとき
+ * @returns {{ values: { all?: boolean }, positionals: string[] }} 読み取った引数と、位置引数（日数）
+ * @throws {BusinessError} 知らない引数があるとき
  */
 function parseCommandLineOptions(commandLineArguments) {
   try {
     return parseArgs({
       args: commandLineArguments,
-      options: { from: { type: 'string' }, to: { type: 'string' }, all: { type: 'boolean' } }
+      options: { all: { type: 'boolean' } },
+      allowPositionals: true
     })
   } catch (error) {
     throw new BusinessError(error.message, { cause: error })
@@ -254,15 +263,17 @@ function parseCommandLineOptions(commandLineArguments) {
 }
 
 /**
- * @param {string} date 検査する文字列
- * @returns {void}
- * @throws {BusinessError} YYYY-MM-DD の形でないとき・実在しないとき・対応する年の範囲の外のとき
+ * 桁数を絞るのは、極端に大きい数で `Date` の扱える範囲（約1億日）を超え、`addDays` が `RangeError` で落ちるのを防ぐためである。7桁なら範囲に収まる。
+ *
+ * @param {string} rawPeriodDays 引数に渡された日数の文字列
+ * @returns {number} 今日を含む期間の日数
+ * @throws {BusinessError} 1以上の整数（7桁まで）でないとき
  */
-function assertSupportedDate(date) {
-  if (isSupportedDate(date)) return
-  throw new BusinessError(
-    `日付は ${MIN_SUPPORTED_YEAR}〜${MAX_SUPPORTED_YEAR} 年の YYYY-MM-DD で渡してください: ${date}`
-  )
+function parsePeriodDays(rawPeriodDays) {
+  if (!/^[1-9]\d{0,6}$/.test(rawPeriodDays)) {
+    throw new BusinessError(`日数は1以上の整数（7桁まで）で渡してください: ${rawPeriodDays}`)
+  }
+  return Number(rawPeriodDays)
 }
 
 /**
