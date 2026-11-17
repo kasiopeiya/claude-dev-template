@@ -1,7 +1,7 @@
 ---
 name: progress-report
 description: 指定した期間に片付けた作業 Issue を人ごとに分け、人ごとの総括を添えた Markdown をターミナルに出す。既定は打った人の分だけで、--all で全員分を出す。チームの進捗報告をチャットへそのまま貼るときに使う。「progress-report」「進捗報告を作って」と指示されたとき。
-argument-hint: '[--from YYYY-MM-DD] [--to YYYY-MM-DD] [--all]（期間を省くと今日までの7日。--all を省くと自分の分だけ）'
+argument-hint: '[日数] [--all]（日数は今日を含む過去の日数で、省くと7。--all を省くと自分の分だけ）'
 disable-model-invocation: true
 ---
 
