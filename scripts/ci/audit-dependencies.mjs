@@ -49,6 +49,45 @@ const ALLOWED_VULNERABILITIES = [
     packageName: 'brace-expansion',
     advisoryUrl: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
     nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/brace-expansion'
+  },
+  // picomatch の ReDoS（single-branch repeated extglobs）は、範囲が <= 4.0.7 で、最新版の 4.0.7 も入る。
+  // 根拠: npm の latest が 4.0.7 で、advisory の first_patched_version も無い（2026-11-18 確認）。
+  // 失効条件: 4.0.7 より新しい修正版が出たら、上げて picomatch のエントリをすべて削除する。
+  {
+    directory: '.',
+    packageName: 'picomatch',
+    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+    nodePathPrefix: 'node_modules/picomatch'
+  },
+  {
+    directory: 'samples/app/backend',
+    packageName: 'picomatch',
+    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+    nodePathPrefix: 'node_modules/picomatch'
+  },
+  {
+    directory: 'samples/app/backend',
+    packageName: 'picomatch',
+    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+    nodePathPrefix: 'node_modules/tinyglobby/node_modules/picomatch'
+  },
+  {
+    directory: 'samples/app/backend',
+    packageName: 'picomatch',
+    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+    nodePathPrefix: 'node_modules/vite/node_modules/picomatch'
+  },
+  {
+    directory: 'samples/app/backend',
+    packageName: 'picomatch',
+    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+    nodePathPrefix: 'node_modules/vitest/node_modules/picomatch'
+  },
+  {
+    directory: 'samples/infra',
+    packageName: 'picomatch',
+    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
+    nodePathPrefix: 'node_modules/picomatch'
   }
 ]
 
@@ -168,11 +207,10 @@ function isObject(candidate) {
  * @returns {{ blocking: object[], matchedAllowlistKeys: Set<string> }} 落とすべき脆弱性と、効いた許容エントリ
  */
 function selectBlockingVulnerabilities(report, directory, allowlist) {
-  const threshold = SEVERITY_ORDER.indexOf(FAILING_SEVERITY)
   const context = { directory, allowlist, vulnerabilityByName: report.vulnerabilities }
 
   const matches = Object.values(report.vulnerabilities)
-    .filter((vulnerability) => SEVERITY_ORDER.indexOf(vulnerability.severity) >= threshold)
+    .filter((vulnerability) => isFailingSeverity(vulnerability))
     .map((vulnerability) => ({ vulnerability, ...matchAllowlist(vulnerability, context) }))
 
   return {
@@ -181,6 +219,16 @@ function selectBlockingVulnerabilities(report, directory, allowlist) {
       .map(({ vulnerability }) => vulnerability),
     matchedAllowlistKeys: new Set(matches.flatMap(({ entries }) => entries).map(buildAllowlistKey))
   }
+}
+
+/**
+ * 脆弱性が、CI を落とす重大度（FAILING_SEVERITY）以上かを返す。
+ *
+ * @param {object} vulnerability npm audit の1エントリ
+ * @returns {boolean} 落とす重大度以上なら true
+ */
+function isFailingSeverity(vulnerability) {
+  return SEVERITY_ORDER.indexOf(vulnerability.severity) >= SEVERITY_ORDER.indexOf(FAILING_SEVERITY)
 }
 
 /**
@@ -200,7 +248,8 @@ function findStaleEntries(matchedAllowlistKeys) {
  *
  * 開示情報を持つ脆弱性は、開示情報も混入経路もすべて許容済みのときだけ覆われる。1つでも未許容が混じれば覆われていない。
  * 開示情報を持たず、原因パッケージの名前だけを指す傍系（via が文字列だけ）は、指している原因がすべて覆われているときだけ覆われる。
- * 原因が1つでも未許容なら傍系も落ちる。傍系が通るのは、原因が根拠付きで許容リストに載っているときだけなので、原因は隠れない。
+ * 落とす重大度以上の原因が1つでも未許容なら傍系も落ちる。傍系が通るのは、そうした原因が根拠付きで許容リストに載っているときだけなので、原因は隠れない。
+ * 落とす重大度未満の原因（moderate の minimatch など）は覆われているとみなす。単独でも落とさない原因で、傍系だけを落とさないため。
  *
  * 覆われていなくても、効いた許容エントリは返す。許容した経路が残ったまま別の経路が増えたとき、
  * 許容エントリは失効しておらず、増えた経路だけが落とす理由だと報告するため。
@@ -222,9 +271,9 @@ function matchAllowlist(vulnerability, context, pathNames = new Set()) {
   const causePathNames = new Set([...pathNames, vulnerability.name])
   const causeMatches = causeNames.map((causeName) => {
     const cause = context.vulnerabilityByName[causeName]
-    return cause
-      ? matchAllowlist(cause, context, causePathNames)
-      : { entries: [], isCovered: false }
+    if (!cause) return { entries: [], isCovered: false }
+    if (!isFailingSeverity(cause)) return { entries: [], isCovered: true }
+    return matchAllowlist(cause, context, causePathNames)
   })
   return {
     entries: causeMatches.flatMap(({ entries }) => entries),
