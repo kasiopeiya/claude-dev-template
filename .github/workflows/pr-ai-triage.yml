@@ -197,6 +197,29 @@ jobs:
             gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
           gh pr edit "$PR" --add-label docs,needs-human-review
 
+      # docs/adr/ に ADR（NNN-slug.md）を新しく足した PR も人間レビューへ寄せる。経緯を AI の作文で埋めさせないため。
+      # 既存 ADR の修正・生成物の adr-index.md・samples/ の ADR には当てない。追加かどうかは PR のファイル一覧の status で見る。
+      # 対象の正は docs/policy/pr-review-policy.md の「docs/adr/ に ADR を新しく足す docs」行で、ここはその写し。
+      - name: Label new ADRs for human review
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ steps.pr.outputs.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          added=$(gh api "repos/$REPO/pulls/$PR/files" --paginate --jq '.[] | select(.status == "added") | .filename')
+          if ! grep -qE '^docs/adr/[0-9]{3}-[^/]+\.md$' <<< "$added"; then
+            echo "no new ADR added; skipping"
+            exit 0
+          fi
+          # ラベルが未作成のリポジトリでも動くよう、無ければ作る（既存なら何もしない）。
+          existing=$(gh label list --limit 200 --json name --jq '.[].name')
+          grep -qx 'docs' <<< "$existing" ||
+            gh label create docs --description "ドキュメント変更" --color 0E8A16
+          grep -qx 'needs-human-review' <<< "$existing" ||
+            gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
+          gh pr edit "$PR" --add-label docs,needs-human-review
+
       # 公式 Action＋サブスク OAuth 認証。モデルは pr-label の判断に十分な Sonnet
       - name: Run AI advisory (pr-label)
         id: advisory
