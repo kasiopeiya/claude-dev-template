@@ -1214,8 +1214,6 @@ stateDiagram-v2
 
 ## 非機能要件
 
-**IPA「非機能要求グレード」をたたき台に**、[非機能要件の項目カタログ](../../docs/reference/non-functional-requirement-items.md)の各分類を検討した。
-
 ### A. 可用性
 
 | 項目                | 要求                                                                                          |
