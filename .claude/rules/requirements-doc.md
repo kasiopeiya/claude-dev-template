@@ -1,7 +1,9 @@
 ---
 paths:
   - 'docs/requirements.md'
+  - 'docs/requirements-detail.md'
   - 'samples/docs/requirements.md'
+  - 'samples/docs/requirements-detail.md'
   - 'docs/project-context/requirements-triage.md'
   - 'samples/docs/requirements-triage.md'
   - 'docs/requirements-appendix/**/*.md'

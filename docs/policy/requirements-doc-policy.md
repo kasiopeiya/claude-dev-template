@@ -1,7 +1,13 @@
 ---
 hook:
   applies-to:
-    ['docs/requirements.md', 'samples/docs/requirements.md', 'docs/requirements-appendix/**/*.md']
+    [
+      'docs/requirements.md',
+      'docs/requirements-detail.md',
+      'samples/docs/requirements.md',
+      'samples/docs/requirements-detail.md',
+      'docs/requirements-appendix/**/*.md'
+    ]
 ---
 
 # 要件定義書ポリシー
