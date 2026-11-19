@@ -49,45 +49,6 @@ const ALLOWED_VULNERABILITIES = [
     packageName: 'brace-expansion',
     advisoryUrl: 'https://github.com/advisories/GHSA-6j4f-fj2g-mc7p',
     nodePathPrefix: 'node_modules/aws-cdk-lib/node_modules/brace-expansion'
-  },
-  // picomatch の ReDoS（single-branch repeated extglobs）は、範囲が <= 4.0.7 で、最新版の 4.0.7 も入る。
-  // 根拠: npm の latest が 4.0.7 で、advisory の first_patched_version も無い（2026-11-18 確認）。
-  // 失効条件: 4.0.7 より新しい修正版が出たら、上げて picomatch のエントリをすべて削除する。
-  {
-    directory: '.',
-    packageName: 'picomatch',
-    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
-    nodePathPrefix: 'node_modules/picomatch'
-  },
-  {
-    directory: 'samples/app/backend',
-    packageName: 'picomatch',
-    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
-    nodePathPrefix: 'node_modules/picomatch'
-  },
-  {
-    directory: 'samples/app/backend',
-    packageName: 'picomatch',
-    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
-    nodePathPrefix: 'node_modules/tinyglobby/node_modules/picomatch'
-  },
-  {
-    directory: 'samples/app/backend',
-    packageName: 'picomatch',
-    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
-    nodePathPrefix: 'node_modules/vite/node_modules/picomatch'
-  },
-  {
-    directory: 'samples/app/backend',
-    packageName: 'picomatch',
-    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
-    nodePathPrefix: 'node_modules/vitest/node_modules/picomatch'
-  },
-  {
-    directory: 'samples/infra',
-    packageName: 'picomatch',
-    advisoryUrl: 'https://github.com/advisories/GHSA-fc5q-39xc-vjpf',
-    nodePathPrefix: 'node_modules/picomatch'
   }
 ]
 

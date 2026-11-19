@@ -176,16 +176,16 @@ jobs:
             gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
           gh pr edit "$PR" --add-label cicd,needs-human-review
 
-      # 要件定義書の本体（docs/requirements.md）に触れた PR も同じく人間レビューへ寄せる。理由は上の policy と同じ。
+      # 要件定義書（docs/requirements.md・docs/requirements-detail.md）に触れた PR も同じく人間レビューへ寄せる。理由は上の policy と同じ。
       # 別紙（docs/requirements-appendix/）や samples/ の要件定義書には当てない。
-      # 対象パスの正は docs/policy/pr-review-policy.md の「docs/requirements.md を変える docs」行で、ここはその写し。
+      # 対象パスの正は docs/policy/pr-review-policy.md の「docs/requirements.md・docs/requirements-detail.md を変える docs」行で、ここはその写し。
       - name: Label requirements changes for human review
         if: steps.pr.outputs.number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ steps.pr.outputs.number }}
         run: |
-          if ! gh pr diff "$PR" --name-only | grep -qxF 'docs/requirements.md'; then
+          if ! gh pr diff "$PR" --name-only | grep -qxF -e 'docs/requirements.md' -e 'docs/requirements-detail.md'; then
             echo "no requirements path touched; skipping"
             exit 0
           fi

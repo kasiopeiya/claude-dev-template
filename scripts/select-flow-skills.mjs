@@ -153,7 +153,9 @@ function isWorkflow(normalizedPath) {
 function isRequirementsDoc(normalizedPath) {
   if (
     normalizedPath === 'docs/requirements.md' ||
-    normalizedPath === 'samples/docs/requirements.md'
+    normalizedPath === 'docs/requirements-detail.md' ||
+    normalizedPath === 'samples/docs/requirements.md' ||
+    normalizedPath === 'samples/docs/requirements-detail.md'
   )
     return true
   return normalizedPath.startsWith('docs/requirements-appendix/') && normalizedPath.endsWith('.md')
