@@ -24,6 +24,7 @@ readonly EXCLUDE_PATHS=(
   'README.md'
   '.gitignore'
   'docs/requirements.md'
+  'docs/requirements-detail.md'
   'docs/design/'
   'docs/design-hub.md'
   'docs/adr/'
