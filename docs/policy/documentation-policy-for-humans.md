@@ -8,6 +8,7 @@ hook:
       'docs/runbook/**/*.md',
       'docs/design-hub.md',
       'docs/requirements.md',
+      'docs/requirements-detail.md',
       'docs/requirements-appendix/**/*.md',
       'README.md',
       'samples/docs/**/*.md',
