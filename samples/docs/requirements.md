@@ -1,6 +1,6 @@
 # 要件定義書：会員ポイント管理システム <!-- omit from toc -->
 
-顧客がこのシステムに何が求められているかを確認して合意するとき、関係者が全体像を掴みたいときに参照する。重点的に読むのはこのファイルで、設計・実装向けの詳細は `requirements-detail.md` にある。
+顧客がこのシステムに何が求められているかを確認して合意するとき、関係者が全体像を掴みたいときに参照する。重点的に読むのはこのファイルで、設計・実装向けの仕様の詳細は `requirements-detail.md` にある。
 
 ## 目次 <!-- omit from toc -->
 
@@ -100,44 +100,9 @@
 
 ## エコシステムマップ
 
-```mermaid
-flowchart TB
-    member[👤 会員]
-    staff[👤 店舗スタッフ]
-    ops[👤 運用担当]
-    ec[🌐 ECサイト]
-    pos[🏬 POSシステム]
-    mail[📨 メール配信サービス]
-    idp[🔑 社内 IdP]
-    cs[👤 CS 部門]
+![エコシステムマップ](requirements-img/ecosystem-map.drawio.svg)
 
-    system[📦 会員ポイント管理システム]
-
-    ec -->|購入確定イベント・ポイント利用要求・会員の本人確認の結果| system
-    system -->|付与/利用結果・残高| ec
-    pos -->|購入確定イベント・ポイント利用要求| system
-    system -->|付与/利用結果・残高| pos
-    member -->|残高・履歴の照会要求| system
-    system -->|残高・履歴・失効予定の回答| member
-    staff -->|残高照会要求・手動調整申請| system
-    system -->|残高・履歴・失効予定の回答| staff
-    cs -->|残高照会要求| system
-    system -->|残高・履歴・失効予定の回答| cs
-    idp -->|運用担当・店舗スタッフ・CS 部門の認証結果| system
-    ops -->|手動調整申請・手動調整承認・失効処理の結果確認| system
-    system -->|手動調整の監査証跡・失効処理の実行結果・承認待ちの手動調整申請・手動調整の結果| ops
-    system -->|手動調整の結果| staff
-    system -->|失効予告の配信依頼| mail
-    mail -->|失効予告メール| member
-    mail -->|失効予告メールの配信結果| system
-
-    classDef internal fill:#90EE90,stroke:#333,stroke-width:3px,color:darkgreen
-    classDef external fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
-    class system internal
-    class member,staff,ops,ec,pos,mail,idp,cs external
-```
-
-**凡例：** 🟩 緑＝開発範囲（内） ／ 🟦 青＝外部アクター・外部システム（外）。矢印は授受の向き（誰から誰へ渡るか）を表す。線種は1種類に統一（種別の区別はしない）。
+**凡例：** 黒塗りの角丸の箱＝開発範囲（内） ／ 白い箱と人型＝外部アクター・外部システム（外）。矢印は授受の向き（誰から誰へ渡るか）を表す。線種は1種類に統一（種別の区別はしない）。
 
 ## 解決する課題
 

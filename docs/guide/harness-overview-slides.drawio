@@ -1,6 +1,6 @@
 <mxfile host="Electron" pages="45">
   <diagram name="slice1" id="Xg8CzgBqZuD8Hr5OrZfq">
-    <mxGraphModel dx="1851" dy="1165" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1937" dy="1164" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="KDqN3TAUptfpRNgF6Euw-0" />
         <mxCell id="KDqN3TAUptfpRNgF6Euw-1" parent="KDqN3TAUptfpRNgF6Euw-0" />
@@ -17,7 +17,7 @@
     </mxGraphModel>
   </diagram>
   <diagram name="AIDD" id="VuWgp9L6Yji_PRQnP5GD">
-    <mxGraphModel dx="1607" dy="1205" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
+    <mxGraphModel dx="1992" dy="1197" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" background="light-dark(#F5F5F5,#121212)" math="0" shadow="0">
       <root>
         <mxCell id="FyGJfU2ifQTK040_GAB6-0" />
         <mxCell id="FyGJfU2ifQTK040_GAB6-1" parent="FyGJfU2ifQTK040_GAB6-0" />
@@ -69,7 +69,7 @@
         <mxCell id="FyGJfU2ifQTK040_GAB6-22" parent="FyGJfU2ifQTK040_GAB6-1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;labelBackgroundColor=none;fontColor=light-dark(#000000,#000000);fontSize=36;" value="&lt;b&gt;AI駆動開発&lt;br&gt;（AIDD）&lt;/b&gt;" vertex="1">
           <mxGeometry height="30" width="352" x="878" y="619.5" as="geometry" />
         </mxCell>
-        <mxCell id="FyGJfU2ifQTK040_GAB6-23" parent="FyGJfU2ifQTK040_GAB6-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="AIが工程全体にわたり主体となる開発手法" vertex="1">
+        <mxCell id="FyGJfU2ifQTK040_GAB6-23" parent="FyGJfU2ifQTK040_GAB6-1" style="text;whiteSpace=wrap;html=1;fontSize=40;fillColor=#D4D2CD;" value="AIがドライバーで、人間は助手席" vertex="1">
           <mxGeometry height="64" width="1383" x="37" y="124" as="geometry" />
         </mxCell>
         <mxCell id="FyGJfU2ifQTK040_GAB6-24" connectable="0" parent="FyGJfU2ifQTK040_GAB6-1" style="group" value="" vertex="1">
