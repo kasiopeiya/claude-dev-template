@@ -1,7 +1,7 @@
 # 仕分け台帳：会員ポイント管理システム
 
 > [!NOTE]
-> 本書は `docs/project-context/requirements-triage.md`（仕分け台帳）の**記述サンプル**である。台帳を書く・レビューする AI が、1行の粒度と `行き先` の書き方を掴むために読む。題材は [要件定義書のサンプル](requirements.md)と同じで、その「背景・入力元」に挙げた入力資料の記述を仕分けている。列と `仕分け` の値の正典は Rule [requirements-doc.md](../../.claude/rules/requirements-doc.md) であり、本書はそれを再掲しない。
+> 本書は `docs/project-context/requirements-triage.md`（仕分け台帳）の**記述サンプル**である。台帳を書く・レビューする AI が、1行の粒度と `行き先` の書き方を掴むために読む。題材は要件定義書のサンプル（[requirements.md](requirements.md) と [requirements-detail.md](requirements-detail.md)）と同じで、`requirements.md` の「背景・入力元」に挙げた入力資料の記述を仕分けている。列と `仕分け` の値の正典は Rule [requirements-doc.md](../../.claude/rules/requirements-doc.md) であり、本書はそれを再掲しない。
 > 要件定義書のサンプルは凍結済みなので、`未決` の行は無い。
 > このサンプル固有の判断は次のとおり。
 >
