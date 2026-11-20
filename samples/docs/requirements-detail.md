@@ -262,8 +262,8 @@ flowchart LR
 
 宛先のメールアドレスは、メール配信サービスが会員番号から引く。本システムは持たない。
 
-- **取扱量**：初回の配信依頼は最大30万件/月。再送は、配信に失敗した分を失効日の前日まで1日1回足す
-- **頻度**：初回は1回/月。再送は配信の失敗の都度
+- **取扱量**：失効予告で最大30万件/月
+- **頻度**：1回/月
 - **利用目的**：失効前の利用促進
 
 </details>
@@ -354,9 +354,9 @@ flowchart LR
 | 会員番号                 | 必須       | AC-01            |
 | 失効予告メールの配信成否 | 必須       | AC-27            |
 
-- **取扱量**：初回の配信依頼に対して最大30万件/月。再送のたびに、その件数を足す
-- **頻度**：失効予告の配信依頼（IO-05）の都度。再送のときも届く
-- **利用目的**：未達の検知と再送の判断
+- **取扱量**：失効予告の配信依頼（IO-05）1件につき1件
+- **頻度**：失効予告の配信依頼（IO-05）の都度
+- **利用目的**：失効予告が会員へ届いたかの判定（BR-08）
 
 </details>
 
@@ -447,14 +447,14 @@ flowchart LR
 | F-03   | スケジューラ（失効）／運用担当（結果確認）                   | 日次起動（完了締切は B. 性能・拡張性／処理量・締切の目標）／結果確認の受信 | IO-09, IO-17 | IO-18               |
 | F-04   | 会員／店舗スタッフ／CS 部門                                  | 照会要求受信                                                               | IO-07        | IO-04               |
 | F-05   | 店舗スタッフ／運用担当（申請）、運用担当（承認）             | 手動調整申請の受信／手動調整承認の受信                                     | IO-06, IO-16 | IO-14, IO-19, IO-20 |
-| F-06   | スケジューラ／メール配信サービス（失効予告メールの配信結果） | 月次起動／再送（1日1回）／失効予告メールの配信結果の受信                   | IO-10, IO-15 | IO-05               |
+| F-06   | スケジューラ／メール配信サービス（失効予告メールの配信結果） | 月次起動／失効予告メールの配信結果の受信                                   | IO-10, IO-15 | IO-05               |
 
 <details>
 <summary>F-01 ポイント付与</summary>
 
 - **適用ルール**：BR-01, BR-02, BR-03, BR-07, BR-09, BR-12, AC-01, AC-02, AC-03, AC-05, AC-23, AC-24, AC-25, AC-26, AC-37, BR-10, AC-18, AC-40
 - **事後条件**：付与ポイントが1以上なら、ロットが1件発行され残高が増え、種別 `付与` の履歴（AC-18）が1件残る。0なら、ロットを発行せず付与履歴も残さない（BR-12）
-- **主要な例外**：会員番号が AC-01 不適合→受付拒否・エラー返却／重複イベント→付与せず受領済みを返す（BR-07）
+- **主要な例外**：会員番号が AC-01 不適合→受付拒否・エラー返却／重複イベント→付与せず受領済みを返す（BR-07）。両方に当たるときは、受付拒否を優先する
 
 </details>
 
@@ -463,7 +463,7 @@ flowchart LR
 
 - **適用ルール**：BR-04, BR-05, BR-15, AC-01, AC-22, AC-29, AC-37, BR-10, AC-18
 - **事後条件**：残高が減り、利用履歴が残る
-- **主要な例外**：残高不足（BR-05）→利用拒否／同一の利用要求（BR-15）→引き当てせず受領済みを返す
+- **主要な例外**：残高不足（BR-05）→利用拒否／同一の利用要求（BR-15）→引き当てせず受領済みを返す。両方に当たるときは、同一の利用要求の扱いを優先する
 
 </details>
 
@@ -471,8 +471,8 @@ flowchart LR
 <summary>F-03 失効処理</summary>
 
 - **適用ルール**：BR-03, BR-10, BR-12, BR-17, AC-01, AC-07, AC-18, AC-20, AC-21, AC-31, AC-32, AC-33
-- **事後条件**：対象ロットの残高が0になり、失効履歴が残り、実行結果（IO-18）が運用担当に届く。運用担当から結果確認（IO-17）を受けると、失効処理結果の確認者・失効処理結果の確認日時・確認した失効処理の実行日を記録する
-- **主要な例外**：一部ロットの処理失敗→失敗したロットを記録して残りを続ける
+- **事後条件**：対象ロットの残高が0になり、失効履歴が残り、実行結果（IO-18）が運用担当に届く（対象のロットが無い日も、件数0で届く）。運用担当から結果確認（IO-17）を受けると、失効処理結果の確認者・失効処理結果の確認日時・確認した失効処理の実行日を記録する
+- **主要な例外**：一部のロットを失効できなかった→ほかのロットは失効済みになり、失効できなかったロットの数が実行結果（IO-18）に残る
 
 </details>
 
@@ -498,8 +498,8 @@ flowchart LR
 <summary>F-06 失効予告通知</summary>
 
 - **適用ルール**：BR-08, BR-13, BR-14, AC-01, AC-08, AC-09, AC-27
-- **事後条件**：対象会員への予告が配信依頼される
-- **主要な例外**：配信失敗→失効日の前日まで1日1回再送し、なお届かなければ未達を記録して終える
+- **事後条件**：BR-14 の範囲にロットを持つ会員ごとに失効予告が1件でき（BR-13）、BR-08 の期限までに配信依頼（IO-05）が出ている
+- **主要な例外**：BR-08 の期限までに会員へ届かなかった（IO-15）→未達として記録する
 
 </details>
 
@@ -562,159 +562,77 @@ flowchart LR
 ### 機能ごとのアクティビティ図
 
 <details>
-<summary>F-01（ポイント付与）— 受付判定と付与</summary>
-
-会員番号の適合判定と重複イベント判定という独立した2つの分岐があるため、アクティビティ図を併記する。
+<summary>F-01（ポイント付与）— 受付の判定と付与の結果</summary>
 
 ```mermaid
 flowchart TD
-    start([購入確定イベント受信 IO-01]) --> valid{会員番号は AC-01 に適合?}
-    valid -->|不適合| reject([受付拒否・エラー返却 IO-03])
-    valid -->|適合| dup{同一イベントを受信済み? BR-07}
-    dup -->|受信済み| ack([付与せず受領済みを返す IO-03])
-    dup -->|初回| target[⚙️ 付与対象金額を算出 BR-02]
-    target --> calc[⚙️ 付与ポイントを計算 BR-01]
-    calc --> zero{付与ポイントは1以上? BR-12}
-    zero -->|0| none([ロットを発行せず付与ポイント0を返却 IO-03])
-    zero -->|1以上| lot[💾 ロットを発行・有効期限と付与種別を設定 BR-03 BR-09]
-    lot --> hist[💾 種別 付与の履歴を記録 BR-10]
-    hist --> resp([付与結果・新残高を返却 IO-03])
+    start(["購入確定イベントを受信 IO-01"]) --> valid{"会員番号が AC-01 に適合?"}
+    valid -->|不適合| reject(["受付拒否 IO-03"])
+    valid -->|適合| dup{"同じ購入確定IDを受信済み? BR-07"}
+    dup -->|受信済み| ack(["付与せず受領済み IO-03"])
+    dup -->|初回| zero{"付与ポイントが1以上? BR-01 BR-02 BR-12"}
+    zero -->|0| none(["ロットを発行せず付与ポイント0 IO-03"])
+    zero -->|1以上| granted(["ロットと付与履歴ができ、付与結果と残高を返す IO-03 BR-03 BR-09 BR-10"])
 
-    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef result fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
     classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
-    class target,calc,lot,hist step
     class valid,dup,zero decision
+    class ack,none,granted result
     class reject error
 ```
 
-**凡例：** 🟩 緑＝処理 ／ 🟨 金＝分岐 ／ 🟥 桃＝例外時の処理。ノードに添えた ID は、従うルールと入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
 
 </details>
 
 <details>
-<summary>F-02（ポイント利用）— 先入れ先出しの引き当て</summary>
-
-複数ロットを期限順に消費するループと残高不足の分岐があるため、アクティビティ図を併記する。
+<summary>F-02（ポイント利用）— 受付の判定と引き当ての結果</summary>
 
 ```mermaid
 flowchart TD
-    start([利用要求受信 IO-02]) --> dup{同一の利用要求を受信済み? BR-15}
-    dup -->|受信済み| ack([引き当てせず受領済みを返す IO-03])
-    dup -->|初回| sum[⚙️ 利用可能残高を集計]
-    sum --> enough{残高 ≥ 利用希望?}
-    enough -->|不足| reject([利用拒否 BR-05])
-    enough -->|充足| pick[⚙️ 期限が最も近い有効ロットを選択 BR-04]
-    pick --> apply[⚙️ ロットから引き当て]
-    apply --> done{利用希望を満たした?}
-    done -->|未達| pick
-    done -->|達成| record[💾 利用履歴を記録]
-    record --> resp([結果・新残高を返却 IO-03])
+    start(["利用要求を受信 IO-02"]) --> dup{"同じ利用要求IDを受信済み? BR-15"}
+    dup -->|受信済み| ack(["引き当てせず受領済み IO-03"])
+    dup -->|初回| enough{"利用可能残高が利用希望ポイント数以上? BR-05"}
+    enough -->|不足| reject(["利用拒否 IO-03"])
+    enough -->|足りる| used(["期限の近いロットから引き当てられ、利用履歴ができ、利用結果と残高を返す IO-03 BR-04 BR-10"])
 
-    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef result fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
     classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
-    class sum,pick,apply,record step
-    class dup,enough,done decision
+    class dup,enough decision
+    class ack,used result
     class reject error
 ```
 
-**凡例：** 🟩 緑＝処理 ／ 🟨 金＝分岐 ／ 🟥 桃＝例外時の処理。ノードに添えた ID は、従うルールと入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
 
 </details>
 
 <details>
-<summary>F-03（失効処理）— 抽出・失効・集計</summary>
-
-分岐・ループを含むため、アクティビティ図を併記する。
+<summary>F-05（手動ポイント調整）— 承認の判定と付与／減算の結果</summary>
 
 ```mermaid
 flowchart TD
-    start([🚀 スケジューラ起動（日次）]) --> load[⚙️ 有効期限切れロットを抽出 BR-03]
-    load --> check{対象ロットあり?}
-    check -->|なし| done([✅ 件数0の実行結果を出す IO-18])
-    check -->|あり| pick[⚙️ 次のロットを取り出す]
-    pick --> expire[💾 ロット残高を失効し失効履歴を記録]
-    expire --> ok{失効できた?}
-    ok -->|失敗| alert[🚨 失敗したロットを記録]
-    ok -->|成功| more{残りのロットあり?}
-    alert --> more
-    more -->|あり| pick
-    more -->|なし| done2([✅ 実行結果を出す IO-18])
-
-    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
-    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
-    classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
-    class load,pick,expire step
-    class check,ok,more decision
-    class alert error
-```
-
-**凡例：** 🟩 緑＝処理 ／ 🟨 金＝分岐 ／ 🟥 桃＝例外時の処理。ノードに添えた ID は、従うルールと入出力情報を指す。
-
-</details>
-
-<details>
-<summary>F-05（手動ポイント調整）— 承認と付与／減算</summary>
-
-承認の有無・申請者と承認者が同じか・調整ポイントの符号の分岐と、ロットごとに減算するループがあるため、アクティビティ図を併記する。
-
-```mermaid
-flowchart TD
-    start([手動調整申請を受付 IO-06]) --> id[💾 手動調整の申請IDを採番 AC-30]
-    id --> notify[📨 承認待ちの申請を運用担当へ IO-19]
-    notify --> wait{手動調整承認を受けた? IO-16 BR-16}
-    wait -->|まだ| hold([調整に反映せず保留])
-    wait -->|受けた| same{申請者と承認者が同じ? AC-38}
+    start(["手動調整申請を受信 IO-06"]) --> approval{"手動調整承認を受けた? IO-16 BR-16"}
+    approval -->|受けていない| hold(["調整に反映せず、申請は承認前のまま"])
+    approval -->|受けた| same{"申請者と承認者が同じ? AC-38"}
     same -->|同じ| hold
-    same -->|別| sign{調整ポイントの符号は? AC-10}
-    sign -->|プラス| lot[💾 付与種別 手動調整付与のロットを発行 BR-12]
-    sign -->|マイナス| neg{減算後の残高がマイナス? BR-11}
-    neg -->|なる| reject([手動調整の結果の区分を不受理で返す IO-20])
-    neg -->|ならない| pick[⚙️ 期限が最も近いロットから減算 BR-11]
-    pick --> left{減算し終えた?}
-    left -->|未達| pick
-    left -->|達成| hist[💾 調整減算の履歴を記録]
-    lot --> histp[💾 種別 付与の履歴を記録 BR-10]
-    histp --> trail[💾 手動調整の監査証跡を記録 IO-14]
-    hist --> trail
-    trail --> resp([手動調整の結果の区分を反映で返す IO-20])
+    same -->|別| sign{"調整ポイントの符号は? AC-10"}
+    sign -->|プラス| plus(["手動調整付与のロットと付与履歴・証跡ができ、結果は反映 IO-14 IO-20 BR-10 BR-12"])
+    sign -->|マイナス| neg{"減算後の残高がマイナスになる? BR-11"}
+    neg -->|なる| reject(["結果は不受理 IO-20"])
+    neg -->|ならない| minus(["期限の近いロットから減算され、調整減算の履歴・証跡ができ、結果は反映 IO-14 IO-20 BR-11"])
 
-    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
+    classDef result fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
     classDef error fill:#FFB6C1,stroke:#DC143C,stroke-width:2px,color:black
-    class id,notify,lot,histp,pick,hist,trail step
-    class wait,same,sign,neg,left decision
+    class approval,same,sign,neg decision
+    class plus,minus result
     class hold,reject error
 ```
 
-**凡例：** 🟩 緑＝処理 ／ 🟨 金＝分岐 ／ 🟥 桃＝例外時の処理。ノードに添えた ID は、従うルールと入出力情報を指す。
-
-</details>
-
-<details>
-<summary>F-06（失効予告通知）— 配信と再送</summary>
-
-配信失敗時に失効日まで再送を繰り返すループがあるため、アクティビティ図を併記する。
-
-```mermaid
-flowchart TD
-    start([🚀 スケジューラ起動（月次）]) --> load[⚙️ 翌月末までに期限が到来するロットを持つ会員を抽出 BR-08]
-    load --> send[📨 メール配信サービスへ配信を依頼 IO-05]
-    send --> result{配信に成功した? IO-15}
-    result -->|成功| done([✅ 正常終了・失効予告メールの配信結果を記録])
-    result -->|失敗| grace{失効日の前日までに再送できる?}
-    grace -->|ある| wait[⚙️ 翌日まで待つ]
-    wait --> send
-    grace -->|ない| done2([✅ 終了・未達を記録])
-
-    classDef step fill:#90EE90,stroke:#333,stroke-width:2px,color:darkgreen
-    classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
-    class load,send,wait step
-    class result,grace decision
-```
-
-**凡例：** 🟩 緑＝処理 ／ 🟨 金＝分岐。ノードに添えた ID は、従うルールと入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝調整に反映した結果 ／ 🟥 桃＝調整に反映しない結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
 
 </details>
 
