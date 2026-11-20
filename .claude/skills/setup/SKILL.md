@@ -266,7 +266,7 @@ find docs/adr -maxdepth 1 -name '[0-9][0-9][0-9]-*.md' -print -delete && npm run
 次を人間に伝える。
 
 - 新規に立ち上げるなら、[新規開発ガイド](../../../docs/guide/new-development-guide.md) に従い、要件定義から始める
-- 要件定義書（`docs/requirements.md`）と設計書（`docs/design/`）は、空から書く
+- 要件定義書（`docs/requirements.md` と `docs/requirements-detail.md`）と設計書（`docs/design/`）は、空から書く
 - 実装は `app/`・`infra/` に書く。どちらも空なので、`samples/` の参照実装を手本にして写す（`samples/` 自体は書き換えない）
 
 あわせて、手順ごとの結果（済ませた／済んでいたので飛ばした／Issue にした番号）を報告する。PR を作ったなら、その URL も添える。

@@ -2,7 +2,7 @@
 
 ## 対象読者
 
-新しいシステム・モジュールを 0 から立ち上げる人 / AIエージェントが、最初の `requirements.md` から起点Issue までを**どの順で・どのスキルで**作るか知りたいとき。
+新しいシステム・モジュールを 0 から立ち上げる人 / AIエージェントが、最初の要件定義書（`requirements.md`・`requirements-detail.md`）から起点Issue までを**どの順で・どのスキルで**作るか知りたいとき。
 
 ## 目的
 
@@ -23,10 +23,10 @@
 stateDiagram-v2
     state "📄 インプット資料（RFC等）" as Input
     state "🗂️ 記載段階ごとの Issue" as Staged
-    state "📝 requirements.md 執筆中（記載段階1〜7）" as Writing
+    state "📝 要件定義書 執筆中（記載段階1〜7）" as Writing
     state "🔍 凍結判定（記載段階8・AI）" as Judge
     state "👥 顧客レビュー" as Review
-    state "🔒 真の凍結済 requirements.md" as Frozen
+    state "🔒 真の凍結済 要件定義書" as Frozen
     state "⚙️ 技術スタックADR" as Adr
     state "🚩 起点Issue群" as Issues
 
@@ -44,14 +44,14 @@ stateDiagram-v2
     Issues --> [*] : 各Issue単位の開発フローへ
 ```
 
-| #   | ステップ                  | input                              | output                                                                      | プロンプト例                                                     |
-| --- | ------------------------- | ---------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| 1   | 記載段階 Issue を起票する | 顧客からのインプット資料（RFC等）  | 記載段階ごとの Issue（ルート「要件定義」の下）。記載段階1が始まる           | `/elicit-requirements <入力資料>`（パスか要求テキスト）          |
-| 2   | 記載段階ごとに書く        | 記載段階 Issue（記載段階1〜7）     | `requirements.md` の該当節と仕分け台帳（仮決めがあれば別紙）。段階ごとに PR | `/elicit-requirements <Issue番号>`（その段階の Issue）           |
-| 3   | 凍結判定を通す            | 記載段階8の Issue                  | 合否判定が凍結可の `requirements.md`                                        | `/elicit-requirements <Issue番号>`（記載段階8の Issue）          |
-| 4   | 顧客レビューで真の凍結    | 凍結可の `requirements.md`         | 真の凍結済 `requirements.md`                                                | 人間の作業（顧客に文書全体をレビューしてもらい、合意を取る）     |
-| 5   | 基盤技術を決める          | 真の凍結済 `requirements.md`       | 初期技術スタックADR（`docs/adr/NNN-*.md`）                                  | `/decide-tech-stack docs/requirements.md`                        |
-| 6   | 起点Issue を作る          | `requirements.md`＋技術スタックADR | 起点Issue群（GitHub・依存順つき）                                           | `新規開発ガイドの「起票する起点Issue」に従って起点Issueを作って` |
+| #   | ステップ                  | input                             | output                                                              | プロンプト例                                                     |
+| --- | ------------------------- | --------------------------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| 1   | 記載段階 Issue を起票する | 顧客からのインプット資料（RFC等） | 記載段階ごとの Issue（ルート「要件定義」の下）。記載段階1が始まる   | `/elicit-requirements <入力資料>`（パスか要求テキスト）          |
+| 2   | 記載段階ごとに書く        | 記載段階 Issue（記載段階1〜7）    | 要件定義書の該当節と仕分け台帳（仮決めがあれば別紙）。段階ごとに PR | `/elicit-requirements <Issue番号>`（その段階の Issue）           |
+| 3   | 凍結判定を通す            | 記載段階8の Issue                 | 合否判定が凍結可の要件定義書                                        | `/elicit-requirements <Issue番号>`（記載段階8の Issue）          |
+| 4   | 顧客レビューで真の凍結    | 凍結可の要件定義書                | 真の凍結済の要件定義書                                              | 人間の作業（顧客に文書全体をレビューしてもらい、合意を取る）     |
+| 5   | 基盤技術を決める          | 真の凍結済の要件定義書            | 初期技術スタックADR（`docs/adr/NNN-*.md`）                          | `/decide-tech-stack docs/requirements.md`                        |
+| 6   | 起点Issue を作る          | 要件定義書＋技術スタックADR       | 起点Issue群（GitHub・依存順つき）                                   | `新規開発ガイドの「起票する起点Issue」に従って起点Issueを作って` |
 
 - **ステップ2は記載段階ごとに繰り返す**：1段階は、その段階の項目だけのインタビュー、`/requirements-review --stage` による判定、PR 作成までを同じセッションで進める。PR は自動マージされないので、開発者がレビューしてマージする。マージで Issue が閉じたら、次の段階の Issue 番号で打ち直す。
 - **ステップ4は人間の作業**：顧客の指摘は Issue にして PR で直し、凍結可を取り直してから顧客レビューへ戻す。顧客が合意したら、記載段階8の Issue に合意の相手と日付をコメントする。これが真の凍結の記録である。

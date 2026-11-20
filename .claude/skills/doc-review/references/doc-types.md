@@ -29,7 +29,7 @@
 
 **3. ファイル名（`docs/` サブディレクトリ外のフォールバック）**：README・CLAUDE・`docs/` 外の Markdown など、1・2で確定しないものにだけ当てる。
 
-- `requirements.md`：PRD
+- `requirements.md`, `requirements-detail.md`：PRD
 - `*-design.md`：DESIGN
 - `*architecture*`, `infrastructure*`：ARCHITECTURE
 - `implementation-plan.md`：PLAN

@@ -62,7 +62,7 @@ PRR で審査する領域と、各領域の pass / warn / fail / N-A の判定�
 ### ⑤ セキュリティ
 
 - **基準の出どころ**：`/security-review`（差分ベース・**補助**）＋ `docs/policy/dependency-policy.md`（依存）。
-- **見るもの**：依存スキャン（`npm audit` 等）の結果、シークレットの直書きが無いか（静的確認）、`/security-review` が最近実施されたか。**丸投げしない**——PRR は上記を自分で確認し、`/security-review` は「古ければ差分単位で実行を推奨する」補助に留める。ペネトレーションテストは `requirements.md` 等で明示された要件があるときのみ要求する。
+- **見るもの**：依存スキャン（`npm audit` 等）の結果、シークレットの直書きが無いか（静的確認）、`/security-review` が最近実施されたか。**丸投げしない**——PRR は上記を自分で確認し、`/security-review` は「古ければ差分単位で実行を推奨する」補助に留める。ペネトレーションテストは要件定義書（`requirements.md`・`requirements-detail.md`）等で明示された要件があるときのみ要求する。
 - **判定**：
   - `pass`：依存スキャンが clean・秘密の直書き無し・security-review が最近実施済み。
   - `warn`：依存に軽微な脆弱性、または security-review が古い（実行を推奨）。

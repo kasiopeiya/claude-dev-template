@@ -32,7 +32,7 @@ PRR はコード・ドキュメント・CI/GitHub 状態を**静的に**読み�
 
 ## 手順
 
-判定基準（各領域・pass/warn/fail/N-A の定義・総合 go/no-go の集約）は `references/readiness-rubric.md`、レポート様式は `references/report-format.md` に従ってください。`design-hub.md`・`requirements.md` が未作成の環境（テンプレート段階）でも破綻せず、該当領域を N-A（前提未整備）として報告してください。
+判定基準（各領域・pass/warn/fail/N-A の定義・総合 go/no-go の集約）は `references/readiness-rubric.md`、レポート様式は `references/report-format.md` に従ってください。`design-hub.md`・要件定義書（`requirements.md`・`requirements-detail.md`）が未作成の環境（テンプレート段階）でも破綻せず、該当領域を N-A（前提未整備）として報告してください。
 
 ## レビュー結果の起票
 

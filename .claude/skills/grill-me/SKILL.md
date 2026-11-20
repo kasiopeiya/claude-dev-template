@@ -9,7 +9,7 @@ description: Interview the user relentlessly about a plan or design until reachi
 
 **Take the user's reason in their own words, before writing the sentence.** A request is usually phrased as a solution, and the reason behind it is known only to the user — anything you write in its place is a guess (the same idea as `/elicit-requirements`「解決策と目的を分離する」). Take it in this order:
 
-1. **Invoked from an Issue**: if the Issue has a `**人間の発言**` line, quote it. If it has none but its トレース names a 機能ID or BR of `docs/requirements.md`, don't ask, and record `人間の発言：なし（要件定義書 <ID> による）` — the intent lives in the requirements the customer already reviewed. If neither, go to 3.
+1. **Invoked from an Issue**: if the Issue has a `**人間の発言**` line, quote it. If it has none but its トレース names a 機能ID or BR of the requirements (`docs/requirements.md` / `docs/requirements-detail.md`), don't ask, and record `人間の発言：なし（要件定義書 <ID> による）` — the intent lives in the requirements the customer already reviewed. If neither, go to 3.
 2. **Otherwise**, if the user's message says what happened or what is troubling them, quote it verbatim. A sentence that names a solution or the thing to build（「〜を作りたい」「〜の仕組みが欲しい」）does not count — counting it would mean the question never fires.
 3. If nothing above applies, ask in prose, not as AskUserQuestion options:
 
@@ -38,7 +38,7 @@ If the caller passed a scope or a stopping condition in the arguments (another S
 Ask about something outside it only when one of these holds — the list is exhaustive:
 
 1. The topic is one of these and the agreed sentence touches it: how data is stored and shaped, an interface exposed outside the system, the authn/authz or billing boundary, where boundaries are placed (deployment topology, internal code structure, directory-structure policy). (Getting these wrong later throws away what this scope produced.)
-2. `docs/requirements.md` states a constraint on what the agreed sentence touches (especially SLI/SLO in 非機能要件).
+2. `docs/requirements.md` or `docs/requirements-detail.md` states a constraint on what the agreed sentence touches (especially SLI/SLO in 非機能要件).
 3. The user raised the topic themselves.
 
 These are never reasons to ask:「後で困るから今決めておく」「ついでに聞いておく」「網羅的に詰めるのが本Skillの役目」「拡張性も詰めないと不完全」.
@@ -51,7 +51,7 @@ These are never reasons to ask:「後で困るから今決めておく」「つ�
 
 Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one-by-one. For each question, provide your recommended answer, and add one line stating whether taking that answer still satisfies the agreed sentence and the issue's purpose — a recommendation that would fail to satisfy either is not a valid recommendation. Never add to a recommendation a mechanism (a label, a gate, a branch) that appears in neither the user's request nor the agreed sentence; if it seems to need one, put that on the Not-now list instead.
 
-Back every recommendation with one fact that exists now: an issue number of a real case, a line of `docs/requirements.md`, or a quotable original text of a file or code. Never mark an option as recommended when all you can show is a possibility ("〜ことがある" / "might happen"); present the options without a recommendation and let the user choose.
+Back every recommendation with one fact that exists now: an issue number of a real case, a line of `docs/requirements.md` or `docs/requirements-detail.md`, or a quotable original text of a file or code. Never mark an option as recommended when all you can show is a possibility ("〜ことがある" / "might happen"); present the options without a recommendation and let the user choose.
 
 Ask the questions one at a time.
 
@@ -59,7 +59,7 @@ When a question's answer can be narrowed to 3 or more concrete options, present 
 
 If a question can be answered by exploring the codebase, explore the codebase instead.
 
-Before and during the interview, read the requirements (docs/requirements.md — the SSOT of requirements, including SLO/SLI), but never in full: it grows large, so locate the headings (`grep -n '^## ' docs/requirements.md`) and read only the 非機能要件 section (which contains SLI/SLO) by line range, plus the specific 機能要件 / スコープ外 subsection whenever the interview touches that feature or boundary (the YAGNI check below needs it). Also list its appendix references (`grep -n '別紙：' docs/requirements.md`) and read the appendices (`docs/requirements-appendix/`) for the features and business processes the interview touches: they hold the non-binding drafts and external materials (e.g. a customer's wireframe) left as input for design. Hold each design decision against them. In particular, a demanding SLO (e.g. tight latency) constrains structural choices — synchronous vs asynchronous, the number of network hops, redundancy — so surface any conflict between the proposed design and the requirements before it freezes into the plan.
+Before and during the interview, read the requirements (`docs/requirements.md` and `docs/requirements-detail.md` — the SSOT of requirements, including SLO/SLI), but never in full: they grow large, so locate the headings (`grep -n '^##' docs/requirements.md docs/requirements-detail.md`) and read only the 非機能要件 section of `docs/requirements.md` (which contains SLI/SLO) by line range, plus the specific 機能要件 / スコープ外 subsection (a feature's 機能仕様 and diagrams are in `docs/requirements-detail.md`) whenever the interview touches that feature or boundary (the YAGNI check below needs it). Also list its appendix references (`grep -n '別紙：' docs/requirements.md docs/requirements-detail.md`) and read the appendices (`docs/requirements-appendix/`) for the features and business processes the interview touches: they hold the non-binding drafts and external materials (e.g. a customer's wireframe) left as input for design. Hold each design decision against them. In particular, a demanding SLO (e.g. tight latency) constrains structural choices — synchronous vs asynchronous, the number of network hops, redundancy — so surface any conflict between the proposed design and the requirements before it freezes into the plan.
 
 When the plan implies documentation changes, ask which document's purpose (対象読者・目的) each piece of resulting content belongs to. Content that doesn't serve any existing document's purpose belongs elsewhere, or nowhere — surface this before it gets frozen into a task list. This catches purpose-mismatch at the source, since downstream sessions treat the issue's task list as ground truth.
 

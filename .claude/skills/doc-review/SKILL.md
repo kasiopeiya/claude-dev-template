@@ -41,7 +41,7 @@ git ls-files --others --exclude-standard
 
 ### 要件定義書を外す
 
-対象に `docs/requirements.md` があれば一覧から外し、「requirements.md は /requirements-review で専用レビューしてください」と出力する。外した結果 0 件なら終了する。
+対象に `docs/requirements.md` か `docs/requirements-detail.md` があれば一覧から外し、「要件定義書（requirements.md・requirements-detail.md）は /requirements-review で専用レビューしてください」と出力する。外した結果 0 件なら終了する。
 
 ### 判定範囲を決める
 
