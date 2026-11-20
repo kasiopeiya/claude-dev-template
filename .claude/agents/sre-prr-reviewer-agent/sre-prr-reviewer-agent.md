@@ -26,7 +26,7 @@ effort: xhigh
 
 1. タスクプロンプトの「引数」を確認する。スコープ指定があればそれを、無ければ**システム全体**を対象とする。
 2. `readiness-rubric.md` と `report-format.md` を Read し、審査基準とレポート様式を把握する。
-3. 前提ドキュメントの有無を確認する：`docs/design-hub.md`・`docs/requirements.md`・`docs/policy/monitoring-policy.md`・`docs/policy/runbook-policy.md`・`docs/policy/dependency-policy.md`。**未作成のものは記録し**、依存する領域を後で `N-A`（前提未整備）として扱う。
+3. 前提ドキュメントの有無を確認する：`docs/design-hub.md`・`docs/requirements.md`・`docs/requirements-detail.md`・`docs/policy/monitoring-policy.md`・`docs/policy/runbook-policy.md`・`docs/policy/dependency-policy.md`。**未作成のものは記録し**、依存する領域を後で `N-A`（前提未整備）として扱う。
 4. リポジトリ構成を把握する：`infra/`（CDK）・`app/`（Lambda 等）・`.github/`（CI/CD）・`docs/` の有無を Bash（`ls`）で確認する。**実装がまだ無いテンプレート段階でも破綻せず**、多くが `N-A` になることを許容する。
 
 ## Phase 2: 領域別の審査

@@ -312,7 +312,7 @@ Issue は GitHub のネイティブ sub-issue で階層にする。sub-issue の
 
 標準のルートを使うときの振り分け条件は、**主に触るもの**で決める。上の行から当て、最初に当たった行で決める。
 
-- `docs/requirements.md`：要件定義
+- `docs/requirements.md`・`docs/requirements-detail.md`：要件定義
 - **開発環境・技術スタック・アプリアーキテクチャ・ディレクトリ構成・`.github/workflows/`**：開発準備
 - **`app/`・`infra/` のコードと、その単体テスト**：設計・実装
 - **結合テスト・E2Eテストのコードと、その実行環境**：結合テスト

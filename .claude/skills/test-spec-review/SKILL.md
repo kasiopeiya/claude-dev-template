@@ -30,7 +30,7 @@ allowed-tools: Task, Bash, Read
 
 ### 要件定義書を確かめる
 
-`docs/requirements.md` が無ければ、「照らす要件なし（docs/requirements.md がありません）」と出力して終了する。中身が見出しだけかどうかは、ここでは判定しない（agent が照らす規則を探し、無ければ「照らした要件」を「なし」と返す）。
+`docs/requirements.md` と `docs/requirements-detail.md` がどちらも無ければ、「照らす要件なし（docs/requirements.md・docs/requirements-detail.md がありません）」と出力して終了する。中身が見出しだけかどうかは、ここでは判定しない（agent が照らす規則を探し、無ければ「照らした要件」を「なし」と返す）。
 
 ### 差分の対象を集める（範囲が今の差分のときだけ）
 
@@ -73,7 +73,7 @@ git ls-files --others --exclude-standard '*.test.ts' '*.test.tsx' '*.spec.ts' '*
 
 - **レンズ名**：正典の表記のまま
 - **範囲**：`今の差分`、`全部`、または `機能名：<引数の文字列をそのまま>`
-- **要件定義書のパス**：`docs/requirements.md`
+- **要件定義書のパス**：`docs/requirements.md` と `docs/requirements-detail.md` のうち、あるもの
 - **差分の対象ファイルの一覧**（範囲が今の差分のときだけ）：各ファイルのパスと、差分ファイルのパス（書いたものだけ）
 - **テストファイルの一覧のパス**：Phase 1 のコマンドが最後に出力したディレクトリ（`tmp/test-spec-review/<日時>`）の `test-files.txt`。`$dir` のまま渡さず、出力されたパスに置き換える（差分ファイルのパスも同じ）
 

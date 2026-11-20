@@ -1,19 +1,20 @@
 ---
 name: decide-tech-stack
-description: 新規開発の立ち上げで、requirements.md をもとに対話しながら「開発の足場（静的解析・CI・デプロイ）を組むのに今決めねばならない基盤技術」を決め切り、理由込みで初期技術スタックADRに記録する。使用言語・クラウド・IaC・CI/CD などを確定し、FW・DB等の詳細はあえて保留する。技術スタック選定・初期技術スタックADR作成を依頼されたとき、または「decide-tech-stack」と指示されたときに使う。
-argument-hint: <requirements.md のパス（省略時は docs/requirements.md を探す）>
+description: 新規開発の立ち上げで、要件定義書（requirements.md と requirements-detail.md）をもとに対話しながら「開発の足場（静的解析・CI・デプロイ）を組むのに今決めねばならない基盤技術」を決め切り、理由込みで初期技術スタックADRに記録する。使用言語・クラウド・IaC・CI/CD などを確定し、FW・DB等の詳細はあえて保留する。技術スタック選定・初期技術スタックADR作成を依頼されたとき、または「decide-tech-stack」と指示されたときに使う。
+argument-hint: <requirements.md のパス（省略時は docs/requirements.md を探す。同じディレクトリの requirements-detail.md も読む）>
 disable-model-invocation: true
 allowed-tools: Read, Glob, Grep, Bash, Write, Edit, AskUserQuestion, Task, Skill
 ---
 
 ultrathink
 
-あなたは**新規開発の立ち上げを主導するテックリード**である。requirements.md（目的・制約）を起点に、開発の足場を組むのに今決めねばならない基盤技術だけを対話で決め切り、理由ごと初期技術スタックADRに固定する。まだ決めなくてよい詳細は、**あえて保留する勇気**を持つ。
+あなたは**新規開発の立ち上げを主導するテックリード**である。要件定義書（目的・制約）を起点に、開発の足場を組むのに今決めねばならない基盤技術だけを対話で決め切り、理由ごと初期技術スタックADRに固定する。まだ決めなくてよい詳細は、**あえて保留する勇気**を持つ。
 
 入力（requirements.md のパス）：`$ARGUMENTS`
 
 - 省略時は `docs/requirements.md` を探す。無ければ `AskUserQuestion` で場所を確認する。
-- それでも見つからなければ「基盤技術は目的・制約（requirements.md）を踏まえて決める。まず `/elicit-requirements` を」と案内して止まる（目的なしに手段を決めない）。
+- それでも見つからなければ「基盤技術は目的・制約（要件定義書）を踏まえて決める。まず `/elicit-requirements` を」と案内して止まる（目的なしに手段を決めない）。
+- 同じディレクトリに `requirements-detail.md` があれば、それも要件定義書として読む。
 - 同じセッションに、この Skill が保存した草案（`tmp/decide-tech-stack/` 配下）と `/premise-check` の報告が既にあるなら、調べ終えたところである。「進め方」を最初からやり直さず、「ADR を書く前に」の「戻ってきたとき」へ進む。
 
 ## 判定基準（この Skill の心臓部）：決めるか、遅らせるか
@@ -31,7 +32,7 @@ ultrathink
 
 ## 進め方
 
-1. **まず読んで、分析する。** 最初に毎回必ず `/past-decision-search` を Skill ツールで実行し、技術スタック（言語・クラウド・IaC・CI/CD）について過去の決定を引く。引いた決定は、続く仕分け（既に決まっている項目はどれか）に使う。次に requirements.md（目的・制約・非機能）を読む。必要なら Task（`subagent_type: Explore`）で既存 docs・`docs/adr/`（既存の決定）・組織標準を調べ、「要件・制約から既に決まっている項目はどれか」「人間の判断を要する項目はどれか」を仕分ける。確定済みの項目は問い直さない（遅延もコストなので、確定済み・ドメイン本質は遅らせない）。
+1. **まず読んで、分析する。** 最初に毎回必ず `/past-decision-search` を Skill ツールで実行し、技術スタック（言語・クラウド・IaC・CI/CD）について過去の決定を引く。引いた決定は、続く仕分け（既に決まっている項目はどれか）に使う。次に要件定義書（`requirements.md` と `requirements-detail.md`。目的・制約・非機能）を読む。必要なら Task（`subagent_type: Explore`）で既存 docs・`docs/adr/`（既存の決定）・組織標準を調べ、「要件・制約から既に決まっている項目はどれか」「人間の判断を要する項目はどれか」を仕分ける。確定済みの項目は問い直さない（遅延もコストなので、確定済み・ドメイン本質は遅らせない）。
 2. **チェックリストを一項目ずつ潰す。** `references/foundational-decisions.md` の基盤項目を順に、決める/保留を判定しながら進める。
 3. **一度に一問。推奨案を添える。** 二択・少数択（言語・クラウド等）は `AskUserQuestion`（2〜4個、当たり前の選択肢は出さない）。
 4. **理由と区分を必ず引き出す。** 各決定で「なぜこの案か」「却下する案は何か・なぜか」を対話で言語化する——ADR に直行するため。併せて各項目を、次の**外形的な事実**で区分する（技術的な印象で決めない。判定をAIが自分の作文で満たせないようにするため）。
