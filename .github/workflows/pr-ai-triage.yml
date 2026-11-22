@@ -156,15 +156,62 @@ jobs:
             gh label create needs-human-review --description "人間がレビューすべきPR" --color D93F0B
           gh pr edit "$PR" --add-label policy,needs-human-review
 
-      # CI の定義（.github/）と、CI が実行するスクリプト（scripts/ci/）に触れた PR も同じく人間レビューへ寄せる。
-      # 理由は上の policy と同じ。対象パスの正は docs/policy/pr-review-policy.md の cicd 行で、ここはその写し。
+      # CI の定義（.github/）と、CI が実行するスクリプト（scripts/ci/）と、静的解析の設定に触れた PR も同じく人間レビューへ寄せる。
+      # 理由は上の policy と同じ。対象の正は docs/policy/pr-review-policy.md の cicd 行で、静的解析の設定の具体的なファイル一覧はここが持つ
+      # （ポリシーは複数プロジェクトで共通に使うので、ファイル名を書かない）。
+      # 静的解析の設定は、触った行がすべてコメントか空行なら対象外。AI でなく機械で見分ける（AI が見誤るとルールを消す変更も素通りするため）。
+      # コメント扱いは、//・/*・*・*/ で始まる行（.prettierignore では # で始まる行）と空行だけ。設定とコメントが同じ行にあれば対象にする。
       - name: Label cicd changes for human review
         if: steps.pr.outputs.number != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ steps.pr.outputs.number }}
         run: |
-          if ! gh pr diff "$PR" --name-only | grep -qE '^(\.github/|scripts/ci/)'; then
+          names=$(gh pr diff "$PR" --name-only)
+          lint_re='^(eslint\.config\.mjs|tsconfig\.json|\.prettierrc\.js|\.prettierignore|knip\.jsonc)$|^eslint-rules/'
+          if grep -qE '^(\.github/|scripts/ci/)' <<< "$names"; then
+            echo "cicd path touched"
+          elif grep -qE "$lint_re" <<< "$names"; then
+            # 差分を取れなければ（大きすぎる PR など）、人間レビューへ寄せる側に倒す。
+            if diff=$(gh pr diff "$PR"); then
+              # 静的解析の設定のファイルで、コメントでも空行でもない行を足すか消していれば 0 で終わる。
+              # 改名だけ（中身の差分が無い）でも設定の効き方が変わるので対象にする。
+              if ! RE="$lint_re" awk '
+                BEGIN { re = ENVIRON["RE"] }
+                function check(p) {
+                  if (p ~ re) target = 1
+                  if (p ~ /^\.prettierignore$/) hash = 1
+                }
+                # パスに空白があっても取り違えないよう、" b/" の位置ごとに a 側と b 側の候補を作って両方調べる。
+                # 引用符で囲んだパス（git が特殊な文字を含むパスに付ける）は分解せず、対象として扱う。
+                /^diff --git / {
+                  target = 0; hash = 0; hunk = 0
+                  s = substr($0, 12)
+                  if (s ~ /"/) { target = 1; next }
+                  rest = s; off = 0
+                  while ((i = index(rest, " b/")) > 0) {
+                    check(substr(s, 3, off + i - 3)); check(substr(s, off + i + 3))
+                    off += i; rest = substr(rest, i + 1)
+                  }
+                  next
+                }
+                !hunk && /^rename (from|to) / { p = $0; sub(/^rename (from|to) /, "", p); check(p); if (target) found = 1 }
+                /^@@/ { hunk = 1; next }
+                !target || !hunk { next }
+                /^[+-]/ {
+                  line = substr($0, 2); gsub(/^[ \t]+|[ \t]+$/, "", line)
+                  if (line == "") next
+                  if (hash && line ~ /^#/) next
+                  if (!hash && line ~ /^(\/\/|\/\*|\*)/) next
+                  found = 1
+                }
+                END { exit !found }' <<< "$diff"; then
+                echo "only comments or blank lines changed in static analysis config; skipping"
+                exit 0
+              fi
+            fi
+            echo "static analysis config changed"
+          else
             echo "no cicd path touched; skipping"
             exit 0
           fi
