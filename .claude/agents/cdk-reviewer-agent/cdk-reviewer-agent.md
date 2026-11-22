@@ -3,7 +3,7 @@ name: cdk-reviewer-agent
 description: AWS CDK インフラコードを、指定されたレンズ（誤設定探し／セキュリティ／設計の形／決まりどおりか／設計書の内容）でレビューする専門エージェント。
 tools: Glob, Grep, Read, Bash
 model: opus
-effort: xhigh
+effort: high
 ---
 
 # CDK Reviewer Agent
@@ -252,3 +252,11 @@ AWS CDK インフラコードをレビューする専門エージェント。機
 共通規約「入力の検証」に従う。ただし次は、共通規約の「対象が 0 件」で終了しない。
 
 - **「設計書の内容」レンズで対象設計書が渡されていない**：「対象設計書なし・スキップ」として Phase 3 の書式で報告して終了（エラーではない）
+
+<details>
+<summary>effort を high にしている理由</summary>
+
+- このレビューは、レンズの数だけ agent を同時に起動する。effort の思考量がレンズの数だけ掛け算で効くので、xhigh では待ち時間とトークン消費が大きく、利用制限にかかる
+- 欠陥の多くは、Issue にする前の監査（`/check-plan`・`/issue-check`）で止めている。そのぶん、ここで指摘が減るおそれは引き受ける
+
+</details>

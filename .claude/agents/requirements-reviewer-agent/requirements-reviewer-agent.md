@@ -3,7 +3,7 @@ name: requirements-reviewer-agent
 description: 要件定義書（docs/requirements.md と docs/requirements-detail.md の2ファイル）を requirements-doc-policy.md の判定基準でレビューする専門エージェント。
 tools: Read, Grep, Glob, Bash
 model: opus
-effort: xhigh
+effort: high
 ---
 
 # Requirements Reviewer Agent
@@ -252,3 +252,11 @@ L2 は続いて **「業務要件の品質検証（BABOK チェックリスト�
 共通規約「入力の検証」に従う。読めないものに、非機能要件のカタログを含める。ただし対象パスが渡されないときは、共通規約の「対象が渡されていない」で終了せず、`docs/requirements.md` と `docs/requirements-detail.md` を対象とする（Phase 1）。ほかに、次を扱う。
 
 - **ファイルが空**：「要件定義書が空です」と表示して終了
+
+<details>
+<summary>effort を high にしている理由</summary>
+
+- このレビューは、レンズの数だけ agent を同時に起動する。effort の思考量がレンズの数だけ掛け算で効くので、xhigh では待ち時間とトークン消費が大きく、利用制限にかかる
+- 要件定義は、開発フローガイドの「フェーズごとにどのモデルで回すか」で effort 最大とする段階にある。それでも、このレビューは待ち時間とトークン消費を優先して high にする（人間の決定）
+
+</details>
