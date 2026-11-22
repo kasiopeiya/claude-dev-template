@@ -79,7 +79,7 @@ Plan を書き出したら、`/check-plan` の前に、Plan の新しい技術�
 3. 新しい技術要素が無ければ、聞かずに `/check-plan <Planパス>` を実行する
 4. あれば `AskUserQuestion` で、新しい技術要素の名前を挙げて「外部の制約を調べる `/premise-check` を実行するか」を聞く。選択肢は「実行する」「実行しない」の2つ
    - 「実行しない」：`/check-plan <Planパス>` を実行する
-   - 「実行する」：`Skill` ツールで `premise-check` を呼び、引数に Plan の絶対パスを渡す。終わったら、見直す制約が選ばれたときは Plan を直し、選ばれなかったときは直さずに、続けて `/check-plan <Planパス>` を実行する。直し方が複数あり、採る技術が変わるときだけ `AskUserQuestion` で聞く
+   - 「実行する」：`Skill` ツールで `premise-check` を呼び、引数に Plan の絶対パスを渡す。終わったら、見直す制約が選ばれたときは Plan を直し、選ばれなかったときは直さずに、続けて `/check-plan <Planパス>` を実行する。直し方が複数あり、採る技術が変わるときだけ `AskUserQuestion` で聞く。聞く前の説明は [explain-before-asking-human](../../rule-bodies/explain-before-asking-human.md) に従う
 
 「実行する」で `/premise-check` の前に `/check-plan` を走らせないのは、`/check-plan` が合格すると `/to-issues` へ進む案内を必ず出し、調べる前に進む道が開くからである。
 

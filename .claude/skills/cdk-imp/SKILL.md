@@ -217,6 +217,8 @@ CDKルール:
 - L1 Construct（Cfn）の活用
 ```
 
+提示の書き方と、問いを出す返答は [explain-before-asking-human](../../rule-bodies/explain-before-asking-human.md) に従う。
+
 AskUserQuestion で実装方針を確認:
 
 ```
@@ -494,7 +496,7 @@ cdk.out/tree.json
 
 #### ステップ 5-3: 循環参照エラーのチェック
 
-循環参照エラーが検出された場合、循環しているリソースと原因を示し、[references/error-handling-and-constraints.md](references/error-handling-and-constraints.md) の「循環参照の回避」から該当パターンの回避方法を提示する。
+循環参照エラーが検出された場合、循環しているリソースと原因を示し、[references/error-handling-and-constraints.md](references/error-handling-and-constraints.md) の「循環参照の回避」から該当パターンの回避方法を提示する。提示の書き方と、問いを出す返答は `explain-before-asking-human.md` に従う。
 
 AskUserQuestion で修正方法を確認:
 
