@@ -33,6 +33,8 @@ If the caller passed a scope or a stopping condition in the arguments (another S
 
 **Look up past decisions next — always.** Right after the scope is agreed (or adopted from the caller) and before the first question, run `/past-decision-search` with the Skill tool, passing the mechanisms, paths, and keywords that appear on the agreed sentence. Do this every time, not only when it seems needed: an AI cannot tell which past decisions it is missing. When a recommendation would overturn a decision it returned, cite that decision and say why it should be overturned.
 
+**Share the big picture next — always.** After the past-decision lookup and before the first question, Read [explain-before-asking-human](../../rule-bodies/explain-before-asking-human.md) and follow its「全体像を共有する段」: show the parts and the flow on the agreed sentence as a table or a diagram that traces real values. End that reply as the section says, and ask the first question only after the user replies. A question is only part of the whole; a user who hasn't seen the whole can't tell where the question sits.
+
 **Default: don't ask.** A question is allowed only about an element that actually appears on the agreed sentence. Inside it, grill as relentlessly as ever. An element's error handling and edge cases count as inside it — you may ask about them, but you don't have to.
 
 Ask about something outside it only when one of these holds — the list is exhaustive:
@@ -53,7 +55,7 @@ Interview me relentlessly about every aspect of this plan until we reach a share
 
 Back every recommendation with one fact that exists now: an issue number of a real case, a line of `docs/requirements.md` or `docs/requirements-detail.md`, or a quotable original text of a file or code. Never mark an option as recommended when all you can show is a possibility ("〜ことがある" / "might happen"); present the options without a recommendation and let the user choose.
 
-Ask the questions one at a time.
+Ask the questions one at a time. Every question follows `explain-before-asking-human.md`: it fixes what the premise must show and when to open the AskUserQuestion panel.
 
 When a question's answer can be narrowed to 3 or more concrete options, present them with the AskUserQuestion tool — picking from options is faster for the user than answering in prose.
 

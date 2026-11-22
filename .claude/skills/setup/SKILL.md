@@ -158,7 +158,7 @@ GitHub Projects のボードを API で作る。Auto-Programmer が拾う `Ready
 - **`gh secret list` に `CLAUDE_CODE_OAUTH_TOKEN` がある**
 - **Bedrock 切り替えの Issue が open である**
 
-飛ばさないなら、`AskUserQuestion` で方式を聞く（選択肢は「Claude サブスクリプションの OAuth トークン」「Bedrock」。最初を既定にする）。
+飛ばさないなら、`AskUserQuestion` で方式を聞く（選択肢は「Claude サブスクリプションの OAuth トークン」「Bedrock」。最初を既定にする）。聞く前の説明は [explain-before-asking-human](../../rule-bodies/explain-before-asking-human.md) に従う。
 
 - **OAuth**：次を案内する。トークンの値は会話に貼らせない。人間が自分で登録する
   1. `claude setup-token` でトークンを発行する
@@ -182,7 +182,7 @@ GitHub Projects のボードを API で作る。Auto-Programmer が拾う `Ready
 - `core-parts.md`・`issue-destinations.md` の注記にある「下の表はテンプレート本体のもの」の文
 - `core-parts.md`・`issue-destinations.md` の、テンプレート本体の表の行
 
-3ファイルごとに、`AskUserQuestion` で次を聞いて書く。
+3ファイルごとに、`AskUserQuestion` で次を聞いて書く。聞く前の説明は `explain-before-asking-human.md` に従う。
 
 - **`project-claude.md`**：何を作るシステムか（一文）と、いまのフェーズ（立ち上げ段階など）。「このシステムは何か」と「現在のプロジェクトのフェーズ・状況」に書く
 - **`issue-destinations.md`**：新規開発ガイドを使うか。使うなら、表の代わりに「issue-policy の標準のルートを使う」と書く。使わないなら、ルートと振り分け条件を聞いて表に書く
