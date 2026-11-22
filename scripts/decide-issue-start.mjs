@@ -25,8 +25,12 @@
 // - `--skip-issue-check` は、人間が監査を飛ばして急ぐ Skill（`/asap`）だけが渡す。#1231 の「『issue N 対応して』では
 //   issue-check を自動で通す」を、人間しか打てない Skill に限って外す。読み替えを SKILL.md に書くと、人間判断待ちの
 //   Issue をラベルを見ずに実装しうるので、旗として本スクリプトに置く。旗があれば、監査の指示と「監査が判定を書き戻さなかった」
-//   で止める判定だけを外す。close 済み・子を持つ親・人間向けのラベル・対象ラベルが無い、の判定は旗の有無で変えない。
+//   で止める判定だけを外す。close 済み・子を持つ親・未完のブロッカー・人間向けのラベル・対象ラベルが無い、の判定は旗の有無で変えない。
 //   子を選ばせるときは、打ち直しにも旗を付けさせる。旗なしで打ち直すと、子の判定で `監査する：` が返るため。
+// - ブロッカーは本文の `## ブロッカー` 節から読み、すべて closed と確かめられなければ止める。無人の経路（board.mjs）と
+//   同じ扱いにし、同じ Issue への答えを両経路で揃える。節の読み方は startOrder.mjs の extractBlockerIssueNumbers を流用し、
+//   2か所に持たない。節が読めない・ブロッカーの state を引けないときも止める側に倒す。未完の依存先を待たずに実装すると、
+//   依存先がまだ決めていない用語や名前を書きうる（Issue #1952）。
 // - 対象ラベルは config.mjs の targetIssueLabel から読み、このファイルには持たない。
 // - `進む：` の1行目に、実装フローの表の「順」の読み方（同じ順の Skill は並行して起動してよい）を載せる。
 //   CLAUDE.md は「記載順に実行する」と書くだけで、従わせるのはこの1行目だけである。CLAUDE.md を変えずに、
@@ -40,6 +44,7 @@ import {
   shouldRunIssueCheck
 } from './auto-programmer/issueCheckVerdict.mjs'
 import { runJson } from './auto-programmer/shell.mjs'
+import { extractBlockerIssueNumbers } from './auto-programmer/startOrder.mjs'
 import { findReasonToSkipForOpenSubIssues } from './auto-programmer/subIssueHandover.mjs'
 import { BusinessError, TechnicalError } from './lib/errors.mjs'
 
@@ -48,6 +53,9 @@ import { BusinessError, TechnicalError } from './lib/errors.mjs'
  *   sub-issue（state は gh の表記で 'OPEN' / 'CLOSED'）
  * @typedef {{ headline: string, guidanceLines: string[] }} DecisionOutput
  *   1行目（先頭が判定の語）と、続けて出す案内の行
+ * @typedef {{ issueNumber: number, state: string, labelNames: string[], subIssues: SubIssue[], blockerNumbers: number[] | null, unresolvedBlockerNumbers: number[] }} IssueForDecision
+ *   読んだ Issue（state は 'OPEN' / 'CLOSED'。blockerNumbers はブロッカー節の番号で、節の書式が読めなければ null。
+ *   unresolvedBlockerNumbers はそのうち closed と確かめられなかった番号。close 済みの Issue では、子もブロッカーも読まず空にする）
  */
 
 const AFTER_ISSUE_CHECK_FLAG = '--after-issue-check'
@@ -146,32 +154,69 @@ async function readTargetIssueLabel() {
 }
 
 /**
- * 今いるリポジトリの Issue の state・ラベル・sub-issue を読む。
+ * 今いるリポジトリの Issue の state・ラベル・sub-issue・ブロッカーを読む。
  *
  * @param {number} issueNumber Issue の番号
- * @returns {{ issueNumber: number, state: string, labelNames: string[], subIssues: SubIssue[] }} Issue（state は 'OPEN' / 'CLOSED'。close 済みの Issue の sub-issue は読まず空にする）
- * @throws {TechnicalError} gh が失敗したとき（存在しない番号・未ログイン・git の外・ネットワーク断など）・gh が返した state・ラベルを読めないとき・sub-issue が一度に読める件数を超えたとき
+ * @returns {IssueForDecision} Issue
+ * @throws {TechnicalError} gh が失敗したとき（存在しない番号・未ログイン・git の外・ネットワーク断など）・gh が返した state・ラベル・本文を読めないとき・sub-issue が一度に読める件数を超えたとき
  * @throws {Error} gh を起動できないとき（PATH に無いなど）
  */
 function readIssueInCurrentRepository(issueNumber) {
-  const { state, labels } = runJson('gh', [
+  const { state, labels, body } = runJson('gh', [
     'issue',
     'view',
     String(issueNumber),
     '--json',
-    'state,labels'
+    'state,labels,body'
   ])
   // 読めない値を OPEN や空として進めると、止めるべき Issue を実装しうるので、読めないまま止める
-  if ((state !== 'OPEN' && state !== 'CLOSED') || !Array.isArray(labels)) {
+  if (
+    (state !== 'OPEN' && state !== 'CLOSED') ||
+    !Array.isArray(labels) ||
+    typeof body !== 'string'
+  ) {
     throw new TechnicalError(
-      `Issue #${issueNumber} の state かラベルを読めません: ${JSON.stringify({ state, labels })}`
+      `Issue #${issueNumber} の state・ラベル・本文を読めません: ${JSON.stringify({ state, labels, hasBody: typeof body === 'string' })}`
     )
   }
+  const labelNames = labels.map(({ name }) => name)
+  if (state !== 'OPEN') {
+    return {
+      issueNumber,
+      state,
+      labelNames,
+      subIssues: [],
+      blockerNumbers: [],
+      unresolvedBlockerNumbers: []
+    }
+  }
+  const blockerNumbers = extractBlockerIssueNumbers(body)
   return {
     issueNumber,
     state,
-    labelNames: labels.map(({ name }) => name),
-    subIssues: state === 'OPEN' ? listSubIssuesInCurrentRepository(issueNumber) : []
+    labelNames,
+    subIssues: listSubIssuesInCurrentRepository(issueNumber),
+    blockerNumbers,
+    unresolvedBlockerNumbers: [...new Set(blockerNumbers ?? [])].filter(
+      (blockerNumber) => readIssueStateInCurrentRepository(blockerNumber) !== 'CLOSED'
+    )
+  }
+}
+
+/**
+ * 今いるリポジトリの Issue の state を引く。ブロッカーが closed かを確かめるのに使う。
+ *
+ * @param {number} issueNumber Issue の番号
+ * @returns {unknown} gh が返した state（'OPEN' / 'CLOSED' のはずだが検査しない。呼ぶ側は 'CLOSED' 以外をすべて未完とみなす）
+ * @throws {TechnicalError} gh が失敗したとき（存在しない番号・未ログイン・ネットワーク断など）
+ * @throws {Error} gh を起動できないとき（PATH に無いなど）
+ */
+function readIssueStateInCurrentRepository(issueNumber) {
+  try {
+    return runJson('gh', ['issue', 'view', String(issueNumber), '--json', 'state']).state
+  } catch (error) {
+    if (!(error instanceof TechnicalError)) throw error
+    throw new TechnicalError(`ブロッカー #${issueNumber} の state を引けません: ${error.message}`)
   }
 }
 
@@ -223,18 +268,28 @@ function listSubIssuesInCurrentRepository(issueNumber) {
 /**
  * Issue の状態から、次にすることを決める。判定の順は上から当て、最初に当たったもので決める。
  *
- * @param {{ issueNumber: number, state: string, labelNames: string[], subIssues: SubIssue[] }} issue 読んだ Issue
+ * @param {IssueForDecision} issue 読んだ Issue
  * @param {{ hasRunIssueCheck: boolean, isIssueCheckSkipped: boolean, targetIssueLabel: string }} context 監査を打った後か・監査を飛ばすか・対象ラベル
  * @returns {DecisionOutput} 判定の出力
  */
 function decideIssueStart(
-  { issueNumber, state, labelNames, subIssues },
+  { issueNumber, state, labelNames, subIssues, blockerNumbers, unresolvedBlockerNumbers },
   { hasRunIssueCheck, isIssueCheckSkipped, targetIssueLabel }
 ) {
   if (state !== 'OPEN') return buildStopOutput(`#${issueNumber} は close 済みです`)
 
   if (findReasonToSkipForOpenSubIssues(subIssues) !== null) {
     return buildChooseChildOutput(issueNumber, subIssues, isIssueCheckSkipped)
+  }
+
+  if (blockerNumbers === null) {
+    return buildStopOutput(
+      `#${issueNumber} の「## ブロッカー」節に、番号を読めない箇条書きの行があります`
+    )
+  }
+  if (unresolvedBlockerNumbers.length > 0) {
+    const blockerList = unresolvedBlockerNumbers.map((number) => `#${number}`).join('・')
+    return buildStopOutput(`#${issueNumber} は ${blockerList} の完了待ちです`)
   }
 
   if (!hasRunIssueCheck && !isIssueCheckSkipped && shouldRunIssueCheck(labelNames)) {
