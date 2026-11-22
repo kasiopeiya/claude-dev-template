@@ -86,7 +86,7 @@
 
 docs/policy/pr-review-policy.md（PR レビューの決まりを書いたポリシー）の PR ラベルの表で、cicd（CI/CD の変更を示す PR ラベル）の対象は「.github/・scripts/ci/・静的解析の設定」と書いてあります。静的解析の設定とは、たとえば eslint.config.mjs です。
 
-一方、.github/workflows/pr-ai-triage.yml（PR にラベルを付けるワークフロー）は、変わったパスが .github/ か scripts/ci/ で始まるときだけ cicd を付けます。
+一方、.github/workflows/pr-ai-triage.yml（PR にラベルを付けるワークフロー）は、変わったパスが .github/ か scripts/ci/ で始まるときだけ cicd を付けるとします。
 
 eslint.config.mjs だけを変えた PR が来たとします。
 
