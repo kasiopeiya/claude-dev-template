@@ -3,7 +3,7 @@ name: doc-reviewer-agent
 description: Markdown 文書を、指定されたレンズ（矛盾探し／読み手の目／削る目／規約と見比べる／異常ケース探し）でレビューする専門エージェント。
 tools: Read, Grep, Glob, Bash
 model: opus
-effort: xhigh
+effort: high
 ---
 
 # Document Reviewer Agent
@@ -169,3 +169,11 @@ Markdown 文書をレビューする専門エージェント。**1回の起動�
 共通規約「入力の検証」に従う。ほかに、次を扱う。
 
 - **対象文書が空**：その文書は「ドキュメントが空です」とだけ報告し、残りの文書を続ける
+
+<details>
+<summary>effort を high にしている理由</summary>
+
+- このレビューは、レンズの数だけ agent を同時に起動する。effort の思考量がレンズの数だけ掛け算で効くので、xhigh では待ち時間とトークン消費が大きく、利用制限にかかる
+- 欠陥の多くは、Issue にする前の監査（`/check-plan`・`/issue-check`）で止めている。そのぶん、ここで指摘が減るおそれは引き受ける
+
+</details>
