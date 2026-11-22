@@ -160,7 +160,7 @@ fi
 
 1なら単独セッションなので、既定スコープをそのまま使う。
 
-CLAUDE.md に従って着手時（編集を始める前）に数えたときは、2以上（0 を含む）なら専用の worktree を切って入る。
+CLAUDE.md に従って着手時（Issue 番号で頼まれたなら `move-issue-card` の直後。`decide-issue-start` と最初の Skill より前）に数えたときは、2以上（0 を含む）なら専用の worktree を切って入る。起動済みの subagent は起動時の作業フォルダで動き続けるので、途中で worktree に入ると、その Bash が隔離ガードに拒まれる。
 
 ```bash
 git worktree add --no-track ../cdt-<Issue番号> -b <ブランチ> origin/<デフォルトブランチ>
