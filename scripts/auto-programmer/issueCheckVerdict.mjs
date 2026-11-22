@@ -17,15 +17,18 @@
 //   監査を打たないので `issue:checked` が無いのは正常で、そこで止めると急げない。人間向けのラベルと対象ラベルの
 //   確認は外さない（止めるべき Issue に着手しないことは速さより優先する）。Auto Programmer は指定しない。
 // - 対話の「issue N 対応して」の経路は、scripts/decide-issue-start.mjs がこのファイルの関数を呼ぶ。
+//   止めた理由が人間向けのどのラベルかを humanOnlyLabel で返すのは、対話の経路が needs-human-decision のときだけ
+//   案内を変えるため。理由の文言を読んで見分けると、文言を直したときに黙って壊れる。
 // - I/O を持たない層をここに切り出すことで、GitHub に触れずに確かめられる。
 
 export const ISSUE_CHECKED_LABEL = 'issue:checked'
 // 週次ワークフローが起票した Issue に付くラベル。表記は docs/policy/issue-policy.md の週次ラベルの行が正
 const WEEKLY_ISSUE_LABELS = ['doc-audit-weekly', 'code-policy-weekly']
+export const NEEDS_HUMAN_DECISION_LABEL = 'needs-human-decision'
 // 人間が方針を決める・人間が作業する Issue に付くラベルと、実装を止めるときに記録へ残す判定の言い回し。
 // 子を着手待ちに載せるかの判定も HUMAN_ONLY_LABELS を使い、人間向けのラベルが増えたときに片方だけ直る食い違いを防ぐ
 const HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE = new Map([
-  ['needs-human-decision', '人間の判断を要する'],
+  [NEEDS_HUMAN_DECISION_LABEL, '人間の判断を要する'],
   ['ready-for-human', '人間しかできない作業だ']
 ])
 export const HUMAN_ONLY_LABELS = [...HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE.keys()]
@@ -49,7 +52,7 @@ export function shouldRunIssueCheck(labelNames) {
  * @param {{ state: string, labelNames: string[] }} issue 監査後（監査済みで飛ばしたときはその時点）に引き直した Issue（state は gh の表記で 'OPEN' / 'CLOSED'）
  * @param {string} targetIssueLabel 実装へ進めてよい Issue に付く対象ラベル（config.mjs の targetIssueLabel）
  * @param {{ isWritebackCheckSkipped?: boolean }} [options] `isWritebackCheckSkipped` が true なら、判定が書き戻されたかの確認だけを外す（人間が監査を飛ばして急ぐときの指定。既定は false）。人間向けのラベル・対象ラベルの確認は外さない
- * @returns {{ reason: string, isVerdict: boolean } | null} 止める理由と、それが /issue-check の判定そのものか（判定が書き戻されていなければ false）。実装へ進めてよければ null
+ * @returns {{ reason: string, isVerdict: boolean, humanOnlyLabel: string | null } | null} 止める理由と、それが /issue-check の判定そのものか（判定が書き戻されていなければ false）と、人間向けのラベルで止めたならそのラベル名（それ以外の理由なら null）。実装へ進めてよければ null
  */
 export function findSkipImplementationDecision(
   { state, labelNames },
@@ -57,22 +60,35 @@ export function findSkipImplementationDecision(
   { isWritebackCheckSkipped = false } = {}
 ) {
   if (state !== 'OPEN') {
-    return { reason: '/issue-check が不要と判定して close しました', isVerdict: true }
+    return {
+      reason: '/issue-check が不要と判定して close しました',
+      isVerdict: true,
+      humanOnlyLabel: null
+    }
   }
   // 監査を走らせる条件が監査後も残っている＝判定が書き戻されていない
   if (!isWritebackCheckSkipped && shouldRunIssueCheck(labelNames)) {
-    return { reason: '/issue-check が判定を書き戻しませんでした', isVerdict: false }
+    return {
+      reason: '/issue-check が判定を書き戻しませんでした',
+      isVerdict: false,
+      humanOnlyLabel: null
+    }
   }
   for (const [humanOnlyLabel, verdictPhrase] of HUMAN_ONLY_LABEL_TO_VERDICT_PHRASE) {
     if (labelNames.includes(humanOnlyLabel)) {
       return {
         reason: `/issue-check が${verdictPhrase}と判定しました（${humanOnlyLabel}）`,
-        isVerdict: true
+        isVerdict: true,
+        humanOnlyLabel
       }
     }
   }
   if (!labelNames.includes(targetIssueLabel)) {
-    return { reason: `/issue-check が ${targetIssueLabel} を外しました`, isVerdict: true }
+    return {
+      reason: `/issue-check が ${targetIssueLabel} を外しました`,
+      isVerdict: true,
+      humanOnlyLabel: null
+    }
   }
   return null
 }
