@@ -31,6 +31,10 @@
 //   同じ扱いにし、同じ Issue への答えを両経路で揃える。節の読み方は startOrder.mjs の extractBlockerIssueNumbers を流用し、
 //   2か所に持たない。節が読めない・ブロッカーの state を引けないときも止める側に倒す。未完の依存先を待たずに実装すると、
 //   依存先がまだ決めていない用語や名前を書きうる（Issue #1952）。
+// - `needs-human-decision` で止めるときだけ、案内の行に「実装フローの先頭が `/grill-me` なら止まらず起動してよい」例外を
+//   載せる。対話の経路は人間がその場にいて、`/grill-me` は人間と対話して方針を詰める Skill なので、人間判断の印と食い違わない。
+//   1行目は `止まる：` のまま変えず、`/asap` の「止まる指示なら終了」も変えない。`--skip-issue-check`（`/asap`）では例外を出さない。
+//   例外を CLAUDE.md に書くと毎回読む文書が増え、`進む：` を返すと Issue 本文の表を機械で読む結合が増える（Issue #1940）。
 // - 対象ラベルは config.mjs の targetIssueLabel から読み、このファイルには持たない。
 // - `進む：` の1行目に、実装フローの表の「順」の読み方（同じ順の Skill は並行して起動してよい）を載せる。
 //   CLAUDE.md は「記載順に実行する」と書くだけで、従わせるのはこの1行目だけである。CLAUDE.md を変えずに、
@@ -41,6 +45,7 @@
 
 import {
   findSkipImplementationDecision,
+  NEEDS_HUMAN_DECISION_LABEL,
   shouldRunIssueCheck
 } from './auto-programmer/issueCheckVerdict.mjs'
 import { runJson } from './auto-programmer/shell.mjs'
@@ -90,6 +95,10 @@ const SUB_ISSUES_QUERY = `query($owner: String!, $name: String!, $number: Int!) 
  */
 const LABELS_NOT_FROM_THIS_RUN_NOTE =
   '今回は /issue-check を打っていません。理由は、前回の監査か人間が付けたラベルの状態です'
+
+// needs-human-decision で止めるとき、止める案内の行と差し替える
+const GRILL_ME_EXCEPTION_GUIDANCE =
+  '人間がこの対話で着手を頼んだ・選んだ Issue で、実装フロー（使用するSkill）の先頭が `/grill-me` なら、止まらず `/grill-me` を起動してください。それ以外は、この Issue には着手せず、理由を人間に伝えて止まってください'
 
 let decisionOutput
 try {
@@ -299,7 +308,9 @@ function decideIssueStart(
   const skipDecision = findSkipImplementationDecision({ state, labelNames }, targetIssueLabel, {
     isWritebackCheckSkipped: isIssueCheckSkipped
   })
-  if (skipDecision !== null) return buildSkipOutput(skipDecision.reason, hasRunIssueCheck)
+  if (skipDecision !== null) {
+    return buildSkipOutput(skipDecision, { hasRunIssueCheck, isIssueCheckSkipped })
+  }
 
   return buildProceedOutput(issueNumber, isIssueCheckSkipped)
 }
@@ -320,12 +331,18 @@ function buildStopOutput(reason) {
 /**
  * ラベルの状態から実装を止めるときの出力を組む。今回 /issue-check を打っていなければ、注記を足す。
  *
- * @param {string} reason findSkipImplementationDecision が返した、止める理由
- * @param {boolean} hasRunIssueCheck 今回 /issue-check を打った後か
+ * `needs-human-decision` で止めるときは、`--skip-issue-check` が無ければ案内の行を `/grill-me` の例外つきに差し替える。
+ *
+ * @param {{ reason: string, humanOnlyLabel: string | null }} skipDecision findSkipImplementationDecision が返した、止める理由と人間向けのラベル
+ * @param {{ hasRunIssueCheck: boolean, isIssueCheckSkipped: boolean }} context 今回 /issue-check を打った後か・監査を飛ばすか
  * @returns {DecisionOutput} 判定の出力
  */
-function buildSkipOutput(reason, hasRunIssueCheck) {
-  const stopOutput = buildStopOutput(reason)
+function buildSkipOutput({ reason, humanOnlyLabel }, { hasRunIssueCheck, isIssueCheckSkipped }) {
+  const baseOutput = buildStopOutput(reason)
+  const stopOutput =
+    humanOnlyLabel === NEEDS_HUMAN_DECISION_LABEL && !isIssueCheckSkipped
+      ? { ...baseOutput, guidanceLines: [GRILL_ME_EXCEPTION_GUIDANCE] }
+      : baseOutput
   if (hasRunIssueCheck) return stopOutput
   return {
     ...stopOutput,
