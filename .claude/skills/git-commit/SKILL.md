@@ -164,10 +164,10 @@ CLAUDE.md に従って着手時（編集を始める前）に数えたときは�
 
 ```bash
 git worktree add --no-track ../cdt-<Issue番号> -b <ブランチ> origin/<デフォルトブランチ>
-cd ../cdt-<Issue番号> && npm ci
+cd ../cdt-<Issue番号> && npm ci && (cd samples/infra && npm ci) && (cd samples/app/backend && npm ci)
 ```
 
-`<デフォルトブランチ>` は `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` で引く。切ったら `EnterWorktree`（`path` 指定）で入って作業する。`cd` ではセッションが移らず、ターン末ゲートも worktree を見ない。マージ後の worktree は、着手時に打つ `npm run prune-merged-branches-and-worktrees` が消す。
+`samples/` の2か所は、直下と別に `package-lock.json` を持つ。直下の `npm ci` だけでは入らず、`npm run knip` と `npm run check:static` が依存の欠落で落ちる。`<デフォルトブランチ>` は `gh repo view --json defaultBranchRef --jq .defaultBranchRef.name` で引く。切ったら `EnterWorktree`（`path` 指定）で入って作業する。`cd` ではセッションが移らず、ターン末ゲートも worktree を見ない。マージ後の worktree は、着手時に打つ `npm run prune-merged-branches-and-worktrees` が消す。
 
 範囲を決めたら現在の状態を把握する。**スコープに不要なコマンドは実行しない**（`work` なら staged 側、`stage` なら worktree 側は取得不要）。依存関係のないコマンドは1回の Bash 呼び出しにまとめる：
 
