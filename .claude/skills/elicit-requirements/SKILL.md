@@ -134,7 +134,7 @@ ultrathink
 `docs/requirements-detail.md` が無ければ、書く前に次の順で作る。`docs/requirements-detail.md` はテンプレートの同期（`sync-template.sh`）の除外パスで、1ファイルで書き始めた利用先には届かない。
 
 1. Rule「2つのファイルと対象読者」の `docs/requirements-detail.md` の文面と見出しのとおりに作る
-2. `docs/requirements.md` に、`置くファイル` 列が `requirements-detail.md` を示す節があれば、手順1で作った同じ名前の空の `###` 見出しを、その節（`###` の見出しごと、中身を変えずに）で置き換え、`docs/requirements.md` からは消す。置き換えた節の見出しの直後に、Rule「節の冒頭に置く項目の説明」の段落が無ければ足す。属性の値制約一覧の2つの表の直前に、`#### 値の種類ごとの既定`・`#### 既定と違う属性の値制約` の見出しが無ければ足す
+2. `docs/requirements.md` に、`置くファイル` 列が `requirements-detail.md` を示す節があれば、手順1で作った同じ名前の空の `###` 見出しを、その節（`###` の見出しごと、中身を変えずに）で置き換え、`docs/requirements.md` からは消す。置き換えた節の見出しの直後に、Rule「節の冒頭に置く項目の説明」の段落が無ければ足す。属性の値制約一覧の2つの表の直前に、`#### 共通の値制約`・`#### 個別の値制約` の見出しが無ければ足す
 3. `docs/requirements.md` の `#` 見出しの直後に、Rule の文面どおりの対象読者の一文が無ければ足す
 
 各項目の粒度・密度は [samples/docs/requirements.md](../../../samples/docs/requirements.md) と [samples/docs/requirements-detail.md](../../../samples/docs/requirements-detail.md)（会員ポイント管理システムの記述サンプル）を手本にする。
