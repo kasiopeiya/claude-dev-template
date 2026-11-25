@@ -595,13 +595,13 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    start(["購入確定イベントを受信 IO-01"]) --> valid{"会員番号が AC-01 に適合?"}
-    valid -->|不適合| reject(["受付拒否 IO-03"])
-    valid -->|適合| dup{"同じ購入確定IDを受信済み? BR-07"}
-    dup -->|受信済み| ack(["付与せず受領済み IO-03"])
-    dup -->|初回| zero{"付与ポイントが1以上? BR-01 BR-02 BR-12"}
-    zero -->|0| none(["ロットを発行せず付与ポイント0 IO-03"])
-    zero -->|1以上| granted(["ロットとポイント履歴ができ、付与結果と残高を返す IO-03 BR-03 BR-09 BR-10"])
+    start(["購入確定イベントを受信"]) --> valid{"会員番号の形式が正しい?"}
+    valid -->|正しくない| reject(["受付拒否"])
+    valid -->|正しい| dup{"同じ購入確定IDを受信済み?"}
+    dup -->|受信済み| ack(["付与せず受領済み"])
+    dup -->|初回| zero{"付与ポイントが1以上?"}
+    zero -->|0| none(["ロットを発行せず付与ポイント0"])
+    zero -->|1以上| granted(["ロットとポイント履歴ができ、付与結果と残高を返す"])
 
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
     classDef result fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
@@ -611,7 +611,7 @@ flowchart TD
     class reject error
 ```
 
-**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。
 
 </details>
 
@@ -620,13 +620,13 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    start(["利用要求を受信 IO-02"]) --> auth{"EC からの要求で、会員番号が本人確認の結果と違う? IO-21"}
-    auth -->|違う| deny(["引き当てせず拒否 IO-03"])
-    auth -->|同じ、または POS からの要求| dup{"同じ利用要求IDを受信済み? BR-15"}
-    dup -->|受信済み| ack(["引き当てせず受領済み IO-03"])
-    dup -->|初回| enough{"利用可能残高が利用希望ポイント数以上? BR-05"}
-    enough -->|不足| reject(["利用拒否 IO-03"])
-    enough -->|足りる| used(["期限の近いロットから引き当てられ、ポイント履歴ができ、利用結果と残高を返す IO-03 BR-04 BR-10"])
+    start(["利用要求を受信"]) --> auth{"EC からの要求で、会員番号が本人確認の結果と違う?"}
+    auth -->|違う| deny(["引き当てせず拒否"])
+    auth -->|同じ、または POS からの要求| dup{"同じ利用要求IDを受信済み?"}
+    dup -->|受信済み| ack(["引き当てせず受領済み"])
+    dup -->|初回| enough{"利用可能残高が利用希望ポイント数以上?"}
+    enough -->|不足| reject(["利用拒否"])
+    enough -->|足りる| used(["期限の近いロットから引き当てられ、ポイント履歴ができ、利用結果と残高を返す"])
 
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
     classDef result fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
@@ -636,7 +636,7 @@ flowchart TD
     class deny,reject error
 ```
 
-**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。
 
 </details>
 
@@ -646,8 +646,8 @@ flowchart TD
 ```mermaid
 flowchart TD
     start(["日次起動"]) --> fail{"失効できなかったロットがある?"}
-    fail -->|ない| done(["対象ロットを失効し、ポイント履歴ができ、実行結果を返す IO-18 BR-03 BR-10"])
-    fail -->|ある| part(["ほかのロットを失効し、失効できなかった数を実行結果に残す IO-18"])
+    fail -->|ない| done(["対象ロットを失効し、ポイント履歴ができ、実行結果を返す"])
+    fail -->|ある| part(["ほかのロットを失効し、失効できなかった数を実行結果に残す"])
 
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
     classDef result fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
@@ -657,12 +657,12 @@ flowchart TD
     class part error
 ```
 
-**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝すべて失効した結果 ／ 🟥 桃＝一部を失効できなかった結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝すべて失効した結果 ／ 🟥 桃＝一部を失効できなかった結果。
 
 ```mermaid
 flowchart TD
-    start(["結果確認を受信 IO-17"]) --> role{"送り手の役割が運用担当? IO-22 AC-31"}
-    role -->|運用担当| rec(["確認者・確認日時・確認した実行日を記録する BR-17"])
+    start(["結果確認を受信"]) --> role{"送り手の役割が運用担当?"}
+    role -->|運用担当| rec(["確認者・確認日時・確認した実行日を記録する"])
     role -->|ほかの役割| norec(["記録しない"])
 
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
@@ -673,7 +673,7 @@ flowchart TD
     class norec error
 ```
 
-**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。
 
 </details>
 
@@ -682,15 +682,15 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    start(["照会要求を受信 IO-07"]) --> who{"送り手は?"}
-    who -->|会員| self{"会員番号が本人確認の結果と同じ? IO-21"}
-    who -->|社内利用者| role{"役割が店舗スタッフか CS 部門? IO-22 AC-42"}
-    self -->|違う| deny(["受付拒否 IO-04 AC-40"])
+    start(["照会要求を受信"]) --> who{"送り手は?"}
+    who -->|会員| self{"会員番号が本人確認の結果と同じ?"}
+    who -->|社内利用者| role{"役割が店舗スタッフか CS 部門?"}
+    self -->|違う| deny(["受付拒否"])
     role -->|ほかの役割| deny
-    self -->|同じ| found{"会員番号の会員がいる? AC-01"}
+    self -->|同じ| found{"会員番号の会員がいる?"}
     role -->|店舗スタッフか CS 部門| found
-    found -->|いない| none(["該当なし IO-04 AC-40"])
-    found -->|いる| ok(["残高・ポイント履歴・失効予定ポイントを返す IO-04 BR-10 BR-14"])
+    found -->|いない| none(["該当なし"])
+    found -->|いる| ok(["残高・ポイント履歴・失効予定ポイントを返す"])
 
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
     classDef result fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
@@ -700,7 +700,7 @@ flowchart TD
     class deny error
 ```
 
-**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝受け付けた結果 ／ 🟥 桃＝受け付けない結果。
 
 </details>
 
@@ -709,17 +709,17 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    start(["手動調整申請を受信 IO-06"]) --> applicant{"申請者の役割が店舗スタッフか運用担当? IO-22 AC-15"}
+    start(["手動調整申請を受信"]) --> applicant{"申請者の役割が店舗スタッフか運用担当?"}
     applicant -->|ほかの役割| refuse(["申請を受け付けない"])
-    applicant -->|店舗スタッフか運用担当| approval{"手動調整承認を受けた? IO-16 BR-16"}
+    applicant -->|店舗スタッフか運用担当| approval{"手動調整承認を受けた?"}
     approval -->|受けていない| hold(["調整に反映せず、申請は承認前のまま"])
-    approval -->|受けた| same{"承認者が運用担当で、申請者と別の人? IO-22 AC-38"}
+    approval -->|受けた| same{"承認者が運用担当で、申請者と別の人?"}
     same -->|違う| hold
-    same -->|そのとおり| sign{"調整ポイントの符号は? AC-10"}
-    sign -->|プラス| plus(["手動調整付与のロットとポイント履歴・監査証跡ができ、結果は反映 IO-14 IO-20 BR-10 BR-12"])
-    sign -->|マイナス| neg{"減算後の残高がマイナスになる? BR-11"}
-    neg -->|なる| reject(["結果は不受理、監査証跡は不受理で残る IO-14 IO-20"])
-    neg -->|ならない| minus(["期限の近いロットから減算され、調整減算のポイント履歴・監査証跡ができ、結果は反映 IO-14 IO-20 BR-11"])
+    same -->|そのとおり| sign{"調整ポイントの符号は?"}
+    sign -->|プラス| plus(["手動調整付与のロットとポイント履歴・監査証跡ができ、結果は反映"])
+    sign -->|マイナス| neg{"減算後の残高がマイナスになる?"}
+    neg -->|なる| reject(["結果は不受理、監査証跡は不受理で残る"])
+    neg -->|ならない| minus(["期限の近いロットから減算され、調整減算のポイント履歴・監査証跡ができ、結果は反映"])
 
     classDef decision fill:#FFD700,stroke:#333,stroke-width:2px,color:black
     classDef result fill:#87CEEB,stroke:#333,stroke-width:2px,color:darkblue
@@ -729,7 +729,7 @@ flowchart TD
     class refuse,hold,reject error
 ```
 
-**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝調整に反映した結果 ／ 🟥 桃＝調整に反映しない結果。ノードに添えた ID は、従うルール・値制約と入出力情報を指す。
+**凡例：** 🟨 金＝結果が分かれる判定 ／ 🟦 青＝調整に反映した結果 ／ 🟥 桃＝調整に反映しない結果。
 
 </details>
 
