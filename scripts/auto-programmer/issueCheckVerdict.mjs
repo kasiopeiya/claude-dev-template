@@ -13,8 +13,8 @@
 // - 対象ラベル（ai-fixable）が外れた Issue も止める。/issue-check がラベルを付け替えると対象ラベルが外れるので、
 //   止める理由のラベルを1つずつ並べるだけでは、ラベルが増えたときに取りこぼす。
 // - ラベル名は `.claude/skills/issue-check/SKILL.md` が貼る表記が正。
-// - 書き戻しの確認だけを外す指定（isWritebackCheckSkipped）は、人間が監査を飛ばして急ぐ経路（`/asap`）のためにある。
-//   監査を打たないので `issue:checked` が無いのは正常で、そこで止めると急げない。人間向けのラベルと対象ラベルの
+// - 書き戻しの確認だけを外す指定（isWritebackCheckSkipped）は、人間が監査を飛ばす経路（`/asap`・`/no-issue-check`）のためにある。
+//   監査を打たないので `issue:checked` が無いのは正常で、そこで止めると監査を飛ばせない。人間向けのラベルと対象ラベルの
 //   確認は外さない（止めるべき Issue に着手しないことは速さより優先する）。Auto Programmer は指定しない。
 // - 対話の「issue N 対応して」の経路は、scripts/decide-issue-start.mjs がこのファイルの関数を呼ぶ。
 //   止めた理由が人間向けのどのラベルかを humanOnlyLabel で返すのは、対話の経路が needs-human-decision のときだけ
