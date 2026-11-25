@@ -22,18 +22,20 @@
 // - `--after-issue-check` は、監査を打った後だと呼ぶ側が渡す印にする。このコマンドは前回の結果を覚えないので、
 //   旗が無いと、監査が判定を書き戻さないたびに `監査する：` が返り続ける。旗があれば監査を返さず、
 //   判定が書き戻されたかを findSkipImplementationDecision が見て、書き戻されていなければ止める。
-// - `--skip-issue-check` は、人間が監査を飛ばして急ぐ Skill（`/asap`）だけが渡す。#1231 の「『issue N 対応して』では
-//   issue-check を自動で通す」を、人間しか打てない Skill に限って外す。読み替えを SKILL.md に書くと、人間判断待ちの
+// - `--skip-issue-check` は、人間が監査を飛ばす Skill（急ぐ `/asap` と、監査だけを飛ばす `/no-issue-check`）だけが渡す。
+//   #1231 の「『issue N 対応して』では issue-check を自動で通す」を、人間しか打てない Skill に限って外す。読み替えを SKILL.md に書くと、人間判断待ちの
 //   Issue をラベルを見ずに実装しうるので、旗として本スクリプトに置く。旗があれば、監査の指示と「監査が判定を書き戻さなかった」
 //   で止める判定だけを外す。close 済み・子を持つ親・未完のブロッカー・人間向けのラベル・対象ラベルが無い、の判定は旗の有無で変えない。
 //   子を選ばせるときは、打ち直しにも旗を付けさせる。旗なしで打ち直すと、子の判定で `監査する：` が返るため。
+//   `進む：` は旗の有無で1行目を変えず、`/asap` 向けの案内を2行目に足す。どの Skill から打たれたかはこのコマンドに
+//   分からないので、2行目を「`/asap` から打ったときは」と名指しして、`/asap` だけが自分の手順へ分かれる（Issue #1990）。
 // - ブロッカーは本文の `## ブロッカー` 節から読み、すべて closed と確かめられなければ止める。無人の経路（board.mjs）と
 //   同じ扱いにし、同じ Issue への答えを両経路で揃える。節の読み方は startOrder.mjs の extractBlockerIssueNumbers を流用し、
 //   2か所に持たない。節が読めない・ブロッカーの state を引けないときも止める側に倒す。未完の依存先を待たずに実装すると、
 //   依存先がまだ決めていない用語や名前を書きうる（Issue #1952）。
 // - `needs-human-decision` で止めるときだけ、案内の行に「実装フローの先頭が `/grill-me` なら止まらず起動してよい」例外を
 //   載せる。対話の経路は人間がその場にいて、`/grill-me` は人間と対話して方針を詰める Skill なので、人間判断の印と食い違わない。
-//   1行目は `止まる：` のまま変えず、`/asap` の「止まる指示なら終了」も変えない。`--skip-issue-check`（`/asap`）では例外を出さない。
+//   1行目は `止まる：` のまま変えず、`/asap` の「止まる指示なら終了」も変えない。`--skip-issue-check`（`/asap`・`/no-issue-check`）では例外を出さない。
 //   例外を CLAUDE.md に書くと毎回読む文書が増え、`進む：` を返すと Issue 本文の表を機械で読む結合が増える（Issue #1940）。
 // - 対象ラベルは config.mjs の targetIssueLabel から読み、このファイルには持たない。
 // - `進む：` の1行目に、実装フローの表の「順」の読み方（同じ順の Skill は並行して起動してよい）を載せる。
@@ -369,22 +371,17 @@ function buildRunIssueCheckOutput(issueNumber) {
  * 実装へ進ませるときの出力を組む。
  *
  * @param {number} issueNumber 着手する Issue の番号
- * @param {boolean} isIssueCheckSkipped 監査を飛ばして進むか（`--skip-issue-check`）。true なら案内の行は `/asap` の手順を指す
+ * @param {boolean} isIssueCheckSkipped 監査を飛ばして進むか（`--skip-issue-check`）。true なら、`/asap` から打ったときの案内の行を足す
  * @returns {DecisionOutput} 判定の出力
  */
 function buildProceedOutput(issueNumber, isIssueCheckSkipped) {
-  const headline = `進む：#${issueNumber} は実装へ進めます`
-  if (isIssueCheckSkipped) {
-    return {
-      headline,
-      guidanceLines: [
-        '/asap の手順で進めてください（Issue の「実装フロー（使用するSkill）」の Skill は呼びません）'
-      ]
-    }
-  }
   return {
-    headline: `${headline}。${PARALLEL_FLOW_INSTRUCTION}`,
-    guidanceLines: []
+    headline: `進む：#${issueNumber} は実装へ進めます。${PARALLEL_FLOW_INSTRUCTION}`,
+    guidanceLines: isIssueCheckSkipped
+      ? [
+          '/asap から打ったときは /asap の手順で進めてください（Issue の「実装フロー（使用するSkill）」の Skill は呼びません）'
+        ]
+      : []
   }
 }
 
