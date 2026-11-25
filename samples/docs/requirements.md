@@ -322,7 +322,7 @@ erDiagram
     NOTICE["失効予告"]
     RESULT["失効予告メールの配信結果"]
     LOT["ロット"]
-    MEMBER ||--o| NOTICE : "F-06 の実行1回につき"
+    MEMBER ||--o| NOTICE : "失効予告通知の実行1回につき"
     NOTICE ||--o{ RESULT : 配信結果を持つ
     NOTICE }o--|{ LOT : 含む
 ```
