@@ -99,7 +99,7 @@ flowchart LR
     end
 
     Label{{"🏷️ needs-human-review<br/>マージ可否を決める"}}
-    Triage2{{"🏷️ needs-manual-triage<br/>振る舞い変更のfeatureラベルを付けるべきかどうかの判定不能<br/>needs-human-reviewをつける"}}
+    Triage2{{"🏷️ needs-manual-triage<br/>レビュー要否を自動判定できなかった<br/>needs-human-reviewをつける"}}
 
     subgraph AutoJob["🔀 auto-merge ジョブ（merge 権限あり）"]
         Judge{付いている?}
@@ -112,7 +112,7 @@ flowchart LR
     Triage ==> AutoJob
     Det -. 付与 .-> Label
     Ai -. 付与 .-> Label
-    Ai -. 振る舞い変更判定不能 .-> Triage2
+    Ai -. レビュー要否を判定できない .-> Triage2
     Label -. 判定材料 .-> Judge
     Label -. 実行の条件 .-> Chk
     Label -. 起票の条件 .-> Iss
