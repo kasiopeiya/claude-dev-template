@@ -1,4 +1,4 @@
-// 責務: 同じマシンで動く複数の auto-programmer が、1つのものを同時に使わないよう、PID 入りのロックファイルを取る・外す。
+// 責務: 同じマシンで動く複数のプロセスが、1つのものを同時に使わないよう、PID 入りのロックファイルを取る・外す。
 //   番号付きのロックは一番小さい空き番号を取り、名前付きのロックはその名前のものだけを取る。判断（死んだロック・空き番号）は pidLockFileDecision.mjs が持つ。
 //
 // 設計意図（WHY）:
@@ -7,6 +7,9 @@
 // - 死んだロックの取り直しは、取り直しの印を排他で作れた1つのプロセスだけが行う。印の名前に死んだロックの中身を織り込むので、
 //   別のプロセスが取り直し終えた後の新しいロックには効かない。2つのプロセスが同時に取り直しても、取れるのは1つだけになる。
 // - 取り直しの途中で落ちたプロセスの印も、同じ手順で取り直す。印が残ったままだと、そのロックを誰も取り直せなくなる。
+// - ロックの持ち主の PID は呼び出し側が渡せる（既定はこのプロセス）。取ってすぐ終わるスクリプトが、長く生きる親のプロセス
+//   （Claude Code のセッションなど）にロックを持たせるため。取り直しの印の持ち主は、渡された PID でなくこのプロセスにする。
+//   印は取り直している間だけのもので、途中で落ちたときに死んだとみなされないと、そのロックを誰も取り直せなくなる。
 
 import { createHash, randomUUID } from 'node:crypto'
 import { linkSync, mkdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
@@ -19,6 +22,7 @@ import {
   readLockHolderPid,
   selectLowestFreeNumber
 } from './pidLockFileDecision.mjs'
+import { isProcessAlive } from './processLiveness.mjs'
 
 /** @typedef {{ lockFilePath: string, lockFileContent: string }} AcquiredLockFile 取ったロックファイルのパスと、書いた中身 */
 
@@ -38,16 +42,23 @@ const TAKEOVER_MARK_DIGEST_HEX_LENGTH = 16
 /**
  * 1番から順に、一番小さい空き番号のロックを取る。ロックファイルは `<lockDirectory>/<lockFileNamePrefix>-<番号>.lock` に置く。
  *
- * @param {{ lockDirectory: string, lockFileNamePrefix: string }} params ロックファイルの置き場（無ければ作る）と、ファイル名の頭
+ * @param {{ lockDirectory: string, lockFileNamePrefix: string, ownerPid?: number }} params ロックファイルの置き場（無ければ作る）と、ファイル名の頭と、ロックに書く持ち主の PID（省けばこのプロセス。生きているプロセスの PID を渡す。終わったプロセスの PID では、取ったロックがすぐ死んだとみなされ、ほかのプロセスに取り直される）
  * @returns {{ lockNumber: number, lock: AcquiredLockFile }} 取った番号とロック
  * @throws {Error} ファイルを読めなかった・作れなかった・消せなかったとき
  */
-export function acquireLowestFreeNumberedLockFile({ lockDirectory, lockFileNamePrefix }) {
+export function acquireLowestFreeNumberedLockFile({
+  lockDirectory,
+  lockFileNamePrefix,
+  ownerPid = process.pid
+}) {
   mkdirSync(lockDirectory, { recursive: true })
   const occupiedNumbers = new Set()
   for (;;) {
     const lockNumber = selectLowestFreeNumber(occupiedNumbers)
-    const lock = tryAcquireLockFile(join(lockDirectory, `${lockFileNamePrefix}-${lockNumber}.lock`))
+    const lock = tryAcquireLockFile(
+      join(lockDirectory, `${lockFileNamePrefix}-${lockNumber}.lock`),
+      ownerPid
+    )
     if (lock !== null) return { lockNumber, lock }
     occupiedNumbers.add(lockNumber)
   }
@@ -56,14 +67,14 @@ export function acquireLowestFreeNumberedLockFile({ lockDirectory, lockFileNameP
 /**
  * 名前で指したロックを1つ取る。ロックファイルは `<lockDirectory>/<lockName>.lock` に置く。
  *
- * @param {{ lockDirectory: string, lockName: string }} params ロックファイルの置き場（無ければ作る）と、拡張子を除いた名前
+ * @param {{ lockDirectory: string, lockName: string, ownerPid?: number }} params ロックファイルの置き場（無ければ作る）と、拡張子を除いた名前と、ロックに書く持ち主の PID（省けばこのプロセス。生きているプロセスの PID を渡す。終わったプロセスの PID では、取ったロックがすぐ死んだとみなされ、ほかのプロセスに取り直される）
  * @returns {{ lock: AcquiredLockFile | null, holderPid: number | null }} 取ったロック（取れなければ null）と、取れなかったときのいまの持ち主の PID（取れた・持ち主を読めなかったときは null）
  * @throws {Error} ファイルを読めなかった・作れなかった・消せなかったとき
  */
-export function tryAcquireNamedLockFile({ lockDirectory, lockName }) {
+export function tryAcquireNamedLockFile({ lockDirectory, lockName, ownerPid = process.pid }) {
   mkdirSync(lockDirectory, { recursive: true })
   const lockFilePath = join(lockDirectory, `${lockName}.lock`)
-  const lock = tryAcquireLockFile(lockFilePath)
+  const lock = tryAcquireLockFile(lockFilePath, ownerPid)
   if (lock !== null) return { lock, holderPid: null }
   const holderLockFileContent = readFileIfExists(lockFilePath)
   return {
@@ -115,22 +126,6 @@ function readCurrentBootId() {
 }
 
 /**
- * PID のプロセスが動いているかを確かめる。シグナル 0 は届くかだけを確かめ、プロセスには何もしない。
- *
- * @param {number} pid 確かめるプロセスの PID
- * @returns {boolean} 動いていれば true
- */
-function isProcessRunning(pid) {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (error) {
-    // EPERM は、別のユーザーのプロセスとして動いている
-    return error?.code === 'EPERM'
-  }
-}
-
-/**
  * ロックが死んでいるかを、このマシンのいまの PID の状態と起動で決める。
  *
  * @param {string} lockFileContent ロックファイルの中身
@@ -139,7 +134,7 @@ function isProcessRunning(pid) {
 function isLockDeadOnThisMachine(lockFileContent) {
   return isLockDead({
     lockFileContent,
-    isProcessRunning,
+    isProcessAlive,
     currentBoot: {
       bootedAtMs: Date.now() - uptime() * MILLISECONDS_PER_SECOND,
       bootId: readCurrentBootId()
@@ -148,15 +143,16 @@ function isLockDeadOnThisMachine(lockFileContent) {
 }
 
 /**
- * このプロセスを持ち主とするロックファイルを、無いときだけ作る。
+ * ownerPid を持ち主とするロックファイルを、無いときだけ作る。
  *
  * @param {string} lockFilePath 作るロックファイル
+ * @param {number} ownerPid ロックの持ち主の PID
  * @returns {string | null} 書いた中身（既にあって作れなければ null）
  * @throws {Error} 既にある以外の理由で作れなかったとき
  */
-function tryCreateLockFile(lockFilePath) {
+function tryCreateLockFile(lockFilePath, ownerPid) {
   const lockFileContent = buildLockFileContent({
-    pid: process.pid,
+    pid: ownerPid,
     createdAt: new Date(),
     bootId: readCurrentBootId()
   })
@@ -191,7 +187,7 @@ function tryRemoveDeadLockFile(lockFilePath, depth) {
     .digest('hex')
     .slice(0, TAKEOVER_MARK_DIGEST_HEX_LENGTH)
   const takeoverMarkPath = `${lockFilePath}.takeover-${contentDigest}`
-  if (tryCreateLockFile(takeoverMarkPath) === null) {
+  if (tryCreateLockFile(takeoverMarkPath, process.pid) === null) {
     return (
       tryRemoveDeadLockFile(takeoverMarkPath, depth + 1) &&
       tryRemoveDeadLockFile(lockFilePath, depth + 1)
@@ -210,12 +206,13 @@ function tryRemoveDeadLockFile(lockFilePath, depth) {
  * ロックを取る。死んだロックが残っていれば取り直す。
  *
  * @param {string} lockFilePath ロックファイル（置き場のディレクトリはあること）
+ * @param {number} ownerPid ロックの持ち主の PID
  * @returns {AcquiredLockFile | null} 取ったロック。生きているロックがある・ほかのプロセスが取り直している途中・作り直しが上限回数で取れなかったときは null
  * @throws {Error} ファイルを読めなかった・作れなかった・消せなかったとき
  */
-function tryAcquireLockFile(lockFilePath) {
+function tryAcquireLockFile(lockFilePath, ownerPid) {
   for (let attempt = 0; attempt < MAX_CREATE_ATTEMPTS; attempt++) {
-    const lockFileContent = tryCreateLockFile(lockFilePath)
+    const lockFileContent = tryCreateLockFile(lockFilePath, ownerPid)
     if (lockFileContent !== null) return { lockFilePath, lockFileContent }
     if (!tryRemoveDeadLockFile(lockFilePath, 0)) return null
   }

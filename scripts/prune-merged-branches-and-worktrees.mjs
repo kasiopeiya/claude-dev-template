@@ -10,7 +10,7 @@
 //
 // 設計意図（WHY）:
 // - 次の Issue の着手時に打つ。自動マージは後から起き、ブランチを作ったセッションは片付けに戻らないため
-// - 消すのは、デフォルトブランチへマージ済みの PR の作業と確かめたブランチだけ（判定は isCoveredByMergedPullRequest）。
+// - 消すのは、デフォルトブランチへマージ済みの PR の作業と確かめたブランチだけ（判定は mergedPullRequestCoverage.mjs の isCoveredByMergedPullRequest）。
 //   PR の無いブランチ・PR がマージされていないブランチは、取り込み済みでも消す対象にしない（出力もしない）
 // - 取り込み済みかの基準は `--merged origin/<デフォルトブランチ>`。引数なしの --merged は HEAD 基準になり、
 //   トピックブランチ上では未 push の作業を巻き込む
@@ -44,6 +44,7 @@ import {
   readLiveSessionWorkingDirectories,
   resolveClaudeConfigDirectory
 } from './liveClaudeSessions.mjs'
+import { isAncestorCommit, isCoveredByMergedPullRequest } from './mergedPullRequestCoverage.mjs'
 import { runCommand } from './runCommand.mjs'
 
 const KNOWN_OPTIONS = new Set(['--dry-run'])
@@ -240,62 +241,6 @@ function selectBranchesCoveredByMergedPullRequest({ originUrl, defaultBranchName
     if (isCovered) coveredBranches.push(branch)
   }
   return { coveredBranches, uncheckedCount }
-}
-
-/**
- * ローカルブランチが、そのブランチ名から出てデフォルトブランチへマージされた PR の作業かを確かめる。
- * 先端が PR の先端と同じかその祖先で、かつマージ直前のデフォルトブランチに含まれていなければ、その PR の作業とみなす。
- *
- * @param {{ originUrl: string, defaultBranchName: string, branch: string }} params
- *   originUrl: origin の URL / defaultBranchName: PR のマージ先 / branch: 確かめるブランチ名
- * @returns {boolean} 当てはまるマージ済み PR があれば true。PR が無い・マージされていない・PR の作業でなければ false
- * @throws {TechnicalError} gh が失敗したとき・PR のコミットが手元に無く判定できなかったとき
- */
-function isCoveredByMergedPullRequest({ originUrl, defaultBranchName, branch }) {
-  const mergedPullRequests = JSON.parse(
-    runCommand('gh', [
-      'pr',
-      'list',
-      '--repo',
-      originUrl,
-      '--head',
-      branch,
-      '--base',
-      defaultBranchName,
-      '--state',
-      'merged',
-      '--json',
-      'headRefOid,mergeCommit'
-    ])
-  )
-  // 作ったばかりのブランチも先端が origin/<デフォルトブランチ> から辿れるので、git の履歴だけではマージ済みと見分けられない。
-  // PR はブランチ名で引けるが、名前だけで照合すると、マージ済み PR と同じ名前で作り直したブランチまで消す。
-  // PR の先端と同じコミットに限らないのは、PR の先端がローカルより先へ進んでいることが多いため（別の clone で直した・取り込んだ）
-  const localTip = `${LOCAL_BRANCH_REF_PREFIX}${branch}`
-  return mergedPullRequests.some(
-    ({ headRefOid, mergeCommit }) =>
-      isAncestorCommit({ ancestor: localTip, descendant: headRefOid }) &&
-      // マージ直前のデフォルトブランチに含まれる先端は、PR の作業ではなく古いデフォルトブランチから作り直したもの
-      !isAncestorCommit({ ancestor: localTip, descendant: `${mergeCommit.oid}^1` })
-  )
-}
-
-/**
- * `ancestor` が `descendant` と同じコミットか、その祖先かを確かめる。
- *
- * @param {{ ancestor: string, descendant: string }} params ancestor: 祖先と見込むコミット / descendant: 子孫と見込むコミット
- * @returns {boolean} 同じか祖先なら true
- * @throws {TechnicalError} どちらかのコミットが手元に無いなど、判定できなかったとき
- */
-function isAncestorCommit({ ancestor, descendant }) {
-  try {
-    runGit(['merge-base', '--is-ancestor', ancestor, descendant])
-    return true
-  } catch (error) {
-    // 終了コード 1 だけが「祖先でない」。それ以外（コミットが手元に無いなど）は判定の失敗なので投げる
-    if (error.cause?.status === 1) return false
-    throw error
-  }
 }
 
 /**

@@ -4,7 +4,7 @@
 // 設計意図（WHY）:
 // - 2種類を1つのモジュールに置くのは、置き場（LOCK_DIRECTORY）と、外せなくても投げない外し方（tryReleaseLockFile）を共有し、
 //   控えの持ち方だけが違うため。分けると、共有する2つを3つ目のモジュールへ出すことになる。
-// - ロックのファイルの取り方・外し方そのもの（PID・死んだロックの取り直し）は pidLockFile.mjs に任せ、ここでは持たない。
+// - ロックのファイルの取り方・外し方そのもの（PID・死んだロックの取り直し）は scripts/pidLockFile.mjs に任せ、ここでは持たない。
 //   ここが持つのは、どこに置くか・どのロックを控えるか・外せなかったときの扱いだけ。
 // - 控え（workspaceLock・issueLockKeeper の heldLock）を書き換えるのは、このモジュールの外す口だけにする。外から外すと、
 //   ファイルは消えても控えが残る（Issue のロックでは次に取るたびに投げる。理由は createIssueLockKeeper）。
@@ -18,7 +18,7 @@ import {
   acquireLowestFreeNumberedLockFile,
   releaseLockFile,
   tryAcquireNamedLockFile
-} from './pidLockFile.mjs'
+} from '../pidLockFile.mjs'
 import { showInfo, showWarning } from './ui.mjs'
 import { formatErrorMessage } from './uiFormat.mjs'
 
