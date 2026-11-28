@@ -1,5 +1,5 @@
 // 責務: PID 入りのロックファイルについて、中身の組み立て・持ち主の読み出しと、ロックが死んでいるか・一番小さい空き番号はどれかの判断を担う純粋関数だけを置く。
-//   ファイルの読み書きとプロセスの確認は pidLockFile.mjs が持つ。
+//   ファイルの読み書きは pidLockFile.mjs、プロセスの生死の確認は processLiveness.mjs が持つ。
 //
 // 設計意図（WHY）:
 // - import を1つも持たない形に保ち、ファイルもプロセスも要らずに確かめられるようにする。
@@ -80,14 +80,14 @@ function isCreatedBeforeCurrentBoot(holder, currentBoot) {
  * 読めない中身は死んだとみなす。ロックファイルは中身を書き終えてから置くので、生きている持ち主のファイルが読めないことは無い。
  * 読めないまま生きているとみなすと、そのロックは誰にも取り直せなくなる。
  *
- * @param {{ lockFileContent: string, isProcessRunning: (pid: number) => boolean, currentBoot: { bootedAtMs: number, bootId: string | null } }} params ロックファイルの中身・PID のプロセスが動いているかを答える関数・いまの起動の時刻（エポックからのミリ秒）と ID（引けない OS では null）
+ * @param {{ lockFileContent: string, isProcessAlive: (pid: number) => boolean, currentBoot: { bootedAtMs: number, bootId: string | null } }} params ロックファイルの中身・PID のプロセスが動いているかを答える関数・いまの起動の時刻（エポックからのミリ秒）と ID（引けない OS では null）
  * @returns {boolean} 死んでいれば true
  */
-export function isLockDead({ lockFileContent, isProcessRunning, currentBoot }) {
+export function isLockDead({ lockFileContent, isProcessAlive, currentBoot }) {
   const holder = parseLockFileContent(lockFileContent)
   if (holder === null) return true
   if (isCreatedBeforeCurrentBoot(holder, currentBoot)) return true
-  return !isProcessRunning(holder.pid)
+  return !isProcessAlive(holder.pid)
 }
 
 /**
