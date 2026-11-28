@@ -17,6 +17,7 @@
     "check:audit": "node scripts/ci/audit-dependencies.mjs",
     "test:hooks": "node --test .claude/hooks/policyMatcher.test.mjs .claude/hooks/policy-loader.test.mjs",
     "auto-programmer": "node scripts/auto-programmer/index.mjs",
+    "auto-programmer:dashboard": "node scripts/auto-programmer/dashboard.mjs",
     "close-issues": "node scripts/close-issues.mjs",
     "perf-report": "node scripts/perf-report.mjs",
     "perf-report-html": "node scripts/perf-report-html.mjs",

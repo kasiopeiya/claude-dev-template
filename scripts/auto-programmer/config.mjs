@@ -95,5 +95,12 @@ export const config = {
 
   // claude セッション1つにつき1ファイル、セッション中のイベント（stream-json の全行）を残すディレクトリ。
   // runLogPath と同じ理由で clone の外に置く。キーが無い config.mjs（同期した利用先の古いもの）では、Issue を拾う前に止まる
-  sessionEventLogDir: resolve(autoProgrammerHomeDir, 'session-events')
+  sessionEventLogDir: resolve(autoProgrammerHomeDir, 'session-events'),
+
+  dashboard: {
+    // 実行記録を見る画面（dashboard.mjs）が待ち受けるポート。127.0.0.1 だけで待ち受ける。このリポジトリで使うほかの開発サーバーと
+    // 重なるなら、全員で使う番号として変える。
+    // キーが無い config.mjs（同期した利用先の古いもの）では、画面は起動せずに止まる
+    port: 4380
+  }
 }

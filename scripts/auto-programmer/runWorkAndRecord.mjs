@@ -44,6 +44,8 @@ export async function runWorkAndRecord({ record, runWork, readPullRequestUrl, sp
   } finally {
     record.pullRequestUrl = readPullRequestUrl()
     record.finishedAt = new Date().toISOString()
+    // 締めの結果の分類に使う値を記録にも残す。実行記録を見る画面（dashboard.mjs）が、端末と同じ値で分類するため
+    record.isAllSessionsSucceeded = isAllSessionsSucceeded
     if (shouldMarkAsNeedsHumanCheck(record, isAllSessionsSucceeded)) {
       Object.assign(record, tryMarkAsNeedsHumanCheck(record.issueNumber))
     }
