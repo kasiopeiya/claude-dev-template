@@ -151,6 +151,7 @@ npm run auto-programmer
 | `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                                                   | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す                         |
 | `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                      | 使い切っても落ちていれば人間へ回す                                                                                    |
 | `sessionEventLogDir`          | claude セッション中のイベントを、セッションごとのファイルに残すディレクトリ               | ふだんは触らない。既定は `AUTO_PROGRAMMER_HOME` の下の `session-events/` で、置き場ごと変えるなら環境変数のほうを使う |
+| `dashboard.port`              | 実行の記録を見る画面が待ち受けるポート                                                    | ほかのプロセスが同じポートを使っていたら変える                                                                        |
 
 フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。各 Status が何を意味するかは [issue-policy](../../docs/policy/issue-policy.md)「ボードの Status の意味」が定める。
 
@@ -276,12 +277,44 @@ jq -r 'select(.type == "assistant") | .message.content[] | select(.type == "tool
 jq 'select(.type == "result") | {duration_ms, num_turns, usage}' "$f"
 ```
 
+## 実行の記録を画面で見る
+
+実行の記録は、ブラウザで開く読むだけの画面でも見られる。手元のマシンからだけ開ける。
+
+```bash
+npm run auto-programmer:dashboard
+```
+
+起動したら `http://127.0.0.1:4380/` を開く（ポートは `dashboard.port`）。止めるときは Ctrl+C を押す。Auto Programmer を動かしていなくても開ける。
+
+画面は5秒ごとに記録を読み直す。右上の「最終更新」の時刻が進んでいなければ、サーバーが止まっている。
+
+- **いまの状況**：「まだありません」と出る
+- **過去の回**：1行が1回で、新しい回が上に並ぶ
+
+「過去の回」の列は次のとおり。
+
+- **結果**：次の4つのどれか。端末の締めと読み上げと同じ判定（`runOutcome.mjs`）で決める
+  - **✓ 完了**：予定した終わり方で終えた
+  - **! 要確認**：人間が見る必要がある（`needs-human-check` が付いた回と、`/issue-check` の判定で止めた回）
+  - **✕ 失敗**：処理の途中で例外が出た
+  - **→ 子へ引き継ぎ**：子の Issue を1件以上、着手待ちに載せた
+- **Issue**：番号とタイトル。止まった理由があれば、その下に小さく出す
+- **終わった時刻**：このマシンの時刻
+- **所要時間**：始めてから終わるまでの時間
+- **CI**：CI が通れば「通過」。通っていなければ記録の `ciOutcome`
+- **PR**：記録に PR の URL があれば、そのリンク
+
+表の上のボタンで、結果ごとに絞り込める。
+
+記録は、Auto Programmer を使う全部のリポジトリで1つのファイルを共有する。Issue と PR の番号は、それぞれのリポジトリのものである。
+
 ## 別のリポジトリで使うとき
 
 直すのは次のものだけ。
 
-- **`config.mjs`**：上の表の値をその環境のものへ書き換える。書き換えないと `npm run move-issue-card` はボード未設定とみなし、カードを動かさない（担当者は足す）。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい。clone の番号とロックの置き場は既存の `workspaceDir` から導くので、同期した後も古い `config.mjs` のまま、キーを足さずに並べて動かせる。読み上げのキー `enableSpeechEnvValue` も同期では届かず、古い `config.mjs` のままではオフで動く（`AUTO_PROGRAMMER_ENABLE_SPEECH=1` を付けても鳴らない）。オンにしたいときは、`config.mjs` の `config` に `enableSpeechEnvValue: process.env.AUTO_PROGRAMMER_ENABLE_SPEECH,` を手で足す
-- **`package.json`**：`auto-programmer`・`move-issue-card`・`decide-issue-start`・`close-issues`・`select-flow-skills` のスクリプトを写す
+- **`config.mjs`**：上の表の値をその環境のものへ書き換える。書き換えないと `npm run move-issue-card` はボード未設定とみなし、カードを動かさない（担当者は足す）。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい。clone の番号とロックの置き場は既存の `workspaceDir` から導くので、同期した後も古い `config.mjs` のまま、キーを足さずに並べて動かせる。読み上げのキー `enableSpeechEnvValue` も同期では届かず、古い `config.mjs` のままではオフで動く（`AUTO_PROGRAMMER_ENABLE_SPEECH=1` を付けても鳴らない）。オンにしたいときは、`config.mjs` の `config` に `enableSpeechEnvValue: process.env.AUTO_PROGRAMMER_ENABLE_SPEECH,` を手で足す。実行の記録を見る画面のキー `dashboard.port` も同期では届かず、無いと画面は起動せずに止まる
+- **`package.json`**：`auto-programmer`・`move-issue-card`・`decide-issue-start`・`close-issues`・`select-flow-skills` のスクリプトを写す。画面を使うなら `auto-programmer:dashboard` も写す
 - **`ci.workflowFile` のワークフロー**：`branchPrefix` を設定したときだけ、push トリガー（`on.push.branches`）に同じ接頭辞を足す（例：`'st2/**'`）。足さないと CI が走らず、PR も作られない。接頭辞は既存のブランチ（`main2` など）と同じ名前にできない（git がその下にブランチを作れないので、起動時に止まる）
 - **`.claude/skills/auto-dev/`・`.claude/skills/auto-fix-ci/`・`.claude/skills/auto-resolve-conflict/`・`.claude/skills/issue-check/`**：そのリポジトリの `.claude/skills/` へ写す（`/auto-dev`・`/auto-fix-ci`・`/auto-resolve-conflict` が無いと手順が無い。`/issue-check` は `.claude/agents/issue-auditor-agent/` と、割るときに使う `.claude/skills/issue-split/` も要る。`/issue-split` は正典として `.claude/skills/to-issues/`・`.claude/skills/quick-issue/` を参照するので、これも写す。初回の検査で外部依存の制約を調べるために `.claude/agents/premise-checker-agent/` も要る。これは一次資料の定義を `.claude/skills/origin-search/` から読むので、これも写す。`issue-auditor-agent` は過去の決定を引く手順を `.claude/skills/past-decision-search/` から読むので、これも写す）
 
