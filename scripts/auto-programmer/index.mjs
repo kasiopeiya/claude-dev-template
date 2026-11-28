@@ -75,7 +75,12 @@ import {
   readCardStatusName
 } from './board.mjs'
 import { buildBranchName, validateBranchPrefix } from './branchName.mjs'
-import { hasSessionSucceeded, runAutoDevSession, runIssueCheckSession } from './claudeSession.mjs'
+import {
+  hasSessionSucceeded,
+  runAutoDevSession,
+  runIssueCheckSession,
+  validateSessionEventLogDir
+} from './claudeSession.mjs'
 import { config } from './config.mjs'
 import { claimFirstConflictedPullRequest } from './conflictedPullRequestClaim.mjs'
 import { resolveConflictAndRecord } from './conflictResolution.mjs'
@@ -136,6 +141,7 @@ async function main() {
   validateBranchPrefix(config.branchPrefix)
   // 欠けたまま動かすと settings.json を継ぎ、対話の /model に引きずられる。Issue を拾う前に止める
   validateSessionModelSettings(config)
+  validateSessionEventLogDir(config.sessionEventLogDir)
   // config.mjs は例外を投げられない（キーのコメントを見る）ので、使えない値の検査はここで、Issue を拾う前に行う
   const shouldSpeakIssueResult = isSpeechEnabled(config.enableSpeechEnvValue)
   // OS のアイドルスリープで sessionTimeoutMinutes の壁時計タイムアウトが実際の経過時間より早く

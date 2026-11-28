@@ -6,21 +6,25 @@
 // - 手順そのものは各 Skill の SKILL.md が持つ。ここが渡すのは Issue 番号だけで、
 //   プロンプト文字列に手順を書かない（書くとドキュメントレビューの対象外になる）。
 // - 時間で打ち切る。無人のセッションが固まると、止める手段は起動側にしか無い。
-// - セッション中は経過時間をステータス行に出し続ける。claude -p は終わるまで何も出さないことが多く、
+// - セッション中は経過時間をステータス行に出し続ける。claude は長いツール呼び出しの間、何分も文章を出さないことがあり、
 //   無音のままだと、人間は固まったのか動いているのかを見分けられない（Issue #782）。TTY では上限までの
 //   残りが一目で分かるよう、スピナーとプログレスバーで出す。
 // - セッションの終わりに、終了状態と所要時間の行を出す。無いと、何分かかったかを時刻の引き算でしか知れない。
+// - stream-json（イベントを1行1件の JSON で流す出力形式）で起動し、イベントをセッションごとのファイルに残す。
+//   遅い理由や使用制限の状態は、イベントの中にしか無い（#2023）。CLI の JSON 出力形式は黙って変わりうるので、
+//   その形式への依存を小さく保つ手立ては sessionEventRelay.mjs が持つ。
+// - セッション ID はこちらで決めて `--session-id` で渡す。最初のイベントを待たずに、記録のファイル名が決まる。
 
+import { mkdirSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { isAbsolute, resolve } from 'node:path'
+
+import { TechnicalError } from '../lib/errors.mjs'
 import { config } from './config.mjs'
+import { createSessionEventRelay } from './sessionEventRelay.mjs'
 import { buildSessionModelArgs } from './sessionModel.mjs'
 import { runStreamingAsync } from './shell.mjs'
-import {
-  createThrottledStatusLine,
-  relayChildProcessOutput,
-  showInfo,
-  showSuccess,
-  showWarning
-} from './ui.mjs'
+import { createThrottledStatusLine, showInfo, showSuccess, showWarning } from './ui.mjs'
 import { buildSessionProgressText, formatElapsedTime, pickSpinnerFrame } from './uiFormat.mjs'
 import {
   UNATTENDED_SESSION_ENV_NAME,
@@ -95,6 +99,22 @@ export function runAutoResolveConflictSession({ issueNumber, workspaceDir, abort
 }
 
 /**
+ * イベントの記録の置き場の設定が、絶対パスであることを確かめる。config.mjs はテンプレート同期の対象外で、
+ * 同期した利用先では欠けうる。欠けたまま動かすと、Issue を拾ってカードを動かした後のセッションの起動で落ちるので、
+ * Issue を拾う前に止める。
+ *
+ * @param {unknown} sessionEventLogDir config.mjs の `sessionEventLogDir`
+ * @returns {void}
+ * @throws {TechnicalError} 欠けている・文字列でない・絶対パスでないとき
+ */
+export function validateSessionEventLogDir(sessionEventLogDir) {
+  if (typeof sessionEventLogDir === 'string' && isAbsolute(sessionEventLogDir)) return
+  throw new TechnicalError(
+    `scripts/auto-programmer/config.mjs の sessionEventLogDir を絶対パスで指定してください（いまの値: ${String(sessionEventLogDir)}）。テンプレートの config.mjs と同じく resolve(autoProgrammerHomeDir, 'session-events') を足せば、既定の置き場になります`
+  )
+}
+
+/**
  * claude プロセスが正常終了したか。
  *
  * @param {{ exitCode: number, signal: string | null }} status 終了状態
@@ -118,26 +138,17 @@ async function runUnattendedSession({ slashCommand, workspaceDir, abortSignal })
     minAppendIntervalMs: ELAPSED_TIME_APPEND_INTERVAL_MS
   })
   const startedAt = Date.now()
-  // 権限確認を飛ばして起動する。無人セッションには権限プロンプトへ答える人間がおらず、
-  // `--allowedTools` での列挙は漏れたところで空転するため（README.md「使う前に済ませておくこと」）。
-  // この形は .claude/hooks/forbiddenCommandMatcher.mjs が「ゲートの迂回」として禁じているが、
-  // それは Bash ツールへ渡すコマンドへの禁止であり、ローカルのファイルへの影響は AI 専用 clone の中に閉じる。
-  // clone の中でも .claude/hooks/ のガードは効き続け、このツール自体の起動も AI には禁じている。
-  // 無人セッションは完了通知で進むので、予約系のツールは要らない。ScheduleWakeup・CronCreate は
-  // 「あとで自分に指示を送り直す」ツールで、使われると Skill が同じ作業を繰り返し、打ち切りまで
-  // 止まらない（#1119・#1497：/issue-check #1497 が約11分おきに6回走った）。Skill 本文に「使うな」と
-  // 書く方法は書き漏らしで再発するので、起動時にツールを外す。deny は権限確認を飛ばすモードでも効く。
+  const sessionId = randomUUID()
+  const sessionEventRelay = createSessionEventRelay({
+    eventLogFilePath: prepareSessionEventLogFilePath({
+      startedAt: new Date(startedAt),
+      slashCommand,
+      sessionId
+    })
+  })
   const exitStatus = await runStreamingAsync(
     'claude',
-    [
-      '-p',
-      slashCommand,
-      '--dangerously-skip-permissions',
-      '--disallowedTools',
-      'ScheduleWakeup',
-      'CronCreate',
-      ...buildSessionModelArgs(config)
-    ],
+    buildClaudeSessionArgs({ slashCommand, sessionId }),
     {
       cwd: workspaceDir,
       // 中で動く hook と Skill が無人だと見分けるため（読み手と理由は unattendedSessionEnv.mjs）
@@ -152,11 +163,75 @@ async function runUnattendedSession({ slashCommand, workspaceDir, abortSignal })
             symbol: pickSpinnerFrame(elapsedMs)
           }
         ),
-      onOutput: relayChildProcessOutput
+      onOutput: sessionEventRelay.onOutput
     }
   )
+  // runStreamingAsync は出力を読み切ってから返るので、改行で終わらない最後の行はここで処理する
+  sessionEventRelay.flush()
   showSessionOutcome(slashCommand, exitStatus, Date.now() - startedAt)
   return exitStatus
+}
+
+/**
+ * 無人セッションの claude に渡す引数を組み立てる。
+ *
+ * @param {{ slashCommand: string, sessionId: string }} params 実行するスラッシュコマンド（引数を含む）・`--session-id` に渡すセッション ID
+ * @returns {string[]} claude の引数
+ */
+function buildClaudeSessionArgs({ slashCommand, sessionId }) {
+  // 権限確認を飛ばして起動する。無人セッションには権限プロンプトへ答える人間がおらず、
+  // `--allowedTools` での列挙は漏れたところで空転するため（README.md「使う前に済ませておくこと」）。
+  // この形は .claude/hooks/forbiddenCommandMatcher.mjs が「ゲートの迂回」として禁じているが、
+  // それは Bash ツールへ渡すコマンドへの禁止であり、ローカルのファイルへの影響は AI 専用 clone の中に閉じる。
+  // clone の中でも .claude/hooks/ のガードは効き続け、このツール自体の起動も AI には禁じている。
+  // 無人セッションは完了通知で進むので、予約系のツールは要らない。ScheduleWakeup・CronCreate は
+  // 「あとで自分に指示を送り直す」ツールで、使われると Skill が同じ作業を繰り返し、打ち切りまで
+  // 止まらない（#1119・#1497：/issue-check #1497 が約11分おきに6回走った）。Skill 本文に「使うな」と
+  // 書く方法は書き漏らしで再発するので、起動時にツールを外す。deny は権限確認を飛ばすモードでも効く。
+  return [
+    '-p',
+    slashCommand,
+    '--dangerously-skip-permissions',
+    '--disallowedTools',
+    'ScheduleWakeup',
+    'CronCreate',
+    '--session-id',
+    sessionId,
+    '--output-format',
+    'stream-json',
+    // -p で stream-json を使うには --verbose が要る
+    '--verbose',
+    ...buildSessionModelArgs(config)
+  ]
+}
+
+/**
+ * セッション1つぶんのイベントを残すファイルのパスを決め、置き場のディレクトリを作る。
+ * ディレクトリは起動前に作る。出力の中継中に作れず例外になると、捕まえる場所が無く、このツールごと落ちて claude だけが残る。
+ *
+ * @param {{ startedAt: Date, slashCommand: string, sessionId: string }} sessionIdentity セッションの開始時刻・実行するスラッシュコマンド・セッション ID
+ * @returns {string} イベントを追記するファイルの絶対パス
+ */
+function prepareSessionEventLogFilePath({ startedAt, slashCommand, sessionId }) {
+  mkdirSync(config.sessionEventLogDir, { recursive: true })
+  return resolve(
+    config.sessionEventLogDir,
+    buildSessionEventLogFileName({ startedAt, slashCommand, sessionId })
+  )
+}
+
+/**
+ * セッション1つぶんのイベントを残すファイルの名前を作る。開始時刻・スラッシュコマンド・セッション ID の順に並べる。
+ * 開始時刻を先頭に置くのは、名前の順に並べれば古い順になり、実行記録（runs.jsonl）の時刻から引けるため。
+ * 時刻の `:` は Windows のファイル名に使えないので `-` に置き換える。
+ *
+ * @param {{ startedAt: Date, slashCommand: string, sessionId: string }} sessionIdentity セッションの開始時刻・実行するスラッシュコマンド（引数を含む）・`claude --session-id` に渡したセッション ID
+ * @returns {string} ファイル名（例：`2026-11-28T01-35-37-123Z-auto-dev-2023-<セッション ID>.jsonl`）
+ */
+function buildSessionEventLogFileName({ startedAt, slashCommand, sessionId }) {
+  const sortableTimestamp = startedAt.toISOString().replaceAll(/[:.]/g, '-')
+  const slashCommandPart = slashCommand.replaceAll(/[^A-Za-z0-9]+/g, '-').replaceAll(/^-|-$/g, '')
+  return `${sortableTimestamp}-${slashCommandPart}-${sessionId}.jsonl`
 }
 
 /**

@@ -131,25 +131,26 @@ npm run auto-programmer
 
 接続先と表記はすべて `config.mjs` に集めてある。**他のファイルにこれらの値は書かれていない**（例外は `branchPrefix` だけ。「別のリポジトリで使うとき」を見る）。
 
-| キー                          | 意味                                                                                      | 調べ方                                                                                        |
-| ----------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| `repository`                  | Issue と PR の相手（`owner/repo`）                                                        | `gh repo view --json nameWithOwner`                                                           |
-| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                                                            | `gh project list --owner <owner>`                                                             |
-| `board.statusFieldName`       | 進捗を持つフィールドの表記                                                                | `gh project field-list <番号> --owner <owner>`                                                |
-| `board.todoStatusName`        | 積まれただけで、まだ着手待ちにしていないことを表す選択肢の表記                            | 同上                                                                                          |
-| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                                                        | 同上                                                                                          |
-| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                                              | 同上                                                                                          |
-| `targetIssueLabel`            | 対象にする Issue のラベル                                                                 | `gh label list`                                                                               |
-| `branchPrefix`                | トピックブランチ名の前に付ける接頭辞（`'st2'` なら `st2/feat/issue-123`。空なら付けない） | ライン（`main`・`main2` など）ごとに CI を分けているときだけ設定する。前提は表の下に書く      |
-| `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数                                 | 長いほうの実装に掛かる時間の上限として決める                                                  |
-| `sessionModel`                | claude セッションに `--model` で渡すモデル（既定 `sonnet`）                               | `claude --help` の `--model`。別名（`sonnet`・`opus`）か正式名                                |
-| `sessionEffort`               | claude セッションに `--effort` で渡す effort（既定 `xhigh`）                              | `claude --help` の `--effort`                                                                 |
-| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数                               | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる   |
-| `maxConsecutiveIdleWaits`     | 着手できない周が続いたとき、待ってよい回数の上限（使い切っても着手できなければ止まる）    | 放置を許せる時間（`pollIntervalMinutes` × この回数）から決める                                |
-| `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名                                   | `.github/workflows/` の下のファイル名                                                         |
-| `ci.pollIntervalSeconds`      | CI の run の状態を見直す秒数                                                              | 短すぎると `gh run list` の呼び出し頻度が上がる                                               |
-| `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                                                   | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す |
-| `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                      | 使い切っても落ちていれば人間へ回す                                                            |
+| キー                          | 意味                                                                                      | 調べ方                                                                                                                |
+| ----------------------------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `repository`                  | Issue と PR の相手（`owner/repo`）                                                        | `gh repo view --json nameWithOwner`                                                                                   |
+| `board.owner`・`board.number` | GitHub Projects の持ち主と番号                                                            | `gh project list --owner <owner>`                                                                                     |
+| `board.statusFieldName`       | 進捗を持つフィールドの表記                                                                | `gh project field-list <番号> --owner <owner>`                                                                        |
+| `board.todoStatusName`        | 積まれただけで、まだ着手待ちにしていないことを表す選択肢の表記                            | 同上                                                                                                                  |
+| `board.readyStatusName`       | 「着手してよい」を表す選択肢の表記                                                        | 同上                                                                                                                  |
+| `board.inProgressStatusName`  | 「着手中」を表す選択肢の表記                                                              | 同上                                                                                                                  |
+| `targetIssueLabel`            | 対象にする Issue のラベル                                                                 | `gh label list`                                                                                                       |
+| `branchPrefix`                | トピックブランチ名の前に付ける接頭辞（`'st2'` なら `st2/feat/issue-123`。空なら付けない） | ライン（`main`・`main2` など）ごとに CI を分けているときだけ設定する。前提は表の下に書く                              |
+| `sessionTimeoutMinutes`       | claude セッション1回（Skill 1つぶん）を打ち切るまでの分数                                 | 長いほうの実装に掛かる時間の上限として決める                                                                          |
+| `sessionModel`                | claude セッションに `--model` で渡すモデル（既定 `sonnet`）                               | `claude --help` の `--model`。別名（`sonnet`・`opus`）か正式名                                                        |
+| `sessionEffort`               | claude セッションに `--effort` で渡す effort（既定 `xhigh`）                              | `claude --help` の `--effort`                                                                                         |
+| `pollIntervalMinutes`         | 着手できる Issue が無かったとき、ボードを見直すまで待つ分数                               | 短すぎると `gh project` の呼び出し頻度が上がり、GitHub API のレートリミットに達しやすくなる                           |
+| `maxConsecutiveIdleWaits`     | 着手できない周が続いたとき、待ってよい回数の上限（使い切っても着手できなければ止まる）    | 放置を許せる時間（`pollIntervalMinutes` × この回数）から決める                                                        |
+| `ci.workflowFile`             | push で走り、マージ可否を決めるワークフローのファイル名                                   | `.github/workflows/` の下のファイル名                                                                                 |
+| `ci.pollIntervalSeconds`      | CI の run の状態を見直す秒数                                                              | 短すぎると `gh run list` の呼び出し頻度が上がる                                                                       |
+| `ci.runWaitLimitMinutes`      | CI の run 1回が終わるまで待つ上限の分数                                                   | `needs` で直列に並ぶジョブの `timeout-minutes` の合計（最も長い連なり）に、起動待ちの分を足す                         |
+| `ci.maxFixAttempts`           | CI が落ちたとき、`/auto-fix-ci` に直させる回数の上限                                      | 使い切っても落ちていれば人間へ回す                                                                                    |
+| `sessionEventLogDir`          | claude セッション中のイベントを、セッションごとのファイルに残すディレクトリ               | ふだんは触らない。既定は `AUTO_PROGRAMMER_HOME` の下の `session-events/` で、置き場ごと変えるなら環境変数のほうを使う |
 
 フィールド ID・選択肢 ID は設定に持たせない。表記から実行時に引き直す。各 Status が何を意味するかは [issue-policy](../../docs/policy/issue-policy.md)「ボードの Status の意味」が定める。
 
@@ -262,11 +263,24 @@ Issue 1件につき1行の JSON が `runLogPath` に追記される。端末を�
 tail -3 ~/dev/auto-programmer/runs.jsonl | jq .
 ```
 
+claude セッション中のイベントは、セッション1つにつき1ファイルで `sessionEventLogDir`（既定 `~/dev/auto-programmer/session-events/`）に残る。セッションは `--output-format stream-json` で起動するので、どのツールを呼んだか・トークンをどれだけ使ったか・使用制限の状態が、1行1件の JSON で全部残る。画面に出るのは、そのうち claude の文章と、セッションが失敗したときの理由だけである。JSON として読めない行は、記録せずにそのまま画面へ流す。
+
+ファイル名は `<開始時刻（UTC）>-<スラッシュコマンド>-<セッション ID>.jsonl` で、例えば `2026-11-28T01-35-37-123Z-auto-dev-2023-<セッション ID>.jsonl` になる。名前の順に並べれば古い順になる。古いファイルは自動で消えない。
+
+```bash
+# Issue #2023 の /auto-dev のうち、最新のセッションで呼んだツールの回数
+f=$(ls ~/dev/auto-programmer/session-events/*-auto-dev-2023-*.jsonl | tail -1)
+jq -r 'select(.type == "assistant") | .message.content[] | select(.type == "tool_use") | .name' "$f" | sort | uniq -c
+
+# 所要時間・ターン数・トークン数（result はターンごとに出るので、複数並ぶことがある）
+jq 'select(.type == "result") | {duration_ms, num_turns, usage}' "$f"
+```
+
 ## 別のリポジトリで使うとき
 
 直すのは次のものだけ。
 
-- **`config.mjs`**：上の表の値をその環境のものへ書き換える。書き換えないと `npm run move-issue-card` はボード未設定とみなし、カードを動かさない（担当者は足す）。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい。clone の番号とロックの置き場は既存の `workspaceDir` から導くので、同期した後も古い `config.mjs` のまま、キーを足さずに並べて動かせる。読み上げのキー `enableSpeechEnvValue` も同期では届かず、古い `config.mjs` のままではオフで動く（`AUTO_PROGRAMMER_ENABLE_SPEECH=1` を付けても鳴らない）。オンにしたいときは、`config.mjs` の `config` に `enableSpeechEnvValue: process.env.AUTO_PROGRAMMER_ENABLE_SPEECH,` を手で足す
+- **`config.mjs`**：上の表の値をその環境のものへ書き換える。書き換えないと `npm run move-issue-card` はボード未設定とみなし、カードを動かさない（担当者は足す）。テンプレートの同期（`scripts/sync-template.sh`）は `config.mjs` を上書きしないので、同期で `maxConsecutiveIdleWaits` のような新しいキーが増えたときは手で足す（無いと起動時に落ちる）。逆に `baseBranch` のように使われなくなったキーは残っても害が無いが、値を変えても何も起きないので消してよい。clone の番号とロックの置き場は既存の `workspaceDir` から導くので、同期した後も古い `config.mjs` のまま、キーを足さずに並べて動かせる。セッションのイベントの置き場 `sessionEventLogDir` は、足さないと Issue を拾う前に止まる。読み上げのキー `enableSpeechEnvValue` も同期では届かず、古い `config.mjs` のままではオフで動く（`AUTO_PROGRAMMER_ENABLE_SPEECH=1` を付けても鳴らない）。オンにしたいときは、`config.mjs` の `config` に `enableSpeechEnvValue: process.env.AUTO_PROGRAMMER_ENABLE_SPEECH,` を手で足す
 - **`package.json`**：`auto-programmer`・`move-issue-card`・`decide-issue-start`・`close-issues`・`select-flow-skills` のスクリプトを写す
 - **`ci.workflowFile` のワークフロー**：`branchPrefix` を設定したときだけ、push トリガー（`on.push.branches`）に同じ接頭辞を足す（例：`'st2/**'`）。足さないと CI が走らず、PR も作られない。接頭辞は既存のブランチ（`main2` など）と同じ名前にできない（git がその下にブランチを作れないので、起動時に止まる）
 - **`.claude/skills/auto-dev/`・`.claude/skills/auto-fix-ci/`・`.claude/skills/auto-resolve-conflict/`・`.claude/skills/issue-check/`**：そのリポジトリの `.claude/skills/` へ写す（`/auto-dev`・`/auto-fix-ci`・`/auto-resolve-conflict` が無いと手順が無い。`/issue-check` は `.claude/agents/issue-auditor-agent/` と、割るときに使う `.claude/skills/issue-split/` も要る。`/issue-split` は正典として `.claude/skills/to-issues/`・`.claude/skills/quick-issue/` を参照するので、これも写す。初回の検査で外部依存の制約を調べるために `.claude/agents/premise-checker-agent/` も要る。これは一次資料の定義を `.claude/skills/origin-search/` から読むので、これも写す。`issue-auditor-agent` は過去の決定を引く手順を `.claude/skills/past-decision-search/` から読むので、これも写す）
